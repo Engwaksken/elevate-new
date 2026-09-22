@@ -84,16 +84,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('job_recommendations', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('job_id')->constrained()->cascadeOnDelete();
-            $table->decimal('score', 5, 2)->default(0);
-            $table->json('reasons')->nullable();
-            $table->timestamp('generated_at')->useCurrent();
-            $table->unique(['user_id','job_id']);
-        });
-
+       
         Schema::create('library_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
@@ -146,7 +137,7 @@ return new class extends Migration
         Schema::dropIfExists('library_bookmarks');
         Schema::dropIfExists('library_resources');
         Schema::dropIfExists('library_categories');
-        Schema::dropIfExists('job_recommendations');
+      
         Schema::dropIfExists('resume_projects');
         Schema::dropIfExists('resume_languages');
         Schema::dropIfExists('resume_certifications');
