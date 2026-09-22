@@ -7,6 +7,9 @@ use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Auth\ParticipantAuthController;
 use App\Http\Controllers\Auth\StaffAuthController;
+use App\Http\Controllers\Participant\DashboardController;
+use App\Http\Controllers\Participant\NotificationController;
+use App\Http\Controllers\Participant\ProfileController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -40,7 +43,14 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('/dashboard', 'dashboard')->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
 });
 
 Route::prefix('admin')
@@ -69,3 +79,4 @@ Route::prefix('admin')
         Route::put('/roles/{role}', [RoleController::class, 'update'])
             ->middleware('permission:roles.manage')->name('roles.update');
     });
+

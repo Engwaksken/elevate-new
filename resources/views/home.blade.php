@@ -9,6 +9,9 @@
 
 @section('content')
 
+{{-- =========================================================
+     HERO
+     ========================================================= --}}
 <section class="hero full-width-section">
 
     <div class="container hero-grid">
@@ -147,6 +150,9 @@
 </section>
 
 
+{{-- =========================================================
+     PLATFORM FEATURES
+     ========================================================= --}}
 <section
     class="section full-width-section section-light"
     id="platform"
@@ -469,16 +475,20 @@
 </section>
 
 
+{{-- =========================================================
+     IMPACT
+     Cards are now BELOW the text
+     ========================================================= --}}
 <section
     class="section full-width-section impact"
     id="impact"
 >
 
-    <div class="container impact-grid">
+    <div class="container">
 
-        <div>
+        <div class="impact-intro">
 
-            <div class="eyebrow text-secondary">
+            <div class="eyebrow impact-eyebrow">
                 Designed for measurable impact
             </div>
 
@@ -490,113 +500,113 @@
             <p>
                 ElevateHer360 provides a connected view from
                 participant registration and training through
-                mentorship, career development, employment and
-                self-employment outcomes.
+                mentorship, career development, employment
+                and self-employment outcomes.
             </p>
 
         </div>
 
 
-        <div class="stats-grid">
+        <div class="impact-cards">
 
-            <div class="stat-card gold">
+            <article class="impact-card">
 
-                <div class="stat-content">
+                <div class="impact-card-top">
 
-                    <div class="stat-label">
+                    <div class="impact-card-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+
+                    <span class="impact-card-label">
                         Identity
-                    </div>
-
-                    <div class="stat-value">
-                        One
-                    </div>
-
-                    <div class="stat-note">
-                        One participant profile across the platform
-                    </div>
+                    </span>
 
                 </div>
 
-                <div class="stat-icon">
-                    <i class="fas fa-user"></i>
+                <div class="impact-card-value">
+                    One
                 </div>
 
-            </div>
+                <p>
+                    One participant profile across the platform.
+                </p>
+
+            </article>
 
 
-            <div class="stat-card gold">
+            <article class="impact-card">
 
-                <div class="stat-content">
+                <div class="impact-card-top">
 
-                    <div class="stat-label">
+                    <div class="impact-card-icon">
+                        <i class="fas fa-arrows-rotate"></i>
+                    </div>
+
+                    <span class="impact-card-label">
                         Journey
-                    </div>
-
-                    <div class="stat-value">
-                        360°
-                    </div>
-
-                    <div class="stat-note">
-                        Connected learning-to-opportunity journey
-                    </div>
+                    </span>
 
                 </div>
 
-                <div class="stat-icon">
-                    <i class="fas fa-arrows-rotate"></i>
+                <div class="impact-card-value">
+                    360°
                 </div>
 
-            </div>
+                <p>
+                    Connected learning-to-opportunity journey.
+                </p>
+
+            </article>
 
 
-            <div class="stat-card gold">
+            <article class="impact-card">
 
-                <div class="stat-content">
+                <div class="impact-card-top">
 
-                    <div class="stat-label">
+                    <div class="impact-card-icon">
+                        <i class="fas fa-shield-halved"></i>
+                    </div>
+
+                    <span class="impact-card-label">
                         Access
-                    </div>
-
-                    <div class="stat-value">
-                        RBAC
-                    </div>
-
-                    <div class="stat-note">
-                        Secure role-based access control
-                    </div>
+                    </span>
 
                 </div>
 
-                <div class="stat-icon">
-                    <i class="fas fa-shield-halved"></i>
+                <div class="impact-card-value">
+                    RBAC
                 </div>
 
-            </div>
+                <p>
+                    Secure role-based access control.
+                </p>
+
+            </article>
 
 
-            <div class="stat-card gold">
+            <article class="impact-card">
 
-                <div class="stat-content">
+                <div class="impact-card-top">
 
-                    <div class="stat-label">
+                    <div class="impact-card-icon">
+                        <i class="fas fa-chart-column"></i>
+                    </div>
+
+                    <span class="impact-card-label">
                         Results
-                    </div>
-
-                    <div class="stat-value">
-                        M&E
-                    </div>
-
-                    <div class="stat-note">
-                        Longitudinal outcome tracking
-                    </div>
+                    </span>
 
                 </div>
 
-                <div class="stat-icon">
-                    <i class="fas fa-chart-column"></i>
+                <div class="impact-card-value">
+                    M&amp;E
                 </div>
 
-            </div>
+                <p>
+                    Longitudinal outcome tracking.
+                </p>
+
+            </article>
 
         </div>
 
@@ -605,6 +615,9 @@
 </section>
 
 
+{{-- =========================================================
+     CTA
+     ========================================================= --}}
 <section class="section full-width-section section-white">
 
     <div class="container">

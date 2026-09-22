@@ -1,5 +1,7 @@
+@import './participant-tabs.css';
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 @import 'tailwindcss';
+@import './participant-sidebar.css';
 
 /* ==========================================================================
    ElevateHer360 Global Styles
@@ -1923,4 +1925,144 @@ tbody tr:hover {
     .registration-actions .btn {
         flex: 1 1 auto;
     }
+}
+/* ==========================================================================
+   Impact Section
+   ========================================================================== */
+
+.impact {
+    width: 100%;
+    margin: 0;
+    padding-block: clamp(72px, 8vw, 100px);
+    background: #2b0a0a;
+    color: #ffffff;
+}
+
+.impact-intro {
+    max-width: 760px;
+    margin-bottom: 42px;
+}
+
+.impact-eyebrow {
+    color: var(--secondary);
+}
+
+.impact-intro h2 {
+    margin: 8px 0 14px;
+
+    color: #ffffff;
+
+    font-size: clamp(30px, 4vw, 46px);
+    line-height: 1.15;
+}
+
+.impact-intro p {
+    max-width: 720px;
+
+    margin-bottom: 0;
+
+    color: #eadede;
+
+    font-size: 16px;
+    line-height: 1.75;
+}
+
+.impact-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    gap: 18px;
+}
+
+.impact-card {
+    min-height: 210px;
+
+    padding: 22px;
+
+    background: #ffffff;
+
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-left: 4px solid var(--secondary);
+    border-radius: 14px;
+
+    box-shadow: var(--shadow-sm);
+}
+
+.impact-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    margin-bottom: 14px;
+}
+
+.impact-card-label {
+    color: var(--muted);
+
+    font-size: 0.78rem;
+    font-weight: 700;
+
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.impact-card-icon {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: var(--secondary-soft);
+    color: var(--primary);
+
+    font-size: 18px;
+}
+
+.impact-card-value {
+    margin-bottom: 10px;
+
+    color: var(--primary);
+
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.impact-card p {
+    margin-bottom: 0;
+
+    color: var(--muted);
+
+    font-size: 0.88rem;
+    line-height: 1.65;
+}
+
+@media (max-width: 1000px) {
+
+    .impact-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width: 600px) {
+
+    .impact-intro {
+        margin-bottom: 30px;
+    }
+
+    .impact-cards {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .impact-card {
+        min-height: auto;
+    }
+
 }
