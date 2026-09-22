@@ -20,34 +20,10 @@
 
         <p>
             Secure access for authorised WITU staff,
-            instructors, programme teams, M&E,
-            operations and administrators.
+            programme teams and administrators.
         </p>
 
-        <ul>
-            <li>
-                Programme and cohort management
-            </li>
-
-            <li>
-                Learning and mentorship oversight
-            </li>
-
-            <li>
-                Workplans and M&E reporting
-            </li>
-
-            <li>
-                HR, assets and procurement
-            </li>
-
-            <li>
-                Executive reporting and administration
-            </li>
-        </ul>
-
     </section>
-
 
     <section class="auth-panel">
 
@@ -67,9 +43,7 @@
             method="POST"
             action="{{ route('admin.login.attempt') }}"
         >
-
             @csrf
-
 
             <div class="form-group">
 
@@ -85,13 +59,13 @@
                     type="email"
                     name="email"
                     value="{{ old('email') }}"
+                    placeholder="e.g. name@witu.org"
                     autocomplete="email"
                     required
                     autofocus
                 >
 
             </div>
-
 
             <div class="form-group">
 
@@ -108,6 +82,7 @@
                         id="staff_password"
                         type="password"
                         name="password"
+                        placeholder="Enter your staff password"
                         autocomplete="current-password"
                         required
                     >
@@ -116,14 +91,14 @@
                         type="button"
                         class="password-toggle"
                         data-password-toggle="staff_password"
+                        aria-label="Show or hide password"
                     >
-                        Show
+                        <i class="fas fa-eye"></i>
                     </button>
 
                 </div>
 
             </div>
-
 
             <div class="checkbox-row">
 
@@ -141,34 +116,15 @@
 
             </div>
 
-
             <button
                 type="submit"
                 class="btn btn-primary btn-block"
             >
-                Sign In to Staff Portal
+                <i class="fas fa-shield-halved"></i>
+                Sign In
             </button>
 
         </form>
-
-
-        <div class="auth-links">
-
-            <p>
-                Participant?
-
-                <a href="{{ route('login') }}">
-                    Use participant login
-                </a>
-            </p>
-
-            <p>
-                <a href="{{ route('home') }}">
-                    Return to ElevateHer360
-                </a>
-            </p>
-
-        </div>
 
     </section>
 

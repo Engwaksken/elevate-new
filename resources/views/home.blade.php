@@ -9,11 +9,11 @@
 
 @section('content')
 
-<section class="hero">
+<section class="hero full-width-section">
 
-    <div class="hero-grid">
+    <div class="container hero-grid">
 
-        <div>
+        <div class="hero-copy">
 
             <div class="eyebrow">
                 Your complete growth journey
@@ -25,13 +25,10 @@
             </h1>
 
             <p class="lead">
-
-                ElevateHer360 brings training,
-                mentorship, career development,
-                employment opportunities and digital
-                resources together under one
+                ElevateHer360 brings training, mentorship,
+                career development, employment opportunities
+                and digital resources together under one
                 participant account.
-
             </p>
 
             <div class="hero-actions">
@@ -44,7 +41,8 @@
                             href="{{ route('admin.dashboard') }}"
                             class="btn btn-primary btn-lg"
                         >
-                            Open Staff Dashboard
+                            <i class="fas fa-gauge-high"></i>
+                            Open Dashboard
                         </a>
 
                     @else
@@ -53,6 +51,7 @@
                             href="{{ route('dashboard') }}"
                             class="btn btn-primary btn-lg"
                         >
+                            <i class="fas fa-gauge-high"></i>
                             Continue to Dashboard
                         </a>
 
@@ -64,6 +63,7 @@
                         href="{{ route('register') }}"
                         class="btn btn-primary btn-lg"
                     >
+                        <i class="fas fa-user-plus"></i>
                         Create Participant Account
                     </a>
 
@@ -71,14 +71,8 @@
                         href="{{ route('login') }}"
                         class="btn btn-outline btn-lg"
                     >
+                        <i class="fas fa-right-to-bracket"></i>
                         Participant Sign In
-                    </a>
-
-                    <a
-                        href="{{ route('admin.login') }}"
-                        class="btn btn-gold btn-lg"
-                    >
-                        Staff Sign In
                     </a>
 
                 @endauth
@@ -86,6 +80,7 @@
             </div>
 
         </div>
+
 
         <div class="journey-card">
 
@@ -99,68 +94,48 @@
 
             <div class="journey-item">
 
-                <span class="number">
-                    1
-                </span>
+                <span class="number">1</span>
 
                 <div>
                     <strong>Learn</strong>
-
                     <br>
-
-                    Courses, assessments,
-                    attendance and certificates
+                    Courses, assessments, attendance and certificates
                 </div>
 
             </div>
 
             <div class="journey-item">
 
-                <span class="number">
-                    2
-                </span>
+                <span class="number">2</span>
 
                 <div>
                     <strong>Connect</strong>
-
                     <br>
-
-                    Mentors, goals,
-                    sessions and milestones
+                    Mentors, goals, sessions and milestones
                 </div>
 
             </div>
 
             <div class="journey-item">
 
-                <span class="number">
-                    3
-                </span>
+                <span class="number">3</span>
 
                 <div>
                     <strong>Prepare</strong>
-
                     <br>
-
-                    Career coaching,
-                    skills and resume building
+                    Career coaching, skills and resume building
                 </div>
 
             </div>
 
             <div class="journey-item">
 
-                <span class="number">
-                    4
-                </span>
+                <span class="number">4</span>
 
                 <div>
                     <strong>Progress</strong>
-
                     <br>
-
-                    Job applications,
-                    employment and outcome tracking
+                    Job applications, employment and outcome tracking
                 </div>
 
             </div>
@@ -172,176 +147,332 @@
 </section>
 
 
-<section class="section" id="platform">
+<section
+    class="section full-width-section section-light"
+    id="platform"
+>
 
-    <div class="section-header">
+    <div class="container">
 
-        <div class="eyebrow">
-            Everything in one place
+        <div class="section-header">
+
+            <div class="eyebrow">
+                Everything in one place
+            </div>
+
+            <h2>
+                One participant. One platform.
+            </h2>
+
+            <p>
+                Your learning, mentorship, career and employment
+                journey stays connected to one profile.
+            </p>
+
         </div>
 
-        <h2>
-            One participant. One platform.
-        </h2>
 
-        <p>
-            Your learning, mentorship, career and
-            employment journey stays connected to
-            one profile.
-        </p>
+        <div class="features">
 
-    </div>
+            <a
+                href="{{ route('learning.index') }}"
+                class="feature-link"
+            >
+                <article class="feature">
 
-    <div class="features">
+                    <div class="feature-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
 
-        <article class="feature">
+                    <h3>
+                        Learning
+                    </h3>
 
-            <div class="feature-icon">
-                L
-            </div>
+                    <p>
+                        Explore courses, lessons, assessments,
+                        attendance, progress tracking and certificates.
+                    </p>
 
-            <h3>
-                Learning
-            </h3>
+                    <div class="feature-arrow">
+                        Explore Learning
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
 
-            <p>
-                Courses, lessons, assessments,
-                attendance, progress tracking and
-                certificates.
-            </p>
+                </article>
+            </a>
 
-        </article>
 
-        <article class="feature">
+            @auth
 
-            <div class="feature-icon">
-                M
-            </div>
+                <a
+                    href="{{ route('mentorship.dashboard') }}"
+                    class="feature-link"
+                >
 
-            <h3>
-                Mentorship
-            </h3>
+            @else
 
-            <p>
-                Mentor matching, sessions,
-                goals, milestones and action plans.
-            </p>
+                <a
+                    href="{{ route('login') }}"
+                    class="feature-link"
+                >
 
-        </article>
+            @endauth
 
-        <article class="feature">
+                <article class="feature">
 
-            <div class="feature-icon">
-                J
-            </div>
+                    <div class="feature-icon">
+                        <i class="fas fa-handshake"></i>
+                    </div>
 
-            <h3>
-                Jobs
-            </h3>
+                    <h3>
+                        Mentorship
+                    </h3>
 
-            <p>
-                Discover opportunities,
-                save jobs, apply and track your
-                application journey.
-            </p>
+                    <p>
+                        Connect with mentors, manage goals,
+                        sessions, milestones and action plans.
+                    </p>
 
-        </article>
+                    <div class="feature-arrow">
+                        Open Mentorship
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
 
-        <article class="feature">
+                </article>
 
-            <div class="feature-icon">
-                EL
-            </div>
+            </a>
 
-            <h3>
-                Digital Library
-            </h3>
 
-            <p>
-                Access curated learning and
-                professional development resources.
-            </p>
+            <a
+                href="{{ route('jobs.index') }}"
+                class="feature-link"
+            >
+                <article class="feature">
 
-        </article>
+                    <div class="feature-icon">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
 
-        <article class="feature">
+                    <h3>
+                        Jobs
+                    </h3>
 
-            <div class="feature-icon">
-                C
-            </div>
+                    <p>
+                        Discover opportunities, save jobs,
+                        apply and track your application journey.
+                    </p>
 
-            <h3>
-                Career Development
-            </h3>
+                    <div class="feature-arrow">
+                        View Jobs
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
 
-            <p>
-                Career navigation,
-                interview readiness and workplace
-                preparation.
-            </p>
+                </article>
+            </a>
 
-        </article>
 
-        <article class="feature">
+            <a
+                href="{{ route('library.index') }}"
+                class="feature-link"
+            >
+                <article class="feature">
 
-            <div class="feature-icon">
-                CV
-            </div>
+                    <div class="feature-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
 
-            <h3>
-                Resume Builder
-            </h3>
+                    <h3>
+                        Digital Library
+                    </h3>
 
-            <p>
-                Build professional resumes and
-                use them directly in job
-                applications.
-            </p>
+                    <p>
+                        Access curated learning, career and
+                        professional development resources.
+                    </p>
 
-        </article>
+                    <div class="feature-arrow">
+                        Browse Library
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
 
-        <article class="feature">
+                </article>
+            </a>
 
-            <div class="feature-icon">
-                CAL
-            </div>
 
-            <h3>
-                Calendar
-            </h3>
+            @auth
 
-            <p>
-                Keep training, mentorship,
-                deadlines and interview dates
-                together.
-            </p>
+                <a
+                    href="{{ route('career.resume.index') }}"
+                    class="feature-link"
+                >
 
-        </article>
+            @else
 
-        <article class="feature">
+                <a
+                    href="{{ route('login') }}"
+                    class="feature-link"
+                >
 
-            <div class="feature-icon">
-                %
-            </div>
+            @endauth
 
-            <h3>
-                Progress
-            </h3>
+                <article class="feature">
 
-            <p>
-                Follow achievements across
-                learning, mentorship, jobs and
-                employment outcomes.
-            </p>
+                    <div class="feature-icon">
+                        <i class="fas fa-compass"></i>
+                    </div>
 
-        </article>
+                    <h3>
+                        Career Development
+                    </h3>
+
+                    <p>
+                        Strengthen career readiness,
+                        interview skills and workplace preparation.
+                    </p>
+
+                    <div class="feature-arrow">
+                        Build Your Career
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+
+                </article>
+
+            </a>
+
+
+            @auth
+
+                <a
+                    href="{{ route('career.resume.index') }}"
+                    class="feature-link"
+                >
+
+            @else
+
+                <a
+                    href="{{ route('login') }}"
+                    class="feature-link"
+                >
+
+            @endauth
+
+                <article class="feature">
+
+                    <div class="feature-icon">
+                        <i class="fas fa-file-lines"></i>
+                    </div>
+
+                    <h3>
+                        Resume Builder
+                    </h3>
+
+                    <p>
+                        Build and manage professional resumes
+                        for job and career opportunities.
+                    </p>
+
+                    <div class="feature-arrow">
+                        Build Resume
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+
+                </article>
+
+            </a>
+
+
+            @auth
+
+                <a
+                    href="{{ route('dashboard') }}"
+                    class="feature-link"
+                >
+
+            @else
+
+                <a
+                    href="{{ route('login') }}"
+                    class="feature-link"
+                >
+
+            @endauth
+
+                <article class="feature">
+
+                    <div class="feature-icon">
+                        <i class="fas fa-calendar-days"></i>
+                    </div>
+
+                    <h3>
+                        Calendar
+                    </h3>
+
+                    <p>
+                        Keep training, mentorship,
+                        deadlines and interview dates organised.
+                    </p>
+
+                    <div class="feature-arrow">
+                        View Calendar
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+
+                </article>
+
+            </a>
+
+
+            @auth
+
+                <a
+                    href="{{ route('dashboard') }}"
+                    class="feature-link"
+                >
+
+            @else
+
+                <a
+                    href="{{ route('login') }}"
+                    class="feature-link"
+                >
+
+            @endauth
+
+                <article class="feature">
+
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+
+                    <h3>
+                        Your Progress
+                    </h3>
+
+                    <p>
+                        Follow achievements across learning,
+                        mentorship, jobs and employment outcomes.
+                    </p>
+
+                    <div class="feature-arrow">
+                        View Progress
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+
+                </article>
+
+            </a>
+
+        </div>
 
     </div>
 
 </section>
 
 
-<section class="section impact" id="impact">
+<section
+    class="section full-width-section impact"
+    id="impact"
+>
 
     <div class="container impact-grid">
 
@@ -357,15 +488,16 @@
             </h2>
 
             <p>
-                ElevateHer360 provides a longitudinal
-                view from participant registration
-                and training through mentorship,
-                employment and self-employment.
+                ElevateHer360 provides a connected view from
+                participant registration and training through
+                mentorship, career development, employment and
+                self-employment outcomes.
             </p>
 
         </div>
 
-        <div class="grid-2">
+
+        <div class="stats-grid">
 
             <div class="stat-card gold">
 
@@ -380,12 +512,17 @@
                     </div>
 
                     <div class="stat-note">
-                        One participant profile
+                        One participant profile across the platform
                     </div>
 
                 </div>
 
+                <div class="stat-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+
             </div>
+
 
             <div class="stat-card gold">
 
@@ -400,12 +537,17 @@
                     </div>
 
                     <div class="stat-note">
-                        Connected programme journey
+                        Connected learning-to-opportunity journey
                     </div>
 
                 </div>
 
+                <div class="stat-icon">
+                    <i class="fas fa-arrows-rotate"></i>
+                </div>
+
             </div>
+
 
             <div class="stat-card gold">
 
@@ -420,12 +562,17 @@
                     </div>
 
                     <div class="stat-note">
-                        Role-based access control
+                        Secure role-based access control
                     </div>
 
                 </div>
 
+                <div class="stat-icon">
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+
             </div>
+
 
             <div class="stat-card gold">
 
@@ -445,6 +592,10 @@
 
                 </div>
 
+                <div class="stat-icon">
+                    <i class="fas fa-chart-column"></i>
+                </div>
+
             </div>
 
         </div>
@@ -454,67 +605,79 @@
 </section>
 
 
-<section class="section">
+<section class="section full-width-section section-white">
 
-    <div class="cta-box">
+    <div class="container">
 
-        <div>
+        <div class="cta-box">
 
-            <h2>
-                Ready to begin your journey?
-            </h2>
+            <div>
 
-            <p>
-                Create one account for learning,
-                mentorship, careers, jobs and
-                digital resources.
-            </p>
+                <div class="eyebrow text-secondary">
+                    Take the next step
+                </div>
 
-        </div>
+                <h2>
+                    Ready to begin your ElevateHer360 journey?
+                </h2>
 
-        @guest
-
-            <div class="d-flex gap-2 flex-wrap">
-
-                <a
-                    href="{{ route('register') }}"
-                    class="btn btn-gold"
-                >
-                    Register
-                </a>
-
-                <a
-                    href="{{ route('login') }}"
-                    class="btn btn-outline"
-                >
-                    Sign In
-                </a>
+                <p>
+                    Create one participant account for learning,
+                    mentorship, careers, jobs and digital resources.
+                </p>
 
             </div>
 
-        @else
 
-            @if(auth()->user()->isStaff())
+            @guest
 
-                <a
-                    href="{{ route('admin.dashboard') }}"
-                    class="btn btn-gold"
-                >
-                    Open Staff Dashboard
-                </a>
+                <div class="d-flex gap-2 flex-wrap">
+
+                    <a
+                        href="{{ route('register') }}"
+                        class="btn btn-gold btn-lg"
+                    >
+                        <i class="fas fa-user-plus"></i>
+                        Create Account
+                    </a>
+
+                    <a
+                        href="{{ route('login') }}"
+                        class="btn btn-outline btn-lg"
+                    >
+                        <i class="fas fa-right-to-bracket"></i>
+                        Sign In
+                    </a>
+
+                </div>
 
             @else
 
-                <a
-                    href="{{ route('dashboard') }}"
-                    class="btn btn-gold"
-                >
-                    Open Dashboard
-                </a>
+                @if(auth()->user()->isStaff())
 
-            @endif
+                    <a
+                        href="{{ route('admin.dashboard') }}"
+                        class="btn btn-gold btn-lg"
+                    >
+                        <i class="fas fa-gauge-high"></i>
+                        Open Dashboard
+                    </a>
 
-        @endguest
+                @else
+
+                    <a
+                        href="{{ route('dashboard') }}"
+                        class="btn btn-gold btn-lg"
+                    >
+                        <i class="fas fa-gauge-high"></i>
+                        Open Dashboard
+                    </a>
+
+                @endif
+
+            @endguest
+
+        </div>
 
     </div>
 

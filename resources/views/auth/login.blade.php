@@ -15,35 +15,19 @@
         </h1>
 
         <p>
-            Sign in with your participant account
-            to continue your learning, mentorship,
-            career and employment journey.
+            Sign in with your participant account to continue your
+            learning, mentorship, career and employment journey.
         </p>
 
         <ul>
-            <li>
-                Continue courses and assessments
-            </li>
-
-            <li>
-                Connect with your mentor
-            </li>
-
-            <li>
-                Build and manage your resume
-            </li>
-
-            <li>
-                Apply for opportunities
-            </li>
-
-            <li>
-                Track your progress and outcomes
-            </li>
+            <li>Continue courses and assessments</li>
+            <li>Connect with your mentor</li>
+            <li>Build and manage your resume</li>
+            <li>Apply for opportunities</li>
+            <li>Track your progress and outcomes</li>
         </ul>
 
     </section>
-
 
     <section class="auth-panel">
 
@@ -52,15 +36,13 @@
         </h2>
 
         <p class="subtitle">
-            Use the email address linked to your
-            ElevateHer360 participant account.
+            Use the email address linked to your ElevateHer360 account.
         </p>
 
         <form
             method="POST"
             action="{{ route('login.attempt') }}"
         >
-
             @csrf
 
             <div class="form-group">
@@ -77,13 +59,13 @@
                     type="email"
                     name="email"
                     value="{{ old('email') }}"
+                    placeholder="e.g. name@example.com"
                     autocomplete="email"
                     required
                     autofocus
                 >
 
             </div>
-
 
             <div class="form-group">
 
@@ -100,6 +82,7 @@
                         id="participant_password"
                         type="password"
                         name="password"
+                        placeholder="Enter your password"
                         autocomplete="current-password"
                         required
                     >
@@ -108,14 +91,14 @@
                         type="button"
                         class="password-toggle"
                         data-password-toggle="participant_password"
+                        aria-label="Show or hide password"
                     >
-                        Show
+                        <i class="fas fa-eye"></i>
                     </button>
 
                 </div>
 
             </div>
-
 
             <div class="checkbox-row">
 
@@ -133,16 +116,15 @@
 
             </div>
 
-
             <button
                 type="submit"
                 class="btn btn-primary btn-block"
             >
+                <i class="fas fa-right-to-bracket"></i>
                 Sign In
             </button>
 
         </form>
-
 
         <div class="auth-links">
 
@@ -151,14 +133,6 @@
 
                 <a href="{{ route('register') }}">
                     Create participant account
-                </a>
-            </p>
-
-            <p>
-                Are you WITU staff?
-
-                <a href="{{ route('admin.login') }}">
-                    Use the staff portal
                 </a>
             </p>
 

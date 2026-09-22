@@ -16,8 +16,8 @@
 
         <p>
             Create one participant account for learning,
-            mentorship, career support, jobs, resources and
-            progress tracking.
+            mentorship, career support, jobs, resources
+            and progress tracking.
         </p>
 
         <ul>
@@ -35,17 +35,23 @@
         <div class="registration-heading">
 
             <div>
-                <h2>Create Participant Account</h2>
+
+                <h2>
+                    Create Participant Account
+                </h2>
 
                 <p class="subtitle">
                     Complete the steps below to set up your account.
                 </p>
+
             </div>
 
             <div class="registration-progress-label">
+
                 <span id="registrationStepLabel">
                     Step 1 of 4
                 </span>
+
             </div>
 
         </div>
@@ -105,20 +111,24 @@
             action="{{ route('register.store') }}"
             id="registrationForm"
         >
-
             @csrf
 
-            {{-- Step 1 --}}
+            {{-- STEP 1 --}}
             <div
                 class="registration-step active"
                 data-step-panel="1"
             >
 
                 <div class="step-heading">
-                    <h3>Personal Information</h3>
+
+                    <h3>
+                        Personal Information
+                    </h3>
+
                     <p>
                         Tell us who you are.
                     </p>
+
                 </div>
 
                 <div class="grid">
@@ -136,6 +146,8 @@
                             id="surname"
                             name="surname"
                             value="{{ old('surname') }}"
+                            placeholder="Enter your surname"
+                            autocomplete="family-name"
                             required
                         >
 
@@ -154,6 +166,8 @@
                             id="given_name"
                             name="given_name"
                             value="{{ old('given_name') }}"
+                            placeholder="Enter your given name"
+                            autocomplete="given-name"
                             required
                         >
 
@@ -169,6 +183,7 @@
                             id="other_name"
                             name="other_name"
                             value="{{ old('other_name') }}"
+                            placeholder="Enter other name if applicable"
                         >
 
                     </div>
@@ -187,6 +202,8 @@
                             type="email"
                             name="email"
                             value="{{ old('email') }}"
+                            placeholder="e.g. name@example.com"
+                            autocomplete="email"
                             required
                         >
 
@@ -200,8 +217,11 @@
 
                         <input
                             id="phone"
+                            type="tel"
                             name="phone"
                             value="{{ old('phone') }}"
+                            placeholder="e.g. +256 700 000000"
+                            autocomplete="tel"
                         >
 
                     </div>
@@ -219,6 +239,10 @@
                             value="{{ old('date_of_birth') }}"
                         >
 
+                        <div class="form-help">
+                            Select your date of birth.
+                        </div>
+
                     </div>
 
                     <div class="form-group">
@@ -233,7 +257,7 @@
                         >
 
                             <option value="">
-                                Select gender
+                                Select your gender
                             </option>
 
                             <option
@@ -272,17 +296,22 @@
 
             </div>
 
-            {{-- Step 2 --}}
+            {{-- STEP 2 --}}
             <div
                 class="registration-step"
                 data-step-panel="2"
             >
 
                 <div class="step-heading">
-                    <h3>Location & Inclusion</h3>
+
+                    <h3>
+                        Location & Inclusion
+                    </h3>
+
                     <p>
-                        Help us understand where you are based.
+                        Tell us where you are based.
                     </p>
+
                 </div>
 
                 <div class="grid">
@@ -299,7 +328,7 @@
                         >
 
                             <option value="">
-                                Select branch
+                                Select your branch
                             </option>
 
                             @foreach($branches as $branch)
@@ -327,6 +356,8 @@
                             id="country"
                             name="country"
                             value="{{ old('country', 'Uganda') }}"
+                            placeholder="e.g. Uganda"
+                            autocomplete="country-name"
                         >
 
                     </div>
@@ -341,6 +372,8 @@
                             id="district"
                             name="district"
                             value="{{ old('district') }}"
+                            placeholder="e.g. Kampala, Wakiso, Gulu"
+                            autocomplete="address-level2"
                         >
 
                     </div>
@@ -365,17 +398,23 @@
 
             </div>
 
-            {{-- Step 3 --}}
+            {{-- STEP 3 --}}
             <div
                 class="registration-step"
                 data-step-panel="3"
             >
 
                 <div class="step-heading">
-                    <h3>Career Interests</h3>
+
+                    <h3>
+                        Career Interests
+                    </h3>
+
                     <p>
-                        Tell us what you are interested in learning or pursuing.
+                        Tell us what you are interested in learning
+                        or pursuing.
                     </p>
+
                 </div>
 
                 <div class="form-group">
@@ -387,24 +426,33 @@
                     <textarea
                         id="career_interests"
                         name="career_interests"
-                        placeholder="Example: software development, digital marketing, data analysis..."
+                        placeholder="e.g. Software development, data analysis, digital marketing, entrepreneurship..."
                     >{{ old('career_interests') }}</textarea>
+
+                    <div class="form-help">
+                        You may list more than one career interest.
+                    </div>
 
                 </div>
 
             </div>
 
-            {{-- Step 4 --}}
+            {{-- STEP 4 --}}
             <div
                 class="registration-step"
                 data-step-panel="4"
             >
 
                 <div class="step-heading">
-                    <h3>Account Security</h3>
+
+                    <h3>
+                        Account Security
+                    </h3>
+
                     <p>
                         Create your password and confirm your consent.
                     </p>
+
                 </div>
 
                 <div class="grid">
@@ -424,6 +472,7 @@
                                 id="registration_password"
                                 type="password"
                                 name="password"
+                                placeholder="Create a strong password"
                                 autocomplete="new-password"
                                 required
                             >
@@ -432,10 +481,15 @@
                                 type="button"
                                 class="password-toggle"
                                 data-password-toggle="registration_password"
+                                aria-label="Show or hide password"
                             >
                                 <i class="fas fa-eye"></i>
                             </button>
 
+                        </div>
+
+                        <div class="form-help">
+                            Use a strong password you do not use elsewhere.
                         </div>
 
                     </div>
@@ -455,6 +509,7 @@
                                 id="registration_password_confirmation"
                                 type="password"
                                 name="password_confirmation"
+                                placeholder="Re-enter your password"
                                 autocomplete="new-password"
                                 required
                             >
@@ -463,6 +518,7 @@
                                 type="button"
                                 class="password-toggle"
                                 data-password-toggle="registration_password_confirmation"
+                                aria-label="Show or hide password"
                             >
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -562,7 +618,6 @@
 
 @endsection
 
-
 @push('scripts')
 
 <script>
@@ -571,8 +626,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentStep = 1;
     const totalSteps = 4;
 
-    const tabs = document.querySelectorAll('.registration-tab');
-    const panels = document.querySelectorAll('.registration-step');
+    const tabs =
+        document.querySelectorAll('.registration-tab');
+
+    const panels =
+        document.querySelectorAll('.registration-step');
 
     const previousButton =
         document.getElementById('registrationPrevious');
@@ -596,13 +654,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 '[data-step-panel="' + currentStep + '"]'
             );
 
+        if (!currentPanel) {
+            return true;
+        }
+
         const requiredFields =
             currentPanel.querySelectorAll('[required]');
 
         for (const field of requiredFields) {
 
             if (!field.checkValidity()) {
+
                 field.reportValidity();
+
                 return false;
             }
 
@@ -666,8 +730,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (currentStep < totalSteps) {
+
             currentStep++;
+
             updateRegistrationStep();
+
         }
 
     });
@@ -675,8 +742,11 @@ document.addEventListener('DOMContentLoaded', function () {
     previousButton.addEventListener('click', function () {
 
         if (currentStep > 1) {
+
             currentStep--;
+
             updateRegistrationStep();
+
         }
 
     });
@@ -689,8 +759,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 Number(tab.dataset.step);
 
             if (requestedStep <= currentStep) {
+
                 currentStep = requestedStep;
+
                 updateRegistrationStep();
+
             }
 
         });

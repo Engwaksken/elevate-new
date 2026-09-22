@@ -30,6 +30,7 @@
 
 <body>
 
+{{-- Accessibility --}}
 <a
     href="#main-content"
     class="skip-link"
@@ -38,13 +39,18 @@
 </a>
 
 
+{{-- =========================================================
+     Public Header
+     ========================================================= --}}
 <header class="site-header">
 
     <div class="nav">
 
+        {{-- Brand --}}
         <a
             href="{{ route('home') }}"
             class="brand"
+            aria-label="ElevateHer360 home"
         >
 
             <span class="brand-mark">
@@ -62,29 +68,49 @@
         </a>
 
 
-        <nav class="nav-links">
+        {{-- Primary Navigation --}}
+        <nav
+            class="nav-links"
+            aria-label="Main navigation"
+        >
 
-            <a href="{{ route('home') }}">
+            <a
+                href="{{ route('home') }}"
+                class="{{ request()->routeIs('home') ? 'active' : '' }}"
+            >
                 Home
             </a>
 
-            <a href="{{ route('learning.index') }}">
+            <a
+                href="{{ route('learning.index') }}"
+                class="{{ request()->routeIs('learning.*') ? 'active' : '' }}"
+            >
                 Learning
             </a>
 
-            <a href="{{ route('jobs.index') }}">
+            <a
+                href="{{ route('jobs.index') }}"
+                class="{{ request()->routeIs('jobs.*') ? 'active' : '' }}"
+            >
                 Jobs
             </a>
 
-            <a href="{{ route('library.index') }}">
+            <a
+                href="{{ route('library.index') }}"
+                class="{{ request()->routeIs('library.*') ? 'active' : '' }}"
+            >
                 Library
             </a>
 
+
             @auth
 
-                @if(!auth()->user()->isStaff())
+                @if(! auth()->user()->isStaff())
 
-                    <a href="{{ route('mentorship.dashboard') }}">
+                    <a
+                        href="{{ route('mentorship.dashboard') }}"
+                        class="{{ request()->routeIs('mentorship.*') ? 'active' : '' }}"
+                    >
                         Mentorship
                     </a>
 
@@ -95,6 +121,7 @@
         </nav>
 
 
+        {{-- Account Actions --}}
         <div class="nav-actions">
 
             @guest
@@ -105,7 +132,9 @@
                 >
                     <i class="fas fa-right-to-bracket"></i>
 
-                    Sign In
+                    <span>
+                        Sign In
+                    </span>
                 </a>
 
                 <a
@@ -114,7 +143,9 @@
                 >
                     <i class="fas fa-user-plus"></i>
 
-                    Register
+                    <span>
+                        Register
+                    </span>
                 </a>
 
             @else
@@ -127,7 +158,9 @@
                     >
                         <i class="fas fa-gauge-high"></i>
 
-                        Dashboard
+                        <span>
+                            Dashboard
+                        </span>
                     </a>
 
                 @else
@@ -138,7 +171,9 @@
                     >
                         <i class="fas fa-gauge-high"></i>
 
-                        Dashboard
+                        <span>
+                            Dashboard
+                        </span>
                     </a>
 
                 @endif
@@ -152,71 +187,117 @@
 </header>
 
 
+{{-- =========================================================
+     Main Content
+
+     Homepage:
+     - No fixed page-shell
+     - Sections can span full browser width
+
+     Other pages:
+     - Constrained to normal page width
+     ========================================================= --}}
 <main
     id="main-content"
-    class="page-shell"
+    class="{{ request()->routeIs('home') ? 'site-main site-main-home' : 'site-main page-shell' }}"
 >
 
-    @if(session('success'))
+    {{-- Flash Messages --}}
+    @if(
+        session('success')
+        || session('error')
+        || session('warning')
+        || session('info')
+        || $errors->any()
+    )
 
-        <div class="success-box">
+        <div class="{{ request()->routeIs('home') ? 'container global-messages' : 'global-messages' }}">
 
-            <i class="fas fa-circle-check"></i>
+            @if(session('success'))
 
-            {{ session('success') }}
+                <div class="success-box">
 
-        </div>
+                    <i class="fas fa-circle-check"></i>
 
-    @endif
+                    <span>
+                        {{ session('success') }}
+                    </span>
 
+                </div>
 
-    @if(session('error'))
-
-        <div class="error-box">
-
-            <i class="fas fa-circle-exclamation"></i>
-
-            {{ session('error') }}
-
-        </div>
-
-    @endif
-
-
-    @if(session('warning'))
-
-        <div class="warning-box">
-
-            <i class="fas fa-triangle-exclamation"></i>
-
-            {{ session('warning') }}
-
-        </div>
-
-    @endif
+            @endif
 
 
-    @if($errors->any())
+            @if(session('error'))
 
-        <div class="error-box">
+                <div class="error-box">
 
-            <strong>
-                <i class="fas fa-circle-exclamation"></i>
+                    <i class="fas fa-circle-exclamation"></i>
 
-                Please correct the following:
-            </strong>
+                    <span>
+                        {{ session('error') }}
+                    </span>
 
-            <ul>
+                </div>
 
-                @foreach($errors->all() as $error)
+            @endif
 
-                    <li>
-                        {{ $error }}
-                    </li>
 
-                @endforeach
+            @if(session('warning'))
 
-            </ul>
+                <div class="warning-box">
+
+                    <i class="fas fa-triangle-exclamation"></i>
+
+                    <span>
+                        {{ session('warning') }}
+                    </span>
+
+                </div>
+
+            @endif
+
+
+            @if(session('info'))
+
+                <div class="info-box">
+
+                    <i class="fas fa-circle-info"></i>
+
+                    <span>
+                        {{ session('info') }}
+                    </span>
+
+                </div>
+
+            @endif
+
+
+            @if($errors->any())
+
+                <div class="error-box">
+
+                    <strong>
+                        <i class="fas fa-circle-exclamation"></i>
+
+                        Please correct the following:
+                    </strong>
+
+                    <ul>
+
+                        @foreach($errors->all() as $error)
+
+                            <li>
+                                {{ $error }}
+                            </li>
+
+                        @endforeach
+
+                    </ul>
+
+                </div>
+
+            @endif
 
         </div>
 
@@ -228,16 +309,32 @@
 </main>
 
 
+{{-- =========================================================
+     Footer
+     ========================================================= --}}
 <footer class="site-footer">
 
     <div class="container footer">
 
-        <span>
-            © {{ date('Y') }}
-            ElevateHer360 · Women in Technology Uganda
-        </span>
+        <div>
 
-        <div class="d-flex gap-2 flex-wrap">
+            <strong class="footer-brand">
+                ElevateHer360
+            </strong>
+
+           <div class="footer-copy">
+    <i class="fas fa-copyright"></i>
+    {{ date('Y') }}
+    Women in Technology Uganda
+</div>
+
+        </div>
+
+
+        <nav
+            class="footer-links"
+            aria-label="Footer navigation"
+        >
 
             <a href="{{ route('home') }}">
                 Home
@@ -267,13 +364,16 @@
 
             @endguest
 
-        </div>
+        </nav>
 
     </div>
 
 </footer>
 
 
+{{-- =========================================================
+     Password Visibility
+     ========================================================= --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
 
@@ -284,9 +384,7 @@
                 button.addEventListener('click', function () {
 
                     const fieldId =
-                        button.getAttribute(
-                            'data-password-toggle'
-                        );
+                        button.getAttribute('data-password-toggle');
 
                     const input =
                         document.getElementById(fieldId);
@@ -295,24 +393,33 @@
                         return;
                     }
 
-                    const showing =
+                    const passwordVisible =
                         input.type === 'text';
 
                     input.type =
-                        showing
+                        passwordVisible
                             ? 'password'
                             : 'text';
 
                     button.innerHTML =
-                        showing
+                        passwordVisible
                             ? '<i class="fas fa-eye"></i>'
                             : '<i class="fas fa-eye-slash"></i>';
+
+                    button.setAttribute(
+                        'aria-label',
+                        passwordVisible
+                            ? 'Show password'
+                            : 'Hide password'
+                    );
+
                 });
 
             });
 
     });
 </script>
+
 
 @stack('scripts')
 

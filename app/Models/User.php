@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -107,4 +107,8 @@ class User extends Authenticatable
     {
         return in_array($this->status, ['active', 'approved'], true);
     }
+    public function consents(): HasMany
+{
+    return $this->hasMany(Consent::class);
+}
 }
