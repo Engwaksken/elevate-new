@@ -1,0 +1,8 @@
+Register these aliases in bootstrap/app.php:
+
+->withMiddleware(function (Middleware $middleware): void {
+    $middleware->alias([
+        'staff' => \App\Http\Middleware\EnsureStaffUser::class,
+        'permission' => \App\Http\Middleware\EnsureUserHasPermission::class,
+    ]);
+})
