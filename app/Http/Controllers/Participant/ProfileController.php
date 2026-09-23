@@ -30,31 +30,46 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email')->ignore($user->id),
-            ],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'branch_id' => ['nullable', 'exists:branches,id'],
-            'surname' => ['nullable', 'string', 'max:255'],
-            'given_name' => ['nullable', 'string', 'max:255'],
-            'other_name' => ['nullable', 'string', 'max:255'],
-            'gender' => ['nullable', Rule::in(['female', 'male', 'other', 'prefer_not_to_say'])],
-            'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
-            'country' => ['nullable', 'string', 'max:255'],
-            'district' => ['nullable', 'string', 'max:255'],
-            'location' => ['nullable', 'string', 'max:255'],
-            'is_pwd' => ['nullable', 'boolean'],
-            'education_level' => ['nullable', 'string', 'max:255'],
-            'employment_status' => ['nullable', 'string', 'max:255'],
-            'career_interests' => ['nullable', 'string', 'max:5000'],
-            'preferred_language' => ['nullable', 'string', 'max:100'],
-            'current_password' => ['nullable', 'string'],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'name' => ['required','string','max:255'],
+            'email' => ['required','email','max:255',Rule::unique('users','email')->ignore($user->id)],
+            'phone' => ['nullable','string','max:30'],
+            'branch_id' => ['nullable','exists:branches,id'],
+            'surname' => ['nullable','string','max:255'],
+            'given_name' => ['nullable','string','max:255'],
+            'other_name' => ['nullable','string','max:255'],
+            'gender' => ['nullable',Rule::in(['female','male','other','prefer_not_to_say'])],
+            'date_of_birth' => ['nullable','date','before_or_equal:today'],
+            'country' => ['nullable','string','max:255'],
+            'district' => ['nullable','string','max:255'],
+            'location' => ['nullable','string','max:255'],
+            'is_pwd' => ['nullable','boolean'],
+            'disability_types' => ['nullable','array'],
+            'disability_types.*' => ['string',Rule::in([
+                'visual','hearing','physical','intellectual','psychosocial','speech','multiple','other'
+            ])],
+            'disability_other' => ['nullable','string','max:190'],
+            'education_level' => ['nullable','string','max:255'],
+            'employment_status' => ['nullable','string','max:255'],
+            'career_interests' => ['nullable','string','max:5000'],
+            'preferred_language' => ['nullable','string','max:100'],
+            'current_password' => ['nullable','string'],
+            'password' => ['nullable','string','min:8','confirmed'],
         ]);
+
+        $isPwd = (bool)($data['is_pwd'] ?? false);
+        $types = $isPwd ? array_values(array_unique($data['disability_types'] ?? [])) : [];
+
+        if ($isPwd && empty($types)) {
+            throw ValidationException::withMessages([
+                'disability_types' => 'Select at least one disability type.',
+            ]);
+        }
+
+        if (in_array('other', $types, true) && blank($data['disability_other'] ?? null)) {
+            throw ValidationException::withMessages([
+                'disability_other' => 'Please specify the other disability.',
+            ]);
+        }
 
         if (! empty($data['password'])) {
             if (empty($data['current_password']) || ! Hash::check($data['current_password'], $user->password)) {
@@ -64,7 +79,7 @@ class ProfileController extends Controller
             }
         }
 
-        DB::transaction(function () use ($user, $data) {
+        DB::transaction(function () use ($user, $data, $isPwd, $types) {
             $user->fill([
                 'name' => $data['name'],
                 'email' => strtolower($data['email']),
@@ -89,11 +104,15 @@ class ProfileController extends Controller
                     'country' => $data['country'] ?? null,
                     'district' => $data['district'] ?? null,
                     'location' => $data['location'] ?? null,
-                    'is_pwd' => (bool) ($data['is_pwd'] ?? false),
+                    'is_pwd' => $isPwd,
+                    'disability_types' => $isPwd ? $types : null,
+                    'disability_other' => $isPwd && in_array('other',$types,true)
+                        ? ($data['disability_other'] ?? null)
+                        : null,
                     'education_level' => $data['education_level'] ?? null,
                     'employment_status' => $data['employment_status'] ?? null,
                     'career_interests' => $data['career_interests'] ?? null,
-                    'preferred_language' => $data['preferred_language'] ?? 'English',
+                    'preferred_language' => $data['preferred_language'] ?? 'en',
                 ]
             );
         });

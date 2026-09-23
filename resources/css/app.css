@@ -1,14 +1,20 @@
-@import './participant-tabs.css';
 @import '@fortawesome/fontawesome-free/css/all.min.css';
-@import 'tailwindcss';
 @import './participant-sidebar.css';
+@import './participant-tabs.css';
+@import './resume-ai-center.css';
+@import 'tailwindcss';
 
 /* ==========================================================================
    ElevateHer360 Global Styles
    Primary:   #800000
    Secondary: #D4AF37
    ========================================================================== */
-
+.fas,
+.fa-solid {
+    font-family: "Font Awesome 7 Free", "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+    font-style: normal;
+}
 :root {
     --primary: #800000;
     --primary-dark: #5f0000;
