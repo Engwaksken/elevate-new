@@ -1,0 +1,10 @@
+/* Inline auth feedback */
+.form-feedback{width:100%;margin:0 0 18px}.form-feedback:empty{display:none}
+.form-alert{display:flex;align-items:flex-start;gap:10px;width:100%;padding:11px 13px;border:1px solid transparent;border-radius:8px;font-size:.8rem;line-height:1.45}
+.form-alert-icon{flex:0 0 20px;text-align:center}.form-alert-content{flex:1;min-width:0}.form-alert-content ul{margin:5px 0 0 18px;padding:0}
+.form-alert-success{background:#ecfdf3;border-color:#abefc6;color:#067647}.form-alert-error{background:#fef3f2;border-color:#fecdca;color:#b42318}.form-alert-warning{background:#fffaeb;border-color:#fedf89;color:#93370d}.form-alert-info{background:#eff8ff;border-color:#b2ddff;color:#175cd3}
+.flash-message{overflow:hidden;max-height:500px;opacity:1;transform:translateY(0);transition:opacity .45s ease,transform .45s ease}.flash-message.is-fading{opacity:0;transform:translateY(-5px)}
+.auth-panel-inner{width:100%;max-width:470px;margin:0 auto}.input-with-icon{position:relative}.input-leading-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#98a2b3;pointer-events:none}
+.auth-form .input-with-icon input{width:100%;min-height:46px;padding:10px 44px 10px 40px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#172033;font:inherit;font-size:.88rem;outline:none}.auth-form .input-with-icon input:focus{border-color:#800000;box-shadow:0 0 0 3px rgba(128,0,0,.08)}.auth-form .input-with-icon input.is-invalid{border-color:#d92d20}
+.form-hint{display:block;margin-top:6px;color:#667085;font-size:.72rem}.field-error{display:flex;align-items:center;gap:5px;margin-top:6px;color:#b42318;font-size:.72rem;font-weight:650}
+.remember-option{display:flex;align-items:flex-start;gap:9px;margin:3px 0 20px;cursor:pointer}.remember-option input{margin-top:3px}.remember-option strong{display:block;color:#344054;font-size:.78rem}.remember-option small{display:block;color:#667085;font-size:.69rem;margin-top:2px}.auth-submit{width:100%;min-height:46px}.staff-security-note{display:flex;gap:7px;margin-top:15px;padding-top:14px;border-top:1px solid #eaecf0;color:#667085;font-size:.69rem}
