@@ -72,14 +72,22 @@ Route::prefix('admin')
     ->group(function () {
         Route::post('/logout', [StaffAuthController::class, 'logout'])->name('logout');
 
+        Route::delete('/programmes/bulk-delete', [ProgrammeController::class, 'bulkDestroy'])->middleware('permission:programmes.manage')->name('programmes.bulk-destroy');
+
         Route::resource('programmes', ProgrammeController::class)->except('show')
             ->middleware('permission:programmes.manage');
+
+        Route::delete('/projects/bulk-delete', [ProjectController::class, 'bulkDestroy'])->middleware('permission:programmes.manage')->name('projects.bulk-destroy');
 
         Route::resource('projects', ProjectController::class)->except('show')
             ->middleware('permission:programmes.manage');
 
+        Route::delete('/branches/bulk-delete', [BranchController::class, 'bulkDestroy'])->middleware('permission:programmes.manage')->name('branches.bulk-destroy');
+
         Route::resource('branches', BranchController::class)->except('show')
             ->middleware('permission:programmes.manage');
+
+        Route::delete('/cohorts/bulk-delete', [CohortController::class, 'bulkDestroy'])->middleware('permission:cohorts.manage')->name('cohorts.bulk-destroy');
 
         Route::resource('cohorts', CohortController::class)->except('show')
             ->middleware('permission:cohorts.manage');

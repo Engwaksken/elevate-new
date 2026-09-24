@@ -4,3 +4,5 @@ document.addEventListener('DOMContentLoaded',()=>{const b=document.body,t=docume
 // EH360 PARTICIPANT TABS
 document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('[data-eh-tabs]').forEach(tabs=>{const buttons=tabs.querySelectorAll('[data-eh-tab]');const panes=tabs.querySelectorAll('[data-eh-pane]');buttons.forEach(button=>{button.addEventListener('click',()=>{const target=button.dataset.ehTab;buttons.forEach(item=>{item.classList.remove('active');item.setAttribute('aria-selected','false')});panes.forEach(pane=>pane.classList.remove('active'));button.classList.add('active');button.setAttribute('aria-selected','true');const pane=tabs.querySelector(`[data-eh-pane="${target}"]`);if(pane)pane.classList.add('active')})})})});
 
+
+import './admin-modal-crud';
