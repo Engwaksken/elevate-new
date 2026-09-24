@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>Bulk Enrolment</h1>
 <form method="POST" enctype="multipart/form-data" action="{{ route('admin.elearning.bulk-enrolment.store') }}">@csrf

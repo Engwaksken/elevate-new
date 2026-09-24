@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card">
 <h1>{{ $course->exists ? 'Edit Course' : 'Add Course' }}</h1>

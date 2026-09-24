@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>{{ $assessment->title }}</h1>
 <h3>Add Question</h3>

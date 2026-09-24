@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>M&E / MEAL Dashboard</h1></div>
 <div class="grid">

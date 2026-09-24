@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>Gradebook — {{ $course->title }}</h1>
 <table width="100%" cellpadding="8"><tr><th>Assessment</th><th>Learner ID</th><th>Status</th><th>Score</th><th></th></tr>

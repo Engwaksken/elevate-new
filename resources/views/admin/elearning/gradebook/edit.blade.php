@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>Grade Attempt #{{ $attempt->id }}</h1>
 <form method="POST" action="{{ route('admin.elearning.gradebook.update',$attempt) }}">@csrf @method('PUT')

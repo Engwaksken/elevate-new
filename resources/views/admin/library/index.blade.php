@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>Library Resources</h1>
 <form method="POST" enctype="multipart/form-data" action="{{ route('admin.library.store') }}">@csrf

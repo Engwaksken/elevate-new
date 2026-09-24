@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>Course Enrolments</h1>
 <form method="GET"><select name="course_id"><option value="">All Courses</option>@foreach($courses as $course)<option value="{{ $course->id }}">{{ $course->title }}</option>@endforeach</select><button>Filter</button></form>

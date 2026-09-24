@@ -1,7 +1,10 @@
+@import './admin-sidebar-dashboard.css';
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 @import './participant-sidebar.css';
 @import './participant-tabs.css';
 @import './resume-ai-center.css';
+@import './auth-feedback.css';
+@import './admin.css';
 @import 'tailwindcss';
 
 /* ==========================================================================

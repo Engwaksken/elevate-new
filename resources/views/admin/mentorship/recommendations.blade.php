@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>Mentor Recommendations for {{ $mentee->user->name }}</h1></div>
 @foreach($recommendations as $mentor)

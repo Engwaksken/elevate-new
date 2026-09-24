@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>Results Frameworks</h1>
 <form method="POST" action="{{ route('admin.results-framework.store') }}">@csrf

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>Quotations — {{ $purchaseRequest->request_number }}</h1>
 <form method="POST" action="{{ route('admin.procurement.quotations.store',$purchaseRequest) }}">@csrf

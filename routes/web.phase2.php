@@ -13,6 +13,7 @@ use App\Http\Controllers\Participant\ProfileController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\PasswordResetController;
 
 // Participant authentication
 Route::middleware('guest')->group(function () {
@@ -23,6 +24,18 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/admin/login', [StaffAuthController::class, 'showLogin'])->name('admin.login');
     Route::post('/admin/login', [StaffAuthController::class, 'login'])->name('admin.login.attempt');
+    
+    Route::get('/forgot-password', [PasswordResetController::class, 'request'])
+    ->name('password.request');
+
+Route::post('/forgot-password', [PasswordResetController::class, 'email'])
+    ->name('password.email');
+
+Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])
+    ->name('password.reset');
+
+Route::post('/reset-password', [PasswordResetController::class, 'update'])
+    ->name('password.update');
 });
 
 Route::middleware('auth')->group(function () {
@@ -58,7 +71,6 @@ Route::prefix('admin')
     ->middleware(['auth', 'staff'])
     ->group(function () {
         Route::post('/logout', [StaffAuthController::class, 'logout'])->name('logout');
-        Route::view('/dashboard', 'admin.dashboard')->name('dashboard');
 
         Route::resource('programmes', ProgrammeController::class)->except('show')
             ->middleware('permission:programmes.manage');

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>{{ $programme->exists ? 'Edit' : 'Add' }} Programme</h1>
 <form method="POST" action="{{ $programme->exists ? route('admin.programmes.update',$programme) : route('admin.programmes.store') }}">

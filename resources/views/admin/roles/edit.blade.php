@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>{{ $role->name }}</h1>
 <form method="POST" action="{{ route('admin.roles.update',$role) }}">@csrf @method('PUT')

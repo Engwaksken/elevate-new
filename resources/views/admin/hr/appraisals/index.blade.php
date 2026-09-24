@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>Performance Appraisals</h1>
 <form method="POST" action="{{ route('admin.hr.appraisal-cycles.store') }}">@csrf

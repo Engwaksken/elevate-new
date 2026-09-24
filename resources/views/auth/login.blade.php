@@ -1,140 +1,254 @@
 @extends('layouts.app')
 
-@section('title', 'Participant Login | ElevateHer360')
+@section('title','Participant Login | ElevateHer360')
 
 @section('content')
 
-<div class="auth-layout">
+<div class="eh-auth-shell eh-auth-participant">
 
-    <section class="auth-side">
+    <section class="eh-auth-hero">
 
-        <div class="gold-line"></div>
+        <div class="eh-auth-hero-inner">
 
-        <h1>
-            Welcome back to ElevateHer360.
-        </h1>
+            <div class="eh-auth-gold-line"></div>
 
-        <p>
-            Sign in with your participant account to continue your
-            learning, mentorship, career and employment journey.
-        </p>
+            <span class="eh-auth-badge">
+                <i class="fas fa-user-graduate"></i>
+                PARTICIPANT PORTAL
+            </span>
 
-        <ul>
-            <li>Continue courses and assessments</li>
-            <li>Connect with your mentor</li>
-            <li>Build and manage your resume</li>
-            <li>Apply for opportunities</li>
-            <li>Track your progress and outcomes</li>
-        </ul>
+            <h1>
+                Welcome back to ElevateHer360.
+            </h1>
 
-    </section>
+            <p>
+                Continue your learning, mentorship,
+                career development and employment journey.
+            </p>
 
-    <section class="auth-panel">
+            <div class="eh-auth-benefits">
 
-        <h2>
-            Participant Sign In
-        </h2>
+                <div class="eh-auth-benefit">
 
-        <p class="subtitle">
-            Use the email address linked to your ElevateHer360 account.
-        </p>
+                    <span>
+                        <i class="fas fa-graduation-cap"></i>
+                    </span>
 
-        <form
-            method="POST"
-            action="{{ route('login.attempt') }}"
-        >
-            @csrf
+                    <div>
+                        <strong>
+                            Continue learning
+                        </strong>
 
-            <div class="form-group">
+                        <small>
+                            Access courses, assessments
+                            and certificates.
+                        </small>
+                    </div>
 
-                <label
-                    for="email"
-                    class="required"
-                >
-                    Email address
-                </label>
+                </div>
 
-                <input
-                    id="email"
-                    type="email"
-                    name="email"
-                    value="{{ old('email') }}"
-                    placeholder="e.g. name@example.com"
-                    autocomplete="email"
-                    required
-                    autofocus
-                >
+                <div class="eh-auth-benefit">
 
-            </div>
+                    <span>
+                        <i class="fas fa-user-group"></i>
+                    </span>
 
-            <div class="form-group">
+                    <div>
+                        <strong>
+                            Mentorship
+                        </strong>
 
-                <label
-                    for="participant_password"
-                    class="required"
-                >
-                    Password
-                </label>
+                        <small>
+                            Manage mentor sessions,
+                            goals and progress.
+                        </small>
+                    </div>
 
-                <div class="password-wrap">
+                </div>
 
-                    <input
-                        id="participant_password"
-                        type="password"
-                        name="password"
-                        placeholder="Enter your password"
-                        autocomplete="current-password"
-                        required
-                    >
+                <div class="eh-auth-benefit">
 
-                    <button
-                        type="button"
-                        class="password-toggle"
-                        data-password-toggle="participant_password"
-                        aria-label="Show or hide password"
-                    >
-                        <i class="fas fa-eye"></i>
-                    </button>
+                    <span>
+                        <i class="fas fa-briefcase"></i>
+                    </span>
+
+                    <div>
+                        <strong>
+                            Career opportunities
+                        </strong>
+
+                        <small>
+                            Build your resume and apply
+                            for opportunities.
+                        </small>
+                    </div>
 
                 </div>
 
             </div>
 
-            <div class="checkbox-row">
+        </div>
 
-                <input
-                    id="remember"
-                    type="checkbox"
-                    name="remember"
-                    value="1"
-                    @checked(old('remember'))
-                >
+    </section>
 
-                <label for="remember">
-                    Remember me
-                </label>
+
+    <section class="eh-auth-form-side">
+
+        <div class="eh-auth-form-inner">
+
+            <span class="eh-auth-badge eh-auth-badge-light">
+                <i class="fas fa-circle-user"></i>
+                Participant access
+            </span>
+
+            <div class="eh-auth-heading">
+
+                <h2>
+                    Participant Sign In
+                </h2>
+
+                <p>
+                    Use the email address linked to
+                    your ElevateHer360 account.
+                </p>
 
             </div>
 
-            <button
-                type="submit"
-                class="btn btn-primary btn-block"
+            @include('partials.form-feedback')
+
+            <form
+                method="POST"
+                action="{{ route('login.attempt') }}"
+                class="eh-auth-form"
             >
-                <i class="fas fa-right-to-bracket"></i>
-                Sign In
-            </button>
 
-        </form>
+                @csrf
 
-        <div class="auth-links">
+                <div class="eh-auth-field">
 
-            <p>
-                Don't have an account?
+                    <label for="email">
+                        Email address
+                        <span>*</span>
+                    </label>
+
+                    <div class="eh-auth-input-wrap">
+
+                        <i class="fas fa-envelope"></i>
+
+                        <input
+                            id="email"
+                            type="email"
+                            name="email"
+                            value="{{ old('email') }}"
+                            placeholder="e.g. name@example.com"
+                            autocomplete="email"
+                            required
+                            autofocus
+                        >
+
+                    </div>
+
+                    <small>
+                        Enter the email used when you
+                        registered for ElevateHer360.
+                    </small>
+
+                    @error('email')
+                        <div class="eh-auth-field-error">
+                            <i class="fas fa-circle-exclamation"></i>
+                            {{ $message }}
+                        </div>
+                    @enderror
+
+                </div>
+
+
+                <div class="eh-auth-field">
+
+                    <label for="participant_password">
+                        Password
+                        <span>*</span>
+                    </label>
+
+                    <div class="eh-auth-input-wrap">
+
+                        <i class="fas fa-lock"></i>
+
+                        <input
+                            id="participant_password"
+                            type="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="eh-auth-password-toggle"
+                            data-password-toggle="participant_password"
+                            aria-label="Show or hide password"
+                        >
+                            <i class="fas fa-eye"></i>
+                        </button>
+
+                    </div>
+
+                    @error('password')
+                        <div class="eh-auth-field-error">
+                            <i class="fas fa-circle-exclamation"></i>
+                            {{ $message }}
+                        </div>
+                    @enderror
+
+                </div>
+
+
+                <label class="eh-auth-remember">
+
+                    <input
+                        type="checkbox"
+                        name="remember"
+                        value="1"
+                        @checked(old('remember'))
+                    >
+
+                    <span>
+                        <strong>
+                            Remember me
+                        </strong>
+
+                        <small>
+                            Keep this account signed in
+                            on this device.
+                        </small>
+                    </span>
+
+                </label>
+
+
+                <button
+                    type="submit"
+                    class="eh-auth-submit"
+                >
+                    <i class="fas fa-right-to-bracket"></i>
+                    Sign In
+                </button>
+
+            </form>
+
+
+            <div class="eh-auth-bottom-link">
+
+                <span>
+                    Don't have an account?
+                </span>
 
                 <a href="{{ route('register') }}">
                     Create participant account
                 </a>
-            </p>
+
+            </div>
 
         </div>
 

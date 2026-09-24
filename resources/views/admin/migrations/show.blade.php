@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>{{ $batch->batch_name }}</h1>
 <p>{{ $batch->source_system }} · {{ $batch->total_rows }} records</p>

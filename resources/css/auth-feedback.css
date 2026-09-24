@@ -1,10 +1,1549 @@
-/* Inline auth feedback */
-.form-feedback{width:100%;margin:0 0 18px}.form-feedback:empty{display:none}
-.form-alert{display:flex;align-items:flex-start;gap:10px;width:100%;padding:11px 13px;border:1px solid transparent;border-radius:8px;font-size:.8rem;line-height:1.45}
-.form-alert-icon{flex:0 0 20px;text-align:center}.form-alert-content{flex:1;min-width:0}.form-alert-content ul{margin:5px 0 0 18px;padding:0}
-.form-alert-success{background:#ecfdf3;border-color:#abefc6;color:#067647}.form-alert-error{background:#fef3f2;border-color:#fecdca;color:#b42318}.form-alert-warning{background:#fffaeb;border-color:#fedf89;color:#93370d}.form-alert-info{background:#eff8ff;border-color:#b2ddff;color:#175cd3}
-.flash-message{overflow:hidden;max-height:500px;opacity:1;transform:translateY(0);transition:opacity .45s ease,transform .45s ease}.flash-message.is-fading{opacity:0;transform:translateY(-5px)}
-.auth-panel-inner{width:100%;max-width:470px;margin:0 auto}.input-with-icon{position:relative}.input-leading-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#98a2b3;pointer-events:none}
-.auth-form .input-with-icon input{width:100%;min-height:46px;padding:10px 44px 10px 40px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#172033;font:inherit;font-size:.88rem;outline:none}.auth-form .input-with-icon input:focus{border-color:#800000;box-shadow:0 0 0 3px rgba(128,0,0,.08)}.auth-form .input-with-icon input.is-invalid{border-color:#d92d20}
-.form-hint{display:block;margin-top:6px;color:#667085;font-size:.72rem}.field-error{display:flex;align-items:center;gap:5px;margin-top:6px;color:#b42318;font-size:.72rem;font-weight:650}
-.remember-option{display:flex;align-items:flex-start;gap:9px;margin:3px 0 20px;cursor:pointer}.remember-option input{margin-top:3px}.remember-option strong{display:block;color:#344054;font-size:.78rem}.remember-option small{display:block;color:#667085;font-size:.69rem;margin-top:2px}.auth-submit{width:100%;min-height:46px}.staff-security-note{display:flex;gap:7px;margin-top:15px;padding-top:14px;border-top:1px solid #eaecf0;color:#667085;font-size:.69rem}
+/* ==========================================================
+   ElevateHer360 AUTHENTICATION
+   Fully namespaced to avoid conflicts with participant/admin
+   ========================================================== */
+
+.eh-auth-shell {
+    width: min(1180px, calc(100% - 40px));
+
+    min-height: 620px;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(420px, 0.9fr);
+
+    margin: 38px auto;
+
+    overflow: hidden;
+
+    border: 1px solid #eadfda;
+
+    border-radius: 22px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 18px 45px rgba(40, 24, 24, 0.08);
+}
+
+
+/* LEFT PANEL */
+
+.eh-auth-hero {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    padding: 58px 54px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #850000 0%,
+            #970000 48%,
+            #690000 100%
+        );
+
+    color: #ffffff;
+}
+
+.eh-auth-hero-inner {
+    width: 100%;
+    max-width: 510px;
+}
+
+.eh-auth-gold-line {
+    width: 72px;
+    height: 5px;
+
+    margin-bottom: 22px;
+
+    border-radius: 999px;
+
+    background: #d4af37;
+}
+
+.eh-auth-badge {
+    width: fit-content;
+
+    display: inline-flex;
+    align-items: center;
+
+    gap: 7px;
+
+    padding: 7px 11px;
+
+    border-radius: 999px;
+
+    background: #f6e7a4;
+
+    color: #6d5100;
+
+    font-size: 0.72rem;
+    font-weight: 800;
+
+    letter-spacing: 0.02em;
+}
+
+.eh-auth-badge-light {
+    margin-bottom: 18px;
+}
+
+.eh-auth-hero h1 {
+    max-width: 500px;
+
+    margin: 24px 0 16px;
+
+    color: #ffffff;
+
+    font-size: clamp(2.2rem, 4.5vw, 3.25rem);
+    line-height: 1.08;
+
+    font-weight: 800;
+}
+
+.eh-auth-hero p {
+    max-width: 470px;
+
+    margin: 0;
+
+    color: rgba(255, 255, 255, 0.78);
+
+    font-size: 0.96rem;
+    line-height: 1.7;
+}
+
+
+/* BENEFITS */
+
+.eh-auth-benefits {
+    display: grid;
+
+    gap: 14px;
+
+    margin-top: 34px;
+}
+
+.eh-auth-benefit {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 12px;
+}
+
+.eh-auth-benefit > span {
+    flex: 0 0 auto;
+
+    width: 38px;
+    height: 38px;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid rgba(255,255,255,.15);
+
+    border-radius: 9px;
+
+    background: rgba(255,255,255,.08);
+
+    color: #f1d56b;
+}
+
+.eh-auth-benefit strong {
+    display: block;
+
+    margin-bottom: 2px;
+
+    color: #ffffff;
+
+    font-size: 0.82rem;
+}
+
+.eh-auth-benefit small {
+    display: block;
+
+    max-width: 340px;
+
+    color: rgba(255,255,255,.67);
+
+    font-size: 0.73rem;
+    line-height: 1.45;
+}
+
+
+/* RIGHT PANEL */
+
+.eh-auth-form-side {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    padding: 52px 50px;
+
+    background: #ffffff;
+}
+
+.eh-auth-form-inner {
+    width: 100%;
+    max-width: 450px;
+
+    margin: 0 auto;
+}
+
+.eh-auth-heading h2 {
+    margin: 0 0 7px;
+
+    color: #800000;
+
+    font-size: 1.85rem;
+    font-weight: 750;
+}
+
+.eh-auth-heading p {
+    margin: 0 0 22px;
+
+    color: #667085;
+
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+
+/* FORM */
+
+.eh-auth-form {
+    width: 100%;
+}
+
+.eh-auth-field {
+    margin-bottom: 18px;
+}
+
+.eh-auth-field label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #172033;
+
+    font-size: 0.82rem;
+    font-weight: 750;
+}
+
+.eh-auth-field label span {
+    color: #b42318;
+}
+
+.eh-auth-input-wrap {
+    position: relative;
+
+    width: 100%;
+}
+
+.eh-auth-input-wrap > i {
+    position: absolute;
+
+    left: 13px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    color: #98a2b3;
+
+    font-size: 0.84rem;
+
+    pointer-events: none;
+}
+
+.eh-auth-input-wrap input {
+    width: 100%;
+
+    min-height: 46px;
+
+    padding:
+        10px
+        44px
+        10px
+        40px;
+
+    border: 1px solid #d0d5dd;
+
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    color: #172033;
+
+    font-family: inherit;
+    font-size: 0.88rem;
+
+    outline: none;
+
+    box-sizing: border-box;
+}
+
+.eh-auth-input-wrap input:focus {
+    border-color: #800000;
+
+    box-shadow:
+        0 0 0 3px rgba(128,0,0,.08);
+}
+
+.eh-auth-input-wrap input::placeholder {
+    color: #98a2b3;
+}
+
+.eh-auth-field > small {
+    display: block;
+
+    margin-top: 6px;
+
+    color: #667085;
+
+    font-size: 0.71rem;
+    line-height: 1.4;
+}
+
+
+/* PASSWORD */
+
+.eh-auth-password-toggle {
+    position: absolute;
+
+    top: 50%;
+    right: 9px;
+
+    width: 34px;
+    height: 34px;
+
+    display: grid;
+    place-items: center;
+
+    transform: translateY(-50%);
+
+    border: 0;
+
+    border-radius: 7px;
+
+    background: transparent;
+
+    color: #667085;
+
+    cursor: pointer;
+}
+
+.eh-auth-password-toggle:hover {
+    background: #f5f5f5;
+
+    color: #800000;
+}
+
+
+/* ERROR */
+
+.eh-auth-field-error {
+    display: flex;
+    align-items: center;
+
+    gap: 5px;
+
+    margin-top: 6px;
+
+    color: #b42318;
+
+    font-size: 0.71rem;
+    font-weight: 650;
+}
+
+
+/* REMEMBER */
+
+.eh-auth-remember {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 9px;
+
+    margin: 3px 0 20px;
+
+    cursor: pointer;
+}
+
+.eh-auth-remember input {
+    flex: 0 0 auto;
+
+    margin-top: 3px;
+}
+
+.eh-auth-remember strong {
+    display: block;
+
+    color: #344054;
+
+    font-size: 0.78rem;
+}
+
+.eh-auth-remember small {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #667085;
+
+    font-size: 0.69rem;
+}
+
+
+/* SUBMIT */
+
+.eh-auth-submit {
+    width: 100%;
+
+    min-height: 46px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
+    padding: 10px 16px;
+
+    border: 1px solid #800000;
+
+    border-radius: 8px;
+
+    background: #800000;
+
+    color: #ffffff;
+
+    font-family: inherit;
+    font-size: 0.86rem;
+    font-weight: 750;
+
+    cursor: pointer;
+}
+
+.eh-auth-submit:hover {
+    background: #650000;
+
+    border-color: #650000;
+}
+
+
+/* BOTTOM LINK */
+
+.eh-auth-bottom-link {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    gap: 5px;
+
+    margin-top: 20px;
+
+    color: #667085;
+
+    font-size: 0.78rem;
+}
+
+.eh-auth-bottom-link a {
+    color: #800000;
+
+    font-weight: 750;
+
+    text-decoration: none;
+}
+
+.eh-auth-bottom-link a:hover {
+    color: #650000;
+}
+
+
+/* FEEDBACK */
+
+.form-feedback {
+    width: 100%;
+
+    margin-bottom: 18px;
+}
+
+.form-feedback:empty {
+    display: none;
+}
+
+.form-alert {
+    width: 100%;
+
+    display: flex;
+    align-items: flex-start;
+
+    gap: 10px;
+
+    box-sizing: border-box;
+
+    padding: 11px 13px;
+
+    border: 1px solid transparent;
+    border-radius: 8px;
+
+    font-size: 0.79rem;
+    line-height: 1.45;
+}
+
+.form-alert-icon {
+    flex: 0 0 20px;
+
+    text-align: center;
+}
+
+.form-alert-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.form-alert-content ul {
+    margin: 5px 0 0 18px;
+    padding: 0;
+}
+
+.form-alert-success {
+    background: #ecfdf3;
+    border-color: #abefc6;
+    color: #067647;
+}
+
+.form-alert-error {
+    background: #fef3f2;
+    border-color: #fecdca;
+    color: #b42318;
+}
+
+.form-alert-warning {
+    background: #fffaeb;
+    border-color: #fedf89;
+    color: #93370d;
+}
+
+.form-alert-info {
+    background: #eff8ff;
+    border-color: #b2ddff;
+    color: #175cd3;
+}
+
+
+/* 5 SECOND FADE */
+
+.flash-message {
+    overflow: hidden;
+
+    max-height: 500px;
+
+    opacity: 1;
+
+    transform: translateY(0);
+
+    transition:
+        opacity .45s ease,
+        transform .45s ease;
+}
+
+.flash-message.is-fading {
+    opacity: 0;
+
+    transform: translateY(-5px);
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 950px) {
+
+    .eh-auth-shell {
+        grid-template-columns: 1fr;
+
+        width: min(680px, calc(100% - 28px));
+
+        margin: 24px auto;
+    }
+
+    .eh-auth-hero {
+        padding: 36px 30px;
+    }
+
+    .eh-auth-hero h1 {
+        font-size: 2rem;
+    }
+
+    .eh-auth-benefits {
+        display: none;
+    }
+
+    .eh-auth-form-side {
+        padding: 38px 30px;
+    }
+}
+
+@media (max-width: 520px) {
+
+    .eh-auth-shell {
+        width: calc(100% - 20px);
+
+        margin: 12px auto;
+
+        border-radius: 14px;
+    }
+
+    .eh-auth-hero {
+        padding: 26px 20px;
+    }
+
+    .eh-auth-form-side {
+        padding: 26px 20px;
+    }
+
+    .eh-auth-heading h2 {
+        font-size: 1.55rem;
+    }
+}
+
+
+/* ==========================================================
+   LOGIN FORM FINAL OVERRIDES
+   Prevent global form / checkbox CSS conflicts
+   ========================================================== */
+
+.eh-auth-shell,
+.eh-auth-shell * {
+    box-sizing: border-box;
+}
+
+.eh-auth-form-side {
+    min-width: 0;
+}
+
+.eh-auth-form-inner {
+    width: 100% !important;
+    max-width: 460px !important;
+}
+
+.eh-auth-form {
+    display: block !important;
+    width: 100% !important;
+}
+
+.eh-auth-field {
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 18px !important;
+}
+
+.eh-auth-input-wrap {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+}
+
+.eh-auth-input-wrap input {
+    display: block !important;
+
+    width: 100% !important;
+    max-width: none !important;
+
+    min-height: 46px !important;
+    height: 46px !important;
+
+    margin: 0 !important;
+
+    padding: 10px 44px 10px 40px !important;
+
+    border: 1px solid #d0d5dd !important;
+    border-radius: 8px !important;
+
+    background: #ffffff !important;
+
+    font-size: 0.88rem !important;
+}
+
+
+/* ==========================================================
+   REMEMBER ME
+   ========================================================== */
+
+.eh-auth-remember {
+    display: flex !important;
+
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+
+    gap: 10px !important;
+
+    width: 100% !important;
+
+    margin: 4px 0 20px !important;
+    padding: 0 !important;
+
+    cursor: pointer;
+}
+
+
+/* Force checkbox back to normal size */
+
+.eh-auth-remember input[type="checkbox"] {
+    appearance: auto !important;
+    -webkit-appearance: checkbox !important;
+
+    flex: 0 0 auto !important;
+
+    width: 16px !important;
+    min-width: 16px !important;
+    max-width: 16px !important;
+
+    height: 16px !important;
+    min-height: 16px !important;
+    max-height: 16px !important;
+
+    margin: 3px 0 0 !important;
+    padding: 0 !important;
+
+    border-radius: 3px !important;
+
+    box-shadow: none !important;
+
+    cursor: pointer;
+}
+
+
+/* Text beside checkbox */
+
+.eh-auth-remember > span {
+    display: block !important;
+
+    flex: 1 1 auto !important;
+
+    min-width: 0 !important;
+    width: auto !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.eh-auth-remember strong {
+    display: block !important;
+
+    margin: 0 0 2px !important;
+
+    color: #344054 !important;
+
+    font-size: 0.8rem !important;
+    line-height: 1.35 !important;
+    font-weight: 700 !important;
+}
+
+.eh-auth-remember small {
+    display: block !important;
+
+    width: auto !important;
+    max-width: 340px !important;
+
+    margin: 0 !important;
+
+    color: #667085 !important;
+
+    font-size: 0.72rem !important;
+    line-height: 1.45 !important;
+}
+
+
+/* ==========================================================
+   SUBMIT BUTTON
+   ========================================================== */
+
+.eh-auth-submit {
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    gap: 8px !important;
+
+    width: 100% !important;
+    max-width: none !important;
+
+    min-height: 46px !important;
+
+    margin: 0 !important;
+
+    padding: 10px 16px !important;
+
+    border: 1px solid #800000 !important;
+    border-radius: 8px !important;
+
+    background: #800000 !important;
+
+    color: #ffffff !important;
+
+    font-size: 0.86rem !important;
+    font-weight: 700 !important;
+
+    text-align: center !important;
+}
+
+.eh-auth-submit:hover {
+    background: #650000 !important;
+    border-color: #650000 !important;
+}
+
+
+/* ==========================================================
+   CREATE ACCOUNT LINK
+   ========================================================== */
+
+.eh-auth-bottom-link {
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    flex-wrap: wrap !important;
+
+    gap: 5px !important;
+
+    width: 100% !important;
+
+    margin: 20px 0 0 !important;
+
+    color: #667085 !important;
+
+    font-size: 0.78rem !important;
+
+    text-align: center !important;
+}
+
+.eh-auth-bottom-link span,
+.eh-auth-bottom-link a {
+    width: auto !important;
+    max-width: none !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.eh-auth-bottom-link a {
+    color: #800000 !important;
+    font-weight: 700 !important;
+}
+
+
+/* ==========================================================
+   MOBILE
+   ========================================================== */
+
+@media (max-width: 520px) {
+
+    .eh-auth-remember small {
+        max-width: 280px !important;
+    }
+
+    .eh-auth-submit {
+        width: 100% !important;
+    }
+}
+
+/* ==========================================================
+   REGISTRATION
+   ========================================================== */
+
+.eh-register-shell {
+    width: min(1220px, calc(100% - 40px));
+
+    min-height: 680px;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 0.95fr)
+        minmax(520px, 1.05fr);
+
+    margin: 36px auto;
+
+    overflow: hidden;
+
+    border: 1px solid #eadfda;
+    border-radius: 22px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 18px 45px rgba(40, 24, 24, .08);
+}
+
+
+/* LEFT */
+
+.eh-register-hero {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    padding: 58px 54px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #870000 0%,
+            #970000 50%,
+            #650000 100%
+        );
+
+    color: #ffffff;
+}
+
+.eh-register-hero-inner {
+    width: 100%;
+    max-width: 510px;
+}
+
+.eh-register-gold-line {
+    width: 72px;
+    height: 5px;
+
+    margin-bottom: 22px;
+
+    border-radius: 20px;
+
+    background: #d4af37;
+}
+
+.eh-register-badge {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 7px;
+
+    width: fit-content;
+
+    padding: 7px 11px;
+
+    border-radius: 999px;
+
+    background: #f7e7a9;
+
+    color: #664d00;
+
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+.eh-register-hero h1 {
+    max-width: 500px;
+
+    margin: 24px 0 16px;
+
+    color: #fff;
+
+    font-size: clamp(2.3rem, 4vw, 3.4rem);
+    line-height: 1.08;
+    font-weight: 800;
+}
+
+.eh-register-hero p {
+    max-width: 460px;
+
+    color: rgba(255,255,255,.78);
+
+    font-size: .95rem;
+    line-height: 1.7;
+}
+
+.eh-register-benefits {
+    display: grid;
+
+    gap: 14px;
+
+    margin-top: 34px;
+}
+
+.eh-register-benefit {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 12px;
+}
+
+.eh-register-benefit > span {
+    flex: 0 0 auto;
+
+    width: 38px;
+    height: 38px;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 9px;
+
+    background: rgba(255,255,255,.08);
+
+    color: #f1d56b;
+}
+
+.eh-register-benefit strong {
+    display: block;
+
+    color: #fff;
+
+    font-size: .82rem;
+}
+
+.eh-register-benefit small {
+    display: block;
+
+    margin-top: 2px;
+
+    color: rgba(255,255,255,.66);
+
+    font-size: .72rem;
+}
+
+
+/* RIGHT */
+
+.eh-register-form-side {
+    min-width: 0;
+
+    padding: 42px 44px;
+
+    background: #ffffff;
+}
+
+.eh-register-form-inner {
+    width: 100%;
+    max-width: 610px;
+
+    margin: 0 auto;
+}
+
+.eh-register-heading {
+    margin-bottom: 18px;
+}
+
+.eh-register-heading h2 {
+    margin: 5px 0 5px;
+
+    color: #172033;
+
+    font-size: 1.8rem;
+}
+
+.eh-register-heading p {
+    margin: 0;
+
+    color: #667085;
+
+    font-size: .86rem;
+}
+
+.eh-register-step-count {
+    color: #667085;
+
+    font-size: .75rem;
+}
+
+
+/* PROGRESS */
+
+.eh-register-progress {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 8px;
+
+    margin-bottom: 26px;
+}
+
+.eh-register-progress-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    gap: 5px;
+
+    padding: 8px 5px;
+
+    border: 0;
+
+    background: transparent;
+
+    color: #98a2b3;
+
+    cursor: pointer;
+}
+
+.eh-register-progress-item > span {
+    width: 30px;
+    height: 30px;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid #d0d5dd;
+    border-radius: 50%;
+
+    background: #fff;
+
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+.eh-register-progress-item small {
+    font-size: .66rem;
+}
+
+.eh-register-progress-item.active {
+    color: #800000;
+}
+
+.eh-register-progress-item.active > span {
+    border-color: #800000;
+
+    background: #800000;
+
+    color: #fff;
+}
+
+.eh-register-progress-item.complete > span {
+    border-color: #d4af37;
+
+    background: #d4af37;
+
+    color: #513d00;
+}
+
+
+/* STEPS */
+
+.eh-register-step {
+    display: none;
+}
+
+.eh-register-step.active {
+    display: block;
+}
+
+.eh-register-step-heading {
+    margin-bottom: 18px;
+
+    padding-bottom: 13px;
+
+    border-bottom: 1px solid #eaecf0;
+}
+
+.eh-register-step-heading h3 {
+    margin: 0 0 4px;
+
+    font-size: 1.08rem;
+}
+
+.eh-register-step-heading p {
+    margin: 0;
+
+    color: #667085;
+
+    font-size: .78rem;
+}
+
+
+/* GRID */
+
+.eh-register-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 17px;
+}
+
+.eh-register-field-full {
+    grid-column: 1 / -1;
+}
+
+.eh-register-field {
+    min-width: 0;
+}
+
+.eh-register-field label {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: #172033;
+
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+.eh-register-field label > span {
+    color: #b42318;
+}
+
+.eh-register-field input:not([type="checkbox"]),
+.eh-register-field select,
+.eh-register-field textarea {
+    display: block;
+
+    width: 100% !important;
+    max-width: none !important;
+
+    min-height: 44px;
+
+    margin: 0 !important;
+
+    padding: 10px 12px !important;
+
+    border: 1px solid #d0d5dd !important;
+    border-radius: 8px !important;
+
+    background: #fff !important;
+
+    font: inherit !important;
+    font-size: .84rem !important;
+
+    box-sizing: border-box !important;
+
+    outline: none;
+}
+
+.eh-register-field textarea {
+    min-height: 115px;
+    resize: vertical;
+}
+
+.eh-register-field input:focus,
+.eh-register-field select:focus,
+.eh-register-field textarea:focus {
+    border-color: #800000 !important;
+
+    box-shadow:
+        0 0 0 3px rgba(128,0,0,.08);
+}
+
+.eh-register-field small {
+    display: block;
+
+    margin-top: 5px;
+
+    color: #667085;
+
+    font-size: .68rem;
+    line-height: 1.4;
+}
+
+
+/* PASSWORD */
+
+.eh-register-password {
+    position: relative;
+}
+
+.eh-register-password input {
+    padding-right: 44px !important;
+}
+
+.eh-register-password button {
+    position: absolute;
+
+    top: 50%;
+    right: 8px;
+
+    width: 34px;
+    height: 34px;
+
+    display: grid;
+    place-items: center;
+
+    transform: translateY(-50%);
+
+    border: 0;
+
+    background: transparent;
+
+    color: #667085;
+}
+
+
+/* CHECKBOX */
+
+.eh-register-checkbox {
+    display: flex !important;
+
+    align-items: flex-start !important;
+
+    gap: 9px !important;
+
+    width: 100% !important;
+
+    cursor: pointer;
+}
+
+.eh-register-checkbox input[type="checkbox"] {
+    appearance: auto !important;
+    -webkit-appearance: checkbox !important;
+
+    flex: 0 0 16px !important;
+
+    width: 16px !important;
+    min-width: 16px !important;
+    max-width: 16px !important;
+
+    height: 16px !important;
+    min-height: 16px !important;
+    max-height: 16px !important;
+
+    margin: 3px 0 0 !important;
+    padding: 0 !important;
+}
+
+.eh-register-checkbox > span {
+    flex: 1;
+}
+
+.eh-register-checkbox strong {
+    display: block;
+
+    font-size: .78rem;
+}
+
+.eh-register-checkbox small {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #667085;
+
+    font-size: .69rem;
+}
+
+
+/* PWD */
+
+.eh-register-pwd {
+    margin-top: 20px;
+
+    padding: 16px;
+
+    border: 1px solid #e4e7ec;
+    border-left: 4px solid #d4af37;
+
+    border-radius: 9px;
+
+    background: #fffdf8;
+}
+
+.eh-register-pwd-details {
+    margin-top: 16px;
+
+    padding-top: 15px;
+
+    border-top: 1px solid #eee8d8;
+}
+
+.eh-register-pwd-details h4 {
+    margin: 0 0 3px;
+
+    font-size: .88rem;
+}
+
+.eh-register-pwd-details > p {
+    margin: 0;
+
+    color: #667085;
+
+    font-size: .7rem;
+}
+
+.eh-register-check-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 8px;
+
+    margin-top: 12px;
+}
+
+.eh-register-check-option {
+    display: flex !important;
+    align-items: center !important;
+
+    gap: 8px !important;
+
+    padding: 9px 10px !important;
+
+    border: 1px solid #e4e7ec;
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    font-size: .72rem;
+
+    cursor: pointer;
+}
+
+.eh-register-check-option input[type="checkbox"] {
+    appearance: auto !important;
+    -webkit-appearance: checkbox !important;
+
+    width: 15px !important;
+    height: 15px !important;
+
+    min-width: 15px !important;
+    min-height: 15px !important;
+
+    margin: 0 !important;
+}
+
+.eh-register-check-option:has(input:checked) {
+    border-color: #800000;
+
+    background: #fff7f7;
+}
+
+.eh-register-pwd-other {
+    margin-top: 15px;
+}
+
+
+/* ACTIONS */
+
+.eh-register-actions {
+    display: flex;
+
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 10px;
+
+    margin-top: 25px;
+
+    padding-top: 18px;
+
+    border-top: 1px solid #eaecf0;
+}
+
+.eh-register-btn {
+    min-height: 43px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    padding: 9px 18px;
+
+    border-radius: 8px;
+
+    font: inherit;
+    font-size: .8rem;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.eh-register-btn-primary {
+    border: 1px solid #800000;
+
+    background: #800000;
+
+    color: #fff;
+}
+
+.eh-register-btn-outline {
+    border: 1px solid #800000;
+
+    background: #fff;
+
+    color: #800000;
+}
+
+#registerSubmit {
+    display: none;
+}
+
+
+/* LOGIN LINK */
+
+.eh-register-login-link {
+    display: flex;
+    justify-content: center;
+
+    gap: 5px;
+
+    margin-top: 18px;
+
+    color: #667085;
+
+    font-size: .75rem;
+}
+
+.eh-register-login-link a {
+    color: #800000;
+
+    font-weight: 700;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+
+    .eh-register-shell {
+        grid-template-columns: 1fr;
+
+        width: min(720px, calc(100% - 28px));
+    }
+
+    .eh-register-hero {
+        padding: 36px 30px;
+    }
+
+    .eh-register-benefits {
+        display: none;
+    }
+
+    .eh-register-form-side {
+        padding: 36px 30px;
+    }
+}
+
+@media (max-width: 620px) {
+
+    .eh-register-grid,
+    .eh-register-check-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .eh-register-progress-item small {
+        display: none;
+    }
+
+    .eh-register-form-side {
+        padding: 26px 20px;
+    }
+
+    .eh-register-actions {
+        justify-content: space-between;
+    }
+}

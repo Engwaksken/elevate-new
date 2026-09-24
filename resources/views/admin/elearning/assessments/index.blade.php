@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>Assessments — {{ $course->title }}</h1>
 <form method="POST" action="{{ route('admin.elearning.assessments.store',$course) }}">@csrf

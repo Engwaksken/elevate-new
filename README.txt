@@ -1,18 +1,65 @@
-ElevateHer360 Participant Tabs Update
+ELEVATEHER360 ADMIN MODAL CRUD CORE
 
-1. Extract this package.
-2. Run from PowerShell:
-   powershell -ExecutionPolicy Bypass -File .\install_tabs_full.ps1
+This batch is the first repository-safe conversion to the requested administration standard.
 
-Default project path: D:\projects\elevate_her
-Optional custom path:
-   powershell -ExecutionPolicy Bypass -File .\install_tabs_full.ps1 -ProjectPath "D:\projects\elevate_her"
+Updated modules:
+- Programmes
+- Projects
+- Branches
+- Cohorts
 
-The installer:
-- backs up replaced participant Blade views
-- adds participant-tabs.css
-- imports it into app.css if needed
-- appends shared tab behaviour to app.js without removing sidebar JS
-- rewrites dashboard, learning, mentorship, jobs, library, calendar, notifications and profile to tab/list layouts
-- writes files as UTF-8 without BOM
-- clears Laravel caches, rebuilds Vite, and checks key routes
+Each updated page now has:
+- fixed admin sidebar layout
+- statistic cards
+- search
+- status filters
+- period filter: today/week/month/quarter/year
+- custom from/to date filters
+- page-size selector
+- pagination
+- multiple row selection
+- bulk delete
+- create modal
+- edit modal
+- delete confirmation modal
+- field placeholders and hints
+- success/error feedback through the shared admin layout
+- Font Awesome icons
+
+Important:
+The remaining platform modules cannot be safely mass-converted by a blind search/replace because their route contracts differ:
+- Workplans use submit/approve actions.
+- Indicators use target/calculate/verify actions.
+- HR uses employee/contract/leave/appraisal/exit workflows.
+- Procurement uses requests/quotations/orders/receipts.
+- Assets use assign/return/maintenance/disposal workflows.
+These need module-specific modal actions rather than generic CRUD.
+
+INSTALL
+1. Make a checkpoint:
+   git add .
+   git commit -m "Checkpoint before admin modal CRUD core"
+
+2. Extract ZIP contents directly to:
+   D:\projects\elevate_her
+   Choose Replace files in destination.
+
+3. Run:
+   cd D:\projects\elevate_her
+   Unblock-File .\APPLY_ADMIN_MODAL_CORE.ps1
+   powershell -ExecutionPolicy Bypass -File .\APPLY_ADMIN_MODAL_CORE.ps1
+
+4. Ctrl+F5.
+
+Next module batches should apply this same UX standard to:
+- Users + Roles
+- Learning
+- Mentorship
+- Jobs
+- Library
+- Workplans + Tasks + Deliverables
+- MEAL / Indicators / Results Framework
+- HR
+- Procurement
+- Assets
+- System / migrations / search / settings

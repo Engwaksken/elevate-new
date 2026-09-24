@@ -1,8 +1,45 @@
-@extends('layouts.app')
+@extends('layouts.admin')
+@section('title','Cohorts | ElevateHer360 Administration')
 @section('content')
-<div class="card"><h1>Cohorts</h1>
-<p><a class="btn" href="{{ route('admin.cohorts.create') }}">Add Cohort</a></p>
-<p>Controller includes search and pagination. Replace this starter table with the approved ElevateHer360 admin UI during the design pass.</p>
-@foreach($cohorts as $cohort)<div class="card">{{ $cohort->name }} <a href="{{ route('admin.cohorts.edit',$cohort) }}">Edit</a></div>@endforeach
-{{ $cohorts->links() }}</div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Programme Management</span><h1>Cohorts</h1><p>Manage participant cohorts, programme links, branches and implementation periods.</p></div><div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createCohortModal"><i class="fas fa-plus"></i> New Cohort</button></div></div>
+
+<div class="admin-stats-grid compact">
+@foreach([['total','Total Cohorts','fa-people-group'],['active','Active','fa-circle-check'],['open','Open','fa-door-open'],['completed','Completed','fa-flag-checkered']] as [$key,$label,$icon])
+<div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span><div><small>{{ $label }}</small><strong>{{ number_format($stats[$key] ?? 0) }}</strong></div></div>
+@endforeach
+</div>
+
+<div class="admin-panel">
+<form method="GET" class="admin-toolbar">
+<div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search cohort name or code..."></div>
+<select name="programme_id"><option value="">All programmes</option>@foreach($programmes as $p)<option value="{{ $p->id }}" @selected((string)request('programme_id')===(string)$p->id)>{{ $p->name }}</option>@endforeach</select>
+<select name="project_id"><option value="">All projects</option>@foreach($projects as $p)<option value="{{ $p->id }}" @selected((string)request('project_id')===(string)$p->id)>{{ $p->name }}</option>@endforeach</select>
+<select name="branch_id"><option value="">All branches</option>@foreach($branches as $b)<option value="{{ $b->id }}" @selected((string)request('branch_id')===(string)$b->id)>{{ $b->name }}</option>@endforeach</select>
+<select name="status"><option value="">All statuses</option>@foreach(['planned','open','active','completed','cancelled'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst($s) }}</option>@endforeach</select>
+<select name="period"><option value="">All periods</option>@foreach(['today'=>'Today','week'=>'This week','month'=>'This month','quarter'=>'This quarter','year'=>'This year'] as $v=>$l)<option value="{{ $v }}" @selected(request('period')===$v)>{{ $l }}</option>@endforeach</select>
+<input class="date-input" type="date" name="from_date" value="{{ request('from_date') }}"><input class="date-input" type="date" name="to_date" value="{{ request('to_date') }}">
+<select name="per_page">@foreach([10,15,25,50,100] as $size)<option value="{{ $size }}" @selected((int)request('per_page',15)===$size)>{{ $size }} / page</option>@endforeach</select>
+<button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.cohorts.index') }}" class="btn btn-outline btn-sm">Reset</a>
+</form>
+
+<div id="cohortBulkBar" class="admin-bulk-bar"><strong><span data-selected-count>0</span> selected</strong><form method="POST" action="{{ route('admin.cohorts.bulk-destroy') }}" data-bulk-form data-table="cohortsTable">@csrf @method('DELETE')<button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete Selected</button></form></div>
+
+<div class="admin-table-wrap"><table class="admin-table" id="cohortsTable"><thead><tr><th class="select-col"><input type="checkbox" data-select-all data-bulk-target="#cohortBulkBar"></th><th>Cohort</th><th>Programme / Project</th><th>Branch</th><th>Period</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@forelse($cohorts as $cohort)
+<tr><td><input type="checkbox" data-row-select value="{{ $cohort->id }}"></td><td><strong>{{ $cohort->name }}</strong><small class="admin-cell-hint">{{ $cohort->code ?: 'No code' }}</small></td><td>{{ optional($cohort->programme)->name ?: '—' }}<small class="admin-cell-hint">{{ optional($cohort->project)->name ?: '' }}</small></td><td>{{ optional($cohort->branch)->name ?: '—' }}</td><td>{{ optional($cohort->start_date)->format('d M Y') ?: '—' }} — {{ optional($cohort->end_date)->format('d M Y') ?: '—' }}</td><td><span class="status-chip {{ $cohort->status }}">{{ ucfirst($cohort->status) }}</span></td><td class="table-actions"><div class="action-group"><button type="button" class="btn-icon" data-modal-open="editCohort{{ $cohort->id }}"><i class="fas fa-pen"></i></button><button type="button" class="btn-icon danger" data-modal-open="deleteCohort{{ $cohort->id }}"><i class="fas fa-trash"></i></button></div></td></tr>
+@empty<tr><td colspan="7"><div class="admin-empty">No cohorts found.</div></td></tr>@endforelse
+</tbody></table></div><div class="admin-pagination">{{ $cohorts->links() }}</div></div>
+
+<div class="eh-modal" id="createCohortModal" aria-hidden="true"><div class="eh-modal-dialog eh-modal-lg"><div class="eh-modal-header"><div><h2>New Cohort</h2><p>Create a cohort without leaving this page.</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div><form method="POST" action="{{ route('admin.cohorts.store') }}">@csrf<div class="eh-modal-body"><div class="modal-grid">
+<div class="form-group"><label>Programme</label><select name="programme_id"><option value="">Select programme</option>@foreach($programmes as $p)<option value="{{ $p->id }}">{{ $p->name }}</option>@endforeach</select></div><div class="form-group"><label>Project</label><select name="project_id"><option value="">Select project</option>@foreach($projects as $p)<option value="{{ $p->id }}">{{ $p->name }}</option>@endforeach</select></div><div class="form-group"><label>Branch</label><select name="branch_id"><option value="">Select branch</option>@foreach($branches as $b)<option value="{{ $b->id }}">{{ $b->name }}</option>@endforeach</select></div>
+<div class="form-group"><label>Cohort name *</label><input name="name" required placeholder="e.g. Kampala Cohort 4"></div><div class="form-group"><label>Code</label><input name="code" placeholder="e.g. KLA-C4-2026"></div><div class="form-group"><label>Status *</label><select name="status" required><option value="planned">Planned</option><option value="open">Open</option><option value="active">Active</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div><div class="form-group"><label>Start date</label><input type="date" name="start_date"></div><div class="form-group"><label>End date</label><input type="date" name="end_date"></div>
+</div></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Create Cohort</button></div></form></div></div>
+
+@foreach($cohorts as $cohort)
+<div class="eh-modal" id="editCohort{{ $cohort->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-lg"><div class="eh-modal-header"><div><h2>Edit Cohort</h2><p>{{ $cohort->name }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div><form method="POST" action="{{ route('admin.cohorts.update',$cohort) }}">@csrf @method('PUT')<div class="eh-modal-body"><div class="modal-grid">
+<div class="form-group"><label>Programme</label><select name="programme_id"><option value="">Select programme</option>@foreach($programmes as $p)<option value="{{ $p->id }}" @selected($cohort->programme_id===$p->id)>{{ $p->name }}</option>@endforeach</select></div><div class="form-group"><label>Project</label><select name="project_id"><option value="">Select project</option>@foreach($projects as $p)<option value="{{ $p->id }}" @selected($cohort->project_id===$p->id)>{{ $p->name }}</option>@endforeach</select></div><div class="form-group"><label>Branch</label><select name="branch_id"><option value="">Select branch</option>@foreach($branches as $b)<option value="{{ $b->id }}" @selected($cohort->branch_id===$b->id)>{{ $b->name }}</option>@endforeach</select></div>
+<div class="form-group"><label>Name *</label><input name="name" value="{{ $cohort->name }}" required></div><div class="form-group"><label>Code</label><input name="code" value="{{ $cohort->code }}"></div><div class="form-group"><label>Status *</label><select name="status" required>@foreach(['planned','open','active','completed','cancelled'] as $s)<option value="{{ $s }}" @selected($cohort->status===$s)>{{ ucfirst($s) }}</option>@endforeach</select></div><div class="form-group"><label>Start date</label><input type="date" name="start_date" value="{{ optional($cohort->start_date)->format('Y-m-d') }}"></div><div class="form-group"><label>End date</label><input type="date" name="end_date" value="{{ optional($cohort->end_date)->format('Y-m-d') }}"></div>
+</div></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Save Changes</button></div></form></div></div>
+<div class="eh-modal" id="deleteCohort{{ $cohort->id }}" aria-hidden="true"><div class="eh-modal-dialog"><div class="eh-modal-header"><div><h2>Delete Cohort?</h2><p>This cannot be undone.</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div><div class="eh-modal-body"><p>Delete <strong>{{ $cohort->name }}</strong>?</p></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><form method="POST" action="{{ route('admin.cohorts.destroy',$cohort) }}">@csrf @method('DELETE')<button class="btn btn-danger">Delete Cohort</button></form></div></div></div>
+@endforeach
 @endsection

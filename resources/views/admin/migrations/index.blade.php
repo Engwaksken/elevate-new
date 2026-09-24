@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('content')
 <div class="card"><h1>Migration Batches</h1>
 <p><a class="btn" href="{{ route('admin.migrations.create') }}">New Migration Batch</a></p>

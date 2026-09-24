@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('title','Resume & Career AI - Admin')
 @section('content')
 <div class="page-header"><div><h1>Resume & Career AI</h1><p>Configure providers securely. API keys are encrypted and never exposed to participants.</p></div></div>
