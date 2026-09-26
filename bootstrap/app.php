@@ -23,6 +23,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 'web.phase9.php',
                 'web.phase10.php',
                 'web.phase11.php',
+                'web.phase12.php',
+                'web.phase13.php',
+                'web.phase14.php',
+                'web.phase15.php',
+                'web.phase16.php',
+                'web.phase17.php',
             ];
 
             foreach ($webRoutes as $routeFile) {
@@ -48,6 +54,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => \App\Http\Middleware\EnsureStaffUser::class,
             'permission' => \App\Http\Middleware\EnsureUserHasPermission::class,
         ]);
+
+        $middleware->web(append: [\App\Http\Middleware\DynamicMaintenanceMode::class]);
 
         $middleware->append(
             \App\Http\Middleware\SecurityHeaders::class

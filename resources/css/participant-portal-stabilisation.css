@@ -1,0 +1,19 @@
+
+.eh-badge{
+    display:inline-grid;
+    place-items:center;
+    min-width:20px;
+    height:20px;
+    padding:0 6px;
+    margin-left:5px;
+    border-radius:999px;
+    background:#D4AF37;
+    color:#3b2600;
+    font-size:.72rem;
+    font-weight:800;
+}
+.eh-section-note{
+    margin:0 0 14px;
+    color:#667085;
+    font-size:.85rem;
+}

@@ -1,0 +1,165 @@
+@extends('layouts.admin')
+@section('title','Bulk Enrolment | ElevateHer360 Administration')
+
+@section('content')
+<div class="admin-page-header">
+    <div>
+        <span class="admin-eyebrow">Programme Delivery</span>
+        <h1>Bulk Enrolment</h1>
+        <p>Enrol participant accounts into courses from a CSV file.</p>
+    </div>
+
+    <div class="admin-page-actions">
+        @if(Route::has('admin.elearning.bulk-enrolment.template'))
+            <a
+                href="{{ route('admin.elearning.bulk-enrolment.template') }}"
+                class="btn btn-outline"
+            >
+                <i class="fas fa-file-csv"></i>
+                Download CSV Template
+            </a>
+        @endif
+    </div>
+</div>
+
+<div class="admin-stats-grid compact">
+    @foreach([
+        ['courses','Courses','fa-graduation-cap'],
+        ['participants','Participants','fa-users'],
+        ['enrolments','Enrolments','fa-user-check'],
+        ['completed','Completed','fa-circle-check']
+    ] as [$key,$label,$icon])
+        <div class="admin-stat">
+            <span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span>
+            <div>
+                <small>{{ $label }}</small>
+                <strong>{{ number_format($stats[$key] ?? 0) }}</strong>
+            </div>
+        </div>
+    @endforeach
+</div>
+
+<div class="admin-panel">
+    <div class="admin-panel-head">
+        <div>
+            <h2>Upload Participants</h2>
+            <p>Download the CSV template, add participant email addresses, then upload the completed file.</p>
+        </div>
+
+        @if(Route::has('admin.elearning.bulk-enrolment.template'))
+            <a
+                href="{{ route('admin.elearning.bulk-enrolment.template') }}"
+                class="btn btn-outline btn-sm"
+            >
+                <i class="fas fa-download"></i>
+                CSV Template
+            </a>
+        @endif
+    </div>
+
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
+    @if($errors->any())
+        <div class="alert alert-error">
+            @foreach($errors->all() as $error)
+                <div>{{ $error }}</div>
+            @endforeach
+        </div>
+    @endif
+
+    <form
+        method="POST"
+        enctype="multipart/form-data"
+        action="{{ route('admin.elearning.bulk-enrolment.store') }}"
+    >
+        @csrf
+
+        <div class="eh-form-grid">
+            <div>
+                <label>Course *</label>
+                <select name="course_id" required>
+                    <option value="">Select course</option>
+                    @foreach($courses as $course)
+                        <option
+                            value="{{ $course->id }}"
+                            @selected((string)old('course_id') === (string)$course->id)
+                        >
+                            {{ $course->title }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label>Cohort</label>
+                <select name="cohort_id">
+                    <option value="">No cohort</option>
+                    @foreach($cohorts as $cohort)
+                        <option
+                            value="{{ $cohort->id }}"
+                            @selected((string)old('cohort_id') === (string)$cohort->id)
+                        >
+                            {{ $cohort->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="full">
+                <label>CSV File *</label>
+                <input
+                    type="file"
+                    name="file"
+                    accept=".csv,.txt,text/csv,text/plain"
+                    required
+                >
+            </div>
+        </div>
+
+        <div class="bulk-guidance">
+            <div>
+                <i class="fas fa-download"></i>
+                <strong>Step 1</strong>
+                <span>Download the CSV template</span>
+            </div>
+
+            <div>
+                <i class="fas fa-envelope"></i>
+                <strong>Step 2</strong>
+                <span>Replace the example with participant email addresses</span>
+            </div>
+
+            <div>
+                <i class="fas fa-file-arrow-up"></i>
+                <strong>Step 3</strong>
+                <span>Upload the completed CSV file</span>
+            </div>
+
+            <div>
+                <i class="fas fa-copy"></i>
+                <strong>Duplicates</strong>
+                <span>Existing enrolments are skipped</span>
+            </div>
+        </div>
+
+        <div class="eh-form-actions">
+            <button class="btn btn-primary">
+                <i class="fas fa-file-import"></i>
+                Enrol Participants
+            </button>
+
+            @if(Route::has('admin.elearning.bulk-enrolment.template'))
+                <a
+                    href="{{ route('admin.elearning.bulk-enrolment.template') }}"
+                    class="btn btn-outline"
+                >
+                    <i class="fas fa-file-csv"></i>
+                    Download Template
+                </a>
+            @endif
+        </div>
+    </form>
+</div>
+@endsection

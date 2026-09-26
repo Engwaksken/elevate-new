@@ -1,0 +1,12 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+return new class extends Migration {
+ public function up(): void {
+  if(!Schema::hasTable('events')) Schema::create('events',function(Blueprint $t){$t->id();$t->string('title');$t->string('event_type')->default('training');$t->text('description')->nullable();$t->dateTime('starts_at');$t->dateTime('ends_at')->nullable();$t->string('venue')->nullable();$t->string('district')->nullable();$t->string('delivery_mode')->default('physical');$t->string('meeting_url')->nullable();$t->unsignedInteger('capacity')->nullable();$t->boolean('registration_required')->default(true);$t->boolean('is_published')->default(false);$t->foreignId('cohort_id')->nullable()->constrained()->nullOnDelete();$t->foreignId('course_id')->nullable()->constrained()->nullOnDelete();$t->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();$t->timestamps();$t->softDeletes();});
+  if(!Schema::hasTable('event_registrations')) Schema::create('event_registrations',function(Blueprint $t){$t->id();$t->foreignId('event_id')->constrained()->cascadeOnDelete();$t->foreignId('user_id')->nullable()->constrained()->nullOnDelete();$t->string('status')->default('registered');$t->timestamp('registered_at')->nullable();$t->timestamps();$t->unique(['event_id','user_id']);});
+  if(!Schema::hasTable('event_attendance_records')) Schema::create('event_attendance_records',function(Blueprint $t){$t->id();$t->foreignId('event_id')->constrained()->cascadeOnDelete();$t->foreignId('event_registration_id')->nullable()->constrained()->nullOnDelete();$t->foreignId('user_id')->nullable()->constrained()->nullOnDelete();$t->string('attendance_status')->default('present');$t->timestamp('check_in_at')->nullable();$t->text('notes')->nullable();$t->foreignId('recorded_by')->nullable()->constrained('users')->nullOnDelete();$t->timestamps();$t->unique(['event_id','event_registration_id'],'event_attendance_registration_unique');});
+ }
+ public function down(): void {Schema::dropIfExists('event_attendance_records');Schema::dropIfExists('event_registrations');Schema::dropIfExists('events');}
+};

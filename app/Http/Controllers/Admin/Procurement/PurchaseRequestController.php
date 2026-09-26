@@ -1,18 +1,49 @@
 <?php
+
 namespace App\Http\Controllers\Admin\Procurement;
 
 use App\Http\Controllers\Controller;
+use App\Models\Activity;
+use App\Models\Programme;
+use App\Models\Project;
 use App\Models\PurchaseRequest;
+use App\Models\Workplan;
 use App\Services\PurchaseRequestNumberService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PurchaseRequestController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query=PurchaseRequest::with(['items','approvals'])->latest();
+
+        if($search=trim((string)$request->get('search'))){
+            $query->where(function($q) use($search){
+                $q->where('request_number','like',"%{$search}%")
+                  ->orWhere('department','like',"%{$search}%")
+                  ->orWhere('funding_source','like',"%{$search}%")
+                  ->orWhere('justification','like',"%{$search}%");
+            });
+        }
+
+        if($status=$request->get('status')) $query->where('status',$status);
+
+        $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
+            ? (int)$request->get('per_page') : 20;
+
         return view('admin.procurement.requests.index',[
-            'requests'=>PurchaseRequest::with('items')->latest()->paginate(20)
+            'requests'=>$query->paginate($perPage)->withQueryString(),
+            'programmes'=>Programme::orderBy('name')->get(),
+            'projects'=>Project::orderBy('name')->get(),
+            'workplans'=>Workplan::latest()->get(),
+            'activities'=>Activity::latest()->get(),
+            'stats'=>[
+                'total'=>PurchaseRequest::count(),
+                'draft'=>PurchaseRequest::where('status','draft')->count(),
+                'submitted'=>PurchaseRequest::where('status','submitted')->count(),
+                'approved'=>PurchaseRequest::where('status','approved')->count(),
+            ],
         ]);
     }
 
@@ -39,7 +70,7 @@ class PurchaseRequestController extends Controller
         ]);
 
         DB::transaction(function() use($data,$numbers){
-            $request=PurchaseRequest::create([
+            $purchaseRequest=PurchaseRequest::create([
                 'request_number'=>$numbers->next(),
                 'procurement_plan_id'=>$data['procurement_plan_id'] ?? null,
                 'programme_id'=>$data['programme_id'] ?? null,
@@ -58,14 +89,15 @@ class PurchaseRequestController extends Controller
             $total=0;
             foreach($data['items'] as $item){
                 $line=(float)$item['quantity']*(float)($item['estimated_unit_cost'] ?? 0);
-                $request->items()->create([
+                $purchaseRequest->items()->create([
                     ...$item,
                     'estimated_total'=>$line,
                     'is_asset'=>(bool)($item['is_asset'] ?? false),
                 ]);
                 $total+=$line;
             }
-            $request->update(['estimated_total'=>$total]);
+
+            $purchaseRequest->update(['estimated_total'=>$total]);
         });
 
         return back()->with('success','Purchase request created.');
@@ -73,7 +105,9 @@ class PurchaseRequestController extends Controller
 
     public function submit(PurchaseRequest $purchaseRequest)
     {
+        abort_unless($purchaseRequest->status==='draft',422,'Only draft requests can be submitted.');
         $purchaseRequest->update(['status'=>'submitted']);
+
         return back()->with('success','Purchase request submitted.');
     }
 

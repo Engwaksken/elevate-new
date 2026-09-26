@@ -1,0 +1,73 @@
+
+/* FINAL: only one sidebar. Old generated sidebar containers never display. */
+.eh-sidebar-extension,
+[data-sidebar-extension="true"],
+.eh-main-sidebar-links,
+[data-main-sidebar-links="true"]{
+    display:none!important;
+}
+
+/* Generated links inherit the existing sidebar and remain in normal flow. */
+.eh-native-sidebar-link{
+    position:static!important;
+    inset:auto!important;
+    float:none!important;
+    transform:none!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:10px!important;
+    width:100%!important;
+    min-height:38px!important;
+    margin:2px 0!important;
+    padding:9px 10px!important;
+    box-sizing:border-box!important;
+    border-radius:8px!important;
+    text-decoration:none!important;
+    color:inherit;
+}
+
+.eh-native-sidebar-link i{
+    position:static!important;
+    width:18px!important;
+    min-width:18px!important;
+    text-align:center!important;
+    color:#D4AF37!important;
+}
+
+.eh-native-sidebar-link span{
+    position:static!important;
+    display:block!important;
+    min-width:0!important;
+    flex:1 1 auto!important;
+}
+
+.eh-native-sidebar-link:hover,
+.eh-native-sidebar-link.active{
+    background:rgba(255,255,255,.11)!important;
+    color:#fff!important;
+}
+
+.eh-native-sidebar-heading{
+    position:static!important;
+    display:block!important;
+    width:100%!important;
+    margin:12px 0 6px!important;
+    padding:7px 10px 5px!important;
+    box-sizing:border-box!important;
+    color:rgba(255,255,255,.58)!important;
+    font-size:.67rem!important;
+    line-height:1.2!important;
+    font-weight:800!important;
+    letter-spacing:.08em!important;
+    text-transform:uppercase!important;
+}
+
+/* Existing sidebar remains a single vertical scroll area. */
+aside,
+.admin-sidebar,
+.sidebar,
+[class*="admin-sidebar"]{
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    max-height:100vh!important;
+}

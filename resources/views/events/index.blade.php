@@ -1,0 +1,7 @@
+@extends('layouts.app')
+@section('title','Events | ElevateHer360')
+@section('content')
+<div class="page-header"><div><span class="eh-kicker">Events</span><h1>Upcoming Events</h1><p>Discover trainings, workshops, webinars, mentorship sessions and career opportunities.</p></div></div>
+<form method="GET" class="event-filter"><div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search events, venue or topic..."></div><button class="btn btn-primary">Search</button></form>
+<div class="event-card-grid">@forelse($events as $event)<a href="{{ route('events.show',$event) }}" class="event-card"><div class="event-date"><strong>{{ $event->starts_at->format('d') }}</strong><span>{{ $event->starts_at->format('M') }}</span></div><div><small>{{ ucwords(str_replace('_',' ',$event->event_type)) }}</small><h2>{{ $event->title }}</h2><p>{{ Str::limit($event->description,120) }}</p><span><i class="fas fa-location-dot"></i> {{ $event->venue ?: ucfirst($event->delivery_mode) }}</span></div></a>@empty<div class="eh-empty-state"><h3>No upcoming events</h3></div>@endforelse</div><div class="eh-pagination">{{ $events->links() }}</div>
+@endsection

@@ -1,0 +1,161 @@
+@php
+    $sidebarUser = auth()->user();
+    $sidebarName = $sidebarUser?->name
+        ?? trim(($sidebarUser?->first_name ?? '') . ' ' . ($sidebarUser?->last_name ?? ''))
+        ?: 'Administrator';
+
+    $sidebarEmail = $sidebarUser?->email ?? '';
+    $sidebarInitial = strtoupper(mb_substr(trim($sidebarName), 0, 1));
+
+    $routeExists = fn (string $name): bool => \Illuminate\Support\Facades\Route::has($name);
+
+    $navGroups = [
+        [
+            'label' => 'Overview',
+            'colour' => 'overview',
+            'items' => [
+                ['route' => 'admin.dashboard', 'label' => 'Dashboard', 'icon' => 'fa-gauge-high'],
+                ['route' => 'admin.executive-dashboard', 'label' => 'Executive Dashboard', 'icon' => 'fa-chart-pie'],
+            ],
+        ],
+        [
+            'label' => 'People & Access',
+            'colour' => 'people',
+            'items' => [
+                ['route' => 'admin.users.index', 'label' => 'Users', 'icon' => 'fa-users'],
+                ['route' => 'admin.roles.index', 'label' => 'Roles & Permissions', 'icon' => 'fa-user-shield'],
+            ],
+        ],
+        [
+            'label' => 'Programme Management',
+            'colour' => 'programme',
+            'items' => [
+                ['route' => 'admin.programmes.index', 'label' => 'Programmes', 'icon' => 'fa-diagram-project'],
+                ['route' => 'admin.projects.index', 'label' => 'Projects', 'icon' => 'fa-folder-tree'],
+                ['route' => 'admin.cohorts.index', 'label' => 'Cohorts', 'icon' => 'fa-people-group'],
+                ['route' => 'admin.branches.index', 'label' => 'Branches', 'icon' => 'fa-building'],
+            ],
+        ],
+        [
+            'label' => 'Programme Delivery',
+            'colour' => 'delivery',
+            'items' => [
+                ['route' => 'admin.elearning.courses.index', 'label' => 'Courses', 'icon' => 'fa-graduation-cap'],
+                ['route' => 'admin.mentorship.index', 'label' => 'Mentorship', 'icon' => 'fa-handshake-angle'],
+                ['route' => 'admin.jobs.index', 'label' => 'Jobs', 'icon' => 'fa-briefcase'],
+                ['route' => 'admin.library.index', 'label' => 'Library', 'icon' => 'fa-book-open'],
+                ['route' => 'admin.events.index', 'label' => 'Events', 'icon' => 'fa-calendar-days'],
+                ['route' => 'admin.events.calendar', 'label' => 'Events Calendar', 'icon' => 'fa-calendar'],
+                ['route' => 'admin.elearning.assignments.index', 'label' => 'Course Assignments', 'icon' => 'fa-user-tie'],
+                ['route' => 'admin.elearning.enrolments.index', 'label' => 'Enrolments', 'icon' => 'fa-user-graduate'],
+                ['route' => 'admin.elearning.learning-files.index', 'label' => 'Learning Files', 'icon' => 'fa-folder-open'],
+                ['route' => 'admin.elearning.certificates.index', 'label' => 'Certificates', 'icon' => 'fa-certificate'],
+                ['route' => 'admin.elearning.bulk-enrolment.create', 'label' => 'Bulk Enrolment', 'icon' => 'fa-file-import'],
+            ],
+        ],
+        [
+            'label' => 'Planning & MEAL',
+            'colour' => 'meal',
+            'items' => [
+                ['route' => 'admin.workplans.index', 'label' => 'Workplans', 'icon' => 'fa-calendar-check'],
+                ['route' => 'admin.tasks.index', 'label' => 'Tasks', 'icon' => 'fa-list-check'],
+                ['route' => 'admin.deliverables.index', 'label' => 'Deliverables', 'icon' => 'fa-box-open'],
+                ['route' => 'admin.indicators.index', 'label' => 'Indicators', 'icon' => 'fa-bullseye'],
+                ['route' => 'admin.results-framework.index', 'label' => 'Results Framework', 'icon' => 'fa-sitemap'],
+                ['route' => 'admin.meal.dashboard', 'label' => 'MEAL Dashboard', 'icon' => 'fa-chart-line'],
+                ['route' => 'admin.course-attendance-report.index', 'label' => 'Course Attendance', 'icon' => 'fa-clipboard-user'],
+                ['route' => 'admin.participant-attendance-summary.index', 'label' => 'Participant Attendance', 'icon' => 'fa-user-check'],
+                ['route' => 'admin.attendance-analytics.index', 'label' => 'Attendance Analytics', 'icon' => 'fa-chart-column'],
+                ['route' => 'admin.events.meal-report', 'label' => 'Event MEAL Report', 'icon' => 'fa-chart-simple'],
+            ],
+        ],
+        [
+            'label' => 'Human Resources',
+            'colour' => 'hr',
+            'items' => [
+                ['route' => 'admin.hr.employees.index', 'label' => 'Employees', 'icon' => 'fa-id-badge'],
+                ['route' => 'admin.hr.leave.index', 'label' => 'Leave', 'icon' => 'fa-calendar-minus'],
+                ['route' => 'admin.hr.appraisals.index', 'label' => 'Appraisals', 'icon' => 'fa-clipboard-check'],
+                ['route' => 'admin.hr.kpi-templates.index', 'label' => 'KPI Templates', 'icon' => 'fa-table-list'],
+                ['route' => 'admin.hr.exits.index', 'label' => 'Staff Exits', 'icon' => 'fa-person-walking-arrow-right'],
+            ],
+        ],
+        [
+            'label' => 'Procurement',
+            'colour' => 'procurement',
+            'items' => [
+                ['route' => 'admin.suppliers.index', 'label' => 'Suppliers', 'icon' => 'fa-truck-field'],
+                ['route' => 'admin.purchase-requests.index', 'label' => 'Purchase Requests', 'icon' => 'fa-cart-plus'],
+                ['route' => 'admin.purchase-orders.index', 'label' => 'Purchase Orders', 'icon' => 'fa-file-invoice-dollar'],
+            ],
+        ],
+        [
+            'label' => 'Assets & Operations',
+            'colour' => 'assets',
+            'items' => [
+                ['route' => 'admin.assets.index', 'label' => 'Assets', 'icon' => 'fa-laptop-file'],
+                ['route' => 'admin.data-migrations.index', 'label' => 'Data Migrations', 'icon' => 'fa-database'],
+                ['route' => 'admin.settings.index', 'label' => 'System Settings', 'icon' => 'fa-gears'],
+            ],
+        ],
+    ];
+@endphp
+
+<aside class="eh-admin-sidebar" data-admin-sidebar="true">
+    <div class="eh-admin-sidebar__brand">
+        <div class="eh-admin-sidebar__logo">E360</div>
+        <div class="eh-admin-sidebar__brand-copy">
+            <strong>ElevateHer360</strong>
+            <small>Administration</small>
+        </div>
+    </div>
+
+    @if($sidebarUser)
+        <a
+            href="{{ \Illuminate\Support\Facades\Route::has('admin.profile') ? route('admin.profile') : '#' }}"
+            class="eh-admin-sidebar__user-card"
+            aria-label="Open profile"
+        >
+            <span class="eh-admin-sidebar__avatar">{{ $sidebarInitial }}</span>
+
+            <span class="eh-admin-sidebar__user-copy">
+                <strong>{{ $sidebarName }}</strong>
+                @if($sidebarEmail !== '')
+                    <small title="{{ $sidebarEmail }}">{{ $sidebarEmail }}</small>
+                @endif
+            </span>
+
+            @if(\Illuminate\Support\Facades\Route::has('admin.profile'))
+                <i class="fas fa-chevron-right"></i>
+            @endif
+        </a>
+    @endif
+
+    <nav class="eh-admin-sidebar__nav" aria-label="Administration navigation">
+        @foreach($navGroups as $group)
+            @php
+                $visibleItems = collect($group['items'])->filter(
+                    fn ($item) => $routeExists($item['route'])
+                );
+            @endphp
+
+            @if($visibleItems->isNotEmpty())
+                <section class="eh-admin-sidebar__group eh-admin-sidebar__group--{{ $group['colour'] }}">
+                    <h3>{{ $group['label'] }}</h3>
+
+                    <div class="eh-admin-sidebar__links">
+                        @foreach($visibleItems as $item)
+                            <a
+                                href="{{ route($item['route']) }}"
+                                class="{{ request()->routeIs($item['route']) ? 'active' : '' }}"
+                            >
+                                <i class="fas {{ $item['icon'] }}"></i>
+                                <span>{{ $item['label'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+        @endforeach
+    </nav>
+</aside>

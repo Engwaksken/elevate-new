@@ -1,0 +1,14 @@
+
+/* Final responsive admin hardening */
+.eh-filter-row{display:flex;align-items:end;gap:8px;flex-wrap:wrap}
+.eh-filter-row .search-box{flex:1 1 280px}
+.eh-filter-row select,.eh-filter-row input[type=date],.eh-filter-row input[type=month]{min-width:150px}
+.admin-stats-grid.compact{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.attendance-rate-cell{min-width:130px}.attendance-rate-cell .progress-track{margin-top:5px}
+.eh-sidebar-extension{margin:10px 10px 16px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14)}
+.eh-sidebar-extension-title{padding:7px 10px 5px;color:rgba(255,255,255,.62);font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.eh-sidebar-extension-link{display:flex;align-items:center;gap:10px;padding:9px 10px;margin:2px 0;border-radius:8px;color:rgba(255,255,255,.9);text-decoration:none;font-size:.82rem}
+.eh-sidebar-extension-link i{width:18px;text-align:center;color:#D4AF37}
+.eh-sidebar-extension-link:hover,.eh-sidebar-extension-link.active{background:rgba(255,255,255,.12);color:#fff}
+@media(max-width:1050px){.admin-stats-grid.compact{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.admin-stats-grid.compact{grid-template-columns:1fr}.eh-filter-row>*{width:100%!important;min-width:0!important}.admin-table-wrap{overflow-x:auto}.admin-table{min-width:760px}}

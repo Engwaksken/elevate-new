@@ -44,6 +44,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth','staff'])->group(func
 
     Route::get('/jobs',[JobAdminController::class,'index'])
         ->middleware('permission:jobs.manage')->name('jobs.index');
+    Route::post('/jobs',[JobAdminController::class,'store'])
+        ->middleware('permission:jobs.manage')->name('jobs.store');
+    Route::post('/jobs/import',[JobAdminController::class,'import'])
+        ->middleware('permission:jobs.manage')->name('jobs.import');
+    Route::put('/jobs/{job}',[JobAdminController::class,'update'])
+        ->middleware('permission:jobs.manage')->name('jobs.update');
+    Route::delete('/jobs/{job}',[JobAdminController::class,'destroy'])
+        ->middleware('permission:jobs.manage')->name('jobs.destroy');
     Route::post('/jobs/{job}/publish',[JobAdminController::class,'publish'])
         ->middleware('permission:jobs.manage')->name('jobs.publish');
     Route::post('/jobs/{job}/reject',[JobAdminController::class,'reject'])

@@ -1,0 +1,11 @@
+
+.eh-course-multi-select{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-height:360px;overflow:auto;padding:4px}
+.eh-course-call-course-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.eh-course-call-course-card{display:flex;gap:12px;align-items:center;padding:14px;border:1px solid #e7e7eb;border-radius:12px}
+.eh-course-call-course-card>i{font-size:1.2rem;color:var(--eh-primary,#800000)}
+.eh-course-call-course-card>div{display:flex;flex-direction:column}
+.eh-details-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.eh-details-grid>div{display:flex;flex-direction:column;gap:4px}
+.admin-chip{display:inline-block;padding:4px 8px;margin:2px;border-radius:999px;background:#f3f3f5;font-size:.82rem}
+@media(max-width:900px){.eh-course-call-course-grid,.eh-details-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.eh-course-multi-select,.eh-course-call-course-grid,.eh-details-grid{grid-template-columns:1fr}}

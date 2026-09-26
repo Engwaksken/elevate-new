@@ -1,0 +1,10 @@
+
+.programme-management-note{
+    font-size:.75rem;
+    color:#667085;
+}
+@media(max-width:900px){
+    .admin-toolbar{
+        flex-wrap:wrap;
+    }
+}

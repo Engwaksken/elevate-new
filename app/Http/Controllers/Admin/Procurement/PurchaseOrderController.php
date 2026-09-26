@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Admin\Procurement;
 
 use App\Http\Controllers\Controller;
@@ -11,10 +12,34 @@ use Illuminate\Support\Facades\DB;
 
 class PurchaseOrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query=PurchaseOrder::with(['supplier','items'])->latest();
+
+        if($search=trim((string)$request->get('search'))){
+            $query->where(function($q) use($search){
+                $q->where('po_number','like',"%{$search}%")
+                  ->orWhereHas('supplier',fn($s)=>$s->where('name','like',"%{$search}%"));
+            });
+        }
+
+        if($status=$request->get('status')) $query->where('status',$status);
+
+        $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
+            ? (int)$request->get('per_page') : 20;
+
         return view('admin.procurement.purchase-orders.index',[
-            'orders'=>PurchaseOrder::with('supplier')->latest()->paginate(20)
+            'orders'=>$query->paginate($perPage)->withQueryString(),
+            'requests'=>PurchaseRequest::with('items')
+                ->whereIn('status',['approved','procurement_review'])
+                ->latest()->get(),
+            'suppliers'=>Supplier::where('status','approved')->orderBy('name')->get(),
+            'stats'=>[
+                'total'=>PurchaseOrder::count(),
+                'issued'=>PurchaseOrder::where('status','issued')->count(),
+                'received'=>PurchaseOrder::where('status','received')->count(),
+                'value'=>PurchaseOrder::sum('total_amount'),
+            ],
         ]);
     }
 

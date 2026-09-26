@@ -1,0 +1,28 @@
+
+.appraisal-kra-workflow{display:block}
+.appraisal-kra-tabs{display:flex;align-items:center;gap:8px;overflow-x:auto;padding:4px 0 14px;margin-bottom:8px}
+.appraisal-kra-tab{display:flex;align-items:center;gap:8px;flex:0 0 auto;min-height:38px;padding:8px 12px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;color:#344054;font-size:.78rem;font-weight:800}
+.appraisal-kra-tab small{display:inline-flex;align-items:center;justify-content:center;min-width:28px;padding:3px 6px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:.65rem}
+.appraisal-kra-tab.active{border-color:#800000;background:#800000;color:#fff}
+.appraisal-kra-tab.active small{background:#D4AF37;color:#2b2100}
+.appraisal-kra-panel{display:none}
+.appraisal-kra-panel.active{display:block}
+.appraisal-kra-card{border-left:4px solid #800000}
+.appraisal-item-card{border-left:4px solid #D4AF37}
+.appraisal-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.appraisal-section-head h2,.appraisal-section-head h3{margin:3px 0 0}
+.appraisal-weight{display:inline-flex;align-items:center;justify-content:center;min-width:62px;padding:7px 9px;border-radius:999px;background:#fff7da;color:#6f5500;font-size:.76rem;font-weight:800}
+.appraisal-rating-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.appraisal-kra-progress{width:min(220px,100%);display:flex;flex-direction:column;gap:5px;align-items:flex-end;color:#667085;font-size:.72rem}
+.appraisal-progress-track{width:100%;height:7px;border-radius:999px;background:#eaecf0;overflow:hidden}
+.appraisal-progress-track span{display:block;height:100%;background:#800000;border-radius:inherit}
+.appraisal-manager-comment{padding:11px;border:1px solid #e4e7ec;border-radius:9px;background:#fafafa}
+.appraisal-manager-comment strong{font-size:.78rem}
+.appraisal-manager-comment p{margin:6px 0 0;color:#475467;font-size:.78rem;line-height:1.5}
+.appraisal-week-table input{min-width:180px;width:100%}
+.appraisal-kra-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.appraisal-submit-panel{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.appraisal-submit-panel h3{margin:0}
+.appraisal-submit-panel p{margin:4px 0 0;color:#667085;font-size:.78rem}
+@media(max-width:900px){.appraisal-rating-grid{grid-template-columns:1fr}.appraisal-section-head{flex-direction:column}.appraisal-kra-progress{align-items:flex-start;width:100%}}
+@media(max-width:650px){.appraisal-submit-panel{align-items:flex-start;flex-direction:column}.appraisal-kra-actions{align-items:stretch;flex-direction:column}.appraisal-kra-actions .btn{width:100%}}

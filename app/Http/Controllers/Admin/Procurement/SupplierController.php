@@ -1,10 +1,10 @@
 <?php
+
 namespace App\Http\Controllers\Admin\Procurement;
 
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 
 class SupplierController extends Controller
 {
@@ -13,13 +13,27 @@ class SupplierController extends Controller
         $query=Supplier::orderBy('name');
 
         if($search=trim((string)$request->get('search'))){
-            $query->where(fn($q)=>$q->where('name','like',"%{$search}%")
+            $query->where(fn($q)=>$q
+                ->where('name','like',"%{$search}%")
                 ->orWhere('category','like',"%{$search}%")
-                ->orWhere('tin','like',"%{$search}%"));
+                ->orWhere('tin','like',"%{$search}%")
+                ->orWhere('contact_person','like',"%{$search}%")
+                ->orWhere('email','like',"%{$search}%"));
         }
 
+        if($status=$request->get('status')) $query->where('status',$status);
+
+        $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
+            ? (int)$request->get('per_page') : 20;
+
         return view('admin.procurement.suppliers.index',[
-            'suppliers'=>$query->paginate(20)->withQueryString()
+            'suppliers'=>$query->paginate($perPage)->withQueryString(),
+            'stats'=>[
+                'total'=>Supplier::count(),
+                'pending'=>Supplier::where('status','pending')->count(),
+                'approved'=>Supplier::where('status','approved')->count(),
+                'inactive'=>Supplier::where('status','inactive')->count(),
+            ],
         ]);
     }
 
@@ -51,6 +65,7 @@ class SupplierController extends Controller
     public function approve(Supplier $supplier)
     {
         $supplier->update(['status'=>'approved']);
+
         return back()->with('success','Supplier approved.');
     }
 }

@@ -1,0 +1,128 @@
+/* ElevateHer360 universal checkbox/radio alignment fix */
+
+/*
+ * Keep native checkbox/radio controls compact and inline.
+ * This overrides broad form rules such as input { width:100%; }
+ * without affecting text, email, date, number or password inputs.
+ */
+input[type="checkbox"],
+input[type="radio"] {
+    appearance: auto;
+    -webkit-appearance: auto;
+    width: 16px !important;
+    min-width: 16px !important;
+    max-width: 16px !important;
+    height: 16px !important;
+    min-height: 16px !important;
+    max-height: 16px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex: 0 0 16px !important;
+    vertical-align: middle;
+    accent-color: #800000;
+}
+
+/* Labels that directly contain a checkbox/radio should align text beside it. */
+label:has(> input[type="checkbox"]),
+label:has(> input[type="radio"]) {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: auto;
+    margin: 0;
+    line-height: 1.35;
+    cursor: pointer;
+}
+
+/* Role/permission option cards */
+.eh-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.eh-choice-card {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: 54px;
+    padding: 12px 14px;
+    margin: 0 !important;
+    border: 1px solid #dfe3ea;
+    border-radius: 9px;
+    background: #fff;
+    color: #1f2937;
+    font-size: .84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+
+.eh-choice-card:hover {
+    border-color: #c9a227;
+    background: #fffdf7;
+}
+
+.eh-choice-card:has(input:checked) {
+    border-color: #800000;
+    background: #fff8f8;
+    box-shadow: 0 0 0 2px rgba(128, 0, 0, .05);
+}
+
+.eh-choice-card input[type="checkbox"],
+.eh-choice-card input[type="radio"] {
+    align-self: center !important;
+}
+
+.eh-choice-card__text {
+    display: block;
+    min-width: 0;
+    line-height: 1.35;
+}
+
+/* Common permission/role/list option wrappers used across admin pages. */
+.checkbox-row,
+.radio-row,
+.form-check,
+.permission-option,
+.role-option,
+.permission-item,
+.role-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.form-check input[type="checkbox"],
+.form-check input[type="radio"],
+.checkbox-row input[type="checkbox"],
+.radio-row input[type="radio"],
+.permission-option input[type="checkbox"],
+.role-option input[type="checkbox"],
+.permission-item input[type="checkbox"],
+.role-item input[type="checkbox"] {
+    margin: 0 !important;
+    flex: 0 0 16px !important;
+}
+
+/* Never let helper text force the checkbox itself onto another line. */
+.form-check label,
+.checkbox-row label,
+.radio-row label,
+.permission-option label,
+.role-option label,
+.permission-item label,
+.role-item label {
+    margin: 0 !important;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+    .eh-choice-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .eh-choice-card {
+        min-height: 50px;
+    }
+}

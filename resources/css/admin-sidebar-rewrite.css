@@ -1,0 +1,222 @@
+
+:root{
+    --eh-admin-sidebar-width:270px;
+}
+
+.eh-admin-sidebar{
+    position:fixed;
+    inset:0 auto 0 0;
+    z-index:1000;
+    display:flex;
+    flex-direction:column;
+    width:var(--eh-admin-sidebar-width);
+    min-width:var(--eh-admin-sidebar-width);
+    height:100vh;
+    padding:0;
+    overflow:hidden;
+    background:#800000;
+    color:#fff;
+    border-right:1px solid rgba(255,255,255,.10);
+}
+
+.eh-admin-sidebar__brand{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    min-height:68px;
+    padding:12px 15px;
+    border-bottom:1px solid rgba(255,255,255,.12);
+}
+
+.eh-admin-sidebar__logo{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:44px;
+    height:44px;
+    flex:0 0 44px;
+    border-radius:10px;
+    background:#D4AF37;
+    color:#5d0000;
+    font-size:.78rem;
+    font-weight:900;
+}
+
+.eh-admin-sidebar__brand-copy{
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+}
+
+.eh-admin-sidebar__brand-copy strong{
+    color:#fff;
+    font-size:.95rem;
+    line-height:1.25;
+}
+
+.eh-admin-sidebar__brand-copy small{
+    margin-top:2px;
+    color:rgba(255,255,255,.72);
+    font-size:.67rem;
+}
+
+.eh-admin-sidebar__user-card{
+    display:flex!important;
+    align-items:center!important;
+    gap:10px!important;
+    width:auto!important;
+    min-width:0!important;
+    margin:14px 11px 12px!important;
+    padding:11px 12px!important;
+    border:1px solid rgba(255,255,255,.18)!important;
+    border-radius:11px!important;
+    background:rgba(255,255,255,.07)!important;
+    color:#fff!important;
+    text-decoration:none!important;
+}
+
+.eh-admin-sidebar__user-card:hover{
+    background:rgba(255,255,255,.12)!important;
+    color:#fff!important;
+}
+
+.eh-admin-sidebar__avatar{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:38px;
+    height:38px;
+    flex:0 0 38px;
+    border-radius:50%;
+    background:#D4AF37;
+    color:#6a0000;
+    font-size:.84rem;
+    font-weight:900;
+}
+
+.eh-admin-sidebar__user-copy{
+    display:flex;
+    flex:1 1 auto;
+    min-width:0;
+    flex-direction:column;
+    overflow:hidden;
+}
+
+.eh-admin-sidebar__user-copy strong{
+    display:block;
+    min-width:0;
+    overflow:hidden;
+    color:#fff;
+    font-size:.80rem;
+    font-weight:800;
+    line-height:1.25;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.eh-admin-sidebar__user-copy small{
+    display:block;
+    min-width:0;
+    margin-top:3px;
+    overflow:hidden;
+    color:rgba(255,255,255,.72);
+    font-size:.62rem;
+    line-height:1.25;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.eh-admin-sidebar__user-card>i{
+    flex:0 0 auto;
+    color:#D4AF37;
+    font-size:.68rem;
+}
+
+.eh-admin-sidebar__nav{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding:0 10px 20px;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(255,255,255,.35) transparent;
+}
+
+.eh-admin-sidebar__group{
+    margin:0 0 14px;
+}
+
+.eh-admin-sidebar__group h3{
+    margin:0 0 5px;
+    padding:0 8px;
+    color:rgba(255,255,255,.60);
+    font-size:.60rem;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+
+.eh-admin-sidebar__links{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+}
+
+.eh-admin-sidebar__links a{
+    display:flex!important;
+    align-items:center!important;
+    gap:10px!important;
+    min-height:38px!important;
+    padding:9px 10px!important;
+    border-radius:8px!important;
+    color:rgba(255,255,255,.92)!important;
+    font-size:.76rem!important;
+    font-weight:600!important;
+    text-decoration:none!important;
+}
+
+.eh-admin-sidebar__links a:hover,
+.eh-admin-sidebar__links a.active{
+    background:rgba(255,255,255,.11)!important;
+    color:#fff!important;
+}
+
+.eh-admin-sidebar__links a.active{
+    box-shadow:inset 3px 0 0 #D4AF37!important;
+}
+
+.eh-admin-sidebar__links i{
+    width:18px;
+    flex:0 0 18px;
+    text-align:center;
+    font-size:.78rem;
+}
+
+/* Distinct icon colours by main group */
+.eh-admin-sidebar__group--overview i{color:#F4C542}
+.eh-admin-sidebar__group--people i{color:#7DD3FC}
+.eh-admin-sidebar__group--programme i{color:#FDBA74}
+.eh-admin-sidebar__group--delivery i{color:#86EFAC}
+.eh-admin-sidebar__group--meal i{color:#C4B5FD}
+.eh-admin-sidebar__group--hr i{color:#F9A8D4}
+.eh-admin-sidebar__group--procurement i{color:#67E8F9}
+.eh-admin-sidebar__group--assets i{color:#FDE68A}
+
+@media(min-width:901px){
+    body:has(.eh-admin-sidebar) .admin-shell,
+    body:has(.eh-admin-sidebar) .admin-main,
+    body:has(.eh-admin-sidebar) main{
+        margin-left:var(--eh-admin-sidebar-width);
+    }
+}
+
+@media(max-width:900px){
+    .eh-admin-sidebar{
+        transform:translateX(-100%);
+        transition:transform .2s ease;
+    }
+
+    body.admin-sidebar-open .eh-admin-sidebar{
+        transform:translateX(0);
+    }
+}

@@ -1,0 +1,7 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+Route::view('/', 'home')->name('home');
+
+require __DIR__.'/web.phase23.integration.php';

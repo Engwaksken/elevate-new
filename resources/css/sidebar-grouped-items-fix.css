@@ -1,0 +1,44 @@
+
+/* Never show legacy generated sidebar sections */
+.eh-sidebar-extension,
+[data-sidebar-extension="true"],
+.eh-main-sidebar-links,
+[data-main-sidebar-links="true"],
+.eh-native-sidebar-heading{
+    display:none!important;
+}
+
+/* Generated links are injected directly beside native sidebar links */
+.eh-grouped-sidebar-link{
+    position:static!important;
+    inset:auto!important;
+    float:none!important;
+    transform:none!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:10px!important;
+    width:100%!important;
+    min-height:38px!important;
+    margin:2px 0!important;
+    padding:9px 10px!important;
+    box-sizing:border-box!important;
+    border-radius:8px!important;
+    text-decoration:none!important;
+    color:rgba(255,255,255,.92)!important;
+}
+.eh-grouped-sidebar-link i{
+    position:static!important;
+    width:18px!important;
+    min-width:18px!important;
+    text-align:center!important;
+    color:#D4AF37!important;
+}
+.eh-grouped-sidebar-link span{
+    flex:1 1 auto!important;
+    min-width:0!important;
+}
+.eh-grouped-sidebar-link:hover,
+.eh-grouped-sidebar-link.active{
+    background:rgba(255,255,255,.11)!important;
+    color:#fff!important;
+}

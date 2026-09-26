@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Admin\HR;
 
 use App\Http\Controllers\Controller;
@@ -13,12 +14,34 @@ class EmployeeController extends Controller
     public function index(Request $request)
     {
         $query=Employee::with(['user'])->latest();
+
+        if($search=trim((string)$request->get('search'))){
+            $query->where(function($q) use($search){
+                $q->where('employee_number','like',"%{$search}%")
+                    ->orWhere('employment_type','like',"%{$search}%")
+                    ->orWhere('work_location','like',"%{$search}%")
+                    ->orWhereHas('user',fn($u)=>$u
+                        ->where('name','like',"%{$search}%")
+                        ->orWhere('email','like',"%{$search}%"));
+            });
+        }
+
         if($status=$request->get('status')) $query->where('status',$status);
+
+        $perPage=in_array((int)$request->get('per_page'),[10,25,50,100],true)
+            ? (int)$request->get('per_page') : 25;
+
         return view('admin.hr.employees.index',[
-            'employees'=>$query->paginate(25)->withQueryString(),
+            'employees'=>$query->paginate($perPage)->withQueryString(),
             'users'=>User::where('user_type','staff')->orderBy('name')->get(),
             'departments'=>Department::where('is_active',true)->orderBy('name')->get(),
             'positions'=>Position::where('is_active',true)->orderBy('title')->get(),
+            'stats'=>[
+                'total'=>Employee::count(),
+                'active'=>Employee::where('status','active')->count(),
+                'probation'=>Employee::where('status','probation')->count(),
+                'on_leave'=>Employee::where('status','on_leave')->count(),
+            ],
         ]);
     }
 
@@ -36,6 +59,7 @@ class EmployeeController extends Controller
             'probation_end_date'=>['nullable','date','after_or_equal:start_date'],
             'status'=>['required','in:active,probation,on_leave,suspended,exiting,exited'],
         ]));
+
         return back()->with('success','Employee record created.');
     }
 }

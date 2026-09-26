@@ -1,14 +1,17 @@
 @extends('layouts.admin')
+@section('title','Participant Outcomes | ElevateHer360 Administration')
 @section('content')
-<div class="card"><h1>Participant Outcomes</h1>
+<div class="admin-page-header"><div><span class="admin-eyebrow">MEAL</span><h1>Participant Outcomes</h1><p>Verify participant employment and livelihood outcomes.</p></div></div>
+<div class="admin-stats-grid compact">@foreach([['total','Total Outcomes','fa-chart-line'],['submitted','Submitted','fa-clock'],['verified','Verified','fa-circle-check'],['rejected','Rejected','fa-circle-xmark']] as [$key,$label,$icon])<div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span><div><small>{{ $label }}</small><strong>{{ number_format($stats[$key] ?? 0) }}</strong></div></div>@endforeach</div>
+<div class="admin-panel">
+<form method="GET" class="admin-toolbar"><div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search participant, organisation or outcome type..."></div><select name="verification_status"><option value="">All statuses</option>@foreach(['submitted','verified','rejected'] as $s)<option value="{{ $s }}" @selected(request('verification_status')===$s)>{{ ucfirst($s) }}</option>@endforeach</select><select name="per_page">@foreach([10,25,50,100] as $size)<option value="{{ $size }}" @selected((int)request('per_page',25)===$size)>{{ $size }}/page</option>@endforeach</select><button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.jobs.outcomes.index') }}" class="btn btn-outline btn-sm">Reset</a></form>
+<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Participant</th><th>Outcome</th><th>Organisation</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@forelse($outcomes as $outcome)
+<tr><td><strong>{{ data_get($outcome,'user.name','—') }}</strong><small class="admin-cell-hint">{{ data_get($outcome,'user.email','') }}</small></td><td>{{ ucfirst(str_replace('_',' ',$outcome->outcome_type)) }}</td><td>{{ $outcome->organisation_name ?: '—' }}</td><td><span class="status-chip {{ $outcome->verification_status }}">{{ ucfirst($outcome->verification_status) }}</span></td><td class="table-actions"><div class="action-group">@if($outcome->verification_status==='submitted')<button type="button" class="btn-icon" data-modal-open="verifyOutcome{{ $outcome->id }}"><i class="fas fa-check"></i></button><button type="button" class="btn-icon danger" data-modal-open="rejectOutcome{{ $outcome->id }}"><i class="fas fa-xmark"></i></button>@endif</div></td></tr>
+@empty<tr><td colspan="5"><div class="admin-empty">No participant outcomes found.</div></td></tr>@endforelse
+</tbody></table></div><div class="admin-pagination">{{ $outcomes->links() }}</div></div>
 @foreach($outcomes as $outcome)
-<div class="card"><strong>{{ $outcome->user->name }}</strong><br>{{ $outcome->outcome_type }} · {{ $outcome->organisation_name }} · {{ $outcome->verification_status }}
-@if($outcome->verification_status==='submitted')
-<form method="POST" action="{{ route('admin.jobs.outcomes.verify',$outcome) }}" style="display:inline">@csrf<button>Verify</button></form>
-<form method="POST" action="{{ route('admin.jobs.outcomes.reject',$outcome) }}" style="display:inline">@csrf<button>Reject</button></form>
-@endif
-</div>
+<div class="eh-modal" id="verifyOutcome{{ $outcome->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-sm"><div class="eh-modal-header"><div><h2>Verify Outcome?</h2><p>{{ data_get($outcome,'user.name','Participant') }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div><div class="eh-modal-body"><p>Confirm that this submitted outcome has been verified?</p></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><form method="POST" action="{{ route('admin.jobs.outcomes.verify',$outcome) }}">@csrf<button class="btn btn-primary">Verify</button></form></div></div></div>
+<div class="eh-modal" id="rejectOutcome{{ $outcome->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-sm"><div class="eh-modal-header"><div><h2>Reject Outcome?</h2><p>{{ data_get($outcome,'user.name','Participant') }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div><div class="eh-modal-body"><p>Reject this submitted outcome?</p></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><form method="POST" action="{{ route('admin.jobs.outcomes.reject',$outcome) }}">@csrf<button class="btn btn-danger">Reject</button></form></div></div></div>
 @endforeach
-{{ $outcomes->links() }}
-</div>
 @endsection

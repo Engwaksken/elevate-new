@@ -7,6 +7,7 @@
 <title>@yield('title','ElevateHer360')</title>
 @vite(['resources/css/app.css','resources/js/app.js'])
 @stack('head')
+@include('partials.dynamic-branding')
 </head>
 @php
 $participantShell=auth()->check() && method_exists(auth()->user(),'isStaff') && !auth()->user()->isStaff();
@@ -89,6 +90,31 @@ document.addEventListener('DOMContentLoaded',function(){
  });
 });
 </script>
+@include('partials.global-assistive-tools')
 @stack('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const seen = new Set();
+
+    document.querySelectorAll(
+        '.flash-message, .form-alert, .success-box, .error-box, .warning-box, .info-box'
+    ).forEach((message) => {
+        const text = (message.textContent || '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+
+        if (!text) return;
+
+        if (seen.has(text)) {
+            message.classList.add('eh-duplicate-flash');
+            message.remove();
+            return;
+        }
+
+        seen.add(text);
+    });
+});
+</script>
 </body>
 </html>

@@ -1,55 +1,233 @@
-<aside id="adminSidebar" class="admin-sidebar" aria-label="Administration navigation">
-<div class="admin-sidebar-brand">
-<a href="{{ route('admin.dashboard') }}"><span class="admin-brand-mark">E360</span><span><strong>ElevateHer360</strong><small>Administration</small></span></a>
-<button type="button" class="admin-sidebar-close" data-admin-sidebar-toggle aria-label="Close navigation"><i class="fas fa-xmark"></i></button>
-</div>
+@php
+    $sidebarUser = auth()->user();
+    $sidebarName = $sidebarUser?->name
+        ?? trim(($sidebarUser?->first_name ?? '') . ' ' . ($sidebarUser?->last_name ?? ''))
+        ?: 'Administrator';
 
-<div class="admin-user-card">
-<span class="admin-user-avatar">{{ strtoupper(substr(auth()->user()->name ?? 'A',0,1)) }}</span>
-<span class="admin-user-copy"><strong>{{ auth()->user()->name ?? 'Administrator' }}</strong><small>{{ auth()->user()->email ?? '' }}</small><em>{{ auth()->user()->roles->pluck('name')->first() ?? 'Staff' }}</em></span>
-</div>
+    $sidebarEmail = $sidebarUser?->email ?? '';
+    $sidebarInitial = strtoupper(mb_substr(trim($sidebarName), 0, 1));
 
-<nav class="admin-nav">
-<div class="admin-nav-section"><span>Overview</span>
-<a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard')?'active':'' }}"><i class="fas fa-gauge-high"></i><b>Dashboard</b></a>
-</div>
+    $routeExists = fn (string $name): bool => \Illuminate\Support\Facades\Route::has($name);
 
-<div class="admin-nav-section"><span>People & Access</span>
-@if(Route::has('admin.users.index'))<a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*')?'active':'' }}"><i class="fas fa-users"></i><b>Users</b></a>@endif
-@if(Route::has('admin.roles.index'))<a href="{{ route('admin.roles.index') }}" class="{{ request()->routeIs('admin.roles.*')?'active':'' }}"><i class="fas fa-user-lock"></i><b>Roles & Permissions</b></a>@endif
-</div>
+    $canAccess = function (?string $permission) use ($sidebarUser): bool {
+        if (! $sidebarUser) {
+            return false;
+        }
 
-<div class="admin-nav-section"><span>Programme Management</span>
-@if(Route::has('admin.programmes.index'))<a href="{{ route('admin.programmes.index') }}" class="{{ request()->routeIs('admin.programmes.*')?'active':'' }}"><i class="fas fa-diagram-project"></i><b>Programmes</b></a>@endif
-@if(Route::has('admin.projects.index'))<a href="{{ route('admin.projects.index') }}" class="{{ request()->routeIs('admin.projects.*')?'active':'' }}"><i class="fas fa-folder-tree"></i><b>Projects</b></a>@endif
-@if(Route::has('admin.cohorts.index'))<a href="{{ route('admin.cohorts.index') }}" class="{{ request()->routeIs('admin.cohorts.*')?'active':'' }}"><i class="fas fa-people-group"></i><b>Cohorts</b></a>@endif
-@if(Route::has('admin.branches.index'))<a href="{{ route('admin.branches.index') }}" class="{{ request()->routeIs('admin.branches.*')?'active':'' }}"><i class="fas fa-building"></i><b>Branches</b></a>@endif
-</div>
+        if (method_exists($sidebarUser, 'isSuperAdmin') && $sidebarUser->isSuperAdmin()) {
+            return true;
+        }
 
-<div class="admin-nav-section"><span>Programme Delivery</span>
-@if(Route::has('admin.elearning.courses.index'))<a href="{{ route('admin.elearning.courses.index') }}" class="{{ request()->routeIs('admin.elearning.*')?'active':'' }}"><i class="fas fa-graduation-cap"></i><b>Learning</b></a>@endif
-@if(Route::has('admin.mentorship.index'))<a href="{{ route('admin.mentorship.index') }}" class="{{ request()->routeIs('admin.mentorship.*')?'active':'' }}"><i class="fas fa-handshake"></i><b>Mentorship</b></a>@endif
-@if(Route::has('admin.jobs.index'))<a href="{{ route('admin.jobs.index') }}" class="{{ request()->routeIs('admin.jobs.*')?'active':'' }}"><i class="fas fa-briefcase"></i><b>Jobs</b></a>@endif
-@if(Route::has('admin.library.index'))<a href="{{ route('admin.library.index') }}" class="{{ request()->routeIs('admin.library.*')?'active':'' }}"><i class="fas fa-book-open"></i><b>Library</b></a>@endif
-</div>
+        if ($permission === null || $permission === '') {
+            return true;
+        }
 
-<div class="admin-nav-section"><span>Planning & MEAL</span>
-@if(Route::has('admin.workplans.index'))<a href="{{ route('admin.workplans.index') }}" class="{{ request()->routeIs('admin.workplans.*')?'active':'' }}"><i class="fas fa-list-check"></i><b>Workplans</b></a>@endif
-@if(Route::has('admin.indicators.index'))<a href="{{ route('admin.indicators.index') }}" class="{{ request()->routeIs('admin.indicators.*')?'active':'' }}"><i class="fas fa-chart-column"></i><b>Indicators & MEAL</b></a>@endif
-</div>
+        return method_exists($sidebarUser, 'hasPermission')
+            && $sidebarUser->hasPermission($permission);
+    };
 
-<div class="admin-nav-section"><span>Operations</span>
-@if(Route::has('admin.hr.index'))<a href="{{ route('admin.hr.index') }}" class="{{ request()->routeIs('admin.hr.*')?'active':'' }}"><i class="fas fa-id-badge"></i><b>Human Resources</b></a>@endif
-@if(Route::has('admin.assets.index'))<a href="{{ route('admin.assets.index') }}" class="{{ request()->routeIs('admin.assets.*')?'active':'' }}"><i class="fas fa-laptop"></i><b>Assets</b></a>@endif
-@if(Route::has('admin.procurement.index'))<a href="{{ route('admin.procurement.index') }}" class="{{ request()->routeIs('admin.procurement.*')?'active':'' }}"><i class="fas fa-cart-shopping"></i><b>Procurement</b></a>@endif
-@if(Route::has('admin.career-ai.index'))<a href="{{ route('admin.career-ai.index') }}" class="{{ request()->routeIs('admin.career-ai.*')?'active':'' }}"><i class="fas fa-wand-magic-sparkles"></i><b>Career AI</b></a>@endif
-@if(Route::has('admin.migrations.index'))<a href="{{ route('admin.migrations.index') }}" class="{{ request()->routeIs('admin.migrations.*')?'active':'' }}"><i class="fas fa-database"></i><b>Migrations</b></a>@endif
-</div>
-</nav>
+    $routePermissions = [
+        'admin.users.index' => 'users.view',
+        'admin.roles.index' => 'roles.manage',
 
-<div class="admin-sidebar-footer">
-<form method="POST" action="{{ route('admin.logout') }}">@csrf
-<button type="submit"><i class="fas fa-right-from-bracket"></i><span>Sign Out</span></button>
-</form>
-</div>
+        'admin.programmes.index' => 'programmes.view',
+        'admin.projects.index' => 'programmes.view',
+        'admin.cohorts.index' => 'cohorts.view',
+        'admin.branches.index' => 'programmes.view',
+
+        'admin.elearning.courses.index' => 'courses.view',
+        'admin.course-calls.index' => 'course_calls.view',
+        'admin.elearning.assignments.index' => 'courses.view',
+        'admin.elearning.enrolments.index' => 'students.view',
+        'admin.elearning.learning-files.index' => 'courses.view',
+        'admin.elearning.certificates.index' => 'courses.view',
+        'admin.elearning.bulk-enrolment.create' => 'students.edit',
+
+        'admin.mentorship.index' => 'mentors.view',
+        'admin.jobs.index' => 'jobs.view',
+        'admin.library.index' => 'library.manage',
+        'admin.events.index' => 'calendar.manage',
+        'admin.events.calendar' => 'calendar.manage',
+
+        'admin.workplans.index' => 'workplans.view',
+        'admin.tasks.index' => 'tasks.manage',
+        'admin.deliverables.index' => 'tasks.manage',
+        'admin.indicators.index' => 'indicators.view',
+        'admin.results-framework.index' => 'meal.view',
+        'admin.meal.dashboard' => 'meal.view',
+        'admin.surveys.index' => 'surveys.view',
+        'admin.course-attendance-report.index' => 'meal.view',
+        'admin.participant-attendance-summary.index' => 'meal.view',
+        'admin.attendance-analytics.index' => 'meal.view',
+        'admin.events.meal-report' => 'meal.view',
+
+        'admin.hr.employees.index' => 'hr.view',
+        'admin.hr.leave.index' => 'leave.view',
+        'admin.hr.appraisals.index' => 'appraisals.view',
+        'admin.hr.kpi-templates.index' => 'appraisals.view',
+        'admin.hr.exits.index' => 'staff_exit.manage',
+
+        'admin.suppliers.index' => 'procurement.view',
+        'admin.purchase-requests.index' => 'procurement.view',
+        'admin.purchase-orders.index' => 'procurement.view',
+
+        'admin.assets.index' => 'assets.view',
+        'admin.data-migrations.index' => 'settings.manage',
+        'admin.settings.index' => 'settings.manage',
+        'admin.platform-settings.index' => 'settings.manage',
+    ];
+
+    $navGroups = [
+        [
+            'label' => 'Overview',
+            'colour' => 'overview',
+            'items' => [
+                ['route' => 'admin.dashboard', 'label' => 'Dashboard', 'icon' => 'fa-gauge-high'],
+                ['route' => 'admin.executive-dashboard', 'label' => 'Executive Dashboard', 'icon' => 'fa-chart-pie'],
+            ],
+        ],
+        [
+            'label' => 'People & Access',
+            'colour' => 'people',
+            'items' => [
+                ['route' => 'admin.users.index', 'label' => 'Users', 'icon' => 'fa-users'],
+                ['route' => 'admin.roles.index', 'label' => 'Roles & Permissions', 'icon' => 'fa-user-shield'],
+            ],
+        ],
+        [
+            'label' => 'Programme Management',
+            'colour' => 'programme',
+            'items' => [
+                ['route' => 'admin.programmes.index', 'label' => 'Programmes', 'icon' => 'fa-diagram-project'],
+                ['route' => 'admin.projects.index', 'label' => 'Projects', 'icon' => 'fa-folder-tree'],
+                ['route' => 'admin.cohorts.index', 'label' => 'Cohorts', 'icon' => 'fa-people-group'],
+                ['route' => 'admin.branches.index', 'label' => 'Branches', 'icon' => 'fa-building'],
+            ],
+        ],
+        [
+            'label' => 'Programme Delivery',
+            'colour' => 'delivery',
+            'items' => [
+                ['route' => 'admin.elearning.courses.index', 'label' => 'Courses', 'icon' => 'fa-graduation-cap'],
+                ['route' => 'admin.course-calls.index', 'label' => 'Course Calls', 'icon' => 'fa-bullhorn'],
+                ['route' => 'admin.mentorship.index', 'label' => 'Mentorship', 'icon' => 'fa-handshake-angle'],
+                ['route' => 'admin.jobs.index', 'label' => 'Jobs', 'icon' => 'fa-briefcase'],
+                ['route' => 'admin.library.index', 'label' => 'Library', 'icon' => 'fa-book-open'],
+                ['route' => 'admin.events.index', 'label' => 'Events', 'icon' => 'fa-calendar-days'],
+                ['route' => 'admin.events.calendar', 'label' => 'Events Calendar', 'icon' => 'fa-calendar'],
+                ['route' => 'admin.elearning.assignments.index', 'label' => 'Course Assignments', 'icon' => 'fa-user-tie'],
+                ['route' => 'admin.elearning.enrolments.index', 'label' => 'Enrolments', 'icon' => 'fa-user-graduate'],
+                ['route' => 'admin.elearning.learning-files.index', 'label' => 'Learning Files', 'icon' => 'fa-folder-open'],
+                ['route' => 'admin.elearning.certificates.index', 'label' => 'Certificates', 'icon' => 'fa-certificate'],
+                ['route' => 'admin.elearning.bulk-enrolment.create', 'label' => 'Bulk Enrolment', 'icon' => 'fa-file-import'],
+            ],
+        ],
+        [
+            'label' => 'Planning & MEAL',
+            'colour' => 'meal',
+            'items' => [
+                ['route' => 'admin.workplans.index', 'label' => 'Workplans', 'icon' => 'fa-calendar-check'],
+                ['route' => 'admin.tasks.index', 'label' => 'Tasks', 'icon' => 'fa-list-check'],
+                ['route' => 'admin.deliverables.index', 'label' => 'Deliverables', 'icon' => 'fa-box-open'],
+                ['route' => 'admin.indicators.index', 'label' => 'Indicators', 'icon' => 'fa-bullseye'],
+                ['route' => 'admin.results-framework.index', 'label' => 'Results Framework', 'icon' => 'fa-sitemap'],
+                ['route' => 'admin.meal.dashboard', 'label' => 'MEAL Dashboard', 'icon' => 'fa-chart-line'],
+                ['route' => 'admin.surveys.index', 'label' => 'M&E Surveys', 'icon' => 'fa-square-poll-vertical'],
+                ['route' => 'admin.course-attendance-report.index', 'label' => 'Course Attendance', 'icon' => 'fa-clipboard-user'],
+                ['route' => 'admin.participant-attendance-summary.index', 'label' => 'Participant Attendance', 'icon' => 'fa-user-check'],
+                ['route' => 'admin.attendance-analytics.index', 'label' => 'Attendance Analytics', 'icon' => 'fa-chart-column'],
+                ['route' => 'admin.events.meal-report', 'label' => 'Event MEAL Report', 'icon' => 'fa-chart-simple'],
+            ],
+        ],
+        [
+            'label' => 'Human Resources',
+            'colour' => 'hr',
+            'items' => [
+                ['route' => 'admin.hr.employees.index', 'label' => 'Employees', 'icon' => 'fa-id-badge'],
+                ['route' => 'admin.hr.leave.index', 'label' => 'Leave', 'icon' => 'fa-calendar-minus'],
+                ['route' => 'admin.hr.appraisals.index', 'label' => 'Appraisals', 'icon' => 'fa-clipboard-check'],
+                ['route' => 'admin.hr.kpi-templates.index', 'label' => 'KPI Templates', 'icon' => 'fa-table-list'],
+                ['route' => 'admin.hr.exits.index', 'label' => 'Staff Exits', 'icon' => 'fa-person-walking-arrow-right'],
+            ],
+        ],
+        [
+            'label' => 'Procurement',
+            'colour' => 'procurement',
+            'items' => [
+                ['route' => 'admin.suppliers.index', 'label' => 'Suppliers', 'icon' => 'fa-truck-field'],
+                ['route' => 'admin.purchase-requests.index', 'label' => 'Purchase Requests', 'icon' => 'fa-cart-plus'],
+                ['route' => 'admin.purchase-orders.index', 'label' => 'Purchase Orders', 'icon' => 'fa-file-invoice-dollar'],
+            ],
+        ],
+        [
+            'label' => 'Assets & Operations',
+            'colour' => 'assets',
+            'items' => [
+                ['route' => 'admin.assets.index', 'label' => 'Assets', 'icon' => 'fa-laptop-file'],
+                ['route' => 'admin.data-migrations.index', 'label' => 'Data Migrations', 'icon' => 'fa-database'],
+                ['route' => 'admin.settings.index', 'label' => 'System Settings', 'icon' => 'fa-gears'],
+                ['route' => 'admin.platform-settings.index', 'label' => 'Platform Configuration', 'icon' => 'fa-sliders'],
+            ],
+        ],
+    ];
+@endphp
+
+<aside class="eh-admin-sidebar" data-admin-sidebar="true">
+    <div class="eh-admin-sidebar__brand">
+        <div class="eh-admin-sidebar__logo">E360</div>
+        <div class="eh-admin-sidebar__brand-copy">
+            <strong>ElevateHer360</strong>
+            <small>Administration</small>
+        </div>
+    </div>
+
+    @if($sidebarUser)
+        <a
+            href="{{ \Illuminate\Support\Facades\Route::has('admin.profile') ? route('admin.profile') : '#' }}"
+            class="eh-admin-sidebar__user-card"
+            aria-label="Open profile"
+        >
+            <span class="eh-admin-sidebar__avatar">{{ $sidebarInitial }}</span>
+
+            <span class="eh-admin-sidebar__user-copy">
+                <strong>{{ $sidebarName }}</strong>
+                @if($sidebarEmail !== '')
+                    <small title="{{ $sidebarEmail }}">{{ $sidebarEmail }}</small>
+                @endif
+            </span>
+
+            @if(\Illuminate\Support\Facades\Route::has('admin.profile'))
+                <i class="fas fa-chevron-right"></i>
+            @endif
+        </a>
+    @endif
+
+    <nav class="eh-admin-sidebar__nav" aria-label="Administration navigation">
+        @foreach($navGroups as $group)
+            @php
+                $visibleItems = collect($group['items'])->filter(
+                    fn ($item) => $routeExists($item['route'])
+                        && $canAccess($routePermissions[$item['route']] ?? null)
+                );
+            @endphp
+
+            @if($visibleItems->isNotEmpty())
+                <section class="eh-admin-sidebar__group eh-admin-sidebar__group--{{ $group['colour'] }}">
+                    <h3>{{ $group['label'] }}</h3>
+
+                    <div class="eh-admin-sidebar__links">
+                        @foreach($visibleItems as $item)
+                            <a
+                                href="{{ route($item['route']) }}"
+                                class="{{ request()->routeIs($item['route']) ? 'active' : '' }}"
+                            >
+                                <i class="fas {{ $item['icon'] }}"></i>
+                                <span>{{ $item['label'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+        @endforeach
+    </nav>
 </aside>

@@ -1,0 +1,396 @@
+/* ==========================================================
+   ElevateHer360 - Universal Admin Responsive UX
+   Applies to all administration pages
+   ========================================================== */
+
+.admin-content{
+    min-width:0;
+    width:100%;
+    box-sizing:border-box;
+}
+
+.admin-panel,
+.card{
+    min-width:0;
+}
+
+/* Keep filter/search controls on ONE horizontal row on desktop */
+.admin-content form[method="GET"]:not(.no-admin-filter),
+.admin-toolbar,
+.admin-filter-row,
+.admin-filters,
+.filter-bar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:nowrap;
+    width:100%;
+    min-width:0;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding-bottom:4px;
+    scrollbar-width:thin;
+}
+
+.admin-content form[method="GET"]:not(.no-admin-filter) > *,
+.admin-toolbar > *,
+.admin-filter-row > *,
+.admin-filters > *,
+.filter-bar > *{
+    flex:0 0 auto;
+}
+
+.admin-content form[method="GET"]:not(.no-admin-filter) input,
+.admin-content form[method="GET"]:not(.no-admin-filter) select,
+.admin-toolbar input,
+.admin-toolbar select{
+    min-height:40px;
+    height:40px;
+    max-width:210px;
+}
+
+.admin-content form[method="GET"]:not(.no-admin-filter) input[name="search"],
+.admin-toolbar .search-box,
+.admin-toolbar input[name="search"]{
+    flex:1 1 260px;
+    min-width:220px;
+    max-width:none;
+}
+
+.admin-toolbar .search-box input{
+    max-width:none;
+}
+
+/* Tables always remain usable on narrow screens */
+.admin-table-wrap,
+.table-responsive,
+.admin-panel > table,
+.admin-content > table,
+.card > table{
+    max-width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+}
+
+.admin-table,
+.admin-content table{
+    width:100%;
+    min-width:760px;
+    border-collapse:collapse;
+}
+
+.admin-content table th,
+.admin-content table td{
+    vertical-align:middle;
+}
+
+/* Universal modal system */
+.eh-global-modal{
+    position:fixed;
+    inset:0;
+    z-index:3500;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(15,23,42,.55);
+    backdrop-filter:blur(3px);
+}
+
+.eh-global-modal.is-open{
+    display:flex;
+}
+
+.eh-global-modal-dialog{
+    width:min(920px,100%);
+    max-height:92vh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    border-radius:14px;
+    background:#fff;
+    box-shadow:0 24px 70px rgba(15,23,42,.26);
+}
+
+.eh-global-modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:14px;
+    padding:18px 20px;
+    border-bottom:1px solid #e4e7ec;
+}
+
+.eh-global-modal-header h2{
+    margin:0 0 4px;
+    font-size:1.15rem;
+}
+
+.eh-global-modal-header p{
+    margin:0;
+    color:#667085;
+    font-size:.76rem;
+}
+
+.eh-global-modal-close{
+    width:36px;
+    height:36px;
+    display:grid;
+    place-items:center;
+    border:0;
+    border-radius:8px;
+    background:#f2f4f7;
+    color:#475467;
+    cursor:pointer;
+}
+
+.eh-global-modal-body{
+    overflow:auto;
+    padding:18px 20px;
+}
+
+.eh-global-modal-body form{
+    margin:0;
+}
+
+.eh-global-modal-body .grid,
+.eh-global-modal-body .form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px;
+}
+
+.eh-global-modal-body label{
+    display:block;
+    margin:10px 0 5px;
+    color:#172033;
+    font-size:.78rem;
+    font-weight:700;
+}
+
+.eh-global-modal-body input:not([type="checkbox"]):not([type="radio"]),
+.eh-global-modal-body select,
+.eh-global-modal-body textarea{
+    width:100%!important;
+    max-width:none!important;
+    min-height:42px;
+    box-sizing:border-box;
+    padding:9px 11px!important;
+    border:1px solid #d0d5dd!important;
+    border-radius:8px!important;
+    background:#fff!important;
+}
+
+.eh-global-modal-body textarea{
+    min-height:100px;
+}
+
+.eh-global-modal-body button[type="submit"]{
+    margin-top:16px;
+}
+
+/* Auto generated generic statistics */
+.admin-auto-stats{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:10px;
+    margin:0 0 18px;
+}
+
+.admin-auto-stat{
+    min-height:70px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 14px;
+    border:1px solid #e4e7ec;
+    border-left:4px solid #800000;
+    border-radius:9px;
+    background:#fff;
+}
+
+.admin-auto-stat:nth-child(even){
+    border-left-color:#d4af37;
+}
+
+.admin-auto-stat i{
+    width:34px;
+    height:34px;
+    display:grid;
+    place-items:center;
+    border-radius:8px;
+    background:#fff3f3;
+    color:#800000;
+}
+
+.admin-auto-stat small,
+.admin-auto-stat strong{
+    display:block;
+}
+
+.admin-auto-stat small{
+    color:#667085;
+    font-size:.68rem;
+}
+
+.admin-auto-stat strong{
+    margin-top:2px;
+    font-size:1.15rem;
+    color:#172033;
+}
+
+/* Generic bulk selection on suitable tables */
+.admin-auto-bulk{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin:0 0 10px;
+    padding:9px 11px;
+    border:1px solid #fedf89;
+    border-radius:8px;
+    background:#fffaeb;
+}
+
+.admin-auto-bulk.is-visible{
+    display:flex;
+}
+
+/* Existing modal controls */
+.modal-check{
+    display:flex!important;
+    align-items:flex-start!important;
+    gap:8px!important;
+}
+
+.modal-check input[type="checkbox"]{
+    appearance:auto!important;
+    -webkit-appearance:checkbox!important;
+    width:16px!important;
+    height:16px!important;
+    min-width:16px!important;
+    min-height:16px!important;
+    margin:2px 0 0!important;
+}
+
+/* Responsive */
+@media(max-width:1100px){
+    .admin-auto-stats,
+    .admin-stats-grid.compact{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+
+@media(max-width:900px){
+    .admin-content{
+        padding-left:18px!important;
+        padding-right:18px!important;
+    }
+
+    .admin-content form[method="GET"]:not(.no-admin-filter),
+    .admin-toolbar,
+    .admin-filter-row,
+    .admin-filters,
+    .filter-bar{
+        flex-wrap:wrap;
+        overflow:visible;
+    }
+
+    .admin-content form[method="GET"]:not(.no-admin-filter) > *,
+    .admin-toolbar > *,
+    .admin-filter-row > *,
+    .admin-filters > *,
+    .filter-bar > *{
+        flex:1 1 180px;
+        min-width:0;
+    }
+
+    .admin-content form[method="GET"]:not(.no-admin-filter) input,
+    .admin-content form[method="GET"]:not(.no-admin-filter) select,
+    .admin-toolbar input,
+    .admin-toolbar select{
+        width:100%;
+        max-width:none;
+    }
+}
+
+@media(max-width:640px){
+    .admin-page-header{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .admin-page-actions,
+    .admin-page-actions .btn{
+        width:100%;
+    }
+
+    .admin-content{
+        padding:16px 12px 36px!important;
+    }
+
+    .admin-auto-stats,
+    .admin-stats-grid.compact{
+        grid-template-columns:1fr;
+    }
+
+    .admin-content form[method="GET"]:not(.no-admin-filter),
+    .admin-toolbar,
+    .admin-filter-row,
+    .admin-filters,
+    .filter-bar{
+        display:grid;
+        grid-template-columns:1fr;
+    }
+
+    .admin-content form[method="GET"]:not(.no-admin-filter) > *,
+    .admin-toolbar > *,
+    .admin-filter-row > *,
+    .admin-filters > *,
+    .filter-bar > *{
+        width:100%!important;
+        max-width:none!important;
+    }
+
+    .eh-modal,
+    .eh-global-modal{
+        padding:8px;
+        align-items:flex-end;
+    }
+
+    .eh-modal-dialog,
+    .eh-global-modal-dialog{
+        width:100%!important;
+        max-height:95vh;
+        border-radius:14px 14px 0 0;
+    }
+
+    .modal-grid,
+    .eh-global-modal-body .grid,
+    .eh-global-modal-body .form-grid{
+        grid-template-columns:1fr!important;
+    }
+
+    .modal-grid .full{
+        grid-column:auto!important;
+    }
+
+    .eh-modal-header,
+    .eh-modal-body,
+    .eh-modal-footer,
+    .eh-global-modal-header,
+    .eh-global-modal-body{
+        padding-left:14px!important;
+        padding-right:14px!important;
+    }
+
+    .eh-modal-footer{
+        flex-wrap:wrap;
+    }
+
+    .eh-modal-footer .btn,
+    .eh-modal-footer form,
+    .eh-modal-footer form .btn{
+        width:100%;
+    }
+}

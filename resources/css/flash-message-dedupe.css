@@ -1,0 +1,19 @@
+/* ElevateHer360 flash-message duplicate cleanup */
+.alert-success,
+.alert-error,
+.alert-danger,
+.alert-warning,
+.alert-info,
+.toast-success,
+.toast-error,
+.toast-warning,
+.toast-info,
+[data-flash-type]{
+    transition: opacity .25s ease, transform .25s ease;
+}
+
+.eh-flash-hiding{
+    opacity:0!important;
+    transform:translateY(-6px);
+    pointer-events:none;
+}

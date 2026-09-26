@@ -1,0 +1,182 @@
+/* ElevateHer360 Career AI form repair */
+.career-ai-page .career-ai-form-fixed{
+    width:100%;
+    min-width:0;
+}
+
+.career-ai-page .career-ai-form-fixed .modal-grid,
+.career-ai-page .career-ai-form-fixed .eh-form-grid,
+.career-ai-page .career-ai-form-fixed .form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px 14px;
+    align-items:start;
+}
+
+.career-ai-page .career-ai-form-fixed .form-group,
+.career-ai-page .career-ai-form-fixed .field,
+.career-ai-page .career-ai-form-fixed .eh-field{
+    min-width:0;
+}
+
+.career-ai-page .career-ai-form-fixed .career-ai-full,
+.career-ai-page .career-ai-form-fixed .full,
+.career-ai-page .career-ai-form-fixed fieldset{
+    grid-column:1 / -1;
+}
+
+.career-ai-page .career-ai-form-fixed label{
+    display:block;
+    margin-bottom:5px;
+    color:#344054;
+    font-size:.78rem;
+    font-weight:700;
+}
+
+.career-ai-page .career-ai-form-fixed input:not([type="checkbox"]):not([type="radio"]),
+.career-ai-page .career-ai-form-fixed select,
+.career-ai-page .career-ai-form-fixed textarea{
+    width:100%;
+    max-width:100%;
+    min-width:0;
+}
+
+.career-ai-page .career-ai-form-fixed textarea{
+    min-height:110px;
+    resize:vertical;
+    line-height:1.55;
+}
+
+.career-ai-page .career-ai-form-fixed input[type="file"]{
+    min-height:42px;
+    padding:8px;
+    border:1px dashed #d0d5dd;
+    border-radius:8px;
+    background:#f9fafb;
+}
+
+.career-ai-page .career-ai-section{
+    margin:0 0 14px;
+    padding:14px;
+    border:1px solid #e4e7ec;
+    border-left:4px solid #800000;
+    border-radius:10px;
+    background:#fff;
+}
+
+.career-ai-page .career-ai-section legend{
+    padding:0 7px;
+    color:#800000;
+    font-size:.9rem;
+    font-weight:800;
+}
+
+.career-ai-page .career-ai-field-hint{
+    margin-top:5px;
+    color:#667085;
+    font-size:.72rem;
+    line-height:1.45;
+}
+
+.career-ai-page .career-ai-form-fixed .alert,
+.career-ai-page .career-ai-form-fixed .invalid-feedback,
+.career-ai-page .career-ai-form-fixed .field-error{
+    grid-column:1 / -1;
+}
+
+.career-ai-page .career-ai-form-fixed .is-invalid,
+.career-ai-page .career-ai-form-fixed [aria-invalid="true"]{
+    border-color:#d92d20 !important;
+    box-shadow:0 0 0 2px rgba(217,45,32,.08);
+}
+
+.career-ai-page .career-ai-form-fixed .eh-form-actions,
+.career-ai-page .career-ai-form-fixed .form-actions,
+.career-ai-page .career-ai-form-fixed .actions{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    grid-column:1 / -1;
+    margin-top:8px;
+}
+
+/* Career AI inside modal: always reach final fields and actions */
+.career-ai-page .career-ai-modal-fixed{
+    overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch;
+}
+
+.career-ai-page .career-ai-modal-fixed .eh-modal-dialog,
+.career-ai-page .career-ai-modal-fixed .modal-dialog{
+    max-height:calc(100dvh - 24px) !important;
+    display:flex !important;
+    flex-direction:column !important;
+    overflow:hidden !important;
+}
+
+.career-ai-page .career-ai-modal-fixed .eh-modal-dialog > form,
+.career-ai-page .career-ai-modal-fixed .modal-dialog > form{
+    min-height:0 !important;
+    display:flex !important;
+    flex:1 1 auto !important;
+    flex-direction:column !important;
+    overflow:hidden !important;
+}
+
+.career-ai-page .career-ai-modal-fixed .eh-modal-body,
+.career-ai-page .career-ai-modal-fixed .modal-body{
+    min-height:0 !important;
+    flex:1 1 auto !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    padding-bottom:28px !important;
+    -webkit-overflow-scrolling:touch;
+}
+
+.career-ai-page .career-ai-modal-fixed .eh-modal-footer,
+.career-ai-page .career-ai-modal-fixed .modal-footer{
+    flex:0 0 auto !important;
+    position:sticky !important;
+    bottom:0 !important;
+    z-index:3;
+    background:#fff;
+    border-top:1px solid #e4e7ec;
+}
+
+/* Optional page-level Career AI card */
+.career-ai-page .career-ai-form-fixed:not(.eh-modal form):not(.modal-dialog form){
+    padding:16px;
+    border:1px solid #e4e7ec;
+    border-left:4px solid #800000;
+    border-radius:12px;
+    background:#fff;
+}
+
+@media(max-width:760px){
+    .career-ai-page .career-ai-form-fixed .modal-grid,
+    .career-ai-page .career-ai-form-fixed .eh-form-grid,
+    .career-ai-page .career-ai-form-fixed .form-grid{
+        grid-template-columns:1fr;
+    }
+
+    .career-ai-page .career-ai-form-fixed .career-ai-full,
+    .career-ai-page .career-ai-form-fixed .full,
+    .career-ai-page .career-ai-form-fixed fieldset{
+        grid-column:1;
+    }
+
+    .career-ai-page .career-ai-form-fixed .eh-form-actions,
+    .career-ai-page .career-ai-form-fixed .form-actions,
+    .career-ai-page .career-ai-form-fixed .actions{
+        align-items:stretch;
+        flex-direction:column;
+    }
+
+    .career-ai-page .career-ai-form-fixed .eh-form-actions .btn,
+    .career-ai-page .career-ai-form-fixed .form-actions .btn,
+    .career-ai-page .career-ai-form-fixed .actions .btn{
+        width:100%;
+    }
+}

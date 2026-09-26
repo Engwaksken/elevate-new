@@ -1,0 +1,518 @@
+@extends('layouts.admin')
+
+@section('title', 'Staff Appraisal | ElevateHer360')
+
+@section('content')
+@php
+    $appraisal = $appraisal ?? null;
+    $template = $template ?? ($appraisal?->kpiTemplate ?? null);
+    $items = collect($items ?? ($template?->items ?? []));
+    $scores = collect($scores ?? ($appraisal?->kpiScores ?? []));
+    $weekly = collect($weekly ?? ($appraisal?->weeklyUpdates ?? []));
+    $progress = is_array($progress ?? null) ? $progress : [];
+
+    $employeeName = data_get($appraisal, 'employee.user.name')
+        ?? data_get($appraisal, 'employee.name')
+        ?? data_get($appraisal, 'user.name')
+        ?? auth()->user()?->name
+        ?? 'Staff Member';
+
+    $managerName = data_get($appraisal, 'manager.name')
+        ?? data_get($appraisal, 'manager.user.name')
+        ?? data_get($appraisal, 'employee.supervisor.name')
+        ?? '—';
+
+    $cycleName = data_get($appraisal, 'cycle.name')
+        ?? data_get($appraisal, 'appraisalCycle.name')
+        ?? 'Performance Appraisal';
+
+    $selfCompletion = (float) (
+        data_get($progress, 'self_completion')
+        ?? data_get($progress, 'selfCompletion')
+        ?? data_get($appraisal, 'self_completion_percent')
+        ?? 0
+    );
+
+    $managerCompletion = (float) (
+        data_get($progress, 'manager_completion')
+        ?? data_get($progress, 'managerCompletion')
+        ?? data_get($appraisal, 'manager_completion_percent')
+        ?? 0
+    );
+
+    $workflowCompletion = (float) (
+        data_get($progress, 'workflow_completion')
+        ?? data_get($progress, 'workflowCompletion')
+        ?? data_get($appraisal, 'workflow_completion_percent')
+        ?? 0
+    );
+
+    $performancePercent = (float) (
+        data_get($progress, 'performance_percent')
+        ?? data_get($progress, 'performancePercent')
+        ?? data_get($appraisal, 'performance_percent')
+        ?? data_get($appraisal, 'final_score')
+        ?? data_get($appraisal, 'manager_score')
+        ?? data_get($appraisal, 'self_score')
+        ?? 0
+    );
+
+    $performanceLabel = data_get($progress, 'rating_label')
+        ?? data_get($progress, 'ratingLabel')
+        ?? data_get($appraisal, 'rating_label')
+        ?? (
+            $performancePercent >= 90 ? 'Outstanding'
+            : ($performancePercent >= 80 ? 'Exceeds Expectations'
+            : ($performancePercent >= 60 ? 'Meets Expectations'
+            : ($performancePercent >= 40 ? 'Partly Met Expectations'
+            : 'Unacceptable')))
+        );
+
+    $status = data_get($appraisal, 'status') ?? 'draft';
+
+    $scoreForItem = function ($item) use ($scores) {
+        if (!$item) {
+            return null;
+        }
+
+        return $scores->first(function ($row) use ($item) {
+            return (string) data_get($row, 'hr_kpi_template_item_id') === (string) data_get($item, 'id')
+                || (string) data_get($row, 'template_item_id') === (string) data_get($item, 'id')
+                || (string) data_get($row, 'item_id') === (string) data_get($item, 'id');
+        });
+    };
+
+    $weeklyForItem = function ($item) use ($weekly) {
+        if (!$item) {
+            return collect();
+        }
+
+        return $weekly->filter(function ($row) use ($item) {
+            return (string) data_get($row, 'hr_kpi_template_item_id') === (string) data_get($item, 'id')
+                || (string) data_get($row, 'template_item_id') === (string) data_get($item, 'id')
+                || (string) data_get($row, 'item_id') === (string) data_get($item, 'id');
+        })->sortBy(function ($row) {
+            return (int) (
+                data_get($row, 'week_number')
+                ?? data_get($row, 'week')
+                ?? 0
+            );
+        });
+    };
+
+    $saveRoute = null;
+    foreach ([
+        'staff.appraisals.update',
+        'staff.appraisals.save',
+        'hr.appraisals.update',
+    ] as $candidate) {
+        if (Route::has($candidate)) {
+            $saveRoute = $candidate;
+            break;
+        }
+    }
+
+    $submitRoute = null;
+    foreach ([
+        'staff.appraisals.submit',
+        'staff.appraisals.employee-submit',
+        'hr.appraisals.submit',
+    ] as $candidate) {
+        if (Route::has($candidate)) {
+            $submitRoute = $candidate;
+            break;
+        }
+    }
+@endphp
+
+<div class="admin-page-header">
+    <div>
+        <span class="admin-eyebrow">Human Resources</span>
+        <h1>{{ $cycleName }}</h1>
+        <p>{{ $employeeName }} · Manager: {{ $managerName }}</p>
+    </div>
+
+    <div class="admin-page-actions">
+        @if(Route::has('staff.appraisals.index'))
+            <a href="{{ route('staff.appraisals.index') }}" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i>
+                My Appraisals
+            </a>
+        @endif
+
+        @if(Route::has('staff.appraisals.export'))
+            <a href="{{ route('staff.appraisals.export', $appraisal) }}" class="btn btn-outline">
+                <i class="fas fa-file-excel"></i>
+                Export
+            </a>
+        @elseif(Route::has('staff.appraisals.export.excel'))
+            <a href="{{ route('staff.appraisals.export.excel', $appraisal) }}" class="btn btn-outline">
+                <i class="fas fa-file-excel"></i>
+                Export
+            </a>
+        @endif
+    </div>
+</div>
+
+@if(session('success'))
+    <div class="alert alert-success">{{ session('success') }}</div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-error">{{ session('error') }}</div>
+@endif
+
+@if($errors->any())
+    <div class="alert alert-error">
+        @foreach($errors->all() as $error)
+            <div>{{ $error }}</div>
+        @endforeach
+    </div>
+@endif
+
+<div class="admin-stats-grid compact">
+    <div class="admin-stat">
+        <span class="admin-stat-icon"><i class="fas fa-user-pen"></i></span>
+        <div><small>Self Completion</small><strong>{{ number_format($selfCompletion, 1) }}%</strong></div>
+    </div>
+
+    <div class="admin-stat">
+        <span class="admin-stat-icon"><i class="fas fa-user-check"></i></span>
+        <div><small>Manager Completion</small><strong>{{ number_format($managerCompletion, 1) }}%</strong></div>
+    </div>
+
+    <div class="admin-stat">
+        <span class="admin-stat-icon"><i class="fas fa-list-check"></i></span>
+        <div><small>Workflow</small><strong>{{ number_format($workflowCompletion, 1) }}%</strong></div>
+    </div>
+
+    <div class="admin-stat">
+        <span class="admin-stat-icon"><i class="fas fa-chart-line"></i></span>
+        <div>
+            <small>Performance</small>
+            <strong>{{ number_format($performancePercent, 1) }}%</strong>
+            <span class="admin-cell-hint">{{ $performanceLabel }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="admin-panel">
+    <div class="appraisal-meta-grid">
+        <div>
+            <small>Status</small>
+            <strong>{{ ucwords(str_replace('_', ' ', $status)) }}</strong>
+        </div>
+        <div>
+            <small>Template</small>
+            <strong>{{ data_get($template, 'name') ?? '—' }}</strong>
+        </div>
+        <div>
+            <small>Quarter</small>
+            <strong>{{ data_get($template, 'quarter') ?? data_get($appraisal, 'quarter') ?? '—' }}</strong>
+        </div>
+        <div>
+            <small>Year</small>
+            <strong>{{ data_get($template, 'year') ?? data_get($appraisal, 'year') ?? '—' }}</strong>
+        </div>
+    </div>
+</div>
+
+@if($items->isEmpty())
+    <div class="admin-panel">
+        <div class="admin-empty">
+            <i class="fas fa-clipboard-list"></i>
+            <h3>No appraisal items found</h3>
+            <p>The assigned KPI template currently has no appraisal items.</p>
+        </div>
+    </div>
+@else
+    <form
+        method="POST"
+        @if($saveRoute)
+            action="{{ route($saveRoute, $appraisal) }}"
+        @else
+            action="#"
+        @endif
+        class="appraisal-form"
+    >
+        @csrf
+
+        @if($saveRoute && str_contains($saveRoute, 'update'))
+            @method('PUT')
+        @endif
+
+        @php
+            $currentKra = null;
+        @endphp
+
+        @foreach($items as $item)
+            @php
+                $itemType = strtolower((string) data_get($item, 'item_type'));
+                $itemTitle = data_get($item, 'title') ?? data_get($item, 'name') ?? 'Appraisal Item';
+                $itemWeight = data_get($item, 'weight');
+                $scoreRecord = $scoreForItem($item);
+                $weeklyRows = $weeklyForItem($item);
+                $itemId = data_get($item, 'id');
+            @endphp
+
+            @if($itemType === 'kra')
+                @php
+                    $currentKra = $itemTitle;
+                @endphp
+
+                <section class="admin-panel appraisal-kra-card">
+                    <div class="appraisal-section-head">
+                        <div>
+                            <span class="admin-eyebrow">Key Result Area</span>
+                            <h2>{{ $itemTitle }}</h2>
+                        </div>
+
+                        @if($itemWeight !== null)
+                            <span class="appraisal-weight">{{ number_format((float) $itemWeight, 1) }}%</span>
+                        @endif
+                    </div>
+                </section>
+
+            @endif
+
+            @if($itemType === 'behavioral' || $itemType === 'behavioural')
+                <section class="admin-panel appraisal-item-card">
+                    <div class="appraisal-section-head">
+                        <div>
+                            <span class="admin-eyebrow">Behavioural Competency</span>
+                            <h3>{{ $itemTitle }}</h3>
+                        </div>
+                    </div>
+
+                    <div class="appraisal-rating-grid">
+                        <div class="form-group">
+                            <label>Employee Rating</label>
+                            <select name="scores[{{ $itemId }}][employee_rating]">
+                                <option value="">Select rating</option>
+                                @foreach([1=>'Never',2=>'Occasionally',3=>'Always'] as $value=>$label)
+                                    <option value="{{ $value }}" @selected((string) old("scores.$itemId.employee_rating", data_get($scoreRecord, 'employee_rating')) === (string) $value)>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Manager Rating</label>
+                            <input type="text"
+                                   value="{{ data_get($scoreRecord, 'manager_rating') ?? '—' }}"
+                                   readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Agreed Rating</label>
+                            <input type="text"
+                                   value="{{ data_get($scoreRecord, 'agreed_rating') ?? '—' }}"
+                                   readonly>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Employee Comment</label>
+                        <textarea name="scores[{{ $itemId }}][employee_comment]"
+                                  rows="3"
+                                  placeholder="Add your comment for this competency...">{{ old("scores.$itemId.employee_comment", data_get($scoreRecord, 'employee_comment')) }}</textarea>
+                    </div>
+
+                    @if(data_get($scoreRecord, 'manager_comment'))
+                        <div class="appraisal-manager-comment">
+                            <strong>Manager Comment</strong>
+                            <p>{{ data_get($scoreRecord, 'manager_comment') }}</p>
+                        </div>
+                    @endif
+                </section>
+
+            @endif
+
+            @if($itemType === 'okr')
+                <section class="admin-panel appraisal-item-card">
+                    <div class="appraisal-section-head">
+                        <div>
+                            <span class="admin-eyebrow">OKR</span>
+                            <h3>{{ $itemTitle }}</h3>
+                            @if($currentKra)
+                                <p>{{ $currentKra }}</p>
+                            @endif
+                        </div>
+
+                        @if($itemWeight !== null)
+                            <span class="appraisal-weight">{{ number_format((float) $itemWeight, 1) }}%</span>
+                        @endif
+                    </div>
+
+                    <div class="admin-table-wrap">
+                        <table class="admin-table appraisal-week-table">
+                            <thead>
+                                <tr>
+                                    <th>Week</th>
+                                    <th>Actual / Target</th>
+                                    <th>Comments</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach(range(1, 13) as $weekNumber)
+                                    @php
+                                        $weekRecord = $weeklyRows->first(function ($row) use ($weekNumber) {
+                                            return (int) (
+                                                data_get($row, 'week_number')
+                                                ?? data_get($row, 'week')
+                                                ?? 0
+                                            ) === $weekNumber;
+                                        });
+
+                                        $weekId = data_get($weekRecord, 'id');
+                                    @endphp
+
+                                    <tr>
+                                        <td><strong>Week {{ $weekNumber }}</strong></td>
+                                        <td>
+                                            <input
+                                                type="text"
+                                                name="weekly[{{ $itemId }}][{{ $weekNumber }}][actual]"
+                                                value="{{ old("weekly.$itemId.$weekNumber.actual", data_get($weekRecord, 'actual')) }}"
+                                                placeholder="Actual (Target)">
+                                        </td>
+                                        <td>
+                                            <input
+                                                type="text"
+                                                name="weekly[{{ $itemId }}][{{ $weekNumber }}][comments]"
+                                                value="{{ old("weekly.$itemId.$weekNumber.comments", data_get($weekRecord, 'comments')) }}"
+                                                placeholder="Weekly comment">
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="appraisal-rating-grid">
+                        <div class="form-group">
+                            <label>Employee Rating</label>
+                            <input type="number"
+                                   min="0"
+                                   max="100"
+                                   step="0.01"
+                                   name="scores[{{ $itemId }}][employee_rating]"
+                                   value="{{ old("scores.$itemId.employee_rating", data_get($scoreRecord, 'employee_rating')) }}"
+                                   placeholder="0–100">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Manager Rating</label>
+                            <input type="text"
+                                   value="{{ data_get($scoreRecord, 'manager_rating') ?? '—' }}"
+                                   readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Agreed Rating</label>
+                            <input type="text"
+                                   value="{{ data_get($scoreRecord, 'agreed_rating') ?? '—' }}"
+                                   readonly>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Employee Comment</label>
+                        <textarea name="scores[{{ $itemId }}][employee_comment]"
+                                  rows="3"
+                                  placeholder="Add your OKR comment...">{{ old("scores.$itemId.employee_comment", data_get($scoreRecord, 'employee_comment')) }}</textarea>
+                    </div>
+                </section>
+
+            @endif
+
+            @if(!in_array($itemType, ['kra','behavioral','behavioural','okr'], true))
+                <section class="admin-panel appraisal-item-card">
+                    <div class="appraisal-section-head">
+                        <div>
+                            <span class="admin-eyebrow">{{ strtoupper($itemType ?: 'KPI') }}</span>
+                            <h3>{{ $itemTitle }}</h3>
+                            @if($currentKra)
+                                <p>{{ $currentKra }}</p>
+                            @endif
+                        </div>
+
+                        @if($itemWeight !== null)
+                            <span class="appraisal-weight">{{ number_format((float) $itemWeight, 1) }}%</span>
+                        @endif
+                    </div>
+
+                    <div class="appraisal-rating-grid">
+                        <div class="form-group">
+                            <label>Employee Rating</label>
+                            <select name="scores[{{ $itemId }}][employee_rating]">
+                                <option value="">Select rating</option>
+                                @foreach(range(1, 5) as $rating)
+                                    <option value="{{ $rating }}" @selected((string) old("scores.$itemId.employee_rating", data_get($scoreRecord, 'employee_rating')) === (string) $rating)>
+                                        {{ $rating }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Manager Rating</label>
+                            <input type="text"
+                                   value="{{ data_get($scoreRecord, 'manager_rating') ?? '—' }}"
+                                   readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Agreed Rating</label>
+                            <input type="text"
+                                   value="{{ data_get($scoreRecord, 'agreed_rating') ?? '—' }}"
+                                   readonly>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Employee Comment</label>
+                        <textarea name="scores[{{ $itemId }}][employee_comment]"
+                                  rows="3"
+                                  placeholder="Add your comment for this KPI...">{{ old("scores.$itemId.employee_comment", data_get($scoreRecord, 'employee_comment')) }}</textarea>
+                    </div>
+
+                    @if(data_get($scoreRecord, 'manager_comment'))
+                        <div class="appraisal-manager-comment">
+                            <strong>Manager Comment</strong>
+                            <p>{{ data_get($scoreRecord, 'manager_comment') }}</p>
+                        </div>
+                    @endif
+                </section>
+            @endif
+        @endforeach
+
+        @if($saveRoute)
+            <div class="admin-panel appraisal-form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-floppy-disk"></i>
+                    Save Appraisal
+                </button>
+            </div>
+        @endif
+    </form>
+
+    @if($submitRoute)
+        <div class="admin-panel appraisal-submit-panel">
+            <div>
+                <h3>Submit Self Assessment</h3>
+                <p>Submit when you have completed your ratings and comments.</p>
+            </div>
+
+            <form method="POST" action="{{ route($submitRoute, $appraisal) }}">
+                @csrf
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i>
+                    Submit
+                </button>
+            </form>
+        </div>
+    @endif
+@endif
+@endsection

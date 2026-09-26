@@ -1,0 +1,60 @@
+
+/* Sidebar and profile/topbar integration repairs */
+.profile-admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+#password{scroll-margin-top:90px}
+
+/* Keep the left navigation as one independent fixed column. */
+aside,
+.admin-sidebar,
+.sidebar,
+[class*="admin-sidebar"]{
+    box-sizing:border-box;
+}
+
+body.eh-has-admin-topbar aside,
+body.eh-has-admin-topbar .admin-sidebar,
+body.eh-has-admin-topbar [class*="admin-sidebar"]{
+    max-height:100vh;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+}
+
+/* The profile/account card belongs in the topbar now. */
+.eh-sidebar-profile-hidden,
+.eh-sidebar-account-hidden{
+    display:none!important;
+}
+
+/* Do not let added navigation sections visually stack on top of each other. */
+.eh-sidebar-extension{
+    position:static!important;
+    inset:auto!important;
+    float:none!important;
+    clear:both!important;
+    width:auto!important;
+    margin:14px 10px 18px!important;
+    padding:12px 0 0!important;
+    border-top:1px solid rgba(255,255,255,.14)!important;
+    transform:none!important;
+}
+
+.eh-sidebar-extension-title{
+    position:static!important;
+    margin:0!important;
+    padding:7px 10px 6px!important;
+}
+
+.eh-sidebar-extension-link{
+    position:static!important;
+    display:flex!important;
+    width:auto!important;
+    min-height:36px;
+    align-items:center;
+    margin:2px 0!important;
+    transform:none!important;
+}
+
+@media(max-width:900px){
+    .profile-admin-grid{grid-template-columns:1fr}
+}

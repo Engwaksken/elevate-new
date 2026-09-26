@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/library',[LibraryController::class,'index'])->name('library.index');
 Route::get('/library/{resource}',[LibraryController::class,'show'])->name('library.show');
+Route::get('/library/{resource}/cover',[LibraryController::class,'cover'])->name('library.cover');
+Route::get('/library/{resource}/download',[LibraryController::class,'download'])->name('library.download');
 
 Route::middleware(['auth','verified'])->group(function () {
     Route::get('/career/resumes',[ResumeController::class,'index'])->name('career.resume.index');
@@ -65,14 +67,14 @@ Route::middleware(['auth','verified'])->group(function () {
 
     Route::post('/employer/applications/{application}/interviews',[InterviewController::class,'store'])->name('employer.interviews.store');
     Route::post('/employer/applications/{application}/offers',[OfferController::class,'store'])->name('employer.offers.store');
-
-    Route::get('/library/{resource}/download',[LibraryController::class,'download'])->name('library.download');
     Route::post('/library/{resource}/bookmark',[LibraryController::class,'bookmark'])->name('library.bookmark');
 });
 
 Route::prefix('admin/library')->name('admin.library.')->middleware(['auth','staff','permission:library.manage'])->group(function () {
     Route::get('/',[LibraryResourceController::class,'index'])->name('index');
     Route::post('/',[LibraryResourceController::class,'store'])->name('store');
+    Route::put('/{resource}',[LibraryResourceController::class,'update'])->name('update');
+    Route::delete('/{resource}',[LibraryResourceController::class,'destroy'])->name('destroy');
 });
 
 Route::prefix('admin/career-ai')->name('admin.career-ai.')->middleware(['auth','staff'])->group(function () {

@@ -1,0 +1,162 @@
+
+/* ============================================================
+   ElevateHer360 Admin Header + Sidebar Alignment Fix
+   ============================================================ */
+
+:root{
+    --eh-sidebar-width:260px;
+    --eh-admin-topbar-height:64px;
+}
+
+/* Sidebar brand: logo on LEFT, text on RIGHT */
+.eh-admin-sidebar__brand{
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:12px!important;
+    min-height:72px!important;
+    padding:12px 14px!important;
+    box-sizing:border-box!important;
+}
+
+.eh-admin-sidebar__logo{
+    position:static!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:44px!important;
+    height:44px!important;
+    min-width:44px!important;
+    flex:0 0 44px!important;
+    margin:0!important;
+}
+
+.eh-admin-sidebar__brand-copy{
+    display:flex!important;
+    flex:1 1 auto!important;
+    min-width:0!important;
+    flex-direction:column!important;
+    align-items:flex-start!important;
+    justify-content:center!important;
+    text-align:left!important;
+    margin:0!important;
+}
+
+.eh-admin-sidebar__brand-copy strong,
+.eh-admin-sidebar__brand-copy small{
+    display:block!important;
+    width:100%!important;
+    text-align:left!important;
+}
+
+/* Sidebar navigation icons left of labels */
+.eh-admin-sidebar__links a{
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:10px!important;
+    text-align:left!important;
+}
+
+.eh-admin-sidebar__links a > i,
+.eh-admin-sidebar__links a > svg{
+    position:static!important;
+    order:0!important;
+    width:18px!important;
+    min-width:18px!important;
+    flex:0 0 18px!important;
+    margin:0!important;
+    text-align:center!important;
+}
+
+.eh-admin-sidebar__links a > span{
+    order:1!important;
+    flex:1 1 auto!important;
+    min-width:0!important;
+    text-align:left!important;
+}
+
+/* Topbar connects directly to sidebar and stays at very top */
+[data-admin-topbar="true"],
+.eh-admin-topbar{
+    position:fixed!important;
+    top:0!important;
+    left:var(--eh-sidebar-width)!important;
+    right:0!important;
+    z-index:1050!important;
+    width:auto!important;
+    max-width:none!important;
+    min-height:var(--eh-admin-topbar-height)!important;
+    margin:0!important;
+    padding:0 16px!important;
+    box-sizing:border-box!important;
+    border-radius:0!important;
+}
+
+/* Remove page shell top whitespace and place body just under fixed topbar */
+[data-eh-admin-main-shell="true"]{
+    padding-top:var(--eh-admin-topbar-height)!important;
+}
+
+[data-eh-admin-content="true"]{
+    padding-top:20px!important;
+}
+
+/* Remove any parent spacing above the topbar */
+body.eh-admin-layout-fixed,
+body.eh-admin-layout-fixed .admin-layout,
+body.eh-admin-layout-fixed .admin-shell,
+body.eh-admin-layout-fixed .admin-wrapper,
+body.eh-admin-layout-fixed .page-wrapper{
+    padding-top:0!important;
+    margin-top:0!important;
+}
+
+/* Search bar: remove helper/hint element next to/under the search input */
+[data-admin-topbar="true"] .form-hint,
+[data-admin-topbar="true"] .field-hint,
+[data-admin-topbar="true"] small.form-text,
+[data-admin-topbar="true"] small.text-muted,
+[data-admin-topbar="true"] [data-search-hint],
+.eh-admin-topbar .form-hint,
+.eh-admin-topbar .field-hint,
+.eh-admin-topbar small.form-text,
+.eh-admin-topbar small.text-muted,
+.eh-admin-topbar [data-search-hint]{
+    display:none!important;
+}
+
+/* Keep topbar search compact and aligned */
+[data-admin-topbar="true"] form,
+.eh-admin-topbar form{
+    margin:0!important;
+}
+
+[data-admin-topbar="true"] input[type="search"],
+[data-admin-topbar="true"] input[name="q"],
+.eh-admin-topbar input[type="search"],
+.eh-admin-topbar input[name="q"]{
+    min-height:40px!important;
+}
+
+/* Avoid page content sliding under fixed topbar */
+@media(min-width:901px){
+    [data-eh-admin-main-shell="true"]{
+        margin-left:var(--eh-sidebar-width)!important;
+        width:calc(100% - var(--eh-sidebar-width))!important;
+    }
+}
+
+@media(max-width:900px){
+    [data-admin-topbar="true"],
+    .eh-admin-topbar{
+        left:0!important;
+    }
+
+    [data-eh-admin-main-shell="true"]{
+        margin-left:0!important;
+        width:100%!important;
+    }
+}

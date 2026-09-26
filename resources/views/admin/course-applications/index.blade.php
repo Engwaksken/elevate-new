@@ -1,0 +1,8 @@
+@extends('layouts.admin')
+@section('title','Course Applications | ElevateHer360')
+@section('content')
+<div class="admin-page-header"><div><span class="admin-eyebrow">Course Applications</span><h1>{{$courseCall->title}}</h1><p>{{$courseCall->course?->title}}</p></div><a href="{{route('admin.course-calls.index')}}" class="btn btn-outline">Back</a></div>
+<div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Participant</th><th>Status</th><th>Entry Score</th><th>Submitted</th><th>Review</th></tr></thead><tbody>
+@forelse($applications as $application)<tr><td><strong>{{$application->user?->name}}</strong><small class="admin-cell-hint">{{$application->user?->email}}</small></td><td>{{ucfirst($application->status)}}</td><td>{{$application->assessmentAttempt?->percentage ?? $application->entry_assessment_score ?? '—'}}</td><td>{{$application->submitted_at?->format('d M Y H:i') ?? 'Draft'}}</td><td><form method="POST" action="{{route('admin.course-applications.review',$application)}}">@csrf @method('PUT')<select name="status"><option value="submitted">Submitted</option>@foreach(['shortlisted','approved','waitlisted','rejected'] as $s)<option value="{{$s}}" @selected($application->status===$s)>{{ucfirst($s)}}</option>@endforeach</select><input type="number" name="application_score" min="0" max="100" step=".01" value="{{$application->application_score}}" placeholder="Score"><input name="reviewer_comments" value="{{$application->reviewer_comments}}" placeholder="Reviewer comments"><button class="btn btn-primary btn-sm">Save</button></form></td></tr>@empty<tr><td colspan="5">No applications found.</td></tr>@endforelse
+</tbody></table></div>{{$applications->links()}}</div>
+@endsection

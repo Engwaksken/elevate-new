@@ -15,13 +15,37 @@ class Course extends Model
     ];
 
     protected $casts = [
-        'start_date'=>'date','end_date'=>'date','pass_mark'=>'decimal:2',
-        'self_enrolment_enabled'=>'boolean'
+        'start_date'=>'date',
+        'end_date'=>'date',
+        'pass_mark'=>'decimal:2',
+        'self_enrolment_enabled'=>'boolean',
     ];
 
-    public function modules(){ return $this->hasMany(CourseModule::class)->orderBy('position'); }
-    public function instructors(){ return $this->belongsToMany(User::class,'course_instructors')->withPivot('is_lead')->withTimestamps(); }
-    public function cohorts(){ return $this->belongsToMany(Cohort::class)->withTimestamps(); }
-    public function enrolments(){ return $this->hasMany(Enrolment::class); }
-    public function assessments(){ return $this->hasMany(Assessment::class); }
+    public function modules()
+    {
+        return $this->hasMany(CourseModule::class)->orderBy('position');
+    }
+
+    public function instructors()
+    {
+        return $this->belongsToMany(User::class,'course_instructors','course_id','user_id')
+            ->withPivot('is_lead')
+            ->withTimestamps();
+    }
+
+    public function cohorts()
+    {
+        return $this->belongsToMany(Cohort::class,'course_cohort','course_id','cohort_id')
+            ->withTimestamps();
+    }
+
+    public function enrolments()
+    {
+        return $this->hasMany(Enrolment::class);
+    }
+
+    public function assessments()
+    {
+        return $this->hasMany(Assessment::class);
+    }
 }

@@ -1,0 +1,153 @@
+
+/* =========================================================
+   ElevateHer360 Modal Scroll Fix
+   Keeps long forms usable on desktop, tablet and mobile.
+   ========================================================= */
+
+html.eh-modal-open,
+body.eh-modal-open,
+body.modal-open{
+    overflow:hidden !important;
+}
+
+.eh-modal{
+    position:fixed !important;
+    inset:0 !important;
+    z-index:10000 !important;
+    padding:16px !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    align-items:flex-start !important;
+}
+
+.eh-modal[aria-hidden="false"],
+.eh-modal.is-open,
+.eh-modal.active{
+    display:flex !important;
+}
+
+.eh-modal-dialog{
+    width:min(920px,100%) !important;
+    max-width:calc(100vw - 32px) !important;
+    max-height:calc(100dvh - 32px) !important;
+    margin:auto !important;
+    display:flex !important;
+    flex-direction:column !important;
+    overflow:hidden !important;
+    border-radius:12px;
+}
+
+.eh-modal-dialog.eh-modal-sm{
+    width:min(520px,100%) !important;
+}
+
+.eh-modal-dialog.eh-modal-lg{
+    width:min(1080px,100%) !important;
+}
+
+.eh-modal-dialog > form{
+    min-height:0 !important;
+    flex:1 1 auto !important;
+    display:flex !important;
+    flex-direction:column !important;
+    overflow:hidden !important;
+}
+
+.eh-modal-header{
+    flex:0 0 auto !important;
+    position:relative;
+    z-index:2;
+}
+
+.eh-modal-body{
+    min-height:0 !important;
+    flex:1 1 auto !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:24px !important;
+    scrollbar-gutter:stable;
+}
+
+.eh-modal-body > form{
+    min-height:0;
+}
+
+.eh-modal-footer{
+    flex:0 0 auto !important;
+    position:sticky !important;
+    bottom:0 !important;
+    z-index:3 !important;
+    background:#fff !important;
+    border-top:1px solid #e4e7ec !important;
+    box-shadow:0 -4px 12px rgba(16,24,40,.05);
+}
+
+.eh-modal-body .modal-grid,
+.eh-modal-body .form-grid{
+    min-width:0;
+}
+
+.eh-modal-body textarea{
+    min-height:90px;
+    resize:vertical;
+}
+
+/* Generic/fetched admin form modal compatibility */
+.admin-modal,
+.modal-overlay,
+[data-admin-modal]{
+    overflow-y:auto !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+}
+
+.admin-modal .modal-dialog,
+.modal-overlay .modal-dialog,
+[data-admin-modal] .modal-dialog{
+    max-height:calc(100dvh - 32px) !important;
+    overflow:hidden !important;
+    display:flex !important;
+    flex-direction:column !important;
+}
+
+.admin-modal .modal-body,
+.modal-overlay .modal-body,
+[data-admin-modal] .modal-body{
+    min-height:0 !important;
+    overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch;
+}
+
+@media(max-width:700px){
+    .eh-modal{
+        padding:6px !important;
+    }
+
+    .eh-modal-dialog,
+    .eh-modal-dialog.eh-modal-sm,
+    .eh-modal-dialog.eh-modal-lg{
+        width:100% !important;
+        max-width:100% !important;
+        max-height:calc(100dvh - 12px) !important;
+        margin:auto 0 !important;
+        border-radius:10px !important;
+    }
+
+    .eh-modal-body{
+        padding-bottom:28px !important;
+    }
+
+    .eh-modal-footer{
+        gap:8px;
+        flex-wrap:wrap;
+    }
+
+    .eh-modal-footer .btn,
+    .eh-modal-footer button{
+        min-height:40px;
+    }
+}

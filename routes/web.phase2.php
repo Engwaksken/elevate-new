@@ -12,9 +12,14 @@ use App\Http\Controllers\Participant\NotificationController;
 use App\Http\Controllers\Participant\ProfileController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Support\ChatbotController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\PasswordResetController;
 
+
+Route::post('/support/chatbot',[ChatbotController::class,'message'])
+    ->middleware('throttle:30,1')
+    ->name('support.chatbot.message');
 // Participant authentication
 Route::middleware('guest')->group(function () {
     Route::get('/register', [ParticipantAuthController::class, 'create'])->name('register');

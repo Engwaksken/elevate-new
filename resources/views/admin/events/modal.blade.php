@@ -1,0 +1,18 @@
+<div class="eh-modal" id="{{ $id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-lg">
+<div class="eh-modal-header"><div><h2>{{ $title }}</h2><p>Complete the event details.</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+<form method="POST" action="{{ $action }}">@csrf @if($method==='PUT') @method('PUT') @endif
+<div class="eh-modal-body"><div class="modal-grid">
+<div class="form-group full"><label>Event Title *</label><input name="title" value="{{ $event->title }}" required placeholder="e.g. Digital Skills Career Fair"><small class="form-hint">Required. Use a clear participant-facing event name.</small></div>
+<div class="form-group"><label>Event Type *</label><select name="event_type">@foreach(['training','workshop','webinar','meeting','mentorship','career_fair','community','other'] as $type)<option value="{{ $type }}" @selected(($event->event_type ?: 'training')===$type)>{{ ucwords(str_replace('_',' ',$type)) }}</option>@endforeach</select></div>
+<div class="form-group"><label>Delivery Mode *</label><select name="delivery_mode">@foreach(['physical','online','hybrid'] as $mode)<option value="{{ $mode }}" @selected(($event->delivery_mode ?: 'physical')===$mode)>{{ ucfirst($mode) }}</option>@endforeach</select></div>
+<div class="form-group"><label>Starts At *</label><input type="datetime-local" name="starts_at" value="{{ $event->starts_at?->format('Y-m-d\TH:i') }}" required></div>
+<div class="form-group"><label>Ends At</label><input type="datetime-local" name="ends_at" value="{{ $event->ends_at?->format('Y-m-d\TH:i') }}"></div>
+<div class="form-group"><label>Venue</label><input name="venue" value="{{ $event->venue }}" placeholder="e.g. WITU Innovation Hub"></div>
+<div class="form-group"><label>District</label><input name="district" value="{{ $event->district }}" placeholder="e.g. Kampala"></div>
+<div class="form-group"><label>Meeting URL</label><input type="url" name="meeting_url" value="{{ $event->meeting_url }}" placeholder="https://..."></div>
+<div class="form-group"><label>Capacity</label><input type="number" min="1" name="capacity" value="{{ $event->capacity }}" placeholder="e.g. 100"></div>
+<div class="form-group"><label>Cohort</label><select name="cohort_id"><option value="">All / None</option>@foreach($cohorts as $cohort)<option value="{{ $cohort->id }}" @selected((string)$event->cohort_id===(string)$cohort->id)>{{ $cohort->name }}</option>@endforeach</select></div>
+<div class="form-group"><label>Course</label><select name="course_id"><option value="">None</option>@foreach($courses as $course)<option value="{{ $course->id }}" @selected((string)$event->course_id===(string)$course->id)>{{ $course->title }}</option>@endforeach</select></div>
+<div class="form-group full"><label>Description</label><textarea name="description" rows="5" placeholder="Describe the event purpose, target audience and expected outcomes...">{{ $event->description }}</textarea></div>
+<div class="form-group full"><div class="eh-choice-grid"><label class="eh-choice-card"><input type="checkbox" name="registration_required" value="1" @checked($event->exists ? $event->registration_required : true)><span class="eh-choice-card__text">Registration required</span></label><label class="eh-choice-card"><input type="checkbox" name="is_published" value="1" @checked($event->is_published)><span class="eh-choice-card__text">Publish event</span></label></div></div>
+</div></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">{{ $method==='POST' ? 'Create Event':'Save Changes' }}</button></div></form></div></div>

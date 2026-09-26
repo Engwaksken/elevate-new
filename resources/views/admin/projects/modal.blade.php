@@ -1,0 +1,13 @@
+<div class="eh-modal" id="{{ $id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-lg">
+<div class="eh-modal-header"><div><h2>{{ $title }}</h2><p>Complete the project details below.</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+<form method="POST" action="{{ $action }}">@csrf @if($method==='PUT') @method('PUT') @endif
+<div class="eh-modal-body"><div class="modal-grid">
+<div class="form-group full"><label>Name *</label><input name="name" value="{{ $project->name }}" placeholder="e.g. Digital Skills for Young Women" required><small class="form-hint">Required. Use the official project name.</small></div>
+<div class="form-group"><label>Programme</label><select name="programme_id"><option value="">None</option>@foreach($programmes as $p)<option value="{{ $p->id }}" @selected((string)$project->programme_id===(string)$p->id)>{{ $p->name }}</option>@endforeach</select><small class="form-hint">Optional. Link this project to its parent programme.</small></div>
+<div class="form-group"><label>Code</label><input name="code" value="{{ $project->code }}" placeholder="e.g. DSYW-2026"><small class="form-hint">Optional. Enter a unique short project code.</small></div>
+<div class="form-group"><label>Status *</label><select name="status">@foreach(['draft','active','completed','on_hold','cancelled'] as $s)<option value="{{ $s }}" @selected(($project->status ?: 'draft')===$s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select><small class="form-hint">Required. Select the current project status.</small></div>
+<div class="form-group"><label>Start Date</label><input type="date" name="start_date" value="{{ optional($project->start_date)->format('Y-m-d') }}"><small class="form-hint">Optional. Choose the planned or actual start date.</small></div>
+<div class="form-group"><label>End Date</label><input type="date" name="end_date" value="{{ optional($project->end_date)->format('Y-m-d') }}"><small class="form-hint">Optional. Must be on or after the start date.</small></div>
+<div class="form-group full"><label>Description</label><textarea name="description" rows="5" placeholder="Describe the project scope, beneficiaries and expected results...">{{ $project->description }}</textarea><small class="form-hint">Optional. Summarise the project purpose and scope.</small></div>
+</div></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">{{ $method==='POST' ? 'Create Project' : 'Save Changes' }}</button></div>
+</form></div></div>

@@ -27,7 +27,10 @@ Route::prefix('admin')
             ->middleware('permission:settings.manage')->name('migrations.show');
 
         Route::prefix('elearning')->name('elearning.')->group(function () {
-            Route::resource('courses',CourseController::class)->except(['show','destroy'])
+            Route::delete('/courses/bulk-delete',[CourseController::class,'bulkDestroy'])
+            ->middleware('permission:courses.delete')->name('courses.bulk-destroy');
+
+        Route::resource('courses',CourseController::class)->except(['show'])
                 ->middleware('permission:courses.edit');
 
             Route::post('/courses/{course}/modules',[CourseModuleController::class,'store'])

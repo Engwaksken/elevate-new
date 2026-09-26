@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>@yield('title','ElevateHer360 Administration')</title>
+@vite(['resources/css/app.css','resources/js/app.js']) @stack('head')
+</head>
+<body class="admin-app-body">
+<div class="admin-shell">
+@include('partials.admin-sidebar')
+<div class="admin-overlay" data-admin-overlay></div>
+<div class="admin-main">
+<header class="admin-mobile-header">
+<button type="button" data-admin-sidebar-toggle aria-label="Open navigation"><i class="fas fa-bars"></i></button>
+<a href="{{ route('admin.dashboard') }}"><span>E360</span><strong>Administration</strong></a>
+<i class="fas fa-user-shield"></i>
+</header>
+<main class="admin-content">
+@if(session('success'))<div class="flash-message form-alert form-alert-success" data-auto-dismiss>{{ session('success') }}</div>@endif
+@if(session('error'))<div class="flash-message form-alert form-alert-error" data-auto-dismiss>{{ session('error') }}</div>@endif
+@if($errors->any())<div class="flash-message form-alert form-alert-error" data-auto-dismiss>{{ $errors->first() }}</div>@endif
+@include('partials.admin-topbar')
+        @yield('content')
+</main>
+</div></div>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ const shell=document.querySelector('.admin-shell');
+ document.querySelectorAll('[data-admin-sidebar-toggle]').forEach(b=>b.addEventListener('click',()=>shell?.classList.toggle('admin-sidebar-open')));
+ document.querySelector('[data-admin-overlay]')?.addEventListener('click',()=>shell?.classList.remove('admin-sidebar-open'));
+ document.querySelectorAll('[data-auto-dismiss]').forEach(m=>setTimeout(()=>{m.classList.add('is-fading');setTimeout(()=>m.remove(),450)},5000));
+});
+</script>
+@include('partials.global-assistive-tools')
+@stack('scripts')
+
+
+
+
+@include('partials.admin-sidebar-overview-links')
+</body></html>

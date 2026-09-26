@@ -1,19 +1,31 @@
 @extends('layouts.admin')
+@section('title','Staff Exits | ElevateHer360 Administration')
 @section('content')
-<div class="card"><h1>Staff Exit & Clearance</h1>
-<form method="POST" action="{{ route('admin.hr.exits.store') }}">@csrf
-<label>Employee</label><select name="employee_id">@foreach($employees as $employee)<option value="{{ $employee->id }}">{{ $employee->user->name }}</option>@endforeach</select>
-<label>Exit Type</label><select name="exit_type"><option value="resignation">Resignation</option><option value="end_of_contract">End of Contract</option><option value="termination">Termination</option><option value="retirement">Retirement</option><option value="new_organisation">New Organisation</option><option value="other">Other</option></select>
-<label>Notice Date</label><input type="date" name="notice_date">
-<label>Last Working Date</label><input type="date" name="last_working_date" required>
-<label>Reason</label><textarea name="reason"></textarea>
-<label>Destination Organisation</label><input name="destination_organisation">
-<label>New Role</label><input name="new_role">
-<button>Start Exit</button>
-</form></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Human Resources</span><h1>Staff Exits</h1><p>Manage staff exits, handover, clearance and account deactivation.</p></div><div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createExitModal"><i class="fas fa-person-walking-arrow-right"></i> Start Exit</button></div></div>
+<div class="admin-stats-grid compact">@foreach([['total','Total Exits','fa-door-open'],['initiated','Initiated','fa-clock'],['exiting','Employees Exiting','fa-person-walking-arrow-right'],['completed','Completed','fa-circle-check']] as [$key,$label,$icon])<div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span><div><small>{{ $label }}</small><strong>{{ number_format($stats[$key] ?? 0) }}</strong></div></div>@endforeach</div>
+
+<div class="admin-panel">
+<form method="GET" class="admin-toolbar"><select name="status"><option value="">All statuses</option>@foreach(['initiated','in_progress','completed'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select><select name="per_page">@foreach([10,25,50,100] as $n)<option value="{{ $n }}" @selected((int)request('per_page',25)===$n)>{{ $n }}/page</option>@endforeach</select><button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.hr.exits.index') }}" class="btn btn-outline btn-sm">Reset</a></form>
+<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Employee</th><th>Exit Type</th><th>Last Working Day</th><th>Clearance</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@forelse($exits as $exit)
+<tr><td><strong>{{ data_get($exit,'employee.user.name','—') }}</strong></td><td>{{ ucfirst(str_replace('_',' ',$exit->exit_type)) }}</td><td>{{ optional($exit->last_working_date)->format('d M Y') ?: '—' }}</td><td>{{ data_get($exit,'clearances',collect())->where('status','cleared')->count() }}/{{ data_get($exit,'clearances',collect())->count() }}</td><td><span class="status-chip {{ $exit->status }}">{{ ucfirst(str_replace('_',' ',$exit->status)) }}</span></td><td class="table-actions"><div class="action-group">
+@if($exit->status!=='completed')<button type="button" class="btn-icon" data-modal-open="clearance{{ $exit->id }}" title="Clear item"><i class="fas fa-list-check"></i></button><button type="button" class="btn-icon" data-modal-open="complete{{ $exit->id }}" title="Complete exit"><i class="fas fa-check"></i></button>@endif
+</div></td></tr>
+@empty<tr><td colspan="6"><div class="admin-empty">No staff exit records found.</div></td></tr>@endforelse
+</tbody></table></div><div class="admin-pagination">{{ $exits->links() }}</div></div>
+
+<div class="eh-modal" id="createExitModal" aria-hidden="true"><div class="eh-modal-dialog eh-modal-lg"><div class="eh-modal-header"><div><h2>Start Staff Exit</h2><p>Initiate handover and clearance for an employee.</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div><form method="POST" action="{{ route('admin.hr.exits.store') }}">@csrf<div class="eh-modal-body"><div class="modal-grid">
+<div class="form-group"><label>Employee *</label><select name="employee_id" required><option value="">Select employee</option>@foreach($employees as $e)<option value="{{ $e->id }}">{{ data_get($e,'user.name','Employee') }}</option>@endforeach</select></div><div class="form-group"><label>Exit Type *</label><select name="exit_type">@foreach(['resignation','end_of_contract','termination','retirement','transfer','new_organisation','other'] as $x)<option value="{{ $x }}">{{ ucfirst(str_replace('_',' ',$x)) }}</option>@endforeach</select></div>
+<div class="form-group"><label>Notice Date</label><input type="date" name="notice_date"></div><div class="form-group"><label>Last Working Date *</label><input type="date" name="last_working_date" required></div><div class="form-group"><label>Handover To</label><select name="handover_user_id"><option value="">None</option>@foreach($users as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach</select></div><div class="form-group"><label>Destination Organisation</label><input name="destination_organisation"></div><div class="form-group"><label>New Role</label><input name="new_role"></div><div class="form-group"><label>Destination Sector</label><input name="destination_sector"></div><div class="form-group full"><label>Reason</label><textarea name="reason"></textarea></div>
+</div></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Start Exit</button></div></form></div></div>
 
 @foreach($exits as $exit)
-<div class="card"><strong>{{ $exit->employee->user->name }}</strong><br>{{ $exit->exit_type }} · {{ $exit->last_working_date->format('d M Y') }} · {{ $exit->status }}</div>
+@if($exit->status!=='completed')
+<div class="eh-modal" id="clearance{{ $exit->id }}" aria-hidden="true"><div class="eh-modal-dialog"><div class="eh-modal-header"><div><h2>Complete Clearance</h2><p>{{ data_get($exit,'employee.user.name','Employee') }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div><form method="POST" action="{{ route('admin.hr.exits.clear',$exit) }}">@csrf<div class="eh-modal-body"><div class="modal-grid">
+<div class="form-group full"><label>Outstanding Clearance Item *</label><select name="clearance_id" required><option value="">Select item</option>@foreach(data_get($exit,'clearances',collect())->where('status','!=','cleared') as $c)<option value="{{ $c->id }}">{{ $c->item_name ?? $c->clearance_type ?? ('Clearance #'.$c->id) }}</option>@endforeach</select></div><div class="form-group full"><label>Remarks</label><textarea name="remarks"></textarea></div>
+</div></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Mark Cleared</button></div></form></div></div>
+
+<div class="eh-modal" id="complete{{ $exit->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-sm"><div class="eh-modal-header"><div><h2>Complete Staff Exit?</h2><p>{{ data_get($exit,'employee.user.name','Employee') }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div><div class="eh-modal-body"><p>This completes the exit, marks the employee as exited and deactivates the user account. All required clearance items must already be complete.</p></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><form method="POST" action="{{ route('admin.hr.exits.complete',$exit) }}">@csrf<button class="btn btn-danger">Complete Exit</button></form></div></div></div>
+@endif
 @endforeach
-{{ $exits->links() }}
 @endsection

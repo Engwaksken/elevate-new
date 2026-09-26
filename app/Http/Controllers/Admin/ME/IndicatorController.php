@@ -1,19 +1,61 @@
 <?php
+
 namespace App\Http\Controllers\Admin\ME;
 
 use App\Http\Controllers\Controller;
 use App\Models\Indicator;
-use App\Models\IndicatorTarget;
 use App\Models\IndicatorResult;
+use App\Models\Programme;
+use App\Models\Project;
+use App\Models\User;
 use App\Services\IndicatorCalculationService;
 use Illuminate\Http\Request;
 
 class IndicatorController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = Indicator::with([
+                'targets' => fn ($q) => $q->latest(),
+                'results' => fn ($q) => $q->latest(),
+            ])
+            ->withCount(['targets','results'])
+            ->latest();
+
+        if ($search = trim((string)$request->get('search'))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name','like',"%{$search}%")
+                    ->orWhere('code','like',"%{$search}%")
+                    ->orWhere('definition','like',"%{$search}%");
+            });
+        }
+
+        if ($status = $request->get('status')) {
+            $query->where('status',$status);
+        }
+
+        if ($level = $request->get('result_level')) {
+            $query->where('result_level',$level);
+        }
+
+        if ($type = $request->get('indicator_type')) {
+            $query->where('indicator_type',$type);
+        }
+
+        $perPage = in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
+            ? (int)$request->get('per_page') : 20;
+
         return view('admin.indicators.index',[
-            'indicators'=>Indicator::withCount(['targets','results'])->latest()->paginate(20)
+            'indicators'=>$query->paginate($perPage)->withQueryString(),
+            'programmes'=>Programme::orderBy('name')->get(),
+            'projects'=>Project::orderBy('name')->get(),
+            'users'=>User::where('user_type','staff')->orderBy('name')->get(),
+            'stats'=>[
+                'total'=>Indicator::count(),
+                'active'=>Indicator::where('status','active')->count(),
+                'pending'=>IndicatorResult::where('verification_status','submitted')->count(),
+                'verified'=>IndicatorResult::where('verification_status','verified')->count(),
+            ],
         ]);
     }
 
@@ -40,6 +82,7 @@ class IndicatorController extends Controller
         ]);
 
         Indicator::create($data);
+
         return back()->with('success','Indicator created.');
     }
 
@@ -53,13 +96,19 @@ class IndicatorController extends Controller
             'target_numeric'=>['nullable','numeric'],
             'target_text'=>['nullable','string'],
         ]));
+
         return back()->with('success','Indicator target added.');
     }
 
     public function calculate(Indicator $indicator, IndicatorCalculationService $service)
     {
         $value=$service->calculate($indicator);
-        abort_if($value===null,422,'This indicator has no automatic calculation configured.');
+
+        abort_if(
+            $value===null,
+            422,
+            'This indicator has no automatic calculation configured.'
+        );
 
         IndicatorResult::create([
             'indicator_id'=>$indicator->id,
@@ -80,6 +129,7 @@ class IndicatorController extends Controller
             'verified_by'=>auth()->id(),
             'verified_at'=>now(),
         ]);
+
         return back()->with('success','Indicator result verified.');
     }
 }

@@ -1,0 +1,14 @@
+
+.assessment-question-list,.assessment-options{display:flex;flex-direction:column;gap:10px}
+.assessment-question-card,.grading-card{border:1px solid #e4e7ec;border-left:4px solid #800000;border-radius:10px;padding:12px;background:#fff}
+.assessment-question-head,.grading-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.assessment-question-head>div{display:flex;flex-direction:column;gap:3px}
+.assessment-question-head small,.assessment-answer,.grading-head span{color:#667085}
+.assessment-options{margin-top:10px}
+.assessment-options div{display:flex;gap:8px;padding:6px 8px;border-radius:6px;background:#f9fafb}
+.assessment-options span{font-weight:700;color:#800000}
+.assessment-answer{display:block;margin-top:8px}
+.grading-card{margin-bottom:12px}
+.grading-answer{margin:10px 0;padding:10px;border-radius:8px;background:#f9fafb}
+.grading-answer small{display:block;margin-bottom:4px;color:#667085;font-weight:700}
+@media(max-width:700px){.assessment-question-head,.grading-head{flex-direction:column}}

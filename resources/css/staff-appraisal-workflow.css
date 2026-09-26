@@ -1,0 +1,35 @@
+/* ElevateHer360 staff appraisal workflow */
+.appraisal-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.appraisal-card-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.appraisal-card{display:flex;flex-direction:column;gap:13px;padding:15px;border:1px solid #e4e7ec;border-left:4px solid #800000;border-radius:12px;background:#fff}
+.appraisal-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.appraisal-card-head small{color:#667085}.appraisal-card-head h2{margin:3px 0 0;font-size:1rem}
+.appraisal-progress-block{display:flex;flex-direction:column;gap:5px}
+.progress-label{display:flex;justify-content:space-between;gap:8px;font-size:.76rem;color:#667085}
+.progress-track{height:8px;border-radius:999px;background:#eef0f3;overflow:hidden}
+.progress-track span,.progress-track i{display:block;height:100%;border-radius:inherit;background:#800000}
+.progress-track.performance span,.progress-track.performance i{background:#D4AF37}
+.appraisal-card-meta{display:flex;flex-direction:column;gap:6px;font-size:.76rem;color:#667085}
+.appraisal-card-meta i{width:18px;color:#800000}
+.appraisal-card-actions,.appraisal-top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.appraisal-overview-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.appraisal-metric-card{display:flex;flex-direction:column;gap:5px;padding:13px;border:1px solid #e4e7ec;border-left:4px solid #800000;border-radius:10px;background:#fff}
+.appraisal-metric-card.performance{border-left-color:#D4AF37}.appraisal-metric-card small{color:#667085}.appraisal-metric-card strong{font-size:1.3rem}
+.appraisal-identity{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.appraisal-identity>div{display:flex;flex-direction:column;gap:3px}.appraisal-identity small{color:#667085}
+.appraisal-form-shell{display:flex;flex-direction:column;gap:12px}
+.appraisal-kra-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:13px 15px;border-radius:10px;background:#800000;color:#fff}
+.appraisal-kra-header span{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;opacity:.8}.appraisal-kra-header h2{margin:3px 0 0;font-size:1rem}
+.appraisal-item-card{padding:14px;border:1px solid #e4e7ec;border-radius:11px;background:#fff}
+.appraisal-item-title{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px}.appraisal-item-title small{color:#667085}.appraisal-item-title h3{margin:3px 0 0;font-size:.92rem}
+.weight-pill{padding:4px 8px;border-radius:999px;background:#fff8dc;color:#6f5700;font-size:.72rem;font-weight:800}
+.appraisal-rating-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.appraisal-rating-grid .full{grid-column:1/-1}
+.readonly-value{min-height:40px;padding:9px 10px;border:1px solid #e4e7ec;border-radius:8px;background:#f9fafb}.readonly-value.long{min-height:64px;white-space:pre-wrap}
+.appraisal-evidence{display:grid;gap:7px;padding:10px;border-radius:8px;background:#fbfbfc}
+.okr-progress-table-wrap{overflow-x:auto;margin-bottom:12px}.okr-progress-table{width:100%;min-width:700px;border-collapse:collapse}.okr-progress-table th,.okr-progress-table td{padding:7px;border:1px solid #e4e7ec}.okr-progress-table th{background:#f9fafb;text-align:left}
+.appraisal-summary-section{padding:14px;border:1px solid #e4e7ec;border-left:4px solid #D4AF37;border-radius:11px;background:#fff}.appraisal-summary-section h2{margin-top:0}
+.appraisal-sticky-actions,.appraisal-submit-form{display:flex;align-items:center;gap:10px;justify-content:flex-end;margin-top:12px}.appraisal-submit-form small{color:#667085;max-width:420px}
+.appraisal-acknowledgement{margin-top:16px;padding:15px;border:1px solid #e4e7ec;border-left:4px solid #800000;border-radius:10px;background:#fff}
+.appraisal-filter-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.table-progress{min-width:120px}.table-progress>span{font-size:.72rem;color:#667085}
+@media(max-width:1100px){.appraisal-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.appraisal-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.appraisal-stats,.appraisal-card-grid,.appraisal-overview-grid,.appraisal-identity,.appraisal-rating-grid{grid-template-columns:1fr}.appraisal-rating-grid .full{grid-column:1}.appraisal-submit-form,.appraisal-sticky-actions{align-items:stretch;flex-direction:column}.appraisal-submit-form .btn,.appraisal-sticky-actions .btn{width:100%}}

@@ -1,0 +1,106 @@
+
+/* Admin appraisal KRA tabs */
+.appraisal-admin-kra-tabs{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    margin:0 0 14px;
+    padding:3px 0 6px;
+    overflow-x:auto;
+}
+
+.appraisal-admin-kra-tab{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-height:40px;
+    flex:0 0 auto;
+    padding:8px 12px;
+    border:1px solid #d0d5dd;
+    border-radius:9px;
+    background:#fff;
+    color:#344054;
+    font-size:.76rem;
+    font-weight:800;
+    white-space:nowrap;
+}
+
+.appraisal-admin-kra-tab i{
+    color:#800000;
+}
+
+.appraisal-admin-kra-tab small{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:25px;
+    min-height:20px;
+    padding:2px 6px;
+    border-radius:999px;
+    background:#f2f4f7;
+    color:#667085;
+    font-size:.62rem;
+}
+
+.appraisal-admin-kra-tab.active{
+    border-color:#800000;
+    background:#800000;
+    color:#fff;
+}
+
+.appraisal-admin-kra-tab.active i{
+    color:#D4AF37;
+}
+
+.appraisal-admin-kra-tab.active small{
+    background:#D4AF37;
+    color:#4f3b00;
+}
+
+.appraisal-admin-kra-panel{
+    display:none;
+}
+
+.appraisal-admin-kra-panel.active{
+    display:block;
+}
+
+.appraisal-admin-tab-actions{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.appraisal-admin-weekly{
+    margin:12px 0;
+}
+
+.appraisal-admin-weekly__title{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:8px;
+    color:#475467;
+    font-size:.72rem;
+}
+
+/* Placeholder-only preference: auto-generated Optional helper text is not displayed. */
+.form-hint[data-form-help-generated],
+.field-hint[data-form-help-generated],
+[data-form-help-generated]{
+    display:none!important;
+}
+
+@media(max-width:760px){
+    .appraisal-admin-tab-actions{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .appraisal-admin-tab-actions .btn{
+        width:100%;
+    }
+}

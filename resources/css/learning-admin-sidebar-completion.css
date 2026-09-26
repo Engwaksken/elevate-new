@@ -1,0 +1,7 @@
+
+.assignment-section{margin-bottom:18px}.assignment-section h2{margin:0 0 10px;font-size:1rem}
+.eh-sidebar-extension{margin:10px 10px 16px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14)}
+.eh-sidebar-extension-title{padding:7px 10px 5px;color:rgba(255,255,255,.62);font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.eh-sidebar-extension-link{display:flex;align-items:center;gap:10px;padding:9px 10px;margin:2px 0;border-radius:8px;color:rgba(255,255,255,.9);text-decoration:none;font-size:.82rem}
+.eh-sidebar-extension-link i{width:18px;text-align:center;color:#D4AF37}
+.eh-sidebar-extension-link:hover,.eh-sidebar-extension-link.active{background:rgba(255,255,255,.12);color:#fff}

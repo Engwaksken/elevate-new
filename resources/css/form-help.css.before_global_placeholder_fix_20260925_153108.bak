@@ -1,0 +1,9 @@
+
+/*
+ * ElevateHer360 placeholder-only form guidance.
+ * Generic Optional helper sentences are removed by form-help.js.
+ * Validation/error messages are intentionally not hidden.
+ */
+[data-form-help-generated]{
+    display:none!important;
+}
