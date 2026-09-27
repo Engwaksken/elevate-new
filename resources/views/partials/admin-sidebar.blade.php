@@ -63,6 +63,7 @@
             'label' => 'Programme Delivery',
             'colour' => 'delivery',
             'items' => [
+                ['route' => 'instructor.dashboard', 'label' => 'My Courses', 'icon' => 'fa-chalkboard-user', 'permissions' => null, 'roles' => ['instructor','trainer']],
                 ['route' => 'admin.elearning.courses.index', 'label' => 'Courses', 'icon' => 'fa-graduation-cap', 'permissions' => ['courses.edit']],
                 ['route' => 'admin.course-calls.index', 'label' => 'Course Calls', 'icon' => 'fa-bullhorn', 'permissions' => ['courses.view', 'courses.edit'], 'roles' => ['communications','communication','communications-officer','administrator','super-administrator','super-admin']],
                 ['route' => 'admin.mentorship.index', 'label' => 'Mentorship', 'icon' => 'fa-handshake-angle', 'permissions' => ['mentors.view', 'mentors.manage', 'mentorship.match']],
