@@ -1,13 +1,191 @@
 @extends('layouts.app')
+@section('title','Mentorship Goals - ElevateHer360')
+
 @section('content')
-<div class="card"><h1>Mentorship Goals</h1>
-<form method="POST" action="{{ route('mentorship.goals.store',$match) }}">@csrf
-<label>Goal title</label><input name="title" required>
-<label>Description</label><textarea name="description"></textarea>
-<label>Target date</label><input type="date" name="target_date">
-<button>Add Goal</button>
-</form></div>
-@foreach($match->goals as $goal)
-<div class="card"><strong>{{ $goal->title }}</strong><br>{{ $goal->progress_percent }}% · {{ $goal->status }}</div>
-@endforeach
+<style>
+.mentorship-form-card{
+    background:#ffffff;
+    border:1px solid #eadede;
+    border-left:4px solid #800000;
+    border-radius:14px;
+    padding:20px;
+    box-shadow:0 6px 18px rgba(0,0,0,.05);
+    margin-bottom:20px;
+}
+
+.mentorship-form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
+}
+
+.mentorship-form-group{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+}
+
+.mentorship-form-group.full{
+    grid-column:1 / -1;
+}
+
+.mentorship-form-group label{
+    color:#344054;
+    font-size:.9rem;
+    font-weight:700;
+}
+
+.mentorship-form-group input,
+.mentorship-form-group textarea,
+.mentorship-form-group select{
+    width:100%;
+    min-height:46px;
+    padding:11px 13px;
+    border:1px solid #d0d5dd;
+    border-radius:10px;
+    background:#fffdf7 !important;
+    color:#101828;
+    font:inherit;
+    outline:none;
+    transition:border-color .2s ease,box-shadow .2s ease,background .2s ease;
+}
+
+.mentorship-form-group textarea{
+    min-height:120px;
+    resize:vertical;
+}
+
+.mentorship-form-group input::placeholder,
+.mentorship-form-group textarea::placeholder{
+    color:#98a2b3 !important;
+    opacity:1 !important;
+}
+
+.mentorship-form-group input:focus,
+.mentorship-form-group textarea:focus,
+.mentorship-form-group select:focus{
+    border-color:#800000;
+    box-shadow:0 0 0 3px rgba(128,0,0,.08);
+    background:#ffffff !important;
+}
+
+.mentorship-goal-list{
+    display:grid;
+    gap:12px;
+}
+
+.mentorship-goal-card{
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-left:4px solid #D4AF37;
+    border-radius:12px;
+    padding:16px;
+}
+
+.mentorship-goal-card h3{
+    margin:0 0 6px;
+    color:#101828;
+}
+
+.mentorship-goal-meta{
+    color:#667085;
+    font-size:.9rem;
+}
+
+.mentorship-form-actions{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:16px;
+}
+
+@media(max-width:700px){
+    .mentorship-form-grid{grid-template-columns:1fr}
+    .mentorship-form-group.full{grid-column:auto}
+}
+</style>
+
+<div class="page-header">
+    <div>
+        <span class="eh-kicker">Mentorship</span>
+        <h1>My Growth Goals</h1>
+        <p>Create and track the goals agreed during your mentorship journey.</p>
+    </div>
+
+    @if(Route::has('mentorship.dashboard'))
+        <a href="{{ route('mentorship.dashboard') }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Back to Mentorship
+        </a>
+    @endif
+</div>
+
+<div class="mentorship-form-card">
+    <h2 style="margin-top:0">Add a Goal</h2>
+
+    <form method="POST" action="{{ route('mentorship.goals.store',$match) }}">
+        @csrf
+
+        <div class="mentorship-form-grid">
+            <div class="mentorship-form-group">
+                <label for="goal_title">Goal title</label>
+                <input
+                    id="goal_title"
+                    name="title"
+                    value="{{ old('title') }}"
+                    placeholder="e.g. Complete my CV and apply for three roles"
+                    required
+                >
+            </div>
+
+            <div class="mentorship-form-group">
+                <label for="target_date">Target date</label>
+                <input
+                    id="target_date"
+                    type="date"
+                    name="target_date"
+                    value="{{ old('target_date') }}"
+                >
+            </div>
+
+            <div class="mentorship-form-group full">
+                <label for="goal_description">Description</label>
+                <textarea
+                    id="goal_description"
+                    name="description"
+                    placeholder="Describe what you want to achieve, why it matters, and what support you may need."
+                >{{ old('description') }}</textarea>
+            </div>
+        </div>
+
+        <div class="mentorship-form-actions">
+            <button class="btn btn-primary" type="submit">
+                <i class="fas fa-plus"></i> Add Goal
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="mentorship-goal-list">
+    @forelse($match->goals as $goal)
+        <div class="mentorship-goal-card">
+            <h3>{{ $goal->title }}</h3>
+            <div class="mentorship-goal-meta">
+                {{ number_format((float)($goal->progress_percent ?? 0),0) }}% complete
+                Â· {{ ucfirst(str_replace('_',' ',$goal->status)) }}
+                @if($goal->target_date)
+                    Â· Target {{ $goal->target_date->format('d M Y') }}
+                @endif
+            </div>
+
+            @if($goal->description)
+                <p>{{ $goal->description }}</p>
+            @endif
+        </div>
+    @empty
+        <div class="eh-empty">
+            <i class="fas fa-bullseye"></i>
+            <h3>No goals yet</h3>
+            <p>Add your first mentorship goal above.</p>
+        </div>
+    @endforelse
+</div>
 @endsection
