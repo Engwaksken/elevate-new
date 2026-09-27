@@ -64,18 +64,18 @@
             'colour' => 'delivery',
             'items' => [
                 ['route' => 'instructor.dashboard', 'label' => 'My Courses', 'icon' => 'fa-chalkboard-user', 'permissions' => null, 'roles' => ['instructor','trainer']],
-                ['route' => 'admin.elearning.courses.index', 'label' => 'Courses', 'icon' => 'fa-graduation-cap', 'permissions' => ['courses.edit']],
+                ['route' => 'admin.elearning.courses.index', 'label' => 'Courses', 'icon' => 'fa-graduation-cap', 'permissions' => ['courses.edit'], 'exclude_roles' => ['instructor','trainer']],
                 ['route' => 'admin.course-calls.index', 'label' => 'Course Calls', 'icon' => 'fa-bullhorn', 'permissions' => ['courses.view', 'courses.edit'], 'roles' => ['communications','communication','communications-officer','administrator','super-administrator','super-admin']],
                 ['route' => 'admin.mentorship.index', 'label' => 'Mentorship', 'icon' => 'fa-handshake-angle', 'permissions' => ['mentors.view', 'mentors.manage', 'mentorship.match']],
                 ['route' => 'admin.jobs.index', 'label' => 'Jobs', 'icon' => 'fa-briefcase', 'permissions' => ['jobs.manage'], 'roles' => ['hr','HR','administrator','super-administrator','super-admin']],
                 ['route' => 'admin.library.index', 'label' => 'Library', 'icon' => 'fa-book-open', 'permissions' => ['library.manage']],
                 ['route' => 'admin.events.index', 'label' => 'Events', 'icon' => 'fa-calendar-days', 'permissions' => ['calendar.manage'], 'roles' => ['communications','communication','communications-officer','administrator','super-administrator','super-admin']],
                 ['route' => 'admin.events.calendar', 'label' => 'Events Calendar', 'icon' => 'fa-calendar', 'permissions' => ['calendar.manage'], 'roles' => ['communications','communication','communications-officer','administrator','super-administrator','super-admin']],
-                ['route' => 'admin.elearning.assignments.index', 'label' => 'Course Assignments', 'icon' => 'fa-user-tie', 'permissions' => ['courses.edit']],
-                ['route' => 'admin.elearning.enrolments.index', 'label' => 'Enrolments', 'icon' => 'fa-user-graduate', 'permissions' => ['students.view', 'students.edit']],
-                ['route' => 'admin.elearning.learning-files.index', 'label' => 'Learning Files', 'icon' => 'fa-folder-open', 'permissions' => ['courses.view', 'courses.edit']],
-                ['route' => 'admin.elearning.certificates.index', 'label' => 'Certificates', 'icon' => 'fa-certificate', 'permissions' => ['courses.view', 'courses.edit']],
-                ['route' => 'admin.elearning.bulk-enrolment.create', 'label' => 'Bulk Enrolment', 'icon' => 'fa-file-import', 'permissions' => ['students.edit']],
+                ['route' => 'admin.elearning.assignments.index', 'label' => 'Course Assignments', 'icon' => 'fa-user-tie', 'permissions' => ['courses.edit'], 'exclude_roles' => ['instructor','trainer']],
+                ['route' => 'admin.elearning.enrolments.index', 'label' => 'Enrolments', 'icon' => 'fa-user-graduate', 'permissions' => ['students.view', 'students.edit'], 'exclude_roles' => ['instructor','trainer']],
+                ['route' => 'admin.elearning.learning-files.index', 'label' => 'Learning Files', 'icon' => 'fa-folder-open', 'permissions' => ['courses.view', 'courses.edit'], 'exclude_roles' => ['instructor','trainer']],
+                ['route' => 'admin.elearning.certificates.index', 'label' => 'Certificates', 'icon' => 'fa-certificate', 'permissions' => ['courses.view', 'courses.edit'], 'exclude_roles' => ['instructor','trainer']],
+                ['route' => 'admin.elearning.bulk-enrolment.create', 'label' => 'Bulk Enrolment', 'icon' => 'fa-file-import', 'permissions' => ['students.edit'], 'exclude_roles' => ['instructor','trainer']]
             ],
         ],
         [
@@ -164,6 +164,7 @@
             @php
                 $visibleItems = collect($group['items'])->filter(
                     fn (array $item): bool => $routeExists($item['route'])
+                        && ! (! empty($item['exclude_roles']) && $sidebarUser->hasAnyRole($item['exclude_roles']))
                         && $canAccess($item['permissions'] ?? null, $item['roles'] ?? [])
                 );
             @endphp

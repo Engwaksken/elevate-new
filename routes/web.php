@@ -1083,3 +1083,16 @@ Route::prefix('admin/elearning/certificates/templates')
         Route::delete('/{template}', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'destroyTemplate'])
             ->name('destroy');
     });
+Route::middleware(['auth','staff','role:instructor,trainer'])
+    ->prefix('instructor/courses')->name('instructor.courses.')
+    ->group(function () {
+        Route::get('/{course}/manage', [\App\Http\Controllers\Instructor\CourseManagementController::class,'show'])->name('manage');
+        Route::post('/{course}/modules', [\App\Http\Controllers\Instructor\CourseManagementController::class,'storeModule'])->name('modules.store');
+        Route::delete('/{course}/modules/{module}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'destroyModule'])->name('modules.destroy');
+        Route::post('/{course}/modules/{module}/lessons', [\App\Http\Controllers\Instructor\CourseManagementController::class,'storeLesson'])->name('lessons.store');
+        Route::delete('/{course}/modules/{module}/lessons/{lesson}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'destroyLesson'])->name('lessons.destroy');
+        Route::post('/{course}/assessments', [\App\Http\Controllers\Instructor\CourseManagementController::class,'storeAssessment'])->name('assessments.store');
+        Route::post('/{course}/assessments/{assessment}/questions', [\App\Http\Controllers\Instructor\CourseManagementController::class,'addQuestion'])->name('assessments.questions.store');
+        Route::delete('/{course}/assessments/{assessment}/questions/{question}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'destroyQuestion'])->name('assessments.questions.destroy');
+        Route::put('/{course}/participants/{enrolment}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'updateParticipant'])->name('participants.update');
+    });
