@@ -1020,3 +1020,12 @@ Route::middleware(['auth','staff'])
             ->middleware('permission:course_calls.view')
             ->name('course-calls.qr');
     });
+
+/* Participant Help & Support */
+Route::middleware(['auth','verified'])->group(function () {
+    Route::get('/participant/help', [\App\Http\Controllers\Participant\HelpController::class, 'index'])->name('participant.help');
+});
+Route::prefix('admin')->name('admin.')->middleware(['auth','staff','permission:settings.manage','role:administrator,super-administrator,super-admin'])->group(function () {
+    Route::get('/support-settings', [\App\Http\Controllers\Admin\SupportSettingsController::class, 'edit'])->name('support-settings.edit');
+    Route::put('/support-settings', [\App\Http\Controllers\Admin\SupportSettingsController::class, 'update'])->name('support-settings.update');
+});

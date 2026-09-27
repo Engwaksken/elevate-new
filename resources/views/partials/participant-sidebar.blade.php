@@ -184,6 +184,10 @@
         </span>
 
 
+        @if(Route::has('participant.course-calls.index'))
+            <a href="{{ route('participant.course-calls.index') }}" class="ps-link {{ request()->routeIs('participant.course-calls.*') ? 'active' : '' }}"><i class="fas fa-bullhorn"></i><span>Course Opportunities</span></a>
+        @endif
+
         @if(Route::has('jobs.index'))
 
             <a
@@ -248,6 +252,10 @@
             Account
         </span>
 
+
+        @if(Route::has('participant.help'))
+            <a href="{{ route('participant.help') }}" class="ps-link {{ request()->routeIs('participant.help') ? 'active' : '' }}"><i class="fas fa-circle-question"></i><span>Help & Support</span></a>
+        @endif
 
         @if(Route::has('profile.edit'))
 
