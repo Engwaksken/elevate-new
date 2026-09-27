@@ -9,7 +9,9 @@ class Certificate extends Model
 {
     protected $fillable = [
         'course_id',
+        'event_id',
         'user_id',
+        'certificate_template_id',
         'certificate_number',
         'issued_on',
         'pdf_path',
@@ -28,5 +30,15 @@ class Certificate extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(CertificateTemplate::class, 'certificate_template_id');
+    }
+
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
     }
 }
