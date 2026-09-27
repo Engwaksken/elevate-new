@@ -7,13 +7,20 @@
     $ehFontSize = (int) $ehSettings->get('branding.font_size', 16);
     $ehLogo = $ehSettings->get('branding.logo_path');
     $ehFavicon = $ehSettings->get('branding.favicon_path');
-    $ehLogoUrl = $ehLogo ? asset('storage/'.ltrim($ehLogo,'/')) : null;
-    $ehFaviconUrl = $ehFavicon ? asset('storage/'.ltrim($ehFavicon,'/')) : null;
+
+    $ehLogoUrl = $ehLogo && \Illuminate\Support\Facades\Route::has('branding.asset')
+        ? route('branding.asset', ['type'=>'logo','v'=>md5((string)$ehLogo)])
+        : null;
+
+    $ehFaviconUrl = $ehFavicon && \Illuminate\Support\Facades\Route::has('branding.asset')
+        ? route('branding.asset', ['type'=>'favicon','v'=>md5((string)$ehFavicon)])
+        : null;
 @endphp
 
 @if($ehFaviconUrl)
-<link rel="icon" href="{{ $ehFaviconUrl }}?v={{ md5((string)$ehFavicon) }}">
-<link rel="shortcut icon" href="{{ $ehFaviconUrl }}?v={{ md5((string)$ehFavicon) }}">
+<link rel="icon" href="{{ $ehFaviconUrl }}">
+<link rel="shortcut icon" href="{{ $ehFaviconUrl }}">
+<link rel="apple-touch-icon" href="{{ $ehFaviconUrl }}">
 @endif
 
 <style>
@@ -26,26 +33,7 @@
 }
 html{font-size:var(--eh-base-font-size)}
 body{font-family:var(--eh-font-family)}
-.btn-primary,.admin-sidebar,.eh-admin-sidebar{--brand-primary:var(--eh-primary)}
 .btn-primary{background:var(--eh-primary)!important;border-color:var(--eh-primary)!important}
 .admin-eyebrow,.text-accent{color:var(--eh-primary)!important}
 .eh-dynamic-brand-logo{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}
 </style>
-
-@if($ehLogoUrl)
-<script>
-document.addEventListener('DOMContentLoaded',()=>{
-    const logoUrl=@json($ehLogoUrl.'?v='.md5((string)$ehLogo));
-    ['.eh-admin-sidebar__logo','.brand-mark','.ps-mark','.ps-mobile-mark'].forEach((selector)=>{
-        document.querySelectorAll(selector).forEach((mark)=>{
-            mark.innerHTML='';
-            const image=document.createElement('img');
-            image.src=logoUrl;
-            image.alt='Platform logo';
-            image.className='eh-dynamic-brand-logo';
-            mark.appendChild(image);
-        });
-    });
-});
-</script>
-@endif

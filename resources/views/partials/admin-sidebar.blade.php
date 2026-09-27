@@ -7,6 +7,16 @@
     $sidebarEmail = $sidebarUser?->email ?? '';
     $sidebarInitial = strtoupper(mb_substr(trim($sidebarName), 0, 1));
 
+    $isInstructorWorkspace = $sidebarUser
+        && ! $sidebarUser->isSuperAdmin()
+        && $sidebarUser->hasAnyRole(['instructor','trainer']);
+
+    $brandSettings = app(\App\Services\SettingsService::class);
+    $brandLogoPath = $brandSettings->get('branding.logo_path');
+    $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('branding.asset')
+        ? route('branding.asset', ['type'=>'logo','v'=>md5((string)$brandLogoPath)])
+        : null;
+
     $routeExists = fn (string $name): bool => \Illuminate\Support\Facades\Route::has($name);
 
     $canAccess = static function (string|array|null $permissions, array $roles = []) use ($sidebarUser): bool {
@@ -127,20 +137,96 @@
             ],
         ],
     ];
+
+    if ($isInstructorWorkspace) {
+        $assignedCourses = $sidebarUser->instructedCourses()->orderBy('title')->get();
+        $routeCourse = request()->route('course');
+        $activeCourse = $routeCourse instanceof \App\Models\Course
+            ? $routeCourse
+            : $assignedCourses->first();
+
+        $navGroups = [
+            [
+                'label' => 'Overview',
+                'colour' => 'overview',
+                'items' => [
+                    ['route'=>'admin.dashboard','label'=>'Dashboard','icon'=>'fa-gauge-high','permissions'=>null],
+                    ['route'=>'instructor.dashboard','label'=>'My Courses','icon'=>'fa-chalkboard-user','permissions'=>null],
+                ],
+            ],
+        ];
+
+        if ($activeCourse && \Illuminate\Support\Facades\Route::has('instructor.courses.manage')) {
+            $manageUrl = route('instructor.courses.manage', $activeCourse);
+
+            $workspaceItems = [
+                ['url'=>$manageUrl.'?tab=modules','label'=>'Modules','icon'=>'fa-layer-group'],
+                ['url'=>$manageUrl.'?tab=lessons','label'=>'Lessons','icon'=>'fa-book-open'],
+                ['url'=>$manageUrl.'?tab=assessments','label'=>'Assignments & Quizzes','icon'=>'fa-list-check'],
+                ['url'=>$manageUrl.'?tab=participants','label'=>'Participants','icon'=>'fa-users'],
+            ];
+
+            if (\Illuminate\Support\Facades\Route::has('instructor.attendance.create')) {
+                $workspaceItems[] = [
+                    'url'=>route('instructor.attendance.create',$activeCourse),
+                    'label'=>'Attendance',
+                    'icon'=>'fa-user-check',
+                ];
+            }
+
+            if (\Illuminate\Support\Facades\Route::has('instructor.module-access.index')) {
+                $workspaceItems[] = [
+                    'url'=>route('instructor.module-access.index',$activeCourse),
+                    'label'=>'Module Access',
+                    'icon'=>'fa-lock-open',
+                ];
+            }
+
+            $navGroups[] = [
+                'label' => 'Course Workspace',
+                'colour' => 'delivery',
+                'items' => $workspaceItems,
+            ];
+        }
+
+        $accountItems = [];
+
+        if (\Illuminate\Support\Facades\Route::has('calendar.index')) {
+            $accountItems[] = ['route'=>'calendar.index','label'=>'Calendar','icon'=>'fa-calendar-days','permissions'=>null];
+        }
+
+        if (\Illuminate\Support\Facades\Route::has('admin.profile.edit')) {
+            $accountItems[] = ['route'=>'admin.profile.edit','label'=>'Profile','icon'=>'fa-user','permissions'=>null];
+        }
+
+        if ($accountItems !== []) {
+            $navGroups[] = [
+                'label' => 'Account',
+                'colour' => 'assets',
+                'items' => $accountItems,
+            ];
+        }
+    }
 @endphp
 
 <aside class="eh-admin-sidebar" data-admin-sidebar="true">
     <div class="eh-admin-sidebar__brand">
-        <div class="eh-admin-sidebar__logo">E360</div>
+        <div class="eh-admin-sidebar__logo">
+            @if($brandLogoUrl)
+                <img src="{{ $brandLogoUrl }}" alt="ElevateHer360 logo" class="eh-dynamic-brand-logo">
+            @else
+                <span>E360</span>
+            @endif
+        </div>
         <div class="eh-admin-sidebar__brand-copy">
             <strong>ElevateHer360</strong>
-            <small>Administration</small>
+            <small>{{ $isInstructorWorkspace ? 'Instructor / Trainer' : 'Administration' }}</small>
         </div>
     </div>
 
     @if($sidebarUser)
         <a
-            href="{{ \Illuminate\Support\Facades\Route::has('admin.profile') ? route('admin.profile') : '#' }}"
+            href="{{ \Illuminate\Support\Facades\Route::has('admin.profile.edit') ? route('admin.profile.edit') : '#' }}"
             class="eh-admin-sidebar__user-card"
             aria-label="Open profile"
         >
@@ -153,7 +239,7 @@
                 @endif
             </span>
 
-            @if(\Illuminate\Support\Facades\Route::has('admin.profile'))
+            @if(\Illuminate\Support\Facades\Route::has('admin.profile.edit'))
                 <i class="fas fa-chevron-right"></i>
             @endif
         </a>
@@ -163,9 +249,13 @@
         @foreach($navGroups as $group)
             @php
                 $visibleItems = collect($group['items'])->filter(
-                    fn (array $item): bool => $routeExists($item['route'])
-                        && ! (! empty($item['exclude_roles']) && $sidebarUser->hasAnyRole($item['exclude_roles']))
-                        && $canAccess($item['permissions'] ?? null, $item['roles'] ?? [])
+                    fn (array $item): bool => ! empty($item['url'])
+                        || (
+                            ! empty($item['route'])
+                            && $routeExists($item['route'])
+                            && ! (! empty($item['exclude_roles']) && $sidebarUser->hasAnyRole($item['exclude_roles']))
+                            && $canAccess($item['permissions'] ?? null, $item['roles'] ?? [])
+                        )
                 );
             @endphp
 
@@ -176,8 +266,8 @@
                     <div class="eh-admin-sidebar__links">
                         @foreach($visibleItems as $item)
                             <a
-                                href="{{ route($item['route']) }}"
-                                class="{{ request()->routeIs($item['route']) ? 'active' : '' }}"
+                                href="{{ $item['url'] ?? route($item['route']) }}"
+                                class="{{ !empty($item['route']) && request()->routeIs($item['route']) ? 'active' : '' }}"
                             >
                                 <i class="fas {{ $item['icon'] }}"></i>
                                 <span>{{ $item['label'] }}</span>
