@@ -7,8 +7,8 @@
     $ehFontSize = (int) $ehSettings->get('branding.font_size', 16);
     $ehLogo = $ehSettings->get('branding.logo_path');
     $ehFavicon = $ehSettings->get('branding.favicon_path');
-    $ehLogoUrl = $ehLogo ? \Illuminate\Support\Facades\Storage::disk('public')->url($ehLogo) : null;
-    $ehFaviconUrl = $ehFavicon ? \Illuminate\Support\Facades\Storage::disk('public')->url($ehFavicon) : null;
+    $ehLogoUrl = $ehLogo ? asset('storage/'.ltrim($ehLogo,'/')) : null;
+    $ehFaviconUrl = $ehFavicon ? asset('storage/'.ltrim($ehFavicon,'/')) : null;
 @endphp
 
 @if($ehFaviconUrl)

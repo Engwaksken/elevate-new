@@ -1029,3 +1029,39 @@ Route::prefix('admin')->name('admin.')->middleware(['auth','staff','permission:s
     Route::get('/support-settings', [\App\Http\Controllers\Admin\SupportSettingsController::class, 'edit'])->name('support-settings.edit');
     Route::put('/support-settings', [\App\Http\Controllers\Admin\SupportSettingsController::class, 'update'])->name('support-settings.update');
 });
+Route::prefix('admin/elearning/certificates/templates')
+    ->name('admin.elearning.certificates.templates.')
+    ->middleware([
+        'auth',
+        'staff',
+        'permission:courses.edit',
+        'role:administrator,super-administrator,super-admin',
+    ])
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'templates'])
+            ->name('index');
+
+        Route::post('/', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'storeTemplate'])
+            ->name('store');
+
+        Route::delete('/{template}', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'destroyTemplate'])
+            ->name('destroy');
+    });
+Route::prefix('admin/elearning/certificates/templates')
+    ->name('admin.elearning.certificates.templates.')
+    ->middleware([
+        'auth',
+        'staff',
+        'permission:courses.edit',
+        'role:administrator,super-administrator,super-admin',
+    ])
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'templates'])
+            ->name('index');
+
+        Route::post('/', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'storeTemplate'])
+            ->name('store');
+
+        Route::delete('/{template}', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'destroyTemplate'])
+            ->name('destroy');
+    });

@@ -32,12 +32,12 @@ class CourseAssignmentController extends Controller
 
     public function edit(Course $course)
     {
-        $roleId=Role::where('slug','instructor')->value('id');
+        $roleIds=Role::whereIn('slug',['instructor','trainer'])->pluck('id');
 
         return view('admin.elearning.assignments.edit',[
             'course'=>$course->load(['instructors','cohorts']),
             'instructors'=>User::where('user_type','staff')
-                ->when($roleId,fn($q)=>$q->whereHas('roles',fn($r)=>$r->where('roles.id',$roleId)))
+                ->when($roleIds->isNotEmpty(),fn($q)=>$q->whereHas('roles',fn($r)=>$r->whereIn('roles.id',$roleIds)))
                 ->orderBy('name')->get(),
             'cohorts'=>Cohort::orderBy('name')->get(),
         ]);

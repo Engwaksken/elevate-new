@@ -277,7 +277,8 @@ class StaffAppraisalController extends Controller
         abort_unless(
             $this->isEmployee($appraisal)
             || $this->isManager($appraisal)
-            || (auth()->user()?->user_type==='staff' && auth()->user()?->hasPermission('appraisals.view')),
+            || auth()->user()?->isSuperAdmin()
+            || auth()->user()?->hasAnyRole(['hr','HR']),
             403
         );
     }
