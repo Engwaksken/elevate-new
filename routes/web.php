@@ -1083,16 +1083,3 @@ Route::prefix('admin/elearning/certificates/templates')
         Route::delete('/{template}', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'destroyTemplate'])
             ->name('destroy');
     });
-/*
-|--------------------------------------------------------------------------
-| Instructor / Trainer assigned courses workspace
-|--------------------------------------------------------------------------
-*/
-Route::middleware([
-    'auth',
-    'staff',
-    'role:instructor,trainer',
-])->prefix('instructor')->name('instructor.')->group(function () {
-    Route::get('/my-courses', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'index'])
-        ->name('dashboard');
-});
