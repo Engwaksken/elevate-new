@@ -16,20 +16,10 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name',
-        'email',
-        'phone',
-        'password',
-        'user_type',
-        'status',
-        'last_login_at',
-        'email_verified_at',
+        'name','email','phone','password','user_type','status','last_login_at','email_verified_at',
     ];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ['password','remember_token'];
 
     protected function casts(): array
     {
@@ -40,116 +30,64 @@ class User extends Authenticatable
         ];
     }
 
-    public function profile(): HasOne
-    {
-        return $this->hasOne(Profile::class);
-    }
-
-    public function consents(): HasMany
-    {
-        return $this->hasMany(Consent::class);
-    }
+    public function profile(): HasOne { return $this->hasOne(Profile::class); }
+    public function consents(): HasMany { return $this->hasMany(Consent::class); }
 
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, 'role_user')
-            ->withTimestamps();
+        return $this->belongsToMany(Role::class, 'role_user')->withTimestamps();
     }
 
     public function hasRole(string|array $roles): bool
     {
         $roles = array_values(array_filter((array) $roles));
-
-        if ($roles === []) {
-            return false;
-        }
+        if ($roles === []) return false;
 
         return $this->roles()
             ->where(function ($query) use ($roles) {
-                $query->whereIn('slug', $roles)
-                    ->orWhereIn('name', $roles);
-            })
-            ->exists();
+                $query->whereIn('slug', $roles)->orWhereIn('name', $roles);
+            })->exists();
     }
 
     public function hasAnyRole(string|array ...$roles): bool
     {
-        $flattened = collect($roles)
-            ->flatten()
-            ->filter()
-            ->values()
-            ->all();
-
-        return $this->hasRole($flattened);
+        return $this->hasRole(collect($roles)->flatten()->filter()->values()->all());
     }
 
     public function isSuperAdmin(): bool
     {
         return $this->hasRole([
-            'super-administrator',
-            'super-admin',
-            'Super Administrator',
-            'Super Admin',
+            'super-administrator','super-admin','administrator',
+            'Super Administrator','Super Admin','Administrator',
         ]);
     }
 
     public function hasPermission(string $permission): bool
     {
-        if (! $this->isActive()) {
-            return false;
-        }
-
-        if ($this->isSuperAdmin()) {
-            return true;
-        }
+        if (! $this->isActive()) return false;
+        if ($this->isSuperAdmin()) return true;
 
         return $this->roles()
             ->whereHas('permissions', function ($query) use ($permission) {
-                $query->where('slug', $permission)
-                    ->orWhere('name', $permission);
-            })
-            ->exists();
+                $query->where('slug', $permission)->orWhere('name', $permission);
+            })->exists();
     }
 
     public function hasAnyPermission(string|array ...$permissions): bool
     {
-        $flattened = collect($permissions)
-            ->flatten()
-            ->filter()
-            ->values();
+        $flattened = collect($permissions)->flatten()->filter()->values();
 
-        if ($flattened->isEmpty()) {
-            return false;
-        }
-
-        if (! $this->isActive()) {
-            return false;
-        }
-
-        if ($this->isSuperAdmin()) {
-            return true;
-        }
+        if ($flattened->isEmpty() || ! $this->isActive()) return false;
+        if ($this->isSuperAdmin()) return true;
 
         return $this->roles()
             ->whereHas('permissions', function ($query) use ($flattened) {
                 $query->whereIn('slug', $flattened->all())
                     ->orWhereIn('name', $flattened->all());
-            })
-            ->exists();
+            })->exists();
     }
 
-    public function isStaff(): bool
-    {
-        return $this->user_type === 'staff';
-    }
-
-    public function isParticipant(): bool
-    {
-        return $this->user_type === 'participant';
-    }
-
-    public function isActive(): bool
-    {
-        return $this->status === 'active';
-    }
+    public function isStaff(): bool { return $this->user_type === 'staff'; }
+    public function isParticipant(): bool { return $this->user_type === 'participant'; }
+    public function isActive(): bool { return $this->status === 'active'; }
 }
