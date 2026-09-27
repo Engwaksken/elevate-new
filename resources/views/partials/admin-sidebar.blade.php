@@ -122,6 +122,7 @@
                 ['route' => 'admin.data-migrations.index', 'label' => 'Data Migrations', 'icon' => 'fa-database', 'permissions' => ['settings.manage']],
                 ['route' => 'admin.settings.index', 'label' => 'System Settings', 'icon' => 'fa-gears', 'permissions' => ['settings.manage']],
                 ['route' => 'admin.platform-settings.index', 'label' => 'Platform Configuration', 'icon' => 'fa-sliders', 'permissions' => ['settings.manage']],
+                ['route' => 'admin.support-settings.edit', 'label' => 'Help & Support', 'icon' => 'fa-circle-question', 'permissions' => ['settings.manage'], 'roles' => ['administrator', 'super-administrator', 'super-admin']],
             ],
         ],
     ];
