@@ -1,0 +1,1 @@
+@include('errors.friendly', ['title' => 'Access restricted', 'message' => 'Your account does not have access to this area. If you need access, contact an administrator.', 'icon' => 'fa-shield-halved'])

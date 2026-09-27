@@ -198,10 +198,10 @@ Route::prefix('admin')
         Route::resource('branches', BranchController::class)->except('show')
             ->middleware('permission:programmes.manage');
 
-        Route::delete('/cohorts/bulk-delete', [CohortController::class, 'bulkDestroy'])->middleware('permission:cohorts.manage')->name('cohorts.bulk-destroy');
+        Route::delete('/cohorts/bulk-delete', [CohortController::class, 'bulkDestroy'])->middleware(['permission:cohorts.manage','role:administrator,super-administrator,super-admin'])->name('cohorts.bulk-destroy');
 
         Route::resource('cohorts', CohortController::class)->except('show')
-            ->middleware('permission:cohorts.manage');
+            ->middleware(['permission:cohorts.manage','role:administrator,super-administrator,super-admin']);
 
         Route::get('/roles', [RoleController::class, 'index'])
             ->middleware('permission:roles.manage')->name('roles.index');
@@ -683,17 +683,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth','staff'])->group(func
         Route::post('/leave/{leave}/hr-approve',[LeaveApprovalController::class,'hrApprove'])->middleware('permission:leave.approve')->name('leave.hr-approve');
         Route::post('/leave/{leave}/reject',[LeaveApprovalController::class,'reject'])->middleware('permission:leave.approve')->name('leave.reject');
 
-        Route::get('/kpi-templates',[KpiTemplateController::class,'index'])->middleware('permission:appraisals.view')->name('kpi-templates.index');
-        Route::post('/kpi-templates',[KpiTemplateController::class,'store'])->middleware('permission:appraisals.manage')->name('kpi-templates.store');
-        Route::put('/kpi-templates/{template}',[KpiTemplateController::class,'update'])->middleware('permission:appraisals.manage')->name('kpi-templates.update');
-        Route::delete('/kpi-templates/{template}',[KpiTemplateController::class,'destroy'])->middleware('permission:appraisals.manage')->name('kpi-templates.destroy');
+        Route::get('/kpi-templates',[KpiTemplateController::class,'index'])->middleware(['permission:appraisals.view','role:hr,administrator,super-administrator,super-admin'])->name('kpi-templates.index');
+        Route::post('/kpi-templates',[KpiTemplateController::class,'store'])->middleware(['permission:appraisals.manage','role:hr,administrator,super-administrator,super-admin'])->name('kpi-templates.store');
+        Route::put('/kpi-templates/{template}',[KpiTemplateController::class,'update'])->middleware(['permission:appraisals.manage','role:hr,administrator,super-administrator,super-admin'])->name('kpi-templates.update');
+        Route::delete('/kpi-templates/{template}',[KpiTemplateController::class,'destroy'])->middleware(['permission:appraisals.manage','role:hr,administrator,super-administrator,super-admin'])->name('kpi-templates.destroy');
 
         Route::get('/appraisals',[AppraisalController::class,'index'])->middleware('permission:appraisals.view')->name('appraisals.index');
         Route::get('/appraisals/{appraisal}/kpis',[AppraisalKpiController::class,'show'])->middleware('permission:appraisals.view')->name('appraisals.kpis');
         Route::post('/appraisals/{appraisal}/kpi-template',[AppraisalKpiController::class,'assignTemplate'])->middleware('permission:appraisals.manage')->name('appraisals.kpi-template');
         Route::post('/appraisals/{appraisal}/kpi-score',[AppraisalKpiController::class,'score'])->middleware('permission:appraisals.manage')->name('appraisals.kpi-score');
         Route::post('/appraisal-cycles',[AppraisalController::class,'createCycle'])->middleware('permission:appraisals.manage')->name('appraisal-cycles.store');
-        Route::post('/appraisals/assign',[AppraisalController::class,'assign'])->middleware('permission:appraisals.manage')->name('appraisals.assign');
+        Route::post('/appraisals/assign',[AppraisalController::class,'assign'])->middleware(['permission:appraisals.manage','role:hr,administrator,super-administrator,super-admin'])->name('appraisals.assign');
         Route::post('/appraisals/{appraisal}/objectives',[AppraisalController::class,'addObjective'])->middleware('permission:appraisals.manage')->name('appraisals.objectives.store');
         Route::post('/appraisals/{appraisal}/recalculate',[AppraisalController::class,'recalculate'])->middleware('permission:appraisals.manage')->name('appraisals.recalculate');
         Route::post('/appraisals/{appraisal}/finalise',[AppraisalWorkflowController::class,'finalise'])->middleware('permission:appraisals.manage')->name('appraisals.finalise');

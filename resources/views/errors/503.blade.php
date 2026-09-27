@@ -1,0 +1,1 @@
+@include('errors.friendly', ['title' => 'Temporarily unavailable', 'message' => 'ElevateHer360 is temporarily unavailable. Please try again shortly.', 'icon' => 'fa-screwdriver-wrench'])

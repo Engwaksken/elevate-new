@@ -1,0 +1,1 @@
+@include('errors.friendly', ['title' => 'Sign in required', 'message' => 'Please sign in with an authorised account to continue.', 'icon' => 'fa-user-lock'])

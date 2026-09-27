@@ -22,7 +22,7 @@
 
     $topbarLogoutRoute = null;
 
-    foreach (['logout', 'admin.logout'] as $candidate) {
+    foreach (['admin.logout'] as $candidate) {
         if (Route::has($candidate)) {
             $topbarLogoutRoute = route($candidate);
             break;

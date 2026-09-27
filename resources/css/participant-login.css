@@ -30,27 +30,9 @@
     overflow:hidden!important;
 }
 
-.eh-login-side::before{
-    content:"";
-    position:absolute;
-    width:330px;
-    height:330px;
-    right:-100px;
-    top:-110px;
-    border:1px solid rgba(212,175,55,.24);
-    border-radius:50%;
-}
+.eh-login-side::before{content:none!important;display:none!important;}
 
-.eh-login-side::after{
-    content:"";
-    position:absolute;
-    width:240px;
-    height:240px;
-    left:-90px;
-    bottom:-100px;
-    border:1px solid rgba(255,255,255,.12);
-    border-radius:50%;
-}
+.eh-login-side::after{content:none!important;display:none!important;}
 
 .eh-login-side__inner{
     position:relative;

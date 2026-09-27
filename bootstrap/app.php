@@ -53,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'staff' => \App\Http\Middleware\EnsureStaffUser::class,
             'permission' => \App\Http\Middleware\EnsureUserHasPermission::class,
+            'role' => \App\Http\Middleware\EnsureUserHasRole::class,
         ]);
 
         $middleware->web(append: [\App\Http\Middleware\DynamicMaintenanceMode::class]);

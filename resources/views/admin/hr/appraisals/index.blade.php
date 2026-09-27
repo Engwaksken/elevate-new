@@ -2,6 +2,14 @@
 @section('title','Performance Appraisals | ElevateHer360 Administration')
 
 @section('content')
+@php
+    $appraisalAdminUser = auth()->user();
+    $canAdministerAppraisals = $appraisalAdminUser
+        && (
+            $appraisalAdminUser->isSuperAdmin()
+            || $appraisalAdminUser->hasAnyRole(['hr', 'HR'])
+        );
+@endphp
 <div class="admin-page-header">
 <div>
 <span class="admin-eyebrow">Human Resources</span>
@@ -10,17 +18,16 @@
 </div>
 
 <div class="admin-page-actions">
-@if(Route::has('admin.hr.kpi-templates.index'))
+@if($canAdministerAppraisals && Route::has('admin.hr.kpi-templates.index'))
 <a href="{{ route('admin.hr.kpi-templates.index') }}" class="btn btn-outline"><i class="fas fa-file-excel"></i> KPI Templates</a>
 @endif
+@if($canAdministerAppraisals)
 <button type="button" class="btn btn-outline" data-modal-open="assignAppraisal"><i class="fas fa-user-check"></i> Assign Appraisal</button>
+@endif
 <button type="button" class="btn btn-primary" data-modal-open="newAppraisalCycle"><i class="fas fa-plus"></i> New Cycle</button>
 </div>
 </div>
 
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-@if(session('error'))<div class="alert alert-error">{{ session('error') }}</div>@endif
-@if($errors->any())<div class="alert alert-error">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
 
 @php
 $collection=$appraisals->getCollection();
@@ -132,6 +139,7 @@ $stats=[
 </div>
 </div>
 
+@if($canAdministerAppraisals)
 <div class="eh-modal" id="assignAppraisal" aria-hidden="true">
 <div class="eh-modal-dialog eh-modal-lg">
 <div class="eh-modal-header">
@@ -155,6 +163,7 @@ $stats=[
 </form>
 </div>
 </div>
+@endif
 
 @foreach($appraisals as $appraisal)
 @if($appraisal->manager_submitted_at && !$appraisal->hr_finalised_at)

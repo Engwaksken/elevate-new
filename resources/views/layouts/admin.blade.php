@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const seen = new Set();
 
     document.querySelectorAll(
-        '.flash-message, .form-alert, .success-box, .error-box, .warning-box, .info-box'
+        '.flash-message, .form-alert, .alert-success, .alert-error, .alert-danger, .alert-warning, .alert-info, .success-box, .error-box, .warning-box, .info-box, [data-flash-type]'
     ).forEach((message) => {
         const text = (message.textContent || '')
             .replace(/\s+/g, ' ')

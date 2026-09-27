@@ -16,6 +16,8 @@
         .eh-staff-login-form .eh-password-toggle:hover,
         .eh-staff-login-form .eh-password-toggle:focus-visible{color:#800000;background:rgba(128,0,0,.07);outline:none}
         .eh-staff-login-form .eh-password-toggle i{position:static!important;transform:none!important;font-size:16px;pointer-events:none}
+        .eh-staff-login-brand h1{color:#fff!important}
+        .eh-staff-login-brand::before,.eh-staff-login-brand::after,.eh-staff-login-decoration{display:none!important;content:none!important}
     </style>
 </head>
 <body class="eh-staff-login-body">
@@ -26,7 +28,6 @@
             <h1>Manage programmes and participant impact.</h1>
             <p>Secure access for authorised WITU staff, programme teams and administrators.</p>
         </div>
-        <div class="eh-staff-login-decoration" aria-hidden="true"></div>
     </section>
 
     <section class="eh-staff-login-form-side">
