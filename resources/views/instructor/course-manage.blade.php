@@ -108,12 +108,14 @@
 
 <script>
 document.addEventListener('DOMContentLoaded',function(){
+ const requestedTab=new URLSearchParams(window.location.search).get('tab');
  document.querySelectorAll('.icm-tab-btn[data-tab]').forEach(btn=>btn.addEventListener('click',function(){
   document.querySelectorAll('.icm-tab-btn[data-tab]').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.icm-pane').forEach(x=>x.classList.remove('active'));
   btn.classList.add('active');
   document.querySelector('[data-pane="'+btn.dataset.tab+'"]')?.classList.add('active');
  }));
+ if(requestedTab){const b=document.querySelector('.icm-tab-btn[data-tab="'+requestedTab+'"]');if(b){b.click();}}
  const m=document.getElementById('lessonModule'),f=document.getElementById('lessonForm');
  if(m&&f){m.addEventListener('change',()=>f.action=m.value);f.action=m.value;}
 });

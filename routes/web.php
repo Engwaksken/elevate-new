@@ -1,3 +1,6 @@
+Route::get('/brand-assets/{type}', [\App\Http\Controllers\BrandAssetController::class, 'show'])
+    ->whereIn('type', ['logo','favicon'])
+    ->name('branding.asset');
 <?php
 
 use App\Http\Controllers\Admin\ProgrammeManagement\ActivityController;
