@@ -1,0 +1,1 @@
+@include('errors.friendly', ['title' => 'Session expired', 'message' => 'Your session has expired. Please return and submit the form again.', 'icon' => 'fa-clock-rotate-left'])

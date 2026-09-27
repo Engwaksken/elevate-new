@@ -1,0 +1,1 @@
+@include('errors.friendly', ['title' => 'We could not complete that request', 'message' => 'An unexpected problem occurred. Please try again. If it continues, contact support.', 'icon' => 'fa-triangle-exclamation'])

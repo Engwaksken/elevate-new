@@ -1,0 +1,1 @@
+@include('errors.friendly', ['title' => 'Please try again shortly', 'message' => 'Too many requests were received in a short period. Please wait a moment and try again.', 'icon' => 'fa-hourglass-half'])

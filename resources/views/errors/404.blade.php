@@ -1,0 +1,1 @@
+@include('errors.friendly', ['title' => 'Page not found', 'message' => 'The page you requested could not be found or may have moved.', 'icon' => 'fa-magnifying-glass'])

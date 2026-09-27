@@ -9,13 +9,17 @@
 
     $routeExists = fn (string $name): bool => \Illuminate\Support\Facades\Route::has($name);
 
-    $canAccess = static function (string|array|null $permissions) use ($sidebarUser): bool {
+    $canAccess = static function (string|array|null $permissions, array $roles = []) use ($sidebarUser): bool {
         if (! $sidebarUser || ! $sidebarUser->isActive()) {
             return false;
         }
 
         if ($sidebarUser->isSuperAdmin()) {
             return true;
+        }
+
+        if ($roles !== [] && ! $sidebarUser->hasAnyRole($roles)) {
+            return false;
         }
 
         if ($permissions === null) {
@@ -51,7 +55,7 @@
             'items' => [
                 ['route' => 'admin.programmes.index', 'label' => 'Programmes', 'icon' => 'fa-diagram-project', 'permissions' => ['programmes.manage']],
                 ['route' => 'admin.projects.index', 'label' => 'Projects', 'icon' => 'fa-folder-tree', 'permissions' => ['programmes.manage']],
-                ['route' => 'admin.cohorts.index', 'label' => 'Cohorts', 'icon' => 'fa-people-group', 'permissions' => ['cohorts.manage']],
+                ['route' => 'admin.cohorts.index', 'label' => 'Cohorts', 'icon' => 'fa-people-group', 'permissions' => ['cohorts.manage'], 'roles' => ['administrator', 'super-administrator', 'super-admin']],
                 ['route' => 'admin.branches.index', 'label' => 'Branches', 'icon' => 'fa-building', 'permissions' => ['programmes.manage']],
             ],
         ],
@@ -97,7 +101,7 @@
                 ['route' => 'admin.hr.employees.index', 'label' => 'Employees', 'icon' => 'fa-id-badge', 'permissions' => ['hr.view', 'hr.manage']],
                 ['route' => 'admin.hr.leave.index', 'label' => 'Leave', 'icon' => 'fa-calendar-minus', 'permissions' => ['leave.view', 'leave.approve']],
                 ['route' => 'admin.hr.appraisals.index', 'label' => 'Appraisals', 'icon' => 'fa-clipboard-check', 'permissions' => ['appraisals.view', 'appraisals.manage']],
-                ['route' => 'admin.hr.kpi-templates.index', 'label' => 'KPI Templates', 'icon' => 'fa-table-list', 'permissions' => ['appraisals.manage']],
+                ['route' => 'admin.hr.kpi-templates.index', 'label' => 'KPI Templates', 'icon' => 'fa-table-list', 'permissions' => ['appraisals.manage'], 'roles' => ['hr', 'administrator', 'super-administrator', 'super-admin']],
                 ['route' => 'admin.hr.exits.index', 'label' => 'Staff Exits', 'icon' => 'fa-person-walking-arrow-right', 'permissions' => ['staff_exit.manage']],
             ],
         ],
@@ -158,7 +162,7 @@
             @php
                 $visibleItems = collect($group['items'])->filter(
                     fn (array $item): bool => $routeExists($item['route'])
-                        && $canAccess($item['permissions'] ?? null)
+                        && $canAccess($item['permissions'] ?? null, $item['roles'] ?? [])
                 );
             @endphp
 

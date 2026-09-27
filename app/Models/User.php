@@ -87,6 +87,12 @@ class User extends Authenticatable
             })->exists();
     }
 
+    public function instructedCourses(): BelongsToMany
+    {
+        return $this->belongsToMany(Course::class, 'course_instructors', 'user_id', 'course_id')
+            ->withPivot('is_lead')
+            ->withTimestamps();
+    }
     public function isStaff(): bool { return $this->user_type === 'staff'; }
     public function isParticipant(): bool { return $this->user_type === 'participant'; }
     public function isActive(): bool { return $this->status === 'active'; }
