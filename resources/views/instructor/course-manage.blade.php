@@ -55,6 +55,9 @@
         <button class="icm-tab-btn" data-tab="lessons"><i class="fas fa-book-open"></i> Lessons</button>
         <button class="icm-tab-btn" data-tab="assessments"><i class="fas fa-list-check"></i> Assignments, Quizzes & Exams</button>
         <button class="icm-tab-btn" data-tab="participants"><i class="fas fa-users"></i> Participants</button>
+        <button class="icm-tab-btn" data-tab="submissions"><i class="fas fa-file-circle-check"></i> Submissions</button>
+        <button class="icm-tab-btn" data-tab="announcements"><i class="fas fa-bullhorn"></i> Announcements</button>
+        <button class="icm-tab-btn" data-tab="settings"><i class="fas fa-pen-to-square"></i> Course Details</button>
         @if(Route::has('instructor.module-access.index'))<a class="icm-tab-btn" href="{{ route('instructor.module-access.index',$course) }}"><i class="fas fa-lock-open"></i> Module Access</a>@endif
         @if(Route::has('instructor.attendance.create'))<a class="icm-tab-btn" href="{{ route('instructor.attendance.create',$course) }}"><i class="fas fa-user-check"></i> Attendance</a>@endif
     </div>
@@ -179,7 +182,7 @@
             <div><label>Search</label><input name="participant_search" value="{{ request('participant_search') }}" placeholder="Name or email"></div>
             <div><label>Period</label><select name="participant_period"><option value="">All periods</option>@foreach(['today'=>'Today','week'=>'This week','month'=>'This month','quarter'=>'This quarter','year'=>'This year'] as $v=>$l)<option value="{{ $v }}" @selected(request('participant_period')===$v)>{{ $l }}</option>@endforeach</select></div>
             <div><label>Cohort</label><select name="cohort_id"><option value="">All cohorts</option>@foreach($course->cohorts as $cohort)<option value="{{ $cohort->id }}" @selected((string)request('cohort_id')===(string)$cohort->id)>{{ $cohort->name }}</option>@endforeach</select></div>
-            <div><label>Status</label><select name="participant_status"><option value="">All statuses</option>@foreach(['enrolled','active','in_progress','completed','withdrawn','cancelled'] as $status)<option value="{{ $status }}" @selected(request('participant_status')===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select></div>
+            <div><label>Status</label><select name="participant_status"><option value="">All statuses</option>@foreach(['enrolled','in_progress','completed','withdrawn','failed'] as $status)<option value="{{ $status }}" @selected(request('participant_status')===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select></div>
             <button class="btn btn-outline"><i class="fas fa-filter"></i> Filter</button>
         </form>
 
@@ -188,7 +191,7 @@
                 <div class="icm-row">
                     <div><strong>{{ $enrolment->user?->name ?? 'Participant' }}</strong><div class="icm-muted">{{ $enrolment->user?->email }} · {{ $enrolment->cohort?->name ?? 'No cohort' }} · {{ number_format((float)($enrolment->progress_percent??0),0) }}% progress</div></div>
                     <form method="POST" action="{{ route('instructor.courses.participants.update',[$course,$enrolment]) }}" style="display:flex;gap:6px;flex-wrap:wrap">@csrf @method('PUT')
-                        <select name="status">@foreach(['enrolled','active','in_progress','completed','withdrawn','cancelled'] as $status)<option value="{{ $status }}" @selected($enrolment->status===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select>
+                        <select name="status">@foreach(['enrolled','in_progress','completed','withdrawn','failed'] as $status)<option value="{{ $status }}" @selected($enrolment->status===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select>
                         <input style="width:90px" type="number" min="0" max="100" step="0.1" name="progress_percent" value="{{ $enrolment->progress_percent }}" placeholder="%">
                         <button class="btn btn-primary btn-sm">Save</button>
                     </form>
@@ -199,6 +202,108 @@
         </div>
         <div class="icm-pagination">{{ $participants->appends(['tab'=>'participants'])->links() }}</div>
     </section>
+    <section class="icm-pane" data-pane="submissions">
+        <div class="icm-toolbar">
+            <div><h2 style="margin:0">Participant Submissions</h2><div class="icm-muted">Review submitted assignments, quizzes and exams and provide feedback.</div></div>
+        </div>
+
+        <form method="GET" class="icm-filter">
+            <input type="hidden" name="tab" value="submissions">
+            <div><label>Search</label><input name="submission_search" value="{{ request('submission_search') }}" placeholder="Participant or assessment"></div>
+            <div><label>Period</label><select name="submission_period"><option value="">All periods</option>@foreach(['today'=>'Today','week'=>'This week','month'=>'This month','quarter'=>'This quarter','year'=>'This year'] as $v=>$l)<option value="{{ $v }}" @selected(request('submission_period')===$v)>{{ $l }}</option>@endforeach</select></div>
+            <div><label>Assessment</label><select name="submission_assessment_id"><option value="">All assessments</option>@foreach($course->assessments()->orderBy('title')->get() as $item)<option value="{{ $item->id }}" @selected((string)request('submission_assessment_id')===(string)$item->id)>{{ $item->title }}</option>@endforeach</select></div>
+            <div><label>Status</label><select name="submission_status"><option value="">All statuses</option>@foreach(['started','submitted','graded'] as $status)<option value="{{ $status }}" @selected(request('submission_status')===$status)>{{ ucfirst($status) }}</option>@endforeach</select></div>
+            <button class="btn btn-outline"><i class="fas fa-filter"></i> Filter</button>
+        </form>
+
+        <div class="icm-list">
+            @forelse($submissions as $attempt)
+                <div class="icm-row">
+                    <div style="min-width:0">
+                        <strong>{{ $attempt->user?->name ?? 'Participant' }}</strong>
+                        <div class="icm-muted">{{ $attempt->assessment?->title }} · Attempt {{ $attempt->attempt_number }} · {{ ucfirst($attempt->status) }}</div>
+                        @if($attempt->submission_text)<p>{{ \Illuminate\Support\Str::limit($attempt->submission_text,220) }}</p>@endif
+                        @if($attempt->instructor_feedback)<div class="icm-muted"><strong>Feedback:</strong> {{ \Illuminate\Support\Str::limit($attempt->instructor_feedback,180) }}</div>@endif
+                    </div>
+                    <div class="icm-actions" style="margin-top:0">
+                        @if($attempt->submission_file_path && Route::has('instructor.courses.submissions.file'))
+                            <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt]) }}"><i class="fas fa-download"></i> File</a>
+                        @endif
+                        <button
+                            type="button"
+                            class="btn btn-primary btn-sm"
+                            data-review-attempt="{{ $attempt->id }}"
+                            data-review-name="{{ $attempt->user?->name }}"
+                            data-review-assessment="{{ $attempt->assessment?->title }}"
+                            data-review-score="{{ $attempt->score }}"
+                            data-review-percentage="{{ $attempt->percentage }}"
+                            data-review-feedback="{{ $attempt->instructor_feedback }}"
+                            data-review-status="{{ $attempt->status }}"
+                        ><i class="fas fa-comment-dots"></i> Review</button>
+                    </div>
+                </div>
+            @empty
+                <div class="icm-card">No submissions found.</div>
+            @endforelse
+        </div>
+        <div class="icm-pagination">{{ $submissions->appends(['tab'=>'submissions'])->links() }}</div>
+    </section>
+
+    <section class="icm-pane" data-pane="announcements">
+        <div class="icm-toolbar">
+            <div><h2 style="margin:0">Course Announcements</h2><div class="icm-muted">Post updates that participants can receive on web and through the mobile API.</div></div>
+            <button type="button" class="btn btn-primary" data-open-modal="announcementModal"><i class="fas fa-plus"></i> New Announcement</button>
+        </div>
+
+        <form method="GET" class="icm-filter">
+            <input type="hidden" name="tab" value="announcements">
+            <div><label>Search</label><input name="announcement_search" value="{{ request('announcement_search') }}" placeholder="Announcement title or text"></div>
+            <div><label>Period</label><select name="announcement_period"><option value="">All periods</option>@foreach(['today'=>'Today','week'=>'This week','month'=>'This month','quarter'=>'This quarter','year'=>'This year'] as $v=>$l)<option value="{{ $v }}" @selected(request('announcement_period')===$v)>{{ $l }}</option>@endforeach</select></div>
+            <div></div><div></div>
+            <button class="btn btn-outline"><i class="fas fa-filter"></i> Filter</button>
+        </form>
+
+        <div class="icm-grid-2">
+            @forelse($announcements as $announcement)
+                <article class="icm-card">
+                    <span class="icm-chip">{{ $announcement->published_at?->isFuture() ? 'Scheduled' : 'Published' }}</span>
+                    <h3 style="margin:8px 0">{{ $announcement->title }}</h3>
+                    <p>{{ \Illuminate\Support\Str::limit($announcement->body,240) }}</p>
+                    <div class="icm-muted">
+                        {{ $announcement->published_at?->format('d M Y, g:i A') ?: 'Immediate' }}
+                        @if($announcement->expires_at) · Expires {{ $announcement->expires_at->format('d M Y') }}@endif
+                    </div>
+                    <div class="icm-actions">
+                        <form method="POST" action="{{ route('instructor.courses.announcements.destroy',[$course,$announcement]) }}" onsubmit="return confirm('Delete this announcement?')">@csrf @method('DELETE')<button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i> Delete</button></form>
+                    </div>
+                </article>
+            @empty
+                <div class="icm-card">No announcements found.</div>
+            @endforelse
+        </div>
+        <div class="icm-pagination">{{ $announcements->appends(['tab'=>'announcements'])->links() }}</div>
+    </section>
+
+    <section class="icm-pane" data-pane="settings">
+        <div class="icm-toolbar">
+            <div><h2 style="margin:0">Course Details</h2><div class="icm-muted">Edit authorised information for this assigned course.</div></div>
+        </div>
+
+        <div class="icm-card">
+            <form method="POST" action="{{ route('instructor.courses.update',$course) }}" class="icm-form">@csrf @method('PUT')
+                <div><label>Course title</label><input name="title" value="{{ old('title',$course->title) }}" required></div>
+                <div><label>Delivery mode</label><select name="delivery_mode">@foreach(['online'=>'Online','in_person'=>'In person','blended'=>'Blended'] as $value=>$label)<option value="{{ $value }}" @selected(old('delivery_mode',$course->delivery_mode)===$value)>{{ $label }}</option>@endforeach</select></div>
+                <div><label>Start date</label><input type="date" name="start_date" value="{{ old('start_date',optional($course->start_date)->format('Y-m-d')) }}"></div>
+                <div><label>End date</label><input type="date" name="end_date" value="{{ old('end_date',optional($course->end_date)->format('Y-m-d')) }}"></div>
+                <div><label>Duration hours</label><input type="number" min="1" name="duration_hours" value="{{ old('duration_hours',$course->duration_hours) }}"></div>
+                <div><label>Pass mark</label><input type="number" min="0" max="100" step="0.01" name="pass_mark" value="{{ old('pass_mark',$course->pass_mark) }}" required></div>
+                <div class="full"><label>Summary</label><textarea name="summary" placeholder="Short course summary">{{ old('summary',$course->summary) }}</textarea></div>
+                <div class="full"><label>Description</label><textarea name="description" placeholder="Course description">{{ old('description',$course->description) }}</textarea></div>
+                <div class="full"><button class="btn btn-primary"><i class="fas fa-save"></i> Save Course Details</button></div>
+            </form>
+        </div>
+    </section>
+
 </div>
 
 <div class="icm-modal" id="moduleModal" aria-hidden="true">
@@ -277,6 +382,38 @@
     </div>
 </div>
 
+
+<div class="icm-modal" id="announcementModal" aria-hidden="true">
+    <div class="icm-modal-dialog">
+        <div class="icm-modal-head"><h3>New Announcement</h3><button type="button" class="icm-modal-close" data-close-modal>&times;</button></div>
+        <div class="icm-modal-body">
+            <form method="POST" action="{{ route('instructor.courses.announcements.store',$course) }}" class="icm-form">@csrf
+                <div class="full"><label>Title</label><input name="title" placeholder="Announcement title" required></div>
+                <div class="full"><label>Message</label><textarea name="body" placeholder="Write the announcement" required></textarea></div>
+                <div><label>Publish at</label><input type="datetime-local" name="published_at"></div>
+                <div><label>Expires at</label><input type="datetime-local" name="expires_at"></div>
+                <div class="full"><button class="btn btn-primary"><i class="fas fa-bullhorn"></i> Post Announcement</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="icm-modal" id="reviewModal" aria-hidden="true">
+    <div class="icm-modal-dialog">
+        <div class="icm-modal-head"><h3 id="reviewModalTitle">Review Submission</h3><button type="button" class="icm-modal-close" data-close-modal>&times;</button></div>
+        <div class="icm-modal-body">
+            <form method="POST" action="" class="icm-form" id="reviewForm">@csrf @method('PUT')
+                <div><label>Score</label><input type="number" step="0.01" min="0" name="score" id="reviewScore"></div>
+                <div><label>Percentage</label><input type="number" step="0.01" min="0" max="100" name="percentage" id="reviewPercentage"></div>
+                <div><label>Status</label><select name="status" id="reviewStatus"><option value="submitted">Submitted</option><option value="graded">Graded</option></select></div>
+                <div></div>
+                <div class="full"><label>Instructor feedback</label><textarea name="instructor_feedback" id="reviewFeedback" placeholder="Feedback for the participant"></textarea></div>
+                <div class="full"><button class="btn btn-primary"><i class="fas fa-save"></i> Save Review</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded',function(){
     const requestedTab=new URLSearchParams(window.location.search).get('tab');
@@ -322,6 +459,19 @@ document.addEventListener('DOMContentLoaded',function(){
         form.action=questionBase.replace('__ASSESSMENT__',btn.dataset.openQuestion);
         document.getElementById('questionModalTitle').textContent='Add Question: '+btn.dataset.assessmentTitle;
         openModal('questionModal');
+    }));
+
+
+    const reviewBase=@json(route('instructor.courses.submissions.review',[$course,'__ATTEMPT__']));
+    document.querySelectorAll('[data-review-attempt]').forEach(btn=>btn.addEventListener('click',function(){
+        const form=document.getElementById('reviewForm');
+        form.action=reviewBase.replace('__ATTEMPT__',btn.dataset.reviewAttempt);
+        document.getElementById('reviewModalTitle').textContent='Review: '+(btn.dataset.reviewName || 'Participant')+' — '+(btn.dataset.reviewAssessment || 'Assessment');
+        document.getElementById('reviewScore').value=btn.dataset.reviewScore || '';
+        document.getElementById('reviewPercentage').value=btn.dataset.reviewPercentage || '';
+        document.getElementById('reviewFeedback').value=btn.dataset.reviewFeedback || '';
+        document.getElementById('reviewStatus').value=btn.dataset.reviewStatus === 'graded' ? 'graded' : 'submitted';
+        openModal('reviewModal');
     }));
 
     document.addEventListener('keydown',e=>{

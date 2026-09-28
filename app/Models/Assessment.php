@@ -20,4 +20,14 @@ class Assessment extends Model
     {
         return $this->hasMany(AssessmentQuestion::class)->orderBy('position');
     }
+
+    public function attempts()
+    {
+        return $this->hasMany(AssessmentAttempt::class);
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
 }
