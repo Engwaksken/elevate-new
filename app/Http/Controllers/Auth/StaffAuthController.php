@@ -16,12 +16,7 @@ class StaffAuthController extends Controller
         if (Auth::check()) {
             $user = Auth::user();
 
-            if (
-                method_exists($user, 'isStaff')
-                && $user->isStaff()
-                && method_exists($user, 'isActive')
-                && $user->isActive()
-            ) {
+            if ($user->isStaff() && $user->isActive()) {
                 return redirect()->route('admin.dashboard');
             }
 
@@ -40,30 +35,19 @@ class StaffAuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt(
-            [
-                'email' => strtolower($credentials['email']),
-                'password' => $credentials['password'],
-            ],
-            $request->boolean('remember')
-        )) {
+        if (! Auth::attempt([
+            'email' => strtolower($credentials['email']),
+            'password' => $credentials['password'],
+        ], $request->boolean('remember'))) {
             throw ValidationException::withMessages([
                 'email' => 'The supplied staff credentials are incorrect.',
             ]);
         }
 
         $request->session()->regenerate();
-
         $user = Auth::user();
 
-        if (
-            ! method_exists($user, 'isStaff')
-            || ! $user->isStaff()
-            || (
-                method_exists($user, 'isActive')
-                && ! $user->isActive()
-            )
-        ) {
+        if (! $user->isStaff() || ! $user->isActive()) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -73,29 +57,24 @@ class StaffAuthController extends Controller
             ]);
         }
 
-        if (property_exists($user, 'last_login_at') || isset($user->last_login_at)) {
-            try {
-                $user->forceFill(['last_login_at' => now()])->save();
-            } catch (\Throwable $e) {
-                // Login should not fail only because optional audit metadata could not update.
-                report($e);
-            }
+        try {
+            $user->forceFill(['last_login_at' => now()])->save();
+        } catch (\Throwable $e) {
+            report($e);
         }
 
-        return redirect()->intended(route('admin.dashboard'));
+        // Never allow a stale intended URL to send staff/admin to /instructor/dashboard.
+        $request->session()->forget('url.intended');
+
+        return redirect()->route('admin.dashboard');
     }
 
     public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        /*
-         * Staff/admin logout must always return to the isolated staff login,
-         * never the participant login.
-         */
         return redirect()
             ->route('admin.login')
             ->with('success', 'You have been signed out securely.');

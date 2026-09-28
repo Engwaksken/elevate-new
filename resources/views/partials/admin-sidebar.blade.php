@@ -7,6 +7,9 @@
     $sidebarEmail = $sidebarUser?->email ?? '';
     $sidebarInitial = strtoupper(mb_substr(trim($sidebarName), 0, 1));
 
+    $isInstructorSimpleMenu = $sidebarUser
+        && ! $sidebarUser->isSuperAdmin()
+        && $sidebarUser->hasAnyRole(['instructor','trainer']);
     $isInstructorWorkspace = $sidebarUser
         && ! $sidebarUser->isSuperAdmin()
         && $sidebarUser->hasAnyRole(['instructor','trainer']);
@@ -206,6 +209,20 @@
                 'items' => $accountItems,
             ];
         }
+    }
+    // Instructor simple menu override:
+    // course-specific functions stay inside My Courses, not the global sidebar.
+    if ($isInstructorSimpleMenu) {
+        $navGroups = [
+            [
+                'label' => 'Instructor',
+                'colour' => 'delivery',
+                'items' => [
+                    ['route' => 'admin.dashboard', 'label' => 'Dashboard', 'icon' => 'fa-gauge-high', 'permissions' => null],
+                    ['route' => 'admin.my-courses', 'label' => 'My Courses', 'icon' => 'fa-chalkboard-user', 'permissions' => null],
+                ],
+            ],
+        ];
     }
 @endphp
 

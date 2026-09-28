@@ -1099,3 +1099,13 @@ Route::middleware(['auth','staff','role:instructor,trainer'])
         Route::delete('/{course}/assessments/{assessment}/questions/{question}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'destroyQuestion'])->name('assessments.questions.destroy');
         Route::put('/{course}/participants/{enrolment}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'updateParticipant'])->name('participants.update');
     });
+/*
+|--------------------------------------------------------------------------
+| Instructor / Trainer My Courses
+|--------------------------------------------------------------------------
+| Staff enter through /admin/dashboard. Legacy /instructor/dashboard
+| redirects to the shared dashboard.
+*/
+Route::get('/admin/my-courses', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'myCourses'])
+    ->middleware(['auth','staff','role:instructor,trainer'])
+    ->name('admin.my-courses');
