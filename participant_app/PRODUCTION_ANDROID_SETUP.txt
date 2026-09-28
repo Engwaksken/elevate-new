@@ -1,0 +1,32 @@
+ElevateHer360 Participant Android production configuration
+
+Firebase
+1. Create/select the Android app in Firebase using package:
+   org.elevateher360.elevateher360_participant
+2. Download google-services.json.
+3. Put it here locally:
+   participant_app/android/app/google-services.json
+4. Run ENABLE_FIREBASE_ANDROID.ps1 from this Phase 7 package.
+5. Do not commit google-services.json. Phase 7 adds it to participant_app/.gitignore.
+
+Release signing
+The Phase 7 Android Gradle file supports android/key.properties when present.
+Without it, release builds use the debug key ONLY for build validation.
+
+Example participant_app/android/key.properties:
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=elevateher360
+storeFile=../app/elevateher360-release.jks
+
+Generate your keystore separately, for example:
+keytool -genkeypair -v -keystore participant_app/android/app/elevateher360-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias elevateher360
+
+Never commit the keystore or key.properties.
+
+Release smoke build:
+cd participant_app
+flutter build apk --release --dart-define=API_BASE_URL=https://site.elevateher360.org/api/v1/participant
+
+Play Store bundle after release signing and Firebase are configured:
+flutter build appbundle --release --dart-define=API_BASE_URL=https://site.elevateher360.org/api/v1/participant

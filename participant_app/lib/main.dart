@@ -9,11 +9,13 @@ import 'services/notification_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await NotificationService.instance.initialise();
-  } catch (_) {}
+  await NotificationService.instance.initialise();
 
   final signedIn = await ApiService.instance.hasToken();
+
+  if (signedIn) {
+    await NotificationService.instance.registerCurrentDevice();
+  }
 
   runApp(ElevateHer360App(signedIn: signedIn));
 }
