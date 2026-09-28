@@ -15,7 +15,10 @@
     };
 
     $cards = [
-        ['participants', 'Participants', 'fa-users'],
+        ['assigned_courses', 'Assigned Courses', 'fa-chalkboard-user'],
+        ['assigned_learners', 'Assigned Learners', 'fa-users'],
+        ['lead_courses', 'Lead Courses', 'fa-star'],
+        ['active_assigned_courses', 'Active Assigned Courses', 'fa-circle-check'],        ['participants', 'Participants', 'fa-users'],
         ['staff', 'Staff', 'fa-user-tie'],
         ['programmes', 'Active Programmes', 'fa-diagram-project'],
         ['courses', 'Published Courses', 'fa-graduation-cap'],
@@ -70,6 +73,38 @@
     </div>
 </div>
 
+@if($isInstructorDashboard ?? false)
+    <div class="admin-panel" style="margin-bottom:18px">
+        <div class="admin-panel-head">
+            <div>
+                <h2>Instructor Course Workspace</h2>
+                <p>Your assigned courses are managed from My Courses. Course functions remain inside the selected course.</p>
+            </div>
+            @if(Route::has('admin.my-courses'))
+                <a href="{{ route('admin.my-courses') }}" class="btn btn-primary">
+                    <i class="fas fa-chalkboard-user"></i> My Courses
+                </a>
+            @endif
+        </div>
+
+        <div class="admin-quick-grid">
+            @forelse($instructorCourses as $course)
+                @if(Route::has('instructor.courses.manage'))
+                    <a href="{{ route('instructor.courses.manage',$course) }}" class="admin-quick-card">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>{{ $course->title }}</span>
+                    </a>
+                @endif
+            @empty
+                <div class="admin-empty">
+                    <i class="fas fa-graduation-cap"></i>
+                    <strong>No courses assigned</strong>
+                    <span>Assigned courses will appear here.</span>
+                </div>
+            @endforelse
+        </div>
+    </div>
+@endif
 @if($visibleCards->isNotEmpty())
     <div class="admin-stats-grid compact">
         @foreach($visibleCards as [$key, $label, $icon])

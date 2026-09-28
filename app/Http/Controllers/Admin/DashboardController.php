@@ -22,12 +22,37 @@ class DashboardController extends Controller
 
         abort_unless($user && $user->isStaff() && $user->isActive(), 403);
 
+        $isInstructor = ! $user->isSuperAdmin()
+            && $user->hasAnyRole(['instructor','trainer']);
+
         $can = static function (string|array $permissions) use ($user): bool {
             return $user->isSuperAdmin()
                 || $user->hasAnyPermission((array) $permissions);
         };
 
         $stats = [];
+        $instructorCourses = collect();
+
+        if ($isInstructor) {
+            $instructorCourses = $user->instructedCourses()
+                ->withCount('enrolments')
+                ->orderBy('title')
+                ->limit(6)
+                ->get();
+
+            $allInstructorCourses = $user->instructedCourses()
+                ->withCount('enrolments')
+                ->get();
+
+            $stats['assigned_courses'] = $allInstructorCourses->count();
+            $stats['assigned_learners'] = (int) $allInstructorCourses->sum('enrolments_count');
+            $stats['lead_courses'] = $allInstructorCourses->filter(
+                fn ($course) => (bool) data_get($course, 'pivot.is_lead', false)
+            )->count();
+            $stats['active_assigned_courses'] = $allInstructorCourses
+                ->whereIn('status', ['published','active'])
+                ->count();
+        }
 
         if ($can(['users.view', 'users.edit'])) {
             $stats['participants'] = User::where('user_type', 'participant')->count();
@@ -74,6 +99,8 @@ class DashboardController extends Controller
 
         return view('admin.dashboard.index', [
             'stats' => $stats,
+            'isInstructorDashboard' => $isInstructor,
+            'instructorCourses' => $instructorCourses,
             'recentTasks' => $can('tasks.manage')
                 ? Task::latest()->limit(6)->get()
                 : collect(),
