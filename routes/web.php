@@ -1,7 +1,5 @@
-Route::get('/brand-assets/{type}', [\App\Http\Controllers\BrandAssetController::class, 'show'])
-    ->whereIn('type', ['logo','favicon'])
-    ->name('branding.asset');
 <?php
+
 
 use App\Http\Controllers\Admin\ProgrammeManagement\ActivityController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -108,6 +106,11 @@ use App\Http\Controllers\Career\ResumeSectionController;
 use App\Http\Controllers\Career\ResumeUploadController;
 use App\Http\Controllers\Admin\RoleController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\BrandAssetController;
+
+Route::get('/brand-assets/{type}', [BrandAssetController::class, 'show'])
+    ->whereIn('type', ['logo','favicon'])
+    ->name('branding.asset');
 use App\Http\Controllers\Jobs\SavedJobController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\HR\StaffAppraisalController;
