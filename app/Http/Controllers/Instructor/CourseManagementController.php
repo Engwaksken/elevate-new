@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Instructor;
 
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
+use App\Models\AssessmentAttempt;
 use App\Models\AssessmentQuestion;
 use App\Models\Course;
+use App\Models\CourseAnnouncement;
 use App\Models\CourseModule;
 use App\Models\Enrolment;
 use App\Models\Lesson;
@@ -20,8 +22,7 @@ class CourseManagementController extends Controller
 
         $course->load(['cohorts']);
 
-        $moduleQuery = $course->modules()
-            ->withCount('lessons');
+        $moduleQuery = $course->modules()->withCount('lessons');
 
         if ($request->filled('module_search')) {
             $term = trim((string) $request->get('module_search'));
@@ -106,12 +107,64 @@ class CourseManagementController extends Controller
             ->paginate(20, ['*'], 'participants_page')
             ->withQueryString();
 
+        $submissionQuery = AssessmentAttempt::query()
+            ->with(['assessment','user'])
+            ->whereHas('assessment', fn ($q) => $q->where('course_id', $course->id));
+
+        if ($request->filled('submission_search')) {
+            $term = trim((string) $request->get('submission_search'));
+            $submissionQuery->where(function ($q) use ($term) {
+                $q->whereHas('user', fn ($u) => $u
+                    ->where('name', 'like', "%{$term}%")
+                    ->orWhere('email', 'like', "%{$term}%"))
+                    ->orWhereHas('assessment', fn ($a) => $a->where('title', 'like', "%{$term}%"));
+            });
+        }
+
+        if ($request->filled('submission_status')) {
+            $submissionQuery->where('status', $request->get('submission_status'));
+        }
+
+        if ($request->filled('submission_assessment_id')) {
+            $submissionQuery->where('assessment_id', (int) $request->get('submission_assessment_id'));
+        }
+
+        if ($request->filled('submission_period')) {
+            $this->applyPeriod($submissionQuery, (string) $request->get('submission_period'));
+        }
+
+        $submissions = $submissionQuery
+            ->latest('submitted_at')
+            ->paginate(20, ['*'], 'submissions_page')
+            ->withQueryString();
+
+        $announcementQuery = $course->announcements()->with('creator');
+
+        if ($request->filled('announcement_search')) {
+            $term = trim((string) $request->get('announcement_search'));
+            $announcementQuery->where(function ($q) use ($term) {
+                $q->where('title', 'like', "%{$term}%")
+                    ->orWhere('body', 'like', "%{$term}%");
+            });
+        }
+
+        if ($request->filled('announcement_period')) {
+            $this->applyPeriod($announcementQuery, (string) $request->get('announcement_period'));
+        }
+
+        $announcements = $announcementQuery
+            ->latest('published_at')
+            ->paginate(12, ['*'], 'announcements_page')
+            ->withQueryString();
+
         return view('instructor.course-manage', [
             'course' => $course,
             'modules' => $modules,
             'lessons' => $lessons,
             'assessments' => $assessments,
             'participants' => $participants,
+            'submissions' => $submissions,
+            'announcements' => $announcements,
             'stats' => [
                 'modules' => $course->modules()->count(),
                 'lessons' => Lesson::whereHas('module', fn ($q) => $q->where('course_id', $course->id))->count(),
@@ -119,6 +172,100 @@ class CourseManagementController extends Controller
                 'participants' => $course->enrolments()->count(),
             ],
         ]);
+    }
+
+    public function updateCourse(Request $request, Course $course)
+    {
+        $this->authorise($course);
+
+        $data = $request->validate([
+            'title' => ['required','string','max:190'],
+            'summary' => ['nullable','string','max:1000'],
+            'description' => ['nullable','string'],
+            'delivery_mode' => ['required','in:online,in_person,blended'],
+            'start_date' => ['nullable','date'],
+            'end_date' => ['nullable','date','after_or_equal:start_date'],
+            'duration_hours' => ['nullable','integer','min:1'],
+            'pass_mark' => ['required','numeric','min:0','max:100'],
+        ]);
+
+        $course->update($data);
+
+        return back()->with('success', 'Course information updated.');
+    }
+
+    public function storeAnnouncement(Request $request, Course $course)
+    {
+        $this->authorise($course);
+
+        $data = $request->validate([
+            'title' => ['required','string','max:190'],
+            'body' => ['required','string'],
+            'published_at' => ['nullable','date'],
+            'expires_at' => ['nullable','date','after:published_at'],
+        ]);
+
+        $course->announcements()->create([
+            'title' => $data['title'],
+            'body' => $data['body'],
+            'published_at' => $data['published_at'] ?? now(),
+            'expires_at' => $data['expires_at'] ?? null,
+            'created_by' => auth()->id(),
+        ]);
+
+        return back()->with('success', 'Announcement posted.');
+    }
+
+    public function destroyAnnouncement(Course $course, CourseAnnouncement $announcement)
+    {
+        $this->authorise($course);
+        abort_unless((int) $announcement->course_id === (int) $course->id, 404);
+
+        $announcement->delete();
+
+        return back()->with('success', 'Announcement deleted.');
+    }
+
+    public function reviewSubmission(Request $request, Course $course, AssessmentAttempt $attempt)
+    {
+        $this->authorise($course);
+
+        abort_unless(
+            (int) optional($attempt->assessment)->course_id === (int) $course->id,
+            404
+        );
+
+        $data = $request->validate([
+            'score' => ['nullable','numeric','min:0'],
+            'percentage' => ['nullable','numeric','min:0','max:100'],
+            'instructor_feedback' => ['nullable','string','max:5000'],
+            'status' => ['required','in:submitted,graded'],
+        ]);
+
+        $attempt->update([
+            'score' => $data['score'] ?? null,
+            'percentage' => $data['percentage'] ?? null,
+            'instructor_feedback' => $data['instructor_feedback'] ?? null,
+            'status' => $data['status'],
+            'graded_at' => $data['status'] === 'graded' ? now() : null,
+            'graded_by' => $data['status'] === 'graded' ? auth()->id() : null,
+        ]);
+
+        return back()->with('success', 'Submission review saved.');
+    }
+
+    public function downloadSubmissionFile(Course $course, AssessmentAttempt $attempt)
+    {
+        $this->authorise($course);
+
+        abort_unless(
+            (int) optional($attempt->assessment)->course_id === (int) $course->id
+            && $attempt->submission_file_path
+            && Storage::disk('local')->exists($attempt->submission_file_path),
+            404
+        );
+
+        return Storage::disk('local')->download($attempt->submission_file_path);
     }
 
     public function storeModule(Request $request, Course $course)
@@ -344,7 +491,7 @@ class CourseManagementController extends Controller
         abort_unless((int) $enrolment->course_id === (int) $course->id, 404);
 
         $enrolment->update($request->validate([
-            'status' => ['required', 'in:enrolled,active,in_progress,completed,withdrawn,cancelled'],
+            'status' => ['required', 'in:enrolled,in_progress,completed,withdrawn,failed'],
             'progress_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'final_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]));

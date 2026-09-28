@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name','email','phone','password','user_type','status','last_login_at','email_verified_at',
@@ -93,6 +94,7 @@ class User extends Authenticatable
             ->withPivot('is_lead')
             ->withTimestamps();
     }
+
     public function isStaff(): bool { return $this->user_type === 'staff'; }
     public function isParticipant(): bool { return $this->user_type === 'participant'; }
     public function isActive(): bool { return $this->status === 'active'; }

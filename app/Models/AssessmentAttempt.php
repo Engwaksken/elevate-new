@@ -6,12 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class AssessmentAttempt extends Model
 {
-    protected $fillable=[
-        'assessment_id','user_id','attempt_number','score','percentage',
-        'status','started_at','submitted_at','graded_at','graded_by'
+    protected $fillable = [
+        'assessment_id','user_id','attempt_number','client_submission_id','submission_text','submission_file_path',
+        'score','percentage','instructor_feedback','status','started_at','submitted_at',
+        'graded_at','graded_by',
     ];
 
-    protected $casts=[
+    protected $casts = [
         'started_at'=>'datetime',
         'submitted_at'=>'datetime',
         'graded_at'=>'datetime',
@@ -27,5 +28,15 @@ class AssessmentAttempt extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function grader()
+    {
+        return $this->belongsTo(User::class, 'graded_by');
+    }
+
+    public function answers()
+    {
+        return $this->hasMany(AssessmentAnswer::class);
     }
 }

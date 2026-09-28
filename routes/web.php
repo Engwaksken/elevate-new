@@ -1121,3 +1121,31 @@ Route::middleware(['auth','staff','role:instructor,trainer'])
             [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadAssessmentFile']
         )->name('instructor.courses.assessments.file');
     });
+Route::middleware(['auth','staff','role:instructor,trainer'])
+    ->prefix('instructor/courses')
+    ->group(function () {
+        Route::put(
+            '/{course}',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'updateCourse']
+        )->name('instructor.courses.update');
+
+        Route::post(
+            '/{course}/announcements',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'storeAnnouncement']
+        )->name('instructor.courses.announcements.store');
+
+        Route::delete(
+            '/{course}/announcements/{announcement}',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'destroyAnnouncement']
+        )->name('instructor.courses.announcements.destroy');
+
+        Route::put(
+            '/{course}/submissions/{attempt}/review',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'reviewSubmission']
+        )->name('instructor.courses.submissions.review');
+
+        Route::get(
+            '/{course}/submissions/{attempt}/file',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadSubmissionFile']
+        )->name('instructor.courses.submissions.file');
+    });
