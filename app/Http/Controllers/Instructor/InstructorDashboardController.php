@@ -26,7 +26,9 @@ class InstructorDashboardController extends Controller
             403
         );
 
-        $query = $user->instructedCourses()->withCount('enrolments');
+        $query = $user->instructedCourses()
+            ->with('cohorts')
+            ->withCount('enrolments');
 
         if ($search = trim((string) $request->get('search'))) {
             $query->where(function ($q) use ($search) {
@@ -36,16 +38,58 @@ class InstructorDashboardController extends Controller
             });
         }
 
-        if ($status = $request->get('status')) {
-            $query->where('status', $status);
+        if ($request->filled('course_id')) {
+            $query->where('courses.id', (int) $request->get('course_id'));
         }
 
-        $courses = $query->orderBy('title')->paginate(12)->withQueryString();
+        if ($request->filled('cohort_id')) {
+            $cohortId = (int) $request->get('cohort_id');
 
-        $allCourses = $user->instructedCourses()->withCount('enrolments')->get();
+            $query->whereHas('cohorts', fn ($q) => $q->where('cohorts.id', $cohortId));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('courses.status', $request->get('status'));
+        }
+
+        if ($request->filled('period')) {
+            $period = (string) $request->get('period');
+
+            match ($period) {
+                'today' => $query->whereDate('courses.updated_at', today()),
+                'week' => $query->where('courses.updated_at', '>=', now()->startOfWeek()),
+                'month' => $query->where('courses.updated_at', '>=', now()->startOfMonth()),
+                'quarter' => $query->where('courses.updated_at', '>=', now()->firstOfQuarter()),
+                'year' => $query->where('courses.updated_at', '>=', now()->startOfYear()),
+                default => null,
+            };
+        }
+
+        $courses = $query
+            ->orderBy('title')
+            ->paginate(12)
+            ->withQueryString();
+
+        $allCourses = $user->instructedCourses()
+            ->withCount('enrolments')
+            ->get();
+
+        $courseOptions = $user->instructedCourses()
+            ->with('cohorts')
+            ->select('courses.id', 'courses.title')
+            ->orderBy('title')
+            ->get();
+
+        $cohortOptions = $courseOptions
+            ->flatMap(fn ($course) => $course->cohorts)
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
 
         return view('instructor.dashboard', [
             'courses' => $courses,
+            'courseOptions' => $courseOptions,
+            'cohortOptions' => $cohortOptions,
             'stats' => [
                 'courses' => $allCourses->count(),
                 'learners' => (int) $allCourses->sum('enrolments_count'),
