@@ -1,26 +1,20 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
+import 'assignments_screen.dart';
 import 'cached_list_screen.dart';
+import 'notifications_screen.dart';
+import 'settings_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
 
-  void _open(
-    BuildContext context, {
-    required String collection,
-    required String title,
-    required IconData icon,
-  }) {
+  void _push(BuildContext context, Widget screen, String title) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => Scaffold(
           appBar: AppBar(title: Text(title)),
-          body: CachedListScreen(
-            collection: collection,
-            title: title,
-            icon: icon,
-          ),
+          body: screen,
         ),
       ),
     );
@@ -28,6 +22,7 @@ class MoreScreen extends StatelessWidget {
 
   Future<void> _profile(BuildContext context) async {
     final user = await ApiService.instance.currentUser();
+
     if (!context.mounted) return;
 
     showModalBottomSheet<void>(
@@ -65,33 +60,92 @@ class MoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      ('Assignments', 'assignments', Icons.assignment_outlined),
-      ('Events', 'events', Icons.event_outlined),
-      ('Announcements', 'announcements', Icons.campaign_outlined),
-      ('Notifications', 'notifications', Icons.notifications_outlined),
-    ];
-
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        for (final item in items)
-          Card(
-            child: ListTile(
-              leading: Icon(item.$3, color: const Color(0xFF800000)),
-              title: Text(item.$1),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _open(
-                context,
-                collection: item.$2,
-                title: item.$1,
-                icon: item.$3,
-              ),
-            ),
-          ),
         Card(
           child: ListTile(
-            leading: const Icon(Icons.person_outline, color: Color(0xFF800000)),
+            leading: const Icon(
+              Icons.assignment_outlined,
+              color: Color(0xFF800000),
+            ),
+            title: const Text('Assignments'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () =>
+                _push(context, const AssignmentsScreen(), 'Assignments'),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const Icon(
+              Icons.event_outlined,
+              color: Color(0xFF800000),
+            ),
+            title: const Text('Events'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(
+              context,
+              const CachedListScreen(
+                collection: 'events',
+                title: 'Events',
+                icon: Icons.event_outlined,
+              ),
+              'Events',
+            ),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const Icon(
+              Icons.campaign_outlined,
+              color: Color(0xFF800000),
+            ),
+            title: const Text('Announcements'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(
+              context,
+              const CachedListScreen(
+                collection: 'announcements',
+                title: 'Announcements',
+                icon: Icons.campaign_outlined,
+              ),
+              'Announcements',
+            ),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const Icon(
+              Icons.notifications_outlined,
+              color: Color(0xFF800000),
+            ),
+            title: const Text('Notifications'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _push(
+              context,
+              const NotificationsScreen(),
+              'Notifications',
+            ),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const Icon(
+              Icons.settings_outlined,
+              color: Color(0xFF800000),
+            ),
+            title: const Text('Data & Offline Settings'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () =>
+                _push(context, const SettingsScreen(), 'Data & Offline'),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const Icon(
+              Icons.person_outline,
+              color: Color(0xFF800000),
+            ),
             title: const Text('Profile'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _profile(context),
