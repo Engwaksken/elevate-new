@@ -29,10 +29,12 @@ class SyncService {
 
   void startAutoSync() {
     _subscription?.cancel();
+
     _subscription =
         Connectivity().onConnectivityChanged.listen((results) async {
       final online = results.any((result) => result != ConnectivityResult.none);
       _onlineController.add(online);
+
       if (online) {
         try {
           await syncNow();
@@ -57,35 +59,73 @@ class SyncService {
     );
   }
 
+  Future<void> queueAssignmentSubmission({
+    required int assessmentId,
+    String? text,
+    String? localFilePath,
+  }) async {
+    await _db.enqueueOperation(
+      clientOperationId: _uuid.v4(),
+      type: 'assignment_submission',
+      payload: {
+        'assessment_id': assessmentId,
+        'submission_text': text,
+        'local_file_path': localFilePath,
+      },
+    );
+  }
+
   Future<void> flushOfflineActions() async {
     if (!await isOnline()) return;
 
     final pending = await _db.pendingOperations();
     if (pending.isEmpty) return;
 
-    final payload = pending
-        .map(
-          (item) => {
-            'client_operation_id': item['client_operation_id'],
-            'type': item['type'],
-            'payload': item['payload'],
-          },
-        )
-        .toList();
+    final completed = <String>[];
+    final serverOperations = <Map<String, dynamic>>[];
 
-    final result = await _api.postOfflineActions(payload);
-    final rows = result['results'];
-    if (rows is! List) return;
+    for (final item in pending) {
+      final type = item['type']?.toString() ?? '';
+      final clientId = item['client_operation_id']?.toString() ?? '';
+      final payload = Map<String, dynamic>.from(item['payload'] as Map? ?? {});
 
-    final processed = <String>[];
-    for (final raw in rows) {
-      if (raw is! Map) continue;
-      final row = Map<String, dynamic>.from(raw);
-      if (row['status'] == 'processed' || row['status'] == 'duplicate') {
-        processed.add(row['client_operation_id'].toString());
+      if (type == 'assignment_submission') {
+        try {
+          await _api.submitAssignment(
+            assessmentId: int.parse(payload['assessment_id'].toString()),
+            text: payload['submission_text']?.toString(),
+            localFilePath: payload['local_file_path']?.toString(),
+            clientSubmissionId: clientId,
+          );
+          completed.add(clientId);
+        } catch (_) {}
+        continue;
+      }
+
+      serverOperations.add({
+        'client_operation_id': clientId,
+        'type': type,
+        'payload': payload,
+      });
+    }
+
+    if (serverOperations.isNotEmpty) {
+      final result = await _api.postOfflineActions(serverOperations);
+      final rows = result['results'];
+
+      if (rows is List) {
+        for (final raw in rows) {
+          if (raw is! Map) continue;
+          final row = Map<String, dynamic>.from(raw);
+
+          if (row['status'] == 'processed' || row['status'] == 'duplicate') {
+            completed.add(row['client_operation_id'].toString());
+          }
+        }
       }
     }
-    await _db.removeOperations(processed);
+
+    await _db.removeOperations(completed);
   }
 
   Future<void> syncNow() async {
@@ -109,6 +149,7 @@ class SyncService {
       'local_reminders',
     ]) {
       final items = data[key];
+
       if (items is List) {
         if (lastSync == null || lastSync.isEmpty) {
           await _db.replaceCollection(key, items);

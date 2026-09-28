@@ -4,10 +4,12 @@ import '../core/connectivity_banner.dart';
 import '../services/api_service.dart';
 import '../services/local_database.dart';
 import '../services/sync_service.dart';
-import 'cached_list_screen.dart';
 import 'dashboard_screen.dart';
-import 'more_screen.dart';
+import 'jobs_screen.dart';
+import 'learning_screen.dart';
 import 'login_screen.dart';
+import 'mentorship_screen.dart';
+import 'more_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,58 +22,58 @@ class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
   bool _syncing = false;
   String? _lastSync;
+  int _queuedActions = 0;
 
   final _pages = const [
     DashboardScreen(),
-    CachedListScreen(
-      collection: 'courses',
-      title: 'Learning',
-      icon: Icons.menu_book_outlined,
-    ),
-    CachedListScreen(
-      collection: 'mentorship',
-      title: 'Mentorship',
-      icon: Icons.diversity_3_outlined,
-    ),
-    CachedListScreen(
-      collection: 'jobs',
-      title: 'Jobs',
-      icon: Icons.work_outline,
-    ),
+    LearningScreen(),
+    MentorshipScreen(),
+    JobsScreen(),
     MoreScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
-    _loadLastSync();
+    _loadSyncState();
     SyncService.instance.startAutoSync();
   }
 
-  Future<void> _loadLastSync() async {
+  Future<void> _loadSyncState() async {
     final value = await LocalDatabase.instance.getMeta('last_synced_at');
-    if (mounted) setState(() => _lastSync = value);
+    final queued = await LocalDatabase.instance.pendingOperationCount();
+
+    if (mounted) {
+      setState(() {
+        _lastSync = value;
+        _queuedActions = queued;
+      });
+    }
   }
 
   Future<void> _sync() async {
     if (_syncing) return;
+
     setState(() => _syncing = true);
 
     try {
       final online = await SyncService.instance.isOnline();
+
       if (!online) {
         if (!mounted) return;
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content:
-                Text('You are offline. Your saved data is still available.'),
+            content: Text(
+              'You are offline. Your saved data is still available.',
+            ),
           ),
         );
         return;
       }
 
       await SyncService.instance.syncNow();
-      await _loadLastSync();
+      await _loadSyncState();
 
       if (mounted) {
         setState(() {});
@@ -83,7 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Sync could not complete. Try again later.')),
+            content: Text('Sync could not complete. Try again later.'),
+          ),
         );
       }
     } finally {
@@ -96,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await LocalDatabase.instance.clearAll();
 
     if (!mounted) return;
+
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,
@@ -105,7 +109,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     const maroon = Color(0xFF800000);
-
     final titles = ['Dashboard', 'Learning', 'Mentorship', 'Jobs', 'More'];
 
     return Scaffold(
@@ -150,11 +153,25 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
             color: Colors.grey.shade100,
-            child: Text(
-              _lastSync == null
-                  ? 'Not synced yet'
-                  : 'Last synced: ${_lastSync!.replaceFirst('T', ' ')}',
-              style: const TextStyle(fontSize: 12),
+            child: Wrap(
+              spacing: 14,
+              runSpacing: 4,
+              children: [
+                Text(
+                  _lastSync == null
+                      ? 'Not synced yet'
+                      : 'Last synced: ${_lastSync!.replaceFirst('T', ' ')}',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                if (_queuedActions > 0)
+                  Text(
+                    'Queued offline actions: $_queuedActions',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+              ],
             ),
           ),
           Expanded(child: _pages[_index]),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -11,11 +12,12 @@ class ApiService {
   static final ApiService instance = ApiService._();
 
   final FlutterSecureStorage _secure = const FlutterSecureStorage();
+
   late final Dio dio = Dio(
     BaseOptions(
       baseUrl: AppConfig.apiBaseUrl,
       connectTimeout: const Duration(seconds: 20),
-      receiveTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 45),
       headers: {'Accept': 'application/json'},
     ),
   )..interceptors.add(
@@ -46,7 +48,10 @@ class ApiService {
     final data = Map<String, dynamic>.from(response.data as Map);
     await _secure.write(key: 'auth_token', value: data['token']?.toString());
     await _secure.write(
-        key: 'current_user', value: jsonEncode(data['user'] ?? {}));
+      key: 'current_user',
+      value: jsonEncode(data['user'] ?? {}),
+    );
+
     return data;
   }
 
@@ -76,6 +81,12 @@ class ApiService {
           'last_synced_at': lastSyncedAt,
       },
     );
+
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> course(int id) async {
+    final response = await dio.get('/courses/$id');
     return Map<String, dynamic>.from(response.data as Map);
   }
 
@@ -86,28 +97,37 @@ class ApiService {
       '/offline-actions',
       data: {'operations': operations},
     );
+
     return Map<String, dynamic>.from(response.data as Map);
   }
 
-  Future<Map<String, dynamic>> dashboard() async {
-    final response = await dio.get('/dashboard');
-    return Map<String, dynamic>.from(response.data as Map);
-  }
+  Future<void> submitAssignment({
+    required int assessmentId,
+    String? text,
+    String? localFilePath,
+    String? clientSubmissionId,
+  }) async {
+    MultipartFile? file;
 
-  Future<List<dynamic>> listEndpoint(String endpoint) async {
-    final response = await dio.get(endpoint);
-    final body = response.data;
-    if (body is List) return body;
-    if (body is Map && body['data'] is List) return body['data'] as List;
-    if (body is Map) {
-      for (final key in ['matches', 'sessions', 'goals', 'courses']) {
-        if (body[key] is List) return body[key] as List;
-      }
+    if (localFilePath != null &&
+        localFilePath.isNotEmpty &&
+        File(localFilePath).existsSync()) {
+      file = await MultipartFile.fromFile(localFilePath);
     }
-    return const [];
+
+    final form = FormData.fromMap({
+      if (text != null && text.trim().isNotEmpty)
+        'submission_text': text.trim(),
+      if (clientSubmissionId != null)
+        'client_submission_id': clientSubmissionId,
+      if (file != null) 'submission_file': file,
+    });
+
+    await dio.post('/assignments/$assessmentId/submit', data: form);
   }
 
   Future<void> saveJob(int jobId) async => dio.post('/jobs/$jobId/save');
+
   Future<void> unsaveJob(int jobId) async => dio.delete('/jobs/$jobId/save');
 
   Future<void> markLessonProgress({
