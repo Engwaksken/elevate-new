@@ -3,50 +3,13 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
-
-        then: function () {
-            $webRoutes = [
-                'web.phase2.php',
-                'web.phase3.php',
-                'web.phase4.php',
-                'web.phase5.php',
-                'web.phase6.php',
-                'web.phase7.php',
-                'web.phase8.php',
-                'web.phase9.php',
-                'web.phase10.php',
-                'web.phase11.php',
-                'web.phase12.php',
-                'web.phase13.php',
-                'web.phase14.php',
-                'web.phase15.php',
-                'web.phase16.php',
-                'web.phase17.php',
-            ];
-
-            foreach ($webRoutes as $routeFile) {
-                $path = base_path('routes/'.$routeFile);
-
-                if (file_exists($path)) {
-                    Route::middleware('web')->group($path);
-                }
-            }
-
-            $apiPath = base_path('routes/api.phase11.php');
-
-            if (file_exists($apiPath)) {
-                Route::middleware('api')
-                    ->prefix('api')
-                    ->group($apiPath);
-            }
-        },
     )
 
     ->withMiddleware(function (Middleware $middleware): void {
@@ -56,7 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
         ]);
 
-        $middleware->web(append: [\App\Http\Middleware\DynamicMaintenanceMode::class]);
+        $middleware->web(
+            append: [
+                \App\Http\Middleware\DynamicMaintenanceMode::class,
+            ]
+        );
 
         $middleware->append(
             \App\Http\Middleware\SecurityHeaders::class
