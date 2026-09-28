@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/connectivity_banner.dart';
 import '../services/api_service.dart';
 import '../services/local_database.dart';
+import '../services/notification_service.dart';
 import '../services/sync_service.dart';
 import 'dashboard_screen.dart';
 import 'jobs_screen.dart';
@@ -23,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _syncing = false;
   String? _lastSync;
   int _queuedActions = 0;
+  StreamSubscription<String>? _notificationSubscription;
 
   final _pages = const [
     DashboardScreen(),
@@ -35,8 +39,61 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
     _loadSyncState();
     SyncService.instance.startAutoSync();
+
+    _notificationSubscription =
+        NotificationService.instance.destinationStream.listen(
+      _openNotificationDestination,
+    );
+
+    final pending = NotificationService.instance.consumePendingDestination();
+
+    if (pending != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openNotificationDestination(pending);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _openNotificationDestination(String destination) {
+    final normalised = destination.toLowerCase();
+
+    var index = 4;
+
+    if (normalised.contains('course') ||
+        normalised.contains('lesson') ||
+        normalised.contains('learning')) {
+      index = 1;
+    } else if (normalised.contains('mentor')) {
+      index = 2;
+    } else if (normalised.contains('job')) {
+      index = 3;
+    } else if (normalised.contains('dashboard')) {
+      index = 0;
+    }
+
+    if (mounted) {
+      setState(() => _index = index);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            index == 4
+                ? 'Open More to view the related update.'
+                : 'Opened the related app section.',
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   Future<void> _loadSyncState() async {
@@ -73,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       await SyncService.instance.syncNow();
+      await NotificationService.instance.registerCurrentDevice();
       await _loadSyncState();
 
       if (mounted) {

@@ -1,7 +1,9 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Assessment extends Model
 {
@@ -14,6 +16,10 @@ class Assessment extends Model
         'opens_at'=>'datetime',
         'due_at'=>'datetime',
         'is_published'=>'boolean',
+    ];
+
+    protected $appends = [
+        'attachment_url',
     ];
 
     public function questions()
@@ -29,5 +35,14 @@ class Assessment extends Model
     public function course()
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function getAttachmentUrlAttribute(): ?string
+    {
+        if (! $this->attachment_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->attachment_path);
     }
 }
