@@ -1109,3 +1109,15 @@ Route::middleware(['auth','staff','role:instructor,trainer'])
 Route::get('/admin/my-courses', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'myCourses'])
     ->middleware(['auth','staff','role:instructor,trainer'])
     ->name('admin.my-courses');
+Route::middleware(['auth','staff','role:instructor,trainer'])
+    ->group(function () {
+        Route::get(
+            '/instructor/courses/{course}/modules/{module}/lessons/{lesson}/file',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadLessonFile']
+        )->name('instructor.courses.lessons.file');
+
+        Route::get(
+            '/instructor/courses/{course}/assessments/{assessment}/file',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadAssessmentFile']
+        )->name('instructor.courses.assessments.file');
+    });
