@@ -1,6 +1,5 @@
 <?php
 
-
 use App\Http\Controllers\Admin\ProgrammeManagement\ActivityController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\Elearning\LessonController as AdminElearningLessonController;
@@ -53,7 +52,6 @@ use App\Http\Controllers\EventEngagementController;
 use App\Http\Controllers\Admin\EventEvaluationController;
 use App\Http\Controllers\Admin\EventOperationsController;
 use App\Http\Controllers\EventPortalController;
-use App\Http\Controllers\Admin\ExecutiveDashboardController;
 use App\Http\Controllers\Admin\GlobalSearchController;
 use App\Http\Controllers\Admin\Procurement\GoodsReceiptController;
 use App\Http\Controllers\Admin\Elearning\GradebookController;
@@ -124,12 +122,20 @@ Route::get('/brand-assets/{type}', [BrandAssetController::class, 'show'])
     ->whereIn('type', ['logo', 'favicon'])
     ->name('branding.asset');
 
-// ElevateHer360 consolidated web routes.
-// Former phased route files are merged into this single file.
+/*
+|--------------------------------------------------------------------------
+| ElevateHer360 Web Routes
+|--------------------------------------------------------------------------
+|
+| Public, participant, staff/admin and instructor routes are consolidated
+| here. Staff and instructors share /admin/dashboard. Legacy dashboard URLs
+| remain only as compatibility redirects.
+|
+*/
+
 
 Route::view('/', 'home')->name('home');
 
-/* web.phase2.php */
 Route::post('/support/chatbot',[ChatbotController::class, 'message'])
     ->middleware('throttle:30,1')
     ->name('support.chatbot.message');
@@ -143,16 +149,16 @@ Route::middleware('guest')->group(function () {
     Route::get('/admin/login', [StaffAuthController::class, 'showLogin'])->name('admin.login');
     Route::post('/admin/login', [StaffAuthController::class, 'login'])->name('admin.login.attempt');
 
-    Route::get('/forgot-password', [PasswordResetController::class, 'request'])
+    Route::get('/forgot-password', [PasswordResetController::class, 'requestForm'])
     ->name('password.request');
 
 Route::post('/forgot-password', [PasswordResetController::class, 'email'])
     ->name('password.email');
 
-Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])
+Route::get('/reset-password/{token}', [PasswordResetController::class, 'resetForm'])
     ->name('password.reset');
 
-Route::post('/reset-password', [PasswordResetController::class, 'update'])
+Route::post('/reset-password', [PasswordResetController::class, 'reset'])
     ->name('password.update');
 });
 
@@ -218,7 +224,6 @@ Route::prefix('admin')
             ->middleware('permission:roles.manage')->name('roles.update');
     });
 
-/* web.phase3.php */
 Route::prefix('admin')
     ->name('admin.')
     ->middleware(['auth', 'staff'])
@@ -260,7 +265,6 @@ Route::prefix('admin')
         });
     });
 
-/* web.phase4.php */
 /*
 |--------------------------------------------------------------------------
 | Public Learning Routes
@@ -416,9 +420,8 @@ Route::prefix('instructor')
     ->middleware(['auth', 'staff'])
     ->group(function () {
 
-        Route::get('/dashboard', function () {
-            return redirect()->route('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', fn () => redirect()->route('admin.dashboard'))
+            ->name('dashboard');
 
         Route::get(
             '/courses/{course}/attendance',
@@ -431,7 +434,6 @@ Route::prefix('instructor')
         )->name('attendance.store');
     });
 
-/* web.phase5.php */
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/learning/files/{file}/download',[LearningFileController::class,'download'])
         ->name('learning.files.download');
@@ -488,7 +490,6 @@ Route::prefix('admin/mentorship')->name('admin.mentorship.')->middleware(['auth'
         ->middleware('permission:mentorship.match')->name('matches.store');
 });
 
-/* web.phase6.php */
 Route::get('/jobs',[JobBrowseController::class,'index'])->name('jobs.index');
 Route::get('/jobs/{job}',[JobBrowseController::class,'show'])->name('jobs.show');
 
@@ -542,7 +543,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         ->middleware('permission:meal.manage')->name('jobs.outcomes.reject');
 });
 
-/* web.phase7.php */
 Route::get('/library',[LibraryController::class,'index'])->name('library.index');
 Route::get('/library/{resource}',[LibraryController::class,'show'])->name('library.show');
 Route::get('/library/{resource}/cover',[LibraryController::class,'cover'])->name('library.cover');
@@ -610,7 +610,6 @@ Route::prefix('admin/career-ai')->name('admin.career-ai.')->middleware(['auth', 
     Route::put('/',[CareerAiController::class,'update'])->name('update');
 });
 
-/* web.phase8.php */
 Route::middleware(['auth'])->group(function () {
     Route::get('/calendar',[CalendarController::class,'index'])->name('calendar.index');
 });
@@ -640,7 +639,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
     Route::get('/meal',[MEDashboardController::class,'index'])->middleware('permission:meal.view')->name('meal.dashboard');
 });
 
-/* web.phase9.php */
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/hr/leave',[LeaveRequestController::class,'index'])->name('hr.leave.index');
     Route::post('/hr/leave',[LeaveRequestController::class,'store'])->name('hr.leave.store');
@@ -711,7 +709,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
     });
 });
 
-/* web.phase10.php */
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function () {
     Route::prefix('procurement')->name('procurement.')->group(function () {
         Route::get('/suppliers',[SupplierController::class,'index'])->middleware('permission:procurement.view')->name('suppliers.index');
@@ -749,10 +746,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
     });
 });
 
-/* web.phase11.php */
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function () {
-    Route::get('/executive-dashboard',[ExecutiveDashboardController::class,'index'])
-        ->middleware('permission:reports.view')->name('executive-dashboard');
+    Route::get('/executive-dashboard', function () {
+        return redirect()->route('admin.dashboard');
+    })->name('executive-dashboard');
 
     Route::get('/search',GlobalSearchController::class)
         ->middleware('permission:reports.view')->name('search');
@@ -772,7 +769,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         ->middleware('permission:reports.view')->name('notifications.index');
 });
 
-/* web.phase12.php */
 Route::get('/events',[EventPortalController::class,'index'])->name('events.index');
 Route::get('/events/{event}',[EventPortalController::class,'show'])->name('events.show');
 Route::middleware(['auth', 'verified'])->group(function(){Route::post('/events/{event}/register',[EventPortalController::class,'register'])->name('events.register');});
@@ -785,7 +781,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
  Route::post('/events/{event}/attendance',[EventController::class,'saveAttendance'])->name('events.attendance.save');
 });
 
-/* web.phase13.php */
 Route::get('/events/{event}/calendar.ics',[EventCheckinController::class,'calendar'])->name('events.calendar');
 
 Route::middleware(['auth', 'verified'])->group(function(){
@@ -802,7 +797,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
     Route::get('/attendance-analytics.csv',[EventOperationsController::class,'analyticsCsv'])->name('attendance-analytics.csv');
 });
 
-/* web.phase14.php */
 Route::get('/event-certificates/verify/{code}',[EventEngagementController::class,'verify'])->name('events.certificates.verify');
 
 Route::middleware(['auth', 'verified'])->group(function(){
@@ -821,7 +815,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
     Route::get('/events-meal-report.csv',[EventEvaluationController::class,'mealCsv'])->name('events.meal-report.csv');
 });
 
-/* web.phase15.php */
 Route::prefix('admin/elearning')->name('admin.elearning.')->middleware(['auth', 'staff'])->group(function () {
     Route::get('/assignments',[CourseAssignmentController::class,'index'])
         ->middleware('permission:courses.edit')->name('assignments.index');
@@ -836,7 +829,6 @@ Route::prefix('admin/elearning')->name('admin.elearning.')->middleware(['auth', 
         ->middleware('permission:courses.edit')->name('learning-files.destroy');
 });
 
-/* web.phase16.php */
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function(){
     Route::get('/course-attendance-report',[CourseAttendanceReportController::class,'index'])
         ->name('course-attendance-report.index');
@@ -848,14 +840,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         ->name('participant-attendance-summary.index');
 });
 
-/* web.phase17.php */
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function(){
     Route::get('/profile',[AdminProfileController::class,'edit'])->name('profile.edit');
     Route::put('/profile',[AdminProfileController::class,'update'])->name('profile.update');
     Route::put('/profile/password',[AdminProfileController::class,'password'])->name('profile.password');
 });
 
-/* web.phase23.integration.php */
 /*
 |--------------------------------------------------------------------------
 | Phase 23 integration routes
@@ -875,7 +865,6 @@ Route::middleware(['auth'])
             ->name('certificates.index');
     });
 
-/* web.phase23.bulk-template.php */
 Route::middleware(['auth'])
     ->prefix('admin/elearning')
     ->name('admin.elearning.')
@@ -888,7 +877,6 @@ Route::middleware(['auth'])
             ->name('bulk-enrolment.template');
     });
 
-/* web.phase25.php */
 Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(function () {
     Route::middleware('permission:course_calls.view')->group(function () {
         Route::get('/course-calls',[CourseCallController::class,'index'])->name('course-calls.index');
@@ -955,7 +943,6 @@ Route::get('/surveys/{survey:slug}',[PublicSurveyController::class,'show'])->nam
 Route::post('/surveys/{survey:slug}',[PublicSurveyController::class,'store'])->name('surveys.public.store');
 Route::get('/surveys/{survey:slug}/qr.svg',[PublicSurveyController::class,'qr'])->name('surveys.public.qr');
 
-/* web.phase25.hardening.php */
 Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(function () {
     Route::put('/surveys/{survey}/reorder',[SurveyController::class,'reorder'])
         ->middleware('permission:surveys.manage')
@@ -988,7 +975,6 @@ Route::middleware(['auth', 'staff'])
             ->name('course-calls.edit');
     });
 
-/* web.coursecalls.display.php */
 Route::middleware(['auth', 'staff'])
     ->prefix('admin')
     ->name('admin.')
