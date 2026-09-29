@@ -12,11 +12,14 @@ import 'package:uuid/uuid.dart';
 import 'api_service.dart';
 
 @pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+Future<void> firebaseMessagingBackgroundHandler(
+  RemoteMessage message,
+) async {
   try {
     await Firebase.initializeApp();
   } catch (_) {
-    return;
+    // Firebase may already have been initialised,
+    // or configuration may not be available yet.
   }
 }
 
@@ -25,94 +28,208 @@ class NotificationService {
 
   static final NotificationService instance = NotificationService._();
 
+  static const String _updatesChannelId = 'elevateher360_updates';
+
+  static const String _remindersChannelId = 'elevateher360_reminders';
+
   final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
 
   final Uuid _uuid = const Uuid();
+
   final StreamController<String> _destinationController =
       StreamController<String>.broadcast();
 
   bool _firebaseReady = false;
+  bool _initialised = false;
+
   String? _pendingDestination;
 
   Stream<String> get destinationStream => _destinationController.stream;
 
+  bool get isFirebaseReady => _firebaseReady;
+
   Future<void> initialise() async {
+    if (_initialised) {
+      return;
+    }
+
+    _initialised = true;
+
     tz.initializeTimeZones();
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const ios = DarwinInitializationSettings();
+    try {
+      tz.setLocalLocation(
+        tz.getLocation('Africa/Kampala'),
+      );
+    } catch (_) {
+      // Falls back to the package's default location.
+    }
+
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
+
+    const iosSettings = DarwinInitializationSettings();
 
     await _local.initialize(
-      const InitializationSettings(android: android, iOS: ios),
+      const InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+      ),
       onDidReceiveNotificationResponse: (response) {
-        _dispatchDestination(response.payload);
+        _dispatchDestination(
+          response.payload,
+        );
       },
     );
 
+    await _createAndroidChannels();
+
     final launchDetails = await _local.getNotificationAppLaunchDetails();
+
     if (launchDetails?.didNotificationLaunchApp == true) {
       _pendingDestination = launchDetails?.notificationResponse?.payload;
     }
 
     try {
       await Firebase.initializeApp();
+
       _firebaseReady = true;
 
-      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+        firebaseMessagingBackgroundHandler,
+      );
 
       final messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission();
 
-      FirebaseMessaging.onMessage.listen(_showForegroundMessage);
+      await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-      FirebaseMessaging.onMessageOpenedApp.listen((message) {
-        _dispatchDestination(_destinationFromMessage(message));
-      });
+      FirebaseMessaging.onMessage.listen(
+        _showForegroundMessage,
+      );
+
+      FirebaseMessaging.onMessageOpenedApp.listen(
+        (message) {
+          _dispatchDestination(
+            _destinationFromMessage(message),
+          );
+        },
+      );
 
       final initialMessage = await messaging.getInitialMessage();
+
       if (initialMessage != null) {
-        _pendingDestination = _destinationFromMessage(initialMessage);
+        _pendingDestination = _destinationFromMessage(
+          initialMessage,
+        );
       }
 
-      messaging.onTokenRefresh.listen((token) async {
-        await _registerToken(token);
-      });
+      messaging.onTokenRefresh.listen(
+        (token) async {
+          await _registerToken(token);
+        },
+      );
     } catch (_) {
       _firebaseReady = false;
     }
   }
 
+  Future<void> _createAndroidChannels() async {
+    final androidImplementation = _local.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidImplementation == null) {
+      return;
+    }
+
+    const updatesChannel = AndroidNotificationChannel(
+      _updatesChannelId,
+      'ElevateHer360 Updates',
+      description: 'Learning, mentorship, jobs and event updates',
+      importance: Importance.high,
+    );
+
+    const remindersChannel = AndroidNotificationChannel(
+      _remindersChannelId,
+      'ElevateHer360 Reminders',
+      description:
+          'Assignment deadlines, mentorship sessions, events and programme reminders',
+      importance: Importance.high,
+    );
+
+    await androidImplementation.createNotificationChannel(
+      updatesChannel,
+    );
+
+    await androidImplementation.createNotificationChannel(
+      remindersChannel,
+    );
+  }
+
   Future<void> registerCurrentDevice() async {
-    if (!_firebaseReady) return;
+    if (!_firebaseReady) {
+      return;
+    }
 
     try {
       final token = await FirebaseMessaging.instance.getToken();
-      if (token == null || token.isEmpty) return;
+
+      if (token == null || token.trim().isEmpty) {
+        return;
+      }
+
       await _registerToken(token);
-    } catch (_) {}
+    } catch (_) {
+      // Registration can retry later.
+    }
   }
 
-  String? consumePendingDestination() {
-    final value = _pendingDestination;
-    _pendingDestination = null;
-    return value;
+  Future<void> unregisterDeviceToken() async {
+    if (!_firebaseReady) {
+      return;
+    }
+
+    try {
+      final deviceId = await persistentDeviceId();
+
+      await ApiService.instance.unregisterDeviceToken(
+        deviceId: deviceId,
+      );
+    } catch (_) {
+      // Local logout should still continue even if
+      // the device cannot reach the API.
+    }
   }
 
   Future<String> persistentDeviceId() async {
     final prefs = await SharedPreferences.getInstance();
-    final existing = prefs.getString('persistent_device_id');
 
-    if (existing != null && existing.isNotEmpty) {
+    final existing = prefs.getString(
+      'persistent_device_id',
+    );
+
+    if (existing != null && existing.trim().isNotEmpty) {
       return existing;
     }
 
     final created = _uuid.v4();
-    await prefs.setString('persistent_device_id', created);
+
+    await prefs.setString(
+      'persistent_device_id',
+      created,
+    );
+
     return created;
   }
 
-  Future<void> _registerToken(String token) async {
+  Future<void> _registerToken(
+    String token,
+  ) async {
     final deviceId = await persistentDeviceId();
 
     try {
@@ -122,96 +239,234 @@ class NotificationService {
         platform: Platform.isIOS ? 'ios' : 'android',
       );
     } catch (_) {
-      // Registration can fail before participant login. It is retried after
-      // successful login and on the next token refresh.
+      // Registration may run before authentication.
+      // Retry after login or token refresh.
     }
   }
 
-  Future<void> _showForegroundMessage(RemoteMessage message) async {
+  Future<void> _showForegroundMessage(
+    RemoteMessage message,
+  ) async {
     final notification = message.notification;
-    if (notification == null) return;
+
+    if (notification == null) {
+      return;
+    }
 
     await _local.show(
-      message.hashCode,
+      _notificationIdForRemoteMessage(
+        message,
+      ),
       notification.title ?? 'ElevateHer360',
       notification.body,
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'elevateher360_updates',
+          _updatesChannelId,
           'ElevateHer360 Updates',
           channelDescription: 'Learning, mentorship, jobs and event updates',
           importance: Importance.high,
           priority: Priority.high,
         ),
+        iOS: DarwinNotificationDetails(),
       ),
-      payload: _destinationFromMessage(message),
+      payload: _destinationFromMessage(
+        message,
+      ),
     );
   }
 
-  String _destinationFromMessage(RemoteMessage message) {
-    return message.data['type']?.toString() ??
-        message.data['destination']?.toString() ??
+  int _notificationIdForRemoteMessage(
+    RemoteMessage message,
+  ) {
+    final messageId = message.messageId;
+
+    if (messageId != null && messageId.isNotEmpty) {
+      return messageId.hashCode & 0x7fffffff;
+    }
+
+    return message.hashCode & 0x7fffffff;
+  }
+
+  String _destinationFromMessage(
+    RemoteMessage message,
+  ) {
+    return message.data['destination']?.toString() ??
+        message.data['type']?.toString() ??
         'notifications';
   }
 
-  void _dispatchDestination(String? destination) {
-    if (destination == null || destination.isEmpty) return;
-    _destinationController.add(destination);
+  void _dispatchDestination(
+    String? destination,
+  ) {
+    if (destination == null || destination.trim().isEmpty) {
+      return;
+    }
+
+    _destinationController.add(
+      destination.trim(),
+    );
   }
 
-  Future<void> scheduleFromSync(List<dynamic> reminders) async {
-    await _local.cancelAll();
+  String? consumePendingDestination() {
+    final value = _pendingDestination;
 
+    _pendingDestination = null;
+
+    return value;
+  }
+
+  Future<void> scheduleFromSync(
+    List<dynamic> reminders,
+  ) async {
     for (final raw in reminders) {
-      if (raw is! Map) continue;
+      if (raw is! Map) {
+        continue;
+      }
 
       final reminder = Map<String, dynamic>.from(raw);
-      final scheduledRaw = reminder['scheduled_at']?.toString();
 
-      if (scheduledRaw == null) continue;
-
-      final date = DateTime.tryParse(scheduledRaw)?.toLocal();
-      if (date == null || date.isBefore(DateTime.now())) continue;
-
-      final id = '${reminder['type']}-${reminder['source_id']}'.hashCode;
-      final notifyAt = date.subtract(const Duration(hours: 1));
-
-      if (notifyAt.isBefore(DateTime.now())) continue;
-
-      await _local.zonedSchedule(
-        id,
-        reminder['title']?.toString() ?? 'ElevateHer360 reminder',
-        _messageForType(reminder['type']?.toString()),
-        tz.TZDateTime.from(
-          notifyAt,
-          tz.getLocation('Africa/Kampala'),
-        ),
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'elevateher360_reminders',
-            'Reminders',
-            channelDescription:
-                'Assignment deadlines, mentorship sessions and events',
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        payload: reminder['type']?.toString(),
+      await _scheduleReminder(
+        reminder,
       );
     }
   }
 
-  String _messageForType(String? type) {
+  Future<void> _scheduleReminder(
+    Map<String, dynamic> reminder,
+  ) async {
+    final scheduledRaw = reminder['scheduled_at']?.toString();
+
+    if (scheduledRaw == null || scheduledRaw.isEmpty) {
+      return;
+    }
+
+    final scheduled = DateTime.tryParse(
+      scheduledRaw,
+    )?.toLocal();
+
+    if (scheduled == null) {
+      return;
+    }
+
+    final type = reminder['type']?.toString() ?? 'activity';
+
+    final sourceId = reminder['source_id']?.toString() ?? scheduledRaw;
+
+    final id = '$type-$sourceId'.hashCode & 0x7fffffff;
+
+    if (scheduled.isBefore(
+      DateTime.now(),
+    )) {
+      await _local.cancel(id);
+      return;
+    }
+
+    final notifyAt = _notificationTimeFor(
+      type,
+      scheduled,
+    );
+
+    if (notifyAt.isBefore(
+      DateTime.now(),
+    )) {
+      return;
+    }
+
+    await _local.zonedSchedule(
+      id,
+      reminder['title']?.toString() ?? 'ElevateHer360 reminder',
+      reminder['message']?.toString() ?? _messageForType(type),
+      tz.TZDateTime.from(
+        notifyAt,
+        tz.local,
+      ),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _remindersChannelId,
+          'ElevateHer360 Reminders',
+          channelDescription:
+              'Assignment deadlines, mentorship sessions, events and programme activities',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: reminder['destination']?.toString() ?? type,
+    );
+  }
+
+  DateTime _notificationTimeFor(
+    String type,
+    DateTime scheduledAt,
+  ) {
+    switch (type) {
+      case 'assignment_deadline':
+        return scheduledAt.subtract(
+          const Duration(hours: 1),
+        );
+
+      case 'mentorship_session':
+        return scheduledAt.subtract(
+          const Duration(hours: 1),
+        );
+
+      case 'event':
+        return scheduledAt.subtract(
+          const Duration(hours: 1),
+        );
+
+      case 'course_deadline':
+        return scheduledAt.subtract(
+          const Duration(hours: 1),
+        );
+
+      case 'programme_activity':
+        return scheduledAt.subtract(
+          const Duration(hours: 1),
+        );
+
+      default:
+        return scheduledAt.subtract(
+          const Duration(hours: 1),
+        );
+    }
+  }
+
+  String _messageForType(
+    String type,
+  ) {
     switch (type) {
       case 'assignment_deadline':
         return 'This assignment is due in about one hour.';
+
       case 'mentorship_session':
         return 'Your mentorship session starts in about one hour.';
+
       case 'event':
         return 'This event starts in about one hour.';
+
+      case 'course_deadline':
+        return 'This course activity is due in about one hour.';
+
+      case 'programme_activity':
+        return 'You have an upcoming programme activity in about one hour.';
+
       default:
         return 'You have an upcoming ElevateHer360 activity.';
     }
+  }
+
+  Future<void> cancelReminder({
+    required String type,
+    required Object sourceId,
+  }) async {
+    final id = '$type-$sourceId'.hashCode & 0x7fffffff;
+
+    await _local.cancel(id);
+  }
+
+  void dispose() {
+    _destinationController.close();
   }
 }

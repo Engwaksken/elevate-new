@@ -1,43 +1,21 @@
-ELEVATEHER360 — ADMIN LOGIN / PROFILE / PLATFORM BRANDING FIX
+Phase 7 V3 Android release-build fix
 
-Fixes:
-- /admin/login password eye toggle positioning/display.
-- Admin Profile changed to tabs: Profile Details + Change Password.
-- Platform Configuration shows current logo/favicon previews.
-- Selecting a new logo/favicon previews immediately before upload.
-- Branding uploads use unique file names and replace old managed assets.
-- Saved logo now renders in existing admin/public/participant brand marks.
-- Saved favicon uses the public storage URL and cache-busting path.
-- Platform Settings stays on the tab that was just saved.
+The build log showed two independent Android issues:
 
-No npm build or Composer install is required for this patch.
+1. flutter_local_notifications requires Android core-library desugaring.
+   This patch enables coreLibraryDesugaring and adds desugar_jdk_libs 2.1.5.
 
-DIRECT GITHUB NOTE
-The connected GitHub integration could read Engwaksken/elevate-new but GitHub rejected
-the attempted direct repository write with HTTP 403 "Resource not accessible by integration".
-This package therefore includes a PowerShell installer that applies the exact inspected
-changes, commits them, and runs `git push origin main` using your local Git credentials.
+2. Kotlin incremental compilation was trying to relativise plugin source files
+   from the C: Pub cache against the D: project and failed because Windows drive
+   roots differ. This patch disables Kotlin incremental compilation and
+   classpath snapshots for this Android project.
 
-APPLY AND PUSH
+The continuation installer also runs flutter clean and removes only the
+project-local android/.gradle cache before rebuilding. It does not delete the
+global Pub cache or global Gradle cache.
 
-Extract this ZIP, then:
+Run:
+powershell -ExecutionPolicy Bypass -File .\APPLY_AND_PUSH_PHASE7_PRODUCTION_READINESS_V3.ps1 -ProjectPath "D:\projects\elevate_her"
 
-powershell -ExecutionPolicy Bypass `
-  -File .\APPLY_AND_PUSH_UI_BRANDING_FIX.ps1 `
-  -ProjectPath "D:\projects\elevate_her"
-
-The script backs up the five replaced files, validates PHP/Blade/routes, checks the Git
-diff, stages only the intended files, commits, and pushes main.
-
-LIVE AFTER PUSH
-
-cd /home/vividfin/site.elevateher360.org
-git pull origin main
-
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-No composer install.
-No npm install/build.
+Validate without commit/push:
+powershell -ExecutionPolicy Bypass -File .\APPLY_AND_PUSH_PHASE7_PRODUCTION_READINESS_V3.ps1 -ProjectPath "D:\projects\elevate_her" -NoPush
