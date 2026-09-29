@@ -9,17 +9,12 @@ use Illuminate\Http\Request;
 
 final class DashboardController extends Controller
 {
-    public function index(
-        Request $request,
-        StaffDashboardService $dashboard
-    ): View {
+    public function index(Request $request, StaffDashboardService $dashboard): View
+    {
         $user = $request->user();
 
         abort_unless($user, 401);
 
-        return view(
-            'admin.dashboard',
-            $dashboard->for($user)
-        );
+        return view('admin.dashboard', $dashboard->for($user));
     }
 }
