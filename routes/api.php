@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\JobController;
 use App\Http\Controllers\Api\V1\LibraryController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\Participant\AuthController as ParticipantAuthController;
+use App\Http\Controllers\Api\V1\Participant\LessonController as ParticipantLessonController;
 use App\Http\Controllers\Api\V1\Participant\ParticipantController;
 use App\Http\Middleware\EnsureParticipantApi;
 
@@ -48,12 +49,23 @@ Route::prefix('v1')->group(function () {
                 Route::get('/notifications',[ParticipantController::class,'notifications']);
                 Route::put('/notifications/{notification}/read',[ParticipantController::class,'markNotificationRead']);
 
-                Route::put('/lessons/{lesson}/progress',[ParticipantController::class,'lessonProgress']);
+                Route::get('/lessons/{lesson}',[ParticipantLessonController::class,'show'])
+                    ->name('api.participant.lessons.show');
+                Route::get('/lessons/{lesson}/download',[ParticipantLessonController::class,'download'])
+                    ->name('api.participant.lessons.download');
+                Route::get('/lessons/{lesson}/files/{file}/download',[ParticipantLessonController::class,'downloadFile'])
+                    ->name('api.participant.lessons.files.download');
+                Route::match(['put','post'],'/lessons/{lesson}/progress',[ParticipantLessonController::class,'progress'])
+                    ->name('api.participant.lessons.progress');
+
+                Route::get('/assignments/{assessment}/attachment',[ParticipantLessonController::class,'assessmentAttachment'])
+                    ->name('api.participant.assignments.attachment');
 
                 Route::post('/offline-actions',[ParticipantController::class,'processOfflineActions']);
                 Route::get('/sync',[ParticipantController::class,'sync']);
 
                 Route::post('/device-token',[ParticipantController::class,'deviceToken']);
+                Route::delete('/device-token',[ParticipantController::class,'removeDeviceToken']);
             });
     });
 });

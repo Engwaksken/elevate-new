@@ -82,6 +82,8 @@ class LocalDatabase {
     for (final raw in items) {
       if (raw is! Map) continue;
       final item = Map<String, dynamic>.from(raw);
+      // A full sync includes soft-deleted rows (withTrashed); skip them.
+      if (item['deleted_at'] != null) continue;
       final id = (item['id'] ?? item['source_id'] ?? item.hashCode).toString();
 
       batch.insert(
@@ -318,6 +320,83 @@ class LocalDatabase {
       where: 'download_key = ?',
       whereArgs: [key],
     );
+  }
+
+  // ---------------------------------------------------------
+  // Lesson completion and course progress
+  // ---------------------------------------------------------
+
+  static const String _localCompletion = 'lesson_completion_local';
+
+  /// Lessons completed according to the last sync (`lesson_progress`
+  /// rows with `completed_at`), overridden by changes made on this device
+  /// that may still be waiting in the offline queue.
+  ///
+  /// [alsoCompleted] adds lessons the server reported complete in another
+  /// payload (e.g. `lesson.progress.completed` in the course tree).
+  Future<Set<int>> completedLessonIds({
+    Iterable<int> alsoCompleted = const [],
+  }) async {
+    final completed = <int>{...alsoCompleted};
+
+    for (final row in await readCollection('lesson_progress')) {
+      final id = int.tryParse(row['lesson_id']?.toString() ?? '');
+      if (id != null && row['completed_at'] != null) completed.add(id);
+    }
+
+    for (final row in await readCollection(_localCompletion)) {
+      final id = int.tryParse(row['lesson_id']?.toString() ?? '');
+      if (id == null) continue;
+      if (row['completed'] == true) {
+        completed.add(id);
+      } else {
+        completed.remove(id);
+      }
+    }
+
+    return completed;
+  }
+
+  Future<void> setLocalLessonCompletion(int lessonId, bool completed) {
+    return cacheItem(
+      collection: _localCompletion,
+      itemId: lessonId.toString(),
+      payload: {
+        'lesson_id': lessonId,
+        'completed': completed,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      },
+    );
+  }
+
+  /// Progress (0-100) per course id, from synced enrolments.
+  Future<Map<int, double>> courseProgress() async {
+    final result = <int, double>{};
+    for (final row in await readCollection('enrolments')) {
+      final id = int.tryParse(row['course_id']?.toString() ?? '');
+      final value = double.tryParse(row['progress_percent']?.toString() ?? '');
+      if (id != null && value != null) {
+        result[id] = value.clamp(0, 100).toDouble();
+      }
+    }
+    return result;
+  }
+
+  Future<void> setCourseProgress(
+    int courseId,
+    double percent, {
+    String? status,
+  }) async {
+    for (final row in await readCollection('enrolments')) {
+      if (row['course_id']?.toString() != courseId.toString()) continue;
+      row['progress_percent'] = percent;
+      if (status != null && status.isNotEmpty) row['status'] = status;
+      await cacheItem(
+        collection: 'enrolments',
+        itemId: (row['id'] ?? row['course_id']).toString(),
+        payload: row,
+      );
+    }
   }
 
   Future<void> clearAll() async {

@@ -3,17 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../core/connectivity_banner.dart';
-import '../services/api_service.dart';
+import '../core/logger.dart';
 import '../services/local_database.dart';
 import '../services/notification_service.dart';
 import '../services/sync_service.dart';
+import '../widgets/feedback.dart';
 import 'dashboard_screen.dart';
 import 'jobs_screen.dart';
 import 'learning_screen.dart';
-import 'login_screen.dart';
 import 'mentorship_screen.dart';
 import 'more_screen.dart';
+import 'notifications_screen.dart';
 
+/// Root shell: five-tab bottom navigation with a shared AppBar.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -21,35 +23,55 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+class _Tab {
+  const _Tab(this.title, this.label, this.icon, this.selectedIcon);
+
+  final String title;
+  final String label;
+  final IconData icon;
+  final IconData selectedIcon;
+}
+
+const _tabs = [
+  _Tab('Home', 'Home', Icons.home_outlined, Icons.home),
+  _Tab('My learning', 'Learning', Icons.menu_book_outlined, Icons.menu_book),
+  _Tab('Mentorship', 'Mentorship', Icons.diversity_3_outlined, Icons.diversity_3),
+  _Tab('Jobs & opportunities', 'Jobs', Icons.work_outline, Icons.work),
+  _Tab('More', 'More', Icons.grid_view_outlined, Icons.grid_view),
+];
+
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
-  bool _syncing = false;
-  String? _lastSync;
-  int _queuedActions = 0;
+  int _unread = 0;
   StreamSubscription<String>? _notificationSubscription;
 
-  final _pages = const [
-    DashboardScreen(),
-    LearningScreen(),
-    MentorshipScreen(),
-    JobsScreen(),
-    MoreScreen(),
+  late final List<Widget> _pages = [
+    DashboardScreen(onOpenTab: _selectTab),
+    const LearningScreen(),
+    const MentorshipScreen(),
+    const JobsScreen(),
+    const MoreScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
 
-    _loadSyncState();
     SyncService.instance.startAutoSync();
+    SyncService.instance.dataVersion.addListener(_loadUnread);
+    _loadUnread();
 
-    _notificationSubscription =
-        NotificationService.instance.destinationStream.listen(
-      _openNotificationDestination,
+    // Refresh quietly in the background when the app opens.
+    unawaited(
+      SyncService.instance.syncNow().catchError((Object error) {
+        appLog('Startup sync failed', error);
+      }),
     );
 
-    final pending = NotificationService.instance.consumePendingDestination();
+    _notificationSubscription = NotificationService.instance.destinationStream
+        .listen(_openNotificationDestination);
 
+    final pending = NotificationService.instance.consumePendingDestination();
     if (pending != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openNotificationDestination(pending);
@@ -59,212 +81,131 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    SyncService.instance.dataVersion.removeListener(_loadUnread);
     _notificationSubscription?.cancel();
     super.dispose();
   }
 
+  Future<void> _loadUnread() async {
+    final items = await LocalDatabase.instance.readCollection('notifications');
+    final unread = items.where((item) => item['read_at'] == null).length;
+    if (mounted) setState(() => _unread = unread);
+  }
+
+  void _selectTab(int index) => setState(() => _index = index);
+
   void _openNotificationDestination(String destination) {
-    final normalised = destination.toLowerCase();
+    final value = destination.toLowerCase();
 
-    var index = 4;
-
-    if (normalised.contains('course') ||
-        normalised.contains('lesson') ||
-        normalised.contains('learning')) {
+    int? index;
+    if (value.contains('course') ||
+        value.contains('lesson') ||
+        value.contains('learning')) {
       index = 1;
-    } else if (normalised.contains('mentor')) {
+    } else if (value.contains('mentor')) {
       index = 2;
-    } else if (normalised.contains('job')) {
+    } else if (value.contains('job')) {
       index = 3;
-    } else if (normalised.contains('dashboard')) {
+    } else if (value.contains('dashboard')) {
       index = 0;
     }
 
-    if (mounted) {
-      setState(() => _index = index);
+    if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            index == 4
-                ? 'Open More to view the related update.'
-                : 'Opened the related app section.',
-          ),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+    if (index == null) {
+      _openNotifications();
+    } else {
+      _selectTab(index);
     }
   }
 
-  Future<void> _loadSyncState() async {
-    final value = await LocalDatabase.instance.getMeta('last_synced_at');
-    final queued = await LocalDatabase.instance.pendingOperationCount();
-
-    if (mounted) {
-      setState(() {
-        _lastSync = value;
-        _queuedActions = queued;
-      });
-    }
+  void _openNotifications() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+    );
   }
 
   Future<void> _sync() async {
-    if (_syncing) return;
-
-    setState(() => _syncing = true);
+    if (!await SyncService.instance.isOnline()) {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          "You're offline. Your saved content is still available.",
+        );
+      }
+      return;
+    }
 
     try {
-      final online = await SyncService.instance.isOnline();
-
-      if (!online) {
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'You are offline. Your saved data is still available.',
-            ),
-          ),
-        );
-        return;
-      }
-
       await SyncService.instance.syncNow();
       await NotificationService.instance.registerCurrentDevice();
-      await _loadSyncState();
-
-      if (mounted) {
-        setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sync completed.')),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sync could not complete. Try again later.'),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _syncing = false);
+      if (mounted) showAppSnackBar(context, 'Everything is up to date.');
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error, onRetry: _sync);
     }
-  }
-
-  Future<void> _logout() async {
-    await ApiService.instance.logout();
-    await LocalDatabase.instance.clearAll();
-
-    if (!mounted) return;
-
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (_) => false,
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    const maroon = Color(0xFF800000);
-    final titles = ['Dashboard', 'Learning', 'Mentorship', 'Jobs', 'More'];
+    final tab = _tabs[_index];
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: maroon,
-        foregroundColor: Colors.white,
-        title: Text(titles[_index]),
+        title: Text(tab.title),
         actions: [
+          ValueListenableBuilder<bool>(
+            valueListenable: SyncService.instance.syncing,
+            builder: (context, syncing, _) => IconButton(
+              tooltip: syncing ? 'Syncing…' : 'Sync now',
+              onPressed: syncing ? null : _sync,
+              icon: syncing
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync),
+            ),
+          ),
           IconButton(
-            tooltip: 'Sync Now',
-            onPressed: _syncing ? null : _sync,
-            icon: _syncing
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.sync),
+            tooltip: _unread == 0
+                ? 'Notifications'
+                : 'Notifications, $_unread unread',
+            onPressed: _openNotifications,
+            icon: Badge(
+              isLabelVisible: _unread > 0,
+              label: Text(_unread > 99 ? '99+' : '$_unread'),
+              child: const Icon(Icons.notifications_outlined),
+            ),
           ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'logout') _logout();
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: Colors.black54),
-                    SizedBox(width: 8),
-                    Text('Sign Out'),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
         children: [
           const ConnectivityBanner(),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-            color: Colors.grey.shade100,
-            child: Wrap(
-              spacing: 14,
-              runSpacing: 4,
-              children: [
-                Text(
-                  _lastSync == null
-                      ? 'Not synced yet'
-                      : 'Last synced: ${_lastSync!.replaceFirst('T', ' ')}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-                if (_queuedActions > 0)
-                  Text(
-                    'Queued offline actions: $_queuedActions',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-              ],
-            ),
+          Expanded(
+            child: IndexedStack(index: _index, children: _pages),
           ),
-          Expanded(child: _pages[_index]),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book),
-            label: 'Learning',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.diversity_3_outlined),
-            selectedIcon: Icon(Icons.diversity_3),
-            label: 'Mentorship',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.work_outline),
-            selectedIcon: Icon(Icons.work),
-            label: 'Jobs',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.grid_view_outlined),
-            selectedIcon: Icon(Icons.grid_view),
-            label: 'More',
-          ),
-        ],
+      // Five labels can't grow without limit on a phone-width bar; clamp
+      // like the platform navigation bars do. Screen content still scales
+      // fully, and each destination keeps its tooltip and semantics label.
+      bottomNavigationBar: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.3,
+        child: NavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: _selectTab,
+          destinations: [
+            for (final t in _tabs)
+              NavigationDestination(
+                icon: Icon(t.icon),
+                selectedIcon: Icon(t.selectedIcon),
+                label: t.label,
+                tooltip: t.title,
+              ),
+          ],
+        ),
       ),
     );
   }

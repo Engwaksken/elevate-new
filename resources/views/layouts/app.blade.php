@@ -73,7 +73,7 @@ $inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.log
 
 <footer class="site-footer"><div class="container footer">
 <div><strong class="footer-brand">ElevateHer360</strong><div class="footer-copy"><i class="fas fa-copyright"></i> {{ date('Y') }} Women in Technology Uganda</div></div>
-<nav class="footer-links" aria-label="Footer navigation"><a href="{{ route('home') }}">Home</a>@if(Route::has('learning.index'))<a href="{{ route('learning.index') }}">Learning</a>@endif @if(Route::has('jobs.index'))<a href="{{ route('jobs.index') }}">Jobs</a>@endif @if(Route::has('library.index'))<a href="{{ route('library.index') }}">Library</a>@endif @guest<a href="{{ route('login') }}">Sign In</a><a href="{{ route('register') }}">Register</a>@endguest</nav>
+<nav class="footer-links" aria-label="Footer navigation"><a href="{{ route('home') }}">Home</a>@if(Route::has('learning.index'))<a href="{{ route('learning.index') }}">Learning</a>@endif @if(Route::has('jobs.index'))<a href="{{ route('jobs.index') }}">Jobs</a>@endif @if(Route::has('library.index'))<a href="{{ route('library.index') }}">Library</a>@endif @guest<a href="{{ route('login') }}">Sign In</a><a href="{{ route('register') }}">Register</a>@endguest @if(Route::has('legal.privacy'))<a href="{{ route('legal.privacy') }}">Privacy Policy</a>@endif @if(Route::has('legal.terms'))<a href="{{ route('legal.terms') }}">Terms of Use</a>@endif</nav>
 </div></footer>
 @endif
 

@@ -793,8 +793,10 @@
 
                                 <span>
                                     <strong>
-                                        I agree to the Terms of Use
-                                        and Privacy Policy.
+                                        I agree to the
+                                        <a href="{{ route('legal.terms') }}" target="_blank" rel="noopener">Terms of Use</a>
+                                        and
+                                        <a href="{{ route('legal.privacy') }}" target="_blank" rel="noopener">Privacy Policy</a>.
                                     </strong>
 
                                     <small>

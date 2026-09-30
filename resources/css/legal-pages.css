@@ -1,0 +1,141 @@
+/* ==========================================================================
+   Public legal pages: /privacy-policy and /terms
+   ========================================================================== */
+
+.legal-page {
+    max-width: 860px;
+    margin-inline: auto;
+}
+
+.legal-header {
+    margin-bottom: 24px;
+}
+
+.legal-header h1 {
+    margin: 8px 0 10px;
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+    line-height: 1.2;
+}
+
+.legal-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.legal-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.legal-toc {
+    margin-bottom: 24px;
+}
+
+.legal-toc h2 {
+    margin: 0 0 10px;
+    font-size: 1rem;
+}
+
+.legal-toc ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    columns: 2 240px;
+    column-gap: 32px;
+}
+
+.legal-toc li {
+    margin-bottom: 6px;
+    break-inside: avoid;
+}
+
+.legal-body {
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+}
+
+.legal-body section {
+    scroll-margin-top: 90px;
+    margin-bottom: 30px;
+}
+
+.legal-body h2 {
+    margin: 0 0 10px;
+    font-size: clamp(1.15rem, 3vw, 1.35rem);
+    color: var(--primary);
+}
+
+.legal-body h3 {
+    margin: 18px 0 6px;
+    font-size: 1.02rem;
+}
+
+.legal-body p,
+.legal-body ul {
+    margin: 0 0 12px;
+}
+
+.legal-body ul {
+    padding-left: 1.25rem;
+    list-style: disc;
+}
+
+.legal-body li {
+    margin-bottom: 6px;
+}
+
+.legal-body a {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.legal-table-wrap {
+    overflow-x: auto;
+    margin-bottom: 12px;
+}
+
+.legal-table {
+    width: 100%;
+    min-width: 520px;
+    border-collapse: collapse;
+    font-size: 0.93rem;
+}
+
+.legal-table th,
+.legal-table td {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+}
+
+.legal-table th {
+    background: #fffaf5;
+}
+
+.legal-placeholder {
+    padding: 1px 6px;
+    border: 1px dashed #b45309;
+    border-radius: 6px;
+    background: #fef3c7;
+    color: #92400e;
+    font-weight: 700;
+}
+
+.legal-callout {
+    padding: 14px 16px;
+    border-left: 4px solid var(--secondary);
+    border-radius: 10px;
+    background: #fffaf5;
+}
+
+@media (max-width: 640px) {
+    .legal-body {
+        font-size: 0.97rem;
+    }
+}
