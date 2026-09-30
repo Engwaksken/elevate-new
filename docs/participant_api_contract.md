@@ -470,3 +470,23 @@ When a request is created, the course instructors get an in-app notification (`t
 - `data`: `{"assessment_id","course_id","extension_request_id","approved_due_at"}`
 
 The backend has no server push (FCM) sender yet, so the app should pick these up through `/notifications` and `/sync`.
+
+## Help & support
+
+`GET /api/v1/participant/support` (authenticated) returns the contacts managed in **Admin → Support Settings**, the same values as the web page `/participant/help`.
+
+```json
+{"support": {
+  "email": "support@elevateher360.org", "alternate_email": null,
+  "phone": "+256 700 000 001", "whatsapp": "+256 700 000 002",
+  "whatsapp_url": "https://wa.me/256700000002",
+  "branch": null, "address": null, "hours": "Mon–Fri, 8am–5pm",
+  "introduction": "Contact the ElevateHer360 support team if you need assistance.",
+  "technical": null,
+  "help_page_url": "https://site.elevateher360.org/participant/help",
+  "privacy_policy_url": "https://site.elevateher360.org/privacy-policy",
+  "terms_url": "https://site.elevateher360.org/terms"
+}}
+```
+
+Blank settings are `null`. `email` falls back to `LEGAL_SUPPORT_EMAIL` and `introduction` to the default text above. `whatsapp_url` is built from the digits in `whatsapp`.

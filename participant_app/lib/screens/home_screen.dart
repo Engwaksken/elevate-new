@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../core/app_config.dart';
 import '../core/connectivity_banner.dart';
 import '../core/logger.dart';
 import '../services/api_service.dart';
@@ -19,6 +17,7 @@ import 'assignments_screen.dart';
 import 'cached_list_screen.dart';
 import 'dashboard_screen.dart';
 import 'downloads_screen.dart';
+import 'help_support_screen.dart';
 import 'jobs_screen.dart';
 import 'learning_screen.dart';
 import 'login_screen.dart';
@@ -147,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case AppDestination.about:
         _push(const AboutScreen());
       case AppDestination.help:
-        _emailSupport();
+        _push(const HelpSupportScreen());
       case AppDestination.signOut:
         _signOut();
       default:
@@ -158,21 +157,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onDrawerSelected(AppDestination destination) {
     Navigator.of(context).pop(); // close the drawer first
     _open(destination);
-  }
-
-  Future<void> _emailSupport() async {
-    final uri = Uri(
-      scheme: 'mailto',
-      path: AppConfig.supportEmail,
-      queryParameters: {'subject': 'ElevateHer360 app support'},
-    );
-    final ok = await launchUrl(uri);
-    if (!ok && mounted) {
-      showAppSnackBar(
-        context,
-        'Email us at ${AppConfig.supportEmail} and we will be glad to help.',
-      );
-    }
   }
 
   Future<void> _signOut() async {

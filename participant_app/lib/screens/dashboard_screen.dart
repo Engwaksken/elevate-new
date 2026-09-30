@@ -177,6 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         value: '${d.counts['assignments'] ?? 0}',
         label: 'Assignments',
         tint: theme.colorScheme.secondaryContainer,
+        compact: true,
         onTap: () => widget.onOpen(AppDestination.assignments),
       ),
       StatCard(
@@ -184,12 +185,14 @@ class _DashboardScreenState extends State<DashboardScreen>
         value: '${d.counts['mentorship'] ?? 0}',
         label: 'Mentorship',
         tint: theme.colorScheme.tertiaryContainer,
+        compact: true,
         onTap: () => widget.onOpen(AppDestination.mentorship),
       ),
       StatCard(
         icon: Icons.work_outline_rounded,
         value: '${d.counts['jobs'] ?? 0}',
         label: 'Jobs',
+        compact: true,
         onTap: () => widget.onOpen(AppDestination.jobs),
       ),
       StatCard(
@@ -197,6 +200,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         value: '${d.counts['events'] ?? 0}',
         label: 'Events',
         tint: theme.colorScheme.secondaryContainer,
+        compact: true,
         onTap: () => widget.onOpen(AppDestination.events),
       ),
       StatCard(
@@ -204,6 +208,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         value: '${d.counts['announcements'] ?? 0}',
         label: 'Announcements',
         tint: theme.colorScheme.tertiaryContainer,
+        compact: true,
         onTap: () => widget.onOpen(AppDestination.announcements),
       ),
     ];
