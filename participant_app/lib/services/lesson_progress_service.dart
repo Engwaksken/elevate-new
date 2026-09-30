@@ -29,7 +29,7 @@ class LessonProgressService {
       await SyncService.instance.queueAction('lesson_progress', {
         'lesson_id': lessonId,
         'completed': completed,
-        'time_spent_seconds': timeSpentSeconds,
+        if (timeSpentSeconds > 0) 'time_spent_seconds': timeSpentSeconds,
       });
       if (courseId != null && localCoursePercent != null) {
         await _db.setCourseProgress(courseId, localCoursePercent);

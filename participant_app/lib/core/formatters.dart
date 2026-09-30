@@ -149,3 +149,85 @@ bool isTruthy(dynamic value) =>
     value == 1 ||
     value?.toString() == '1' ||
     value?.toString().toLowerCase() == 'true';
+
+/// Reading/activity time: "0 min", "<1 min", "12 min", "1h", "3h 20m".
+String formatDuration(int? seconds) {
+  final total = seconds == null || seconds < 0 ? 0 : seconds;
+  if (total == 0) return '0 min';
+  if (total < 60) return '<1 min';
+  final minutes = total ~/ 60;
+  if (minutes < 60) return '$minutes min';
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  return m == 0 ? '${h}h' : '${h}h ${m}m';
+}
+
+/// Screen-reader friendly form of [formatDuration]: "3 hours 20 minutes".
+String spokenDuration(int? seconds) {
+  final total = seconds == null || seconds < 0 ? 0 : seconds;
+  if (total < 60) return total == 0 ? 'no time yet' : 'less than a minute';
+  final minutes = total ~/ 60;
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  String unit(int n, String word) => '$n $word${n == 1 ? '' : 's'}';
+  if (h == 0) return unit(m, 'minute');
+  return m == 0 ? unit(h, 'hour') : '${unit(h, 'hour')} ${unit(m, 'minute')}';
+}
+
+String _plural(int n, String word) => '$n $word${n == 1 ? '' : 's'}';
+
+/// Relative due text: "Due in 2 days", "Due tomorrow", "Due today",
+/// "Due in 45 min", "Overdue by 3 hours", "Overdue by 3 days".
+/// Day counts use calendar days in local time.
+String relativeDueText(DateTime due, {DateTime? now}) {
+  final current = (now ?? DateTime.now()).toLocal();
+  final local = due.toLocal();
+  final diff = local.difference(current);
+  final dayDiff = DateTime(local.year, local.month, local.day)
+      .difference(DateTime(current.year, current.month, current.day))
+      .inDays;
+
+  if (!diff.isNegative) {
+    if (diff.inMinutes < 60) {
+      return diff.inMinutes <= 1 ? 'Due now' : 'Due in ${diff.inMinutes} min';
+    }
+    if (dayDiff <= 0) return 'Due today';
+    if (dayDiff == 1) return 'Due tomorrow';
+    return 'Due in ${_plural(dayDiff, 'day')}';
+  }
+
+  final ago = current.difference(local);
+  if (ago.inHours < 24 && dayDiff >= -1) {
+    if (ago.inHours < 1) return 'Overdue by ${_plural(ago.inMinutes < 1 ? 1 : ago.inMinutes, 'minute')}';
+    return 'Overdue by ${_plural(ago.inHours, 'hour')}';
+  }
+  return 'Overdue by ${_plural(-dayDiff, 'day')}';
+}
+
+/// Initials for an avatar: "Jane Akello" -> "JA".
+String initialsOf(String? name) {
+  final parts = (name ?? '')
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((p) => p.isNotEmpty)
+      .take(2)
+      .map((p) => p[0].toUpperCase())
+      .join();
+  return parts.isEmpty ? '?' : parts;
+}
+
+/// "Good morning" / "Good afternoon" / "Good evening".
+String greetingFor(DateTime time) {
+  final h = time.hour;
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+int? asInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.round();
+  final text = value.toString().trim();
+  return int.tryParse(text) ?? double.tryParse(text)?.round();
+}

@@ -507,6 +507,28 @@ class NotificationService {
     }
   }
 
+  /// Schedules a local reminder about an hour before a mentorship session.
+  /// Returns false when that moment has already passed.
+  Future<bool> scheduleSessionReminder({
+    required Object sessionId,
+    required String title,
+    required DateTime scheduledAt,
+  }) async {
+    final notifyAt = _notificationTimeFor('mentorship_session', scheduledAt.toLocal());
+    if (!notifyAt.isAfter(DateTime.now())) return false;
+
+    await requestPermission();
+    await _scheduleReminder({
+      'type': 'mentorship_session',
+      'source_id': sessionId,
+      'title': title,
+      'message': 'Your mentorship session starts in about one hour.',
+      'scheduled_at': scheduledAt.toUtc().toIso8601String(),
+      'destination': 'mentorship',
+    });
+    return true;
+  }
+
   Future<void> cancelReminder({
     required String type,
     required Object sourceId,
