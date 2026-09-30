@@ -8,6 +8,7 @@ use App\Models\LearningFile;
 use App\Models\Lesson;
 use App\Services\Participant\ParticipantLessonService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class LessonController extends Controller
@@ -65,7 +66,9 @@ class LessonController extends Controller
     }
 
     /**
-     * PUT /lessons/{lesson}/progress — save progress / completion.
+     * PUT /lessons/{lesson}/progress — save progress / completion and/or add reading time.
+     * "completed" is optional (omitted = unchanged); "time_spent_seconds_delta" (0..3600, clamped)
+     * is added to the stored total. "client_operation_id" makes the call idempotent.
      */
     public function progress(Request $request, Lesson $lesson)
     {
@@ -73,13 +76,51 @@ class LessonController extends Controller
         $this->lessons->authorize($user, $lesson);
 
         $data = $request->validate([
-            'completed' => ['required', 'boolean'],
+            'completed' => ['required_without_all:time_spent_seconds_delta,time_spent_seconds', 'nullable', 'boolean'],
+            'time_spent_seconds_delta' => ['nullable', 'integer', 'min:0'],
             'time_spent_seconds' => ['nullable', 'integer', 'min:0'],
+            'client_operation_id' => ['nullable', 'string', 'max:190'],
+        ], [
+            'completed.required_without_all' => 'The completed field is required.',
         ]);
 
-        return response()->json(
-            $this->lessons->saveProgress($user, $lesson, (bool) $data['completed'], (int) ($data['time_spent_seconds'] ?? 0))
+        $operationId = $data['client_operation_id'] ?? null;
+
+        if ($operationId) {
+            $existing = DB::table('mobile_sync_operations')
+                ->where('user_id', $user->id)
+                ->where('client_operation_id', $operationId)
+                ->first();
+
+            if ($existing) {
+                return response()->json(
+                    ($existing->result ? json_decode($existing->result, true) : []) + ['duplicate' => true]
+                );
+            }
+        }
+
+        $result = $this->lessons->saveProgress(
+            $user,
+            $lesson,
+            array_key_exists('completed', $data) && $data['completed'] !== null ? (bool) $data['completed'] : null,
+            $this->lessons->secondsToAdd($data)
         );
+
+        if ($operationId) {
+            DB::table('mobile_sync_operations')->insertOrIgnore([
+                'user_id' => $user->id,
+                'client_operation_id' => $operationId,
+                'operation_type' => 'lesson_progress',
+                'payload' => json_encode(['lesson_id' => $lesson->id] + $data),
+                'status' => 'processed',
+                'result' => json_encode($result),
+                'processed_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return response()->json($result);
     }
 
     /**
