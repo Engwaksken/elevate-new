@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends(auth()->check() && method_exists(auth()->user(), 'isStaff') && auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'My Growth Goals | ElevateHer360')
 
@@ -180,10 +180,10 @@
 
                 <div class="mentorship-goal-meta">
                     {{ number_format((float) ($goal->progress_percent ?? 0), 0) }}% complete
-                    · {{ ucfirst(str_replace('_', ' ', $goal->status)) }}
+                    Â· {{ ucfirst(str_replace('_', ' ', $goal->status)) }}
 
                     @if($goal->target_date)
-                        · Target {{ $goal->target_date->format('d M Y') }}
+                        Â· Target {{ $goal->target_date->format('d M Y') }}
                     @endif
                 </div>
 
@@ -201,3 +201,4 @@
     </div>
 </div>
 @endsection
+

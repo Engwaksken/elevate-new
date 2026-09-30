@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends(auth()->check() && method_exists(auth()->user(), 'isStaff') && auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
 @section('title','Digital Library - ElevateHer360')
 @section('content')
 
@@ -94,3 +94,4 @@
 </div>
 </div>
 @endsection
+

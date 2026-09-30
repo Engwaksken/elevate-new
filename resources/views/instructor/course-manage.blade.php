@@ -1,484 +1,546 @@
 @extends('layouts.admin')
-@section('title',$course->title.' | Instructor Workspace')
+
+@section('title', $course->title.' | Instructor Workspace')
 
 @section('content')
+@php
+    $activeTab = request('tab', 'overview');
+
+    $tabs = [
+        'overview' => ['Overview', 'fa-gauge-high'],
+        'modules' => ['Modules', 'fa-layer-group'],
+        'lessons' => ['Lessons', 'fa-book-open'],
+        'materials' => ['Learning Materials', 'fa-folder-open'],
+        'assignments' => ['Assignments', 'fa-list-check'],
+        'quizzes' => ['Quizzes', 'fa-circle-question'],
+        'exams' => ['Exams', 'fa-file-signature'],
+        'submissions' => ['Submissions', 'fa-file-circle-check'],
+        'participants' => ['Participants', 'fa-users'],
+        'progress' => ['Progress', 'fa-chart-line'],
+        'announcements' => ['Announcements', 'fa-bullhorn'],
+        'settings' => ['Settings', 'fa-gear'],
+    ];
+
+    $allModules = $course->modules()->orderBy('position')->get();
+@endphp
+
 <style>
-.icm-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
-.icm-stat{background:#fff;border:1px solid #e5e7eb;border-left:4px solid #800000;border-radius:12px;padding:16px}
-.icm-stat small{display:block;color:#667085;font-weight:700}.icm-stat strong{font-size:1.35rem}
-.icm-tabs{background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden}
-.icm-tab-nav{display:flex;gap:4px;overflow-x:auto;padding:10px;border-bottom:1px solid #e5e7eb;background:#fafafa}
-.icm-tab-btn{border:0;background:transparent;padding:10px 14px;border-radius:8px;font-weight:700;color:#475467;white-space:nowrap;cursor:pointer;text-decoration:none}
-.icm-tab-btn.active{background:#800000;color:#fff}
-.icm-pane{display:none;padding:18px}.icm-pane.active{display:block}
-.icm-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
-.icm-filter{display:grid;grid-template-columns:2fr repeat(3,minmax(150px,1fr)) auto;gap:10px;margin-bottom:16px}
-.icm-filter input,.icm-filter select,.icm-form input,.icm-form textarea,.icm-form select{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d0d5dd;border-radius:9px;background:#fff}
-.icm-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.icm-lessons-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.icm-card{border:1px solid #e5e7eb;border-radius:12px;padding:16px;background:#fff}
-.icm-card h3{margin-top:0}.icm-muted{color:#667085;font-size:.88rem}
-.icm-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:12px;border:1px solid #e5e7eb;border-radius:10px}
-.icm-list{display:grid;gap:10px}
-.icm-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
-.icm-chip{display:inline-flex;padding:4px 8px;border-radius:999px;background:#f2f4f7;font-size:.75rem;font-weight:700;color:#344054}
-.icm-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.icm-form .full{grid-column:1/-1}.icm-form textarea{min-height:90px}
-.icm-modal{position:fixed;inset:0;background:rgba(16,24,40,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:9999}
-.icm-modal.open{display:flex}.icm-modal-dialog{width:min(760px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.25)}
-.icm-modal-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid #e5e7eb;position:sticky;top:0;background:#fff;z-index:2}
-.icm-modal-body{padding:18px}.icm-modal-close{border:0;background:#f2f4f7;border-radius:8px;width:36px;height:36px;cursor:pointer}
-.icm-pagination{margin-top:16px}
-@media(max-width:1200px){.icm-lessons-grid{grid-template-columns:repeat(2,1fr)}.icm-filter{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:900px){.icm-stats,.icm-grid-2,.icm-form,.icm-filter{grid-template-columns:1fr}.icm-form .full{grid-column:auto}}
-@media(max-width:620px){.icm-lessons-grid{grid-template-columns:1fr}}
+.icm-header-actions{display:flex;gap:10px;flex-wrap:wrap}
+.icm-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.icm-stat{background:#fff;border:1px solid #e5e7eb;border-left:4px solid #800000;border-radius:12px;padding:15px}
+.icm-stat small{display:block;color:#667085;font-weight:700}.icm-stat strong{display:block;font-size:1.3rem;margin-top:4px}
+.icm-tabs{display:flex;gap:7px;overflow:auto;padding:8px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:18px}
+.icm-tabs a{padding:9px 12px;border-radius:8px;color:#475467;text-decoration:none;font-weight:700;white-space:nowrap}
+.icm-tabs a.active{background:#800000;color:#fff}
+.icm-panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin-bottom:18px}
+.icm-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.icm-panel-head h2,.icm-panel-head h3{margin:0}
+.icm-muted{color:#667085;font-size:.9rem}
+.icm-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.icm-form-grid .full{grid-column:1/-1}
+.icm-form-grid input,.icm-form-grid select,.icm-form-grid textarea,
+.icm-filter input,.icm-filter select{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d0d5dd;border-radius:8px;background:#fff}
+.icm-form-grid textarea{min-height:90px}
+.icm-filter{display:grid;grid-template-columns:2fr repeat(3,minmax(150px,1fr)) auto;gap:10px;margin-bottom:15px}
+.icm-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.icm-card{border:1px solid #e5e7eb;border-radius:12px;padding:15px}
+.icm-card h3{margin:5px 0}
+.icm-chip{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#f2f4f7;font-size:.75rem;font-weight:700}
+.icm-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.icm-details{margin-top:12px;border-top:1px solid #eaecf0;padding-top:12px}
+.icm-progress{height:8px;background:#eaecf0;border-radius:999px;overflow:hidden}
+.icm-progress span{display:block;height:100%;background:#800000}
+.table-responsive{overflow:auto}
+.admin-table{width:100%;border-collapse:collapse}
+.admin-table th,.admin-table td{padding:10px;border-bottom:1px solid #eaecf0;text-align:left;vertical-align:top}
+.admin-table th{font-size:.78rem;color:#667085;text-transform:uppercase;letter-spacing:.03em}
+@media(max-width:1200px){.icm-stats{grid-template-columns:repeat(3,1fr)}.icm-filter{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.icm-stats,.icm-card-grid,.icm-form-grid,.icm-filter{grid-template-columns:1fr}.icm-form-grid .full{grid-column:auto}}
 </style>
 
 <div class="admin-page-header">
     <div>
         <span class="admin-eyebrow">Instructor / Trainer Workspace</span>
         <h1>{{ $course->title }}</h1>
-        <p>Manage authorised content, assessments and participants for this assigned course.</p>
+        <p>Manage assigned course content, assessments, announcements, participants and progress.</p>
     </div>
-    <a href="{{ route('admin.my-courses') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> My Courses</a>
+    <div class="icm-header-actions">
+        @if(Route::has('instructor.attendance.create'))
+            <a href="{{ route('instructor.attendance.create', $course) }}" class="btn btn-outline"><i class="fas fa-user-check"></i> Attendance</a>
+        @endif
+        <a href="{{ route('admin.my-courses') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> My Courses</a>
+    </div>
 </div>
 
 <div class="icm-stats">
     <div class="icm-stat"><small>Modules</small><strong>{{ number_format($stats['modules']) }}</strong></div>
     <div class="icm-stat"><small>Lessons</small><strong>{{ number_format($stats['lessons']) }}</strong></div>
-    <div class="icm-stat"><small>Assignments / Quizzes / Exams</small><strong>{{ number_format($stats['assessments']) }}</strong></div>
+    <div class="icm-stat"><small>Assignments</small><strong>{{ number_format($stats['assignments']) }}</strong></div>
+    <div class="icm-stat"><small>Quizzes</small><strong>{{ number_format($stats['quizzes']) }}</strong></div>
+    <div class="icm-stat"><small>Exams</small><strong>{{ number_format($stats['exams']) }}</strong></div>
     <div class="icm-stat"><small>Participants</small><strong>{{ number_format($stats['participants']) }}</strong></div>
 </div>
 
-<div class="icm-tabs">
-    <div class="icm-tab-nav">
-        <button class="icm-tab-btn active" data-tab="modules"><i class="fas fa-layer-group"></i> Modules</button>
-        <button class="icm-tab-btn" data-tab="lessons"><i class="fas fa-book-open"></i> Lessons</button>
-        <button class="icm-tab-btn" data-tab="assessments"><i class="fas fa-list-check"></i> Assignments, Quizzes & Exams</button>
-        <button class="icm-tab-btn" data-tab="participants"><i class="fas fa-users"></i> Participants</button>
-        <button class="icm-tab-btn" data-tab="submissions"><i class="fas fa-file-circle-check"></i> Submissions</button>
-        <button class="icm-tab-btn" data-tab="announcements"><i class="fas fa-bullhorn"></i> Announcements</button>
-        <button class="icm-tab-btn" data-tab="settings"><i class="fas fa-pen-to-square"></i> Course Details</button>
-        @if(Route::has('instructor.module-access.index'))<a class="icm-tab-btn" href="{{ route('instructor.module-access.index',$course) }}"><i class="fas fa-lock-open"></i> Module Access</a>@endif
-        @if(Route::has('instructor.attendance.create'))<a class="icm-tab-btn" href="{{ route('instructor.attendance.create',$course) }}"><i class="fas fa-user-check"></i> Attendance</a>@endif
+<nav class="icm-tabs" aria-label="Course workspace">
+    @foreach($tabs as $key => [$label, $icon])
+        <a href="{{ route('instructor.courses.manage', ['course' => $course, 'tab' => $key]) }}"
+           class="{{ $activeTab === $key ? 'active' : '' }}">
+            <i class="fas {{ $icon }}"></i> {{ $label }}
+        </a>
+    @endforeach
+</nav>
+
+@if($activeTab === 'overview')
+<section class="icm-panel">
+    <div class="icm-panel-head">
+        <div><h2>Course Overview</h2><p class="icm-muted">Quick access to the key delivery areas for this assigned course.</p></div>
+    </div>
+    <div class="icm-card-grid">
+        @foreach([
+            ['modules','Modules','Create, edit, publish and reorder modules.','fa-layer-group'],
+            ['lessons','Lessons','Create and maintain lesson content and resources.','fa-book-open'],
+            ['assignments','Assignments','Create assignments, due dates and files.','fa-list-check'],
+            ['quizzes','Quizzes','Create quizzes, questions, attempts and pass marks.','fa-circle-question'],
+            ['exams','Exams','Create timed exams with marks and pass requirements.','fa-file-signature'],
+            ['progress','Participant Progress','Review learning, assessment and attendance progress.','fa-chart-line'],
+        ] as [$tab,$title,$copy,$icon])
+        <a class="icm-card" style="text-decoration:none;color:inherit" href="{{ route('instructor.courses.manage',['course'=>$course,'tab'=>$tab]) }}">
+            <i class="fas {{ $icon }}"></i>
+            <h3>{{ $title }}</h3>
+            <p class="icm-muted">{{ $copy }}</p>
+        </a>
+        @endforeach
+    </div>
+</section>
+@endif
+
+@if($activeTab === 'modules')
+<section class="icm-panel">
+    <div class="icm-panel-head"><div><h2>Modules</h2><p class="icm-muted">Create, edit, publish and reorder course modules.</p></div></div>
+
+    <form method="POST" action="{{ route('instructor.courses.modules.store',$course) }}" class="icm-form-grid">
+        @csrf
+        <div><label>Title</label><input name="title" required></div>
+        <div><label>Position</label><input type="number" name="position" min="1"></div>
+        <div class="full"><label>Description</label><textarea name="description"></textarea></div>
+        <label><input type="checkbox" name="is_published" value="1"> Published</label>
+        <div><button class="btn btn-primary"><i class="fas fa-plus"></i> Add Module</button></div>
+    </form>
+</section>
+
+<section class="icm-panel">
+    <div class="icm-card-grid">
+        @forelse($modules as $module)
+        <article class="icm-card">
+            <span class="icm-chip">Module {{ $module->position }}</span>
+            <h3>{{ $module->title }}</h3>
+            <p class="icm-muted">{{ $module->lessons_count }} lesson(s) · {{ $module->is_published ? 'Published' : 'Draft' }}</p>
+            @if($module->description)<p>{{ $module->description }}</p>@endif
+            <details class="icm-details">
+                <summary>Edit module</summary>
+                <form method="POST" action="{{ route('instructor.courses.modules.update',[$course,$module]) }}" class="icm-form-grid" style="margin-top:12px">
+                    @csrf @method('PUT')
+                    <div><label>Title</label><input name="title" value="{{ $module->title }}" required></div>
+                    <div><label>Position</label><input type="number" name="position" min="1" value="{{ $module->position }}" required></div>
+                    <div class="full"><label>Description</label><textarea name="description">{{ $module->description }}</textarea></div>
+                    <label><input type="checkbox" name="is_published" value="1" @checked($module->is_published)> Published</label>
+                    <div><button class="btn btn-primary btn-sm">Save Module</button></div>
+                </form>
+            </details>
+            <form method="POST" action="{{ route('instructor.courses.modules.destroy',[$course,$module]) }}" onsubmit="return confirm('Delete this module and its lessons?')" style="margin-top:10px">
+                @csrf @method('DELETE')
+                <button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i> Delete</button>
+            </form>
+        </article>
+        @empty
+        <div class="icm-card">No modules found.</div>
+        @endforelse
+    </div>
+    <div style="margin-top:15px">{{ $modules->appends(['tab'=>'modules'])->links() }}</div>
+</section>
+@endif
+
+@if($activeTab === 'lessons')
+<section class="icm-panel">
+    <div class="icm-panel-head"><div><h2>Lessons</h2><p class="icm-muted">Create lessons with text, video, links and downloadable files.</p></div></div>
+
+    <form method="POST" enctype="multipart/form-data" action="{{ $allModules->isNotEmpty() ? route('instructor.courses.lessons.store',[$course,$allModules->first()]) : '#' }}" class="icm-form-grid" id="lessonCreateForm">
+        @csrf
+        <div>
+            <label>Module</label>
+            <select id="lessonModule" required>
+                <option value="">Select module</option>
+                @foreach($allModules as $module)<option value="{{ $module->id }}">{{ $module->title }}</option>@endforeach
+            </select>
+        </div>
+        <div><label>Lesson title</label><input name="title" required></div>
+        <div><label>Content type</label><select name="content_type" required>@foreach(['text','video','file','link','mixed'] as $type)<option value="{{ $type }}">{{ ucfirst($type) }}</option>@endforeach</select></div>
+        <div><label>Estimated minutes</label><input type="number" name="estimated_minutes" min="1"></div>
+        <div><label>Position</label><input type="number" name="position" min="1"></div>
+        <div><label>Video URL</label><input type="url" name="video_url"></div>
+        <div><label>External URL</label><input type="url" name="external_url"></div>
+        <div><label>Resource file</label><input type="file" name="resource_file"></div>
+        <div class="full"><label>Lesson content</label><textarea name="content"></textarea></div>
+        <label><input type="checkbox" name="is_published" value="1"> Published</label>
+        <div><button class="btn btn-primary" @disabled($allModules->isEmpty())><i class="fas fa-plus"></i> Add Lesson</button></div>
+    </form>
+</section>
+
+<section class="icm-panel">
+    <form method="GET" class="icm-filter">
+        <input type="hidden" name="tab" value="lessons">
+        <input name="lesson_search" value="{{ request('lesson_search') }}" placeholder="Search lessons">
+        <select name="module_id"><option value="">All modules</option>@foreach($allModules as $module)<option value="{{ $module->id }}" @selected((string)request('module_id')===(string)$module->id)>{{ $module->title }}</option>@endforeach</select>
+        <select name="lesson_type"><option value="">All types</option>@foreach(['text','video','file','link','mixed'] as $type)<option value="{{ $type }}" @selected(request('lesson_type')===$type)>{{ ucfirst($type) }}</option>@endforeach</select>
+        <span></span>
+        <button class="btn btn-outline"><i class="fas fa-filter"></i> Filter</button>
+    </form>
+
+    <div class="icm-card-grid">
+        @forelse($lessons as $lesson)
+        <article class="icm-card">
+            <span class="icm-chip">{{ ucfirst($lesson->content_type) }}</span>
+            <h3>{{ $lesson->title }}</h3>
+            <p class="icm-muted">{{ $lesson->module?->title }} · {{ $lesson->is_published ? 'Published' : 'Draft' }}</p>
+
+            <div class="icm-actions">
+                @if($lesson->file_path)<a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson]) }}"><i class="fas fa-download"></i> File</a>@endif
+                @if($lesson->video_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->video_url }}" target="_blank"><i class="fas fa-video"></i> Video</a>@endif
+                @if($lesson->external_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->external_url }}" target="_blank"><i class="fas fa-link"></i> Link</a>@endif
+            </div>
+
+            <details class="icm-details">
+                <summary>Edit lesson</summary>
+                <form method="POST" enctype="multipart/form-data" action="{{ route('instructor.courses.lessons.update',[$course,$lesson->module,$lesson]) }}" class="icm-form-grid" style="margin-top:12px">
+                    @csrf @method('PUT')
+                    <div><label>Title</label><input name="title" value="{{ $lesson->title }}" required></div>
+                    <div><label>Type</label><select name="content_type">@foreach(['text','video','file','link','mixed'] as $type)<option value="{{ $type }}" @selected($lesson->content_type===$type)>{{ ucfirst($type) }}</option>@endforeach</select></div>
+                    <div><label>Estimated minutes</label><input type="number" name="estimated_minutes" min="1" value="{{ $lesson->estimated_minutes }}"></div>
+                    <div><label>Position</label><input type="number" name="position" min="1" value="{{ $lesson->position }}"></div>
+                    <div><label>Video URL</label><input type="url" name="video_url" value="{{ $lesson->video_url }}"></div>
+                    <div><label>External URL</label><input type="url" name="external_url" value="{{ $lesson->external_url }}"></div>
+                    <div><label>Replace file</label><input type="file" name="resource_file"></div>
+                    <div><label><input type="checkbox" name="remove_file" value="1"> Remove existing file</label></div>
+                    <div class="full"><label>Content</label><textarea name="content">{{ $lesson->content }}</textarea></div>
+                    <label><input type="checkbox" name="is_published" value="1" @checked($lesson->is_published)> Published</label>
+                    <div><button class="btn btn-primary btn-sm">Save Lesson</button></div>
+                </form>
+            </details>
+
+            <form method="POST" action="{{ route('instructor.courses.lessons.destroy',[$course,$lesson->module,$lesson]) }}" onsubmit="return confirm('Delete this lesson?')" style="margin-top:10px">
+                @csrf @method('DELETE')
+                <button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i> Delete</button>
+            </form>
+        </article>
+        @empty
+        <div class="icm-card">No lessons found.</div>
+        @endforelse
+    </div>
+    <div style="margin-top:15px">{{ $lessons->appends(['tab'=>'lessons'])->links() }}</div>
+</section>
+@endif
+
+@if($activeTab === 'materials')
+<section class="icm-panel">
+    <div class="icm-panel-head"><div><h2>Learning Materials</h2><p class="icm-muted">Files, links and media attached to lessons.</p></div></div>
+    <div class="icm-card-grid">
+        @forelse($course->modules()->with('lessons')->orderBy('position')->get()->flatMap->lessons->filter(fn($lesson)=>$lesson->file_path || $lesson->video_url || $lesson->external_url) as $lesson)
+            <article class="icm-card">
+                <h3>{{ $lesson->title }}</h3>
+                <p class="icm-muted">{{ $lesson->module?->title }}</p>
+                <div class="icm-actions">
+                    @if($lesson->file_path)<a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson]) }}"><i class="fas fa-download"></i> Download</a>@endif
+                    @if($lesson->video_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->video_url }}" target="_blank"><i class="fas fa-video"></i> Video</a>@endif
+                    @if($lesson->external_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->external_url }}" target="_blank"><i class="fas fa-link"></i> Resource</a>@endif
+                </div>
+            </article>
+        @empty
+            <div class="icm-card">No learning materials are attached yet.</div>
+        @endforelse
+    </div>
+</section>
+@endif
+
+@foreach(['assignment'=>'assignments','quiz'=>'quizzes','exam'=>'exams'] as $assessmentType => $tabName)
+@if($activeTab === $tabName)
+<section class="icm-panel">
+    <div class="icm-panel-head">
+        <div><h2>{{ ucfirst($tabName) }}</h2><p class="icm-muted">Create and manage {{ $tabName }} for this course.</p></div>
     </div>
 
-    <section class="icm-pane active" data-pane="modules">
-        <div class="icm-toolbar">
-            <div><h2 style="margin:0">Modules</h2><div class="icm-muted">Create and organise course modules.</div></div>
-            <button type="button" class="btn btn-primary" data-open-modal="moduleModal"><i class="fas fa-plus"></i> Add Module</button>
-        </div>
+    <form method="POST" enctype="multipart/form-data" action="{{ route('instructor.courses.assessments.store',$course) }}" class="icm-form-grid">
+        @csrf
+        <input type="hidden" name="type" value="{{ $assessmentType }}">
+        <div><label>Title</label><input name="title" required></div>
+        <div><label>Module (optional)</label><select name="course_module_id"><option value="">Course-wide</option>@foreach($allModules as $module)<option value="{{ $module->id }}">{{ $module->title }}</option>@endforeach</select></div>
+        <div><label>Pass mark (%)</label><input type="number" name="pass_mark" value="{{ $course->pass_mark ?? 50 }}" min="0" max="100" step="0.01" required></div>
+        <div><label>Maximum attempts</label><input type="number" name="max_attempts" value="1" min="1" max="20" required></div>
+        <div><label>Opens at</label><input type="datetime-local" name="opens_at"></div>
+        <div><label>Due / closes at</label><input type="datetime-local" name="due_at"></div>
+        <div><label>Duration minutes</label><input type="number" name="duration_minutes" min="1"></div>
+        <div><label>Total marks</label><input type="number" name="total_marks" min="0" step="0.01"></div>
+        <div><label>Attachment</label><input type="file" name="assessment_file"></div>
+        <label><input type="checkbox" name="is_published" value="1"> Published</label>
+        <div class="full"><label>Instructions</label><textarea name="instructions"></textarea></div>
+        <div><button class="btn btn-primary"><i class="fas fa-plus"></i> Add {{ ucfirst($assessmentType) }}</button></div>
+    </form>
+</section>
 
-        <form method="GET" class="icm-filter">
-            <input type="hidden" name="tab" value="modules">
-            <div><label>Search</label><input name="module_search" value="{{ request('module_search') }}" placeholder="Module title or description"></div>
-            <div><label>Period</label><select name="period"><option value="">All periods</option>@foreach(['today'=>'Today','week'=>'This week','month'=>'This month','quarter'=>'This quarter','year'=>'This year'] as $v=>$l)<option value="{{ $v }}" @selected(request('period')===$v)>{{ $l }}</option>@endforeach</select></div>
-            <div></div><div></div>
-            <button class="btn btn-outline"><i class="fas fa-filter"></i> Filter</button>
-        </form>
+<section class="icm-panel">
+    <div class="icm-card-grid">
+        @forelse($course->assessments()->where('type',$assessmentType)->withCount(['questions','attempts'])->latest()->get() as $assessment)
+        <article class="icm-card">
+            <span class="icm-chip">{{ ucfirst($assessment->type) }}</span>
+            <h3>{{ $assessment->title }}</h3>
+            <p class="icm-muted">
+                {{ $assessment->questions_count }} question(s) · {{ $assessment->attempts_count }} attempt(s)
+                · {{ $assessment->is_published ? 'Published' : 'Draft' }}
+            </p>
+            @if($assessment->duration_minutes)<p><strong>Duration:</strong> {{ $assessment->duration_minutes }} minutes</p>@endif
+            @if($assessment->total_marks !== null)<p><strong>Total marks:</strong> {{ number_format((float)$assessment->total_marks,1) }}</p>@endif
+            @if($assessment->due_at)<p><strong>Closes:</strong> {{ $assessment->due_at->format('d M Y H:i') }}</p>@endif
 
-        <div class="icm-grid-2">
-            @forelse($modules as $module)
-                <div class="icm-card">
-                    <div style="display:flex;justify-content:space-between;gap:10px">
-                        <div>
-                            <span class="icm-chip">Module {{ $module->position }}</span>
-                            <h3 style="margin:8px 0">{{ $module->title }}</h3>
-                            <div class="icm-muted">{{ $module->lessons_count }} lesson(s) · {{ $module->is_published ? 'Published' : 'Draft' }}</div>
-                        </div>
-                        <form method="POST" action="{{ route('instructor.courses.modules.destroy',[$course,$module]) }}" onsubmit="return confirm('Delete this module and its related content?')">@csrf @method('DELETE')<button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i></button></form>
-                    </div>
-                    @if($module->description)<p>{{ \Illuminate\Support\Str::limit($module->description,180) }}</p>@endif
-                </div>
-            @empty
-                <div class="icm-card">No modules found.</div>
-            @endforelse
-        </div>
-        <div class="icm-pagination">{{ $modules->appends(['tab'=>'modules'])->links() }}</div>
-    </section>
+            <details class="icm-details">
+                <summary>Edit {{ $assessmentType }}</summary>
+                <form method="POST" enctype="multipart/form-data" action="{{ route('instructor.courses.assessments.update',[$course,$assessment]) }}" class="icm-form-grid" style="margin-top:12px">
+                    @csrf @method('PUT')
+                    <input type="hidden" name="type" value="{{ $assessmentType }}">
+                    <div><label>Title</label><input name="title" value="{{ $assessment->title }}" required></div>
+                    <div><label>Module</label><select name="course_module_id"><option value="">Course-wide</option>@foreach($allModules as $module)<option value="{{ $module->id }}" @selected((int)$assessment->course_module_id===(int)$module->id)>{{ $module->title }}</option>@endforeach</select></div>
+                    <div><label>Pass mark</label><input type="number" name="pass_mark" min="0" max="100" step=".01" value="{{ $assessment->pass_mark }}" required></div>
+                    <div><label>Attempts</label><input type="number" name="max_attempts" min="1" max="20" value="{{ $assessment->max_attempts }}" required></div>
+                    <div><label>Opens at</label><input type="datetime-local" name="opens_at" value="{{ $assessment->opens_at?->format('Y-m-d\TH:i') }}"></div>
+                    <div><label>Due / closes</label><input type="datetime-local" name="due_at" value="{{ $assessment->due_at?->format('Y-m-d\TH:i') }}"></div>
+                    <div><label>Duration minutes</label><input type="number" name="duration_minutes" min="1" value="{{ $assessment->duration_minutes }}"></div>
+                    <div><label>Total marks</label><input type="number" name="total_marks" min="0" step=".01" value="{{ $assessment->total_marks }}"></div>
+                    <div><label>Replace attachment</label><input type="file" name="assessment_file"></div>
+                    <div><label><input type="checkbox" name="remove_attachment" value="1"> Remove attachment</label></div>
+                    <div class="full"><label>Instructions</label><textarea name="instructions">{{ $assessment->instructions }}</textarea></div>
+                    <label><input type="checkbox" name="is_published" value="1" @checked($assessment->is_published)> Published</label>
+                    <div><button class="btn btn-primary btn-sm">Save</button></div>
+                </form>
+            </details>
 
-    <section class="icm-pane" data-pane="lessons">
-        <div class="icm-toolbar">
-            <div><h2 style="margin:0">Lessons</h2><div class="icm-muted">Lessons display four per row on desktop.</div></div>
-            <button type="button" class="btn btn-primary" data-open-modal="lessonModal" @disabled($course->modules()->count()===0)><i class="fas fa-plus"></i> Add Lesson</button>
-        </div>
+            @if(in_array($assessmentType,['quiz','exam'],true))
+            <details class="icm-details">
+                <summary>Add question</summary>
+                <form method="POST" action="{{ route('instructor.courses.assessments.questions.store',[$course,$assessment]) }}" class="icm-form-grid" style="margin-top:12px">
+                    @csrf
+                    <div><label>Question type</label><select name="question_type">@foreach(['multiple_choice'=>'Multiple choice','true_false'=>'True / False','short_text'=>'Short text','long_text'=>'Long text'] as $value=>$label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></div>
+                    <div><label>Marks</label><input type="number" name="marks" min=".1" step=".1" value="1" required></div>
+                    <div class="full"><label>Question</label><textarea name="question_text" required></textarea></div>
+                    <div class="full"><label>Options (one per line)</label><textarea name="options_text"></textarea></div>
+                    <div><label>Correct value</label><input name="correct_value"></div>
+                    <div><button class="btn btn-primary btn-sm">Add Question</button></div>
+                </form>
+            </details>
+            @endif
 
-        <form method="GET" class="icm-filter">
-            <input type="hidden" name="tab" value="lessons">
-            <div><label>Search</label><input name="lesson_search" value="{{ request('lesson_search') }}" placeholder="Lesson title or content"></div>
-            <div><label>Period</label><select name="period"><option value="">All periods</option>@foreach(['today'=>'Today','week'=>'This week','month'=>'This month','quarter'=>'This quarter','year'=>'This year'] as $v=>$l)<option value="{{ $v }}" @selected(request('period')===$v)>{{ $l }}</option>@endforeach</select></div>
-            <div><label>Module</label><select name="module_id"><option value="">All modules</option>@foreach($course->modules()->orderBy('position')->get() as $m)<option value="{{ $m->id }}" @selected((string)request('module_id')===(string)$m->id)>{{ $m->title }}</option>@endforeach</select></div>
-            <div><label>Type</label><select name="lesson_type"><option value="">All types</option>@foreach(['text','video','file','link','mixed'] as $type)<option value="{{ $type }}" @selected(request('lesson_type')===$type)>{{ ucfirst($type) }}</option>@endforeach</select></div>
-            <button class="btn btn-outline"><i class="fas fa-filter"></i> Filter</button>
-        </form>
+            <form method="POST" action="{{ route('instructor.courses.assessments.destroy',[$course,$assessment]) }}" onsubmit="return confirm('Delete this {{ $assessmentType }}?')" style="margin-top:10px">
+                @csrf @method('DELETE')
+                <button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i> Delete</button>
+            </form>
+        </article>
+        @empty
+        <div class="icm-card">No {{ $tabName }} created yet.</div>
+        @endforelse
+    </div>
+</section>
+@endif
+@endforeach
 
-        <div class="icm-lessons-grid">
-            @forelse($lessons as $lesson)
-                <article class="icm-card">
-                    <span class="icm-chip">{{ ucfirst($lesson->content_type) }}</span>
-                    <h3 style="margin:8px 0">{{ $lesson->title }}</h3>
-                    <div class="icm-muted">{{ $lesson->module?->title }} · {{ $lesson->estimated_minutes ?: '—' }} min</div>
-                    @if($lesson->content)<p>{{ \Illuminate\Support\Str::limit(strip_tags($lesson->content),120) }}</p>@endif
-                    <div class="icm-actions">
-                        @if($lesson->video_url)<a class="btn btn-outline btn-sm" target="_blank" href="{{ $lesson->video_url }}"><i class="fas fa-video"></i> Video</a>@endif
-                        @if($lesson->external_url)<a class="btn btn-outline btn-sm" target="_blank" href="{{ $lesson->external_url }}"><i class="fas fa-link"></i> Link</a>@endif
-                        @if($lesson->file_path && Route::has('instructor.courses.lessons.file'))
-                            <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson]) }}"><i class="fas fa-download"></i> File</a>
-                        @endif
-                        <form method="POST" action="{{ route('instructor.courses.lessons.destroy',[$course,$lesson->module,$lesson]) }}" onsubmit="return confirm('Delete this lesson?')">@csrf @method('DELETE')<button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i></button></form>
-                    </div>
-                </article>
-            @empty
-                <div class="icm-card" style="grid-column:1/-1">No lessons found.</div>
-            @endforelse
-        </div>
-        <div class="icm-pagination">{{ $lessons->appends(['tab'=>'lessons'])->links() }}</div>
-    </section>
-
-    <section class="icm-pane" data-pane="assessments">
-        <div class="icm-toolbar">
-            <div><h2 style="margin:0">Assignments, Quizzes & Exams</h2><div class="icm-muted">Create assessments, attach files and add questions.</div></div>
-            <button type="button" class="btn btn-primary" data-open-modal="assessmentModal"><i class="fas fa-plus"></i> Add Assessment</button>
-        </div>
-
-        <form method="GET" class="icm-filter">
-            <input type="hidden" name="tab" value="assessments">
-            <div><label>Search</label><input name="assessment_search" value="{{ request('assessment_search') }}" placeholder="Title or instructions"></div>
-            <div><label>Period</label><select name="assessment_period"><option value="">All periods</option>@foreach(['today'=>'Today','week'=>'This week','month'=>'This month','quarter'=>'This quarter','year'=>'This year'] as $v=>$l)<option value="{{ $v }}" @selected(request('assessment_period')===$v)>{{ $l }}</option>@endforeach</select></div>
-            <div><label>Type</label><select name="assessment_type"><option value="">All types</option>@foreach(['assignment','quiz','exam'] as $type)<option value="{{ $type }}" @selected(request('assessment_type')===$type)>{{ ucfirst($type) }}</option>@endforeach</select></div>
-            <div></div>
-            <button class="btn btn-outline"><i class="fas fa-filter"></i> Filter</button>
-        </form>
-
-        <div class="icm-grid-2">
-            @forelse($assessments as $assessment)
-                <article class="icm-card">
-                    <div style="display:flex;justify-content:space-between;gap:10px">
-                        <div>
-                            <span class="icm-chip">{{ ucfirst($assessment->type) }}</span>
-                            <h3 style="margin:8px 0">{{ $assessment->title }}</h3>
-                            <div class="icm-muted">{{ $assessment->questions_count }} question(s) · Pass {{ number_format((float)$assessment->pass_mark,0) }}%</div>
-                        </div>
-                    </div>
-                    @if($assessment->due_at)<p><strong>Due:</strong> {{ $assessment->due_at->format('d M Y, g:i A') }}</p>@endif
-                    <div class="icm-actions">
-                        <button type="button" class="btn btn-primary btn-sm" data-open-question="{{ $assessment->id }}" data-assessment-title="{{ $assessment->title }}"><i class="fas fa-circle-question"></i> Add Question</button>
-                        @if($assessment->attachment_path && Route::has('instructor.courses.assessments.file'))
-                            <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.assessments.file',[$course,$assessment]) }}"><i class="fas fa-paperclip"></i> Download File</a>
-                        @endif
-                    </div>
-                </article>
-            @empty
-                <div class="icm-card" style="grid-column:1/-1">No assessments found.</div>
-            @endforelse
-        </div>
-        <div class="icm-pagination">{{ $assessments->appends(['tab'=>'assessments'])->links() }}</div>
-    </section>
-
-    <section class="icm-pane" data-pane="participants">
-        <div class="icm-toolbar"><div><h2 style="margin:0">Participants</h2><div class="icm-muted">Search, filter and track participant progress.</div></div></div>
-
-        <form method="GET" class="icm-filter">
-            <input type="hidden" name="tab" value="participants">
-            <div><label>Search</label><input name="participant_search" value="{{ request('participant_search') }}" placeholder="Name or email"></div>
-            <div><label>Period</label><select name="participant_period"><option value="">All periods</option>@foreach(['today'=>'Today','week'=>'This week','month'=>'This month','quarter'=>'This quarter','year'=>'This year'] as $v=>$l)<option value="{{ $v }}" @selected(request('participant_period')===$v)>{{ $l }}</option>@endforeach</select></div>
-            <div><label>Cohort</label><select name="cohort_id"><option value="">All cohorts</option>@foreach($course->cohorts as $cohort)<option value="{{ $cohort->id }}" @selected((string)request('cohort_id')===(string)$cohort->id)>{{ $cohort->name }}</option>@endforeach</select></div>
-            <div><label>Status</label><select name="participant_status"><option value="">All statuses</option>@foreach(['enrolled','in_progress','completed','withdrawn','failed'] as $status)<option value="{{ $status }}" @selected(request('participant_status')===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select></div>
-            <button class="btn btn-outline"><i class="fas fa-filter"></i> Filter</button>
-        </form>
-
-        <div class="icm-list">
-            @forelse($participants as $enrolment)
-                <div class="icm-row">
-                    <div><strong>{{ $enrolment->user?->name ?? 'Participant' }}</strong><div class="icm-muted">{{ $enrolment->user?->email }} · {{ $enrolment->cohort?->name ?? 'No cohort' }} · {{ number_format((float)($enrolment->progress_percent??0),0) }}% progress</div></div>
-                    <form method="POST" action="{{ route('instructor.courses.participants.update',[$course,$enrolment]) }}" style="display:flex;gap:6px;flex-wrap:wrap">@csrf @method('PUT')
-                        <select name="status">@foreach(['enrolled','in_progress','completed','withdrawn','failed'] as $status)<option value="{{ $status }}" @selected($enrolment->status===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select>
-                        <input style="width:90px" type="number" min="0" max="100" step="0.1" name="progress_percent" value="{{ $enrolment->progress_percent }}" placeholder="%">
-                        <button class="btn btn-primary btn-sm">Save</button>
-                    </form>
-                </div>
-            @empty
-                <div class="icm-card">No participants found.</div>
-            @endforelse
-        </div>
-        <div class="icm-pagination">{{ $participants->appends(['tab'=>'participants'])->links() }}</div>
-    </section>
-    <section class="icm-pane" data-pane="submissions">
-        <div class="icm-toolbar">
-            <div><h2 style="margin:0">Participant Submissions</h2><div class="icm-muted">Review submitted assignments, quizzes and exams and provide feedback.</div></div>
-        </div>
-
-        <form method="GET" class="icm-filter">
-            <input type="hidden" name="tab" value="submissions">
-            <div><label>Search</label><input name="submission_search" value="{{ request('submission_search') }}" placeholder="Participant or assessment"></div>
-            <div><label>Period</label><select name="submission_period"><option value="">All periods</option>@foreach(['today'=>'Today','week'=>'This week','month'=>'This month','quarter'=>'This quarter','year'=>'This year'] as $v=>$l)<option value="{{ $v }}" @selected(request('submission_period')===$v)>{{ $l }}</option>@endforeach</select></div>
-            <div><label>Assessment</label><select name="submission_assessment_id"><option value="">All assessments</option>@foreach($course->assessments()->orderBy('title')->get() as $item)<option value="{{ $item->id }}" @selected((string)request('submission_assessment_id')===(string)$item->id)>{{ $item->title }}</option>@endforeach</select></div>
-            <div><label>Status</label><select name="submission_status"><option value="">All statuses</option>@foreach(['started','submitted','graded'] as $status)<option value="{{ $status }}" @selected(request('submission_status')===$status)>{{ ucfirst($status) }}</option>@endforeach</select></div>
-            <button class="btn btn-outline"><i class="fas fa-filter"></i> Filter</button>
-        </form>
-
-        <div class="icm-list">
+@if($activeTab === 'submissions')
+<section class="icm-panel">
+    <div class="icm-panel-head"><div><h2>Submissions</h2><p class="icm-muted">Review participant submissions and record marks and feedback.</p></div></div>
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead><tr><th>Participant</th><th>Assessment</th><th>Status</th><th>Submitted</th><th>Review</th></tr></thead>
+            <tbody>
             @forelse($submissions as $attempt)
-                <div class="icm-row">
-                    <div style="min-width:0">
-                        <strong>{{ $attempt->user?->name ?? 'Participant' }}</strong>
-                        <div class="icm-muted">{{ $attempt->assessment?->title }} · Attempt {{ $attempt->attempt_number }} · {{ ucfirst($attempt->status) }}</div>
-                        @if($attempt->submission_text)<p>{{ \Illuminate\Support\Str::limit($attempt->submission_text,220) }}</p>@endif
-                        @if($attempt->instructor_feedback)<div class="icm-muted"><strong>Feedback:</strong> {{ \Illuminate\Support\Str::limit($attempt->instructor_feedback,180) }}</div>@endif
-                    </div>
-                    <div class="icm-actions" style="margin-top:0">
-                        @if($attempt->submission_file_path && Route::has('instructor.courses.submissions.file'))
+                <tr>
+                    <td>{{ $attempt->user?->name }}<br><small>{{ $attempt->user?->email }}</small></td>
+                    <td>{{ $attempt->assessment?->title }}<br><small>{{ ucfirst($attempt->assessment?->type ?? '') }}</small></td>
+                    <td>{{ ucfirst($attempt->status) }}</td>
+                    <td>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '—' }}</td>
+                    <td>
+                        @if($attempt->submission_file_path)
                             <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt]) }}"><i class="fas fa-download"></i> File</a>
                         @endif
-                        <button
-                            type="button"
-                            class="btn btn-primary btn-sm"
-                            data-review-attempt="{{ $attempt->id }}"
-                            data-review-name="{{ $attempt->user?->name }}"
-                            data-review-assessment="{{ $attempt->assessment?->title }}"
-                            data-review-score="{{ $attempt->score }}"
-                            data-review-percentage="{{ $attempt->percentage }}"
-                            data-review-feedback="{{ $attempt->instructor_feedback }}"
-                            data-review-status="{{ $attempt->status }}"
-                        ><i class="fas fa-comment-dots"></i> Review</button>
-                    </div>
-                </div>
+                        <details class="icm-details">
+                            <summary>Grade / feedback</summary>
+                            <form method="POST" action="{{ route('instructor.courses.submissions.review',[$course,$attempt]) }}" class="icm-form-grid" style="min-width:360px;margin-top:10px">
+                                @csrf @method('PUT')
+                                <div><label>Score</label><input type="number" name="score" min="0" step=".01" value="{{ $attempt->score }}"></div>
+                                <div><label>Percentage</label><input type="number" name="percentage" min="0" max="100" step=".01" value="{{ $attempt->percentage }}"></div>
+                                <div><label>Status</label><select name="status"><option value="submitted" @selected($attempt->status==='submitted')>Submitted</option><option value="graded" @selected($attempt->status==='graded')>Graded</option></select></div>
+                                <div class="full"><label>Feedback</label><textarea name="instructor_feedback">{{ $attempt->instructor_feedback }}</textarea></div>
+                                <div><button class="btn btn-primary btn-sm">Save Review</button></div>
+                            </form>
+                        </details>
+                    </td>
+                </tr>
             @empty
-                <div class="icm-card">No submissions found.</div>
+                <tr><td colspan="5">No submissions found.</td></tr>
             @endforelse
-        </div>
-        <div class="icm-pagination">{{ $submissions->appends(['tab'=>'submissions'])->links() }}</div>
-    </section>
+            </tbody>
+        </table>
+    </div>
+    <div style="margin-top:15px">{{ $submissions->appends(['tab'=>'submissions'])->links() }}</div>
+</section>
+@endif
 
-    <section class="icm-pane" data-pane="announcements">
-        <div class="icm-toolbar">
-            <div><h2 style="margin:0">Course Announcements</h2><div class="icm-muted">Post updates that participants can receive on web and through the mobile API.</div></div>
-            <button type="button" class="btn btn-primary" data-open-modal="announcementModal"><i class="fas fa-plus"></i> New Announcement</button>
-        </div>
-
-        <form method="GET" class="icm-filter">
-            <input type="hidden" name="tab" value="announcements">
-            <div><label>Search</label><input name="announcement_search" value="{{ request('announcement_search') }}" placeholder="Announcement title or text"></div>
-            <div><label>Period</label><select name="announcement_period"><option value="">All periods</option>@foreach(['today'=>'Today','week'=>'This week','month'=>'This month','quarter'=>'This quarter','year'=>'This year'] as $v=>$l)<option value="{{ $v }}" @selected(request('announcement_period')===$v)>{{ $l }}</option>@endforeach</select></div>
-            <div></div><div></div>
-            <button class="btn btn-outline"><i class="fas fa-filter"></i> Filter</button>
-        </form>
-
-        <div class="icm-grid-2">
-            @forelse($announcements as $announcement)
-                <article class="icm-card">
-                    <span class="icm-chip">{{ $announcement->published_at?->isFuture() ? 'Scheduled' : 'Published' }}</span>
-                    <h3 style="margin:8px 0">{{ $announcement->title }}</h3>
-                    <p>{{ \Illuminate\Support\Str::limit($announcement->body,240) }}</p>
-                    <div class="icm-muted">
-                        {{ $announcement->published_at?->format('d M Y, g:i A') ?: 'Immediate' }}
-                        @if($announcement->expires_at) · Expires {{ $announcement->expires_at->format('d M Y') }}@endif
-                    </div>
-                    <div class="icm-actions">
-                        <form method="POST" action="{{ route('instructor.courses.announcements.destroy',[$course,$announcement]) }}" onsubmit="return confirm('Delete this announcement?')">@csrf @method('DELETE')<button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i> Delete</button></form>
-                    </div>
-                </article>
+@if($activeTab === 'participants')
+<section class="icm-panel">
+    <div class="icm-panel-head"><div><h2>Course Participants</h2><p class="icm-muted">View and update enrolment status and course progress.</p></div></div>
+    <form method="GET" class="icm-filter">
+        <input type="hidden" name="tab" value="participants">
+        <input name="participant_search" value="{{ request('participant_search') }}" placeholder="Search name or email">
+        <select name="participant_status"><option value="">All statuses</option>@foreach(['enrolled','in_progress','completed','withdrawn','failed'] as $status)<option value="{{ $status }}" @selected(request('participant_status')===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select>
+        <select name="cohort_id"><option value="">All cohorts</option>@foreach($course->cohorts as $cohort)<option value="{{ $cohort->id }}" @selected((string)request('cohort_id')===(string)$cohort->id)>{{ $cohort->name }}</option>@endforeach</select>
+        <span></span>
+        <button class="btn btn-outline">Filter</button>
+    </form>
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead><tr><th>Participant</th><th>Cohort</th><th>Status</th><th>Progress</th><th>Final Score</th><th>Actions</th></tr></thead>
+            <tbody>
+            @forelse($participants as $enrolment)
+            <tr>
+                <td>{{ $enrolment->user?->name }}<br><small>{{ $enrolment->user?->email }}</small></td>
+                <td>{{ $enrolment->cohort?->name ?? '—' }}</td>
+                <td>{{ ucfirst(str_replace('_',' ',$enrolment->status)) }}</td>
+                <td>{{ number_format((float)$enrolment->progress_percent,1) }}%</td>
+                <td>{{ $enrolment->final_score !== null ? number_format((float)$enrolment->final_score,1).'%' : '—' }}</td>
+                <td>
+                    <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.participants.progress',[$course,$enrolment]) }}">View Progress</a>
+                    <details class="icm-details">
+                        <summary>Edit</summary>
+                        <form method="POST" action="{{ route('instructor.courses.participants.update',[$course,$enrolment]) }}" class="icm-form-grid" style="min-width:360px;margin-top:10px">
+                            @csrf @method('PUT')
+                            <div><label>Status</label><select name="status">@foreach(['enrolled','in_progress','completed','withdrawn','failed'] as $status)<option value="{{ $status }}" @selected($enrolment->status===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select></div>
+                            <div><label>Progress %</label><input type="number" name="progress_percent" min="0" max="100" step=".01" value="{{ $enrolment->progress_percent }}"></div>
+                            <div><label>Final score</label><input type="number" name="final_score" min="0" max="100" step=".01" value="{{ $enrolment->final_score }}"></div>
+                            <div><button class="btn btn-primary btn-sm">Save</button></div>
+                        </form>
+                    </details>
+                </td>
+            </tr>
             @empty
-                <div class="icm-card">No announcements found.</div>
+            <tr><td colspan="6">No participants found.</td></tr>
             @endforelse
-        </div>
-        <div class="icm-pagination">{{ $announcements->appends(['tab'=>'announcements'])->links() }}</div>
-    </section>
-
-    <section class="icm-pane" data-pane="settings">
-        <div class="icm-toolbar">
-            <div><h2 style="margin:0">Course Details</h2><div class="icm-muted">Edit authorised information for this assigned course.</div></div>
-        </div>
-
-        <div class="icm-card">
-            <form method="POST" action="{{ route('instructor.courses.update',$course) }}" class="icm-form">@csrf @method('PUT')
-                <div><label>Course title</label><input name="title" value="{{ old('title',$course->title) }}" required></div>
-                <div><label>Delivery mode</label><select name="delivery_mode">@foreach(['online'=>'Online','in_person'=>'In person','blended'=>'Blended'] as $value=>$label)<option value="{{ $value }}" @selected(old('delivery_mode',$course->delivery_mode)===$value)>{{ $label }}</option>@endforeach</select></div>
-                <div><label>Start date</label><input type="date" name="start_date" value="{{ old('start_date',optional($course->start_date)->format('Y-m-d')) }}"></div>
-                <div><label>End date</label><input type="date" name="end_date" value="{{ old('end_date',optional($course->end_date)->format('Y-m-d')) }}"></div>
-                <div><label>Duration hours</label><input type="number" min="1" name="duration_hours" value="{{ old('duration_hours',$course->duration_hours) }}"></div>
-                <div><label>Pass mark</label><input type="number" min="0" max="100" step="0.01" name="pass_mark" value="{{ old('pass_mark',$course->pass_mark) }}" required></div>
-                <div class="full"><label>Summary</label><textarea name="summary" placeholder="Short course summary">{{ old('summary',$course->summary) }}</textarea></div>
-                <div class="full"><label>Description</label><textarea name="description" placeholder="Course description">{{ old('description',$course->description) }}</textarea></div>
-                <div class="full"><button class="btn btn-primary"><i class="fas fa-save"></i> Save Course Details</button></div>
-            </form>
-        </div>
-    </section>
-
-</div>
-
-<div class="icm-modal" id="moduleModal" aria-hidden="true">
-    <div class="icm-modal-dialog">
-        <div class="icm-modal-head"><h3>Add Module</h3><button type="button" class="icm-modal-close" data-close-modal>&times;</button></div>
-        <div class="icm-modal-body">
-            <form method="POST" action="{{ route('instructor.courses.modules.store',$course) }}" class="icm-form">@csrf
-                <div><label>Module title</label><input name="title" placeholder="Enter module title" required></div>
-                <div><label>Position</label><input type="number" min="1" name="position" placeholder="e.g. 1"></div>
-                <div class="full"><label>Description</label><textarea name="description" placeholder="Describe this module"></textarea></div>
-                <label class="full"><input type="checkbox" name="is_published" value="1"> Publish module</label>
-                <div class="full"><button class="btn btn-primary"><i class="fas fa-save"></i> Save Module</button></div>
-            </form>
-        </div>
+            </tbody>
+        </table>
     </div>
-</div>
+    <div style="margin-top:15px">{{ $participants->appends(['tab'=>'participants'])->links() }}</div>
+</section>
+@endif
 
-<div class="icm-modal" id="lessonModal" aria-hidden="true">
-    <div class="icm-modal-dialog">
-        <div class="icm-modal-head"><h3>Add Lesson</h3><button type="button" class="icm-modal-close" data-close-modal>&times;</button></div>
-        <div class="icm-modal-body">
-            @if($course->modules()->count()===0)
-                <p>Create a module first.</p>
-            @else
-            <form method="POST" enctype="multipart/form-data" action="{{ route('instructor.courses.lessons.store',[$course,$course->modules()->orderBy('position')->first()]) }}" class="icm-form" id="lessonForm">@csrf
-                <div><label>Module</label><select id="lessonModule">@foreach($course->modules()->orderBy('position')->get() as $module)<option value="{{ route('instructor.courses.lessons.store',[$course,$module]) }}">{{ $module->title }}</option>@endforeach</select></div>
-                <div><label>Lesson title</label><input name="title" placeholder="Enter lesson title" required></div>
-                <div><label>Content type</label><select name="content_type"><option value="text">Text</option><option value="video">Video</option><option value="file">File</option><option value="link">Link</option><option value="mixed">Mixed</option></select></div>
-                <div><label>Estimated minutes</label><input type="number" min="1" name="estimated_minutes" placeholder="30"></div>
-                <div><label>Position</label><input type="number" min="1" name="position" placeholder="e.g. 1"></div>
-                <div><label>Video URL</label><input type="url" name="video_url" placeholder="https://..."></div>
-                <div class="full"><label>External URL</label><input type="url" name="external_url" placeholder="https://..."></div>
-                <div class="full"><label>Upload resource</label><input type="file" name="resource_file"><small class="icm-muted">PDF, Office document, image, audio, video or ZIP up to 50 MB.</small></div>
-                <div class="full"><label>Content</label><textarea name="content" placeholder="Enter lesson content"></textarea></div>
-                <label class="full"><input type="checkbox" name="is_published" value="1"> Publish lesson</label>
-                <div class="full"><button class="btn btn-primary"><i class="fas fa-save"></i> Save Lesson</button></div>
-            </form>
-            @endif
-        </div>
+@if($activeTab === 'progress')
+<section class="icm-panel">
+    <div class="icm-panel-head">
+        <div><h2>Participant Progress</h2><p class="icm-muted">Lesson completion, modules, assessments, attendance and overall progress.</p></div>
+        <a class="btn btn-outline" href="{{ route('instructor.courses.progress.export',$course) }}"><i class="fas fa-file-csv"></i> Export CSV</a>
     </div>
-</div>
-
-<div class="icm-modal" id="assessmentModal" aria-hidden="true">
-    <div class="icm-modal-dialog">
-        <div class="icm-modal-head"><h3>Add Assignment, Quiz or Exam</h3><button type="button" class="icm-modal-close" data-close-modal>&times;</button></div>
-        <div class="icm-modal-body">
-            <form method="POST" enctype="multipart/form-data" action="{{ route('instructor.courses.assessments.store',$course) }}" class="icm-form">@csrf
-                <div><label>Title</label><input name="title" placeholder="Assessment title" required></div>
-                <div><label>Type</label><select name="type"><option value="assignment">Assignment</option><option value="quiz">Quiz</option><option value="exam">Exam</option></select></div>
-                <div><label>Pass mark</label><input type="number" min="0" max="100" name="pass_mark" value="50" required></div>
-                <div><label>Max attempts</label><input type="number" min="1" max="20" name="max_attempts" value="1" required></div>
-                <div><label>Opens at</label><input type="datetime-local" name="opens_at"></div>
-                <div><label>Due at</label><input type="datetime-local" name="due_at"></div>
-                <div class="full"><label>Upload assessment file</label><input type="file" name="assessment_file"><small class="icm-muted">Optional. Upload instructions, question paper or supporting document.</small></div>
-                <div class="full"><label>Instructions</label><textarea name="instructions" placeholder="Instructions for participants"></textarea></div>
-                <label class="full"><input type="checkbox" name="is_published" value="1"> Publish assessment</label>
-                <div class="full"><button class="btn btn-primary"><i class="fas fa-save"></i> Save Assessment</button></div>
-            </form>
-        </div>
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Participant</th><th>Status</th><th>Lessons</th><th>Modules</th><th>Assignments</th><th>Quizzes</th><th>Exams</th><th>Avg Score</th><th>Attendance</th><th>Overall</th><th>Last Activity</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @forelse($progressRows as $row)
+                <tr>
+                    <td>{{ $row['participant'] }}<br><small>{{ $row['email'] }}</small></td>
+                    <td>{{ ucfirst(str_replace('_',' ',$row['status'])) }}</td>
+                    <td>{{ $row['lessons_completed'] }}/{{ $row['lessons_total'] }}</td>
+                    <td>{{ $row['modules_completed'] }}/{{ $row['modules_total'] }}</td>
+                    <td>{{ $row['assignment_progress'] }}</td>
+                    <td>{{ $row['quiz_progress'] }}</td>
+                    <td>{{ $row['exam_progress'] }}</td>
+                    <td>{{ $row['average_score'] !== null ? number_format($row['average_score'],1).'%' : '—' }}</td>
+                    <td>{{ $row['attendance'] }}</td>
+                    <td>
+                        <div class="icm-progress"><span style="width:{{ min(100,max(0,$row['overall_progress'])) }}%"></span></div>
+                        <small>{{ number_format($row['overall_progress'],1) }}%</small>
+                    </td>
+                    <td>{{ $row['last_activity'] }}</td>
+                    <td><a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.participants.progress',[$course,$row['enrolment_id']]) }}">Details</a></td>
+                </tr>
+            @empty
+                <tr><td colspan="12">No participant progress records.</td></tr>
+            @endforelse
+            </tbody>
+        </table>
     </div>
-</div>
+</section>
+@endif
 
-<div class="icm-modal" id="questionModal" aria-hidden="true">
-    <div class="icm-modal-dialog">
-        <div class="icm-modal-head"><h3 id="questionModalTitle">Add Question</h3><button type="button" class="icm-modal-close" data-close-modal>&times;</button></div>
-        <div class="icm-modal-body">
-            <form method="POST" action="" class="icm-form" id="questionForm">@csrf
-                <div><label>Question type</label><select name="question_type"><option value="multiple_choice">Multiple choice</option><option value="true_false">True / False</option><option value="short_text">Short text</option><option value="long_text">Long text</option></select></div>
-                <div><label>Marks</label><input type="number" step="0.1" min="0.1" name="marks" value="1" required></div>
-                <div class="full"><label>Question</label><textarea name="question_text" placeholder="Enter question" required></textarea></div>
-                <div class="full"><label>Options</label><textarea name="options_text" placeholder="For multiple choice: one option per line"></textarea></div>
-                <div class="full"><label>Correct value</label><input name="correct_value" placeholder="Correct option/value"></div>
-                <div class="full"><button class="btn btn-primary"><i class="fas fa-plus"></i> Add Question</button></div>
+@if($activeTab === 'announcements')
+<section class="icm-panel">
+    <div class="icm-panel-head"><div><h2>Announcements</h2><p class="icm-muted">Publish course-specific updates for enrolled participants.</p></div></div>
+    <form method="POST" action="{{ route('instructor.courses.announcements.store',$course) }}" class="icm-form-grid">
+        @csrf
+        <div><label>Title</label><input name="title" required></div>
+        <div><label>Publish at</label><input type="datetime-local" name="published_at"></div>
+        <div><label>Expires at</label><input type="datetime-local" name="expires_at"></div>
+        <div class="full"><label>Announcement</label><textarea name="body" required></textarea></div>
+        <div><button class="btn btn-primary"><i class="fas fa-bullhorn"></i> Publish</button></div>
+    </form>
+</section>
+
+<section class="icm-panel">
+    <div class="icm-card-grid">
+        @forelse($announcements as $announcement)
+        <article class="icm-card">
+            <h3>{{ $announcement->title }}</h3>
+            <p class="icm-muted">Published {{ $announcement->published_at?->format('d M Y H:i') ?? 'immediately' }}</p>
+            <p>{{ $announcement->body }}</p>
+            <form method="POST" action="{{ route('instructor.courses.announcements.destroy',[$course,$announcement]) }}" onsubmit="return confirm('Delete this announcement?')">
+                @csrf @method('DELETE')
+                <button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i> Delete</button>
             </form>
-        </div>
+        </article>
+        @empty
+        <div class="icm-card">No announcements found.</div>
+        @endforelse
     </div>
-</div>
+    <div style="margin-top:15px">{{ $announcements->appends(['tab'=>'announcements'])->links() }}</div>
+</section>
+@endif
 
-
-<div class="icm-modal" id="announcementModal" aria-hidden="true">
-    <div class="icm-modal-dialog">
-        <div class="icm-modal-head"><h3>New Announcement</h3><button type="button" class="icm-modal-close" data-close-modal>&times;</button></div>
-        <div class="icm-modal-body">
-            <form method="POST" action="{{ route('instructor.courses.announcements.store',$course) }}" class="icm-form">@csrf
-                <div class="full"><label>Title</label><input name="title" placeholder="Announcement title" required></div>
-                <div class="full"><label>Message</label><textarea name="body" placeholder="Write the announcement" required></textarea></div>
-                <div><label>Publish at</label><input type="datetime-local" name="published_at"></div>
-                <div><label>Expires at</label><input type="datetime-local" name="expires_at"></div>
-                <div class="full"><button class="btn btn-primary"><i class="fas fa-bullhorn"></i> Post Announcement</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="icm-modal" id="reviewModal" aria-hidden="true">
-    <div class="icm-modal-dialog">
-        <div class="icm-modal-head"><h3 id="reviewModalTitle">Review Submission</h3><button type="button" class="icm-modal-close" data-close-modal>&times;</button></div>
-        <div class="icm-modal-body">
-            <form method="POST" action="" class="icm-form" id="reviewForm">@csrf @method('PUT')
-                <div><label>Score</label><input type="number" step="0.01" min="0" name="score" id="reviewScore"></div>
-                <div><label>Percentage</label><input type="number" step="0.01" min="0" max="100" name="percentage" id="reviewPercentage"></div>
-                <div><label>Status</label><select name="status" id="reviewStatus"><option value="submitted">Submitted</option><option value="graded">Graded</option></select></div>
-                <div></div>
-                <div class="full"><label>Instructor feedback</label><textarea name="instructor_feedback" id="reviewFeedback" placeholder="Feedback for the participant"></textarea></div>
-                <div class="full"><button class="btn btn-primary"><i class="fas fa-save"></i> Save Review</button></div>
-            </form>
-        </div>
-    </div>
-</div>
+@if($activeTab === 'settings')
+<section class="icm-panel">
+    <div class="icm-panel-head"><div><h2>Course Settings</h2><p class="icm-muted">Update delivery information for this assigned course.</p></div></div>
+    <form method="POST" action="{{ route('instructor.courses.update',$course) }}" class="icm-form-grid">
+        @csrf @method('PUT')
+        <div><label>Title</label><input name="title" value="{{ $course->title }}" required></div>
+        <div><label>Delivery mode</label><select name="delivery_mode">@foreach(['online'=>'Online','in_person'=>'In person','blended'=>'Blended'] as $value=>$label)<option value="{{ $value }}" @selected($course->delivery_mode===$value)>{{ $label }}</option>@endforeach</select></div>
+        <div><label>Start date</label><input type="date" name="start_date" value="{{ optional($course->start_date)->format('Y-m-d') }}"></div>
+        <div><label>End date</label><input type="date" name="end_date" value="{{ optional($course->end_date)->format('Y-m-d') }}"></div>
+        <div><label>Duration hours</label><input type="number" name="duration_hours" min="1" value="{{ $course->duration_hours }}"></div>
+        <div><label>Pass mark</label><input type="number" name="pass_mark" min="0" max="100" step=".01" value="{{ $course->pass_mark }}" required></div>
+        <div class="full"><label>Summary</label><textarea name="summary">{{ $course->summary }}</textarea></div>
+        <div class="full"><label>Description</label><textarea name="description">{{ $course->description }}</textarea></div>
+        <div><button class="btn btn-primary">Save Course</button></div>
+    </form>
+</section>
+@endif
 
 <script>
-document.addEventListener('DOMContentLoaded',function(){
-    const requestedTab=new URLSearchParams(window.location.search).get('tab');
+document.addEventListener('DOMContentLoaded', () => {
+    const moduleSelect = document.getElementById('lessonModule');
+    const lessonForm = document.getElementById('lessonCreateForm');
 
-    document.querySelectorAll('.icm-tab-btn[data-tab]').forEach(btn=>btn.addEventListener('click',function(){
-        document.querySelectorAll('.icm-tab-btn[data-tab]').forEach(x=>x.classList.remove('active'));
-        document.querySelectorAll('.icm-pane').forEach(x=>x.classList.remove('active'));
-        btn.classList.add('active');
-        document.querySelector('[data-pane="'+btn.dataset.tab+'"]')?.classList.add('active');
-        const url=new URL(window.location.href);
-        url.searchParams.set('tab',btn.dataset.tab);
-        history.replaceState(null,'',url);
-    }));
+    if (moduleSelect && lessonForm) {
+        moduleSelect.addEventListener('change', () => {
+            const moduleId = moduleSelect.value;
+            if (!moduleId) return;
 
-    if(requestedTab){
-        const b=document.querySelector('.icm-tab-btn[data-tab="'+requestedTab+'"]');
-        if(b){ b.click(); }
+            const template = @json(url('/instructor/courses/'.$course->id.'/modules/__MODULE__/lessons'));
+            lessonForm.action = template.replace('__MODULE__', moduleId);
+        });
     }
-
-    const moduleSelect=document.getElementById('lessonModule');
-    const lessonForm=document.getElementById('lessonForm');
-    if(moduleSelect&&lessonForm){
-        moduleSelect.addEventListener('change',()=>lessonForm.action=moduleSelect.value);
-        lessonForm.action=moduleSelect.value;
-    }
-
-    function openModal(id){
-        const modal=document.getElementById(id);
-        if(modal){ modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); }
-    }
-    function closeModal(modal){
-        modal.classList.remove('open');
-        modal.setAttribute('aria-hidden','true');
-    }
-
-    document.querySelectorAll('[data-open-modal]').forEach(btn=>btn.addEventListener('click',()=>openModal(btn.dataset.openModal)));
-    document.querySelectorAll('[data-close-modal]').forEach(btn=>btn.addEventListener('click',()=>closeModal(btn.closest('.icm-modal'))));
-    document.querySelectorAll('.icm-modal').forEach(modal=>modal.addEventListener('click',e=>{if(e.target===modal)closeModal(modal);}));
-
-    const questionBase=@json(route('instructor.courses.assessments.questions.store',[$course,'__ASSESSMENT__']));
-    document.querySelectorAll('[data-open-question]').forEach(btn=>btn.addEventListener('click',function(){
-        const form=document.getElementById('questionForm');
-        form.action=questionBase.replace('__ASSESSMENT__',btn.dataset.openQuestion);
-        document.getElementById('questionModalTitle').textContent='Add Question: '+btn.dataset.assessmentTitle;
-        openModal('questionModal');
-    }));
-
-
-    const reviewBase=@json(route('instructor.courses.submissions.review',[$course,'__ATTEMPT__']));
-    document.querySelectorAll('[data-review-attempt]').forEach(btn=>btn.addEventListener('click',function(){
-        const form=document.getElementById('reviewForm');
-        form.action=reviewBase.replace('__ATTEMPT__',btn.dataset.reviewAttempt);
-        document.getElementById('reviewModalTitle').textContent='Review: '+(btn.dataset.reviewName || 'Participant')+' — '+(btn.dataset.reviewAssessment || 'Assessment');
-        document.getElementById('reviewScore').value=btn.dataset.reviewScore || '';
-        document.getElementById('reviewPercentage').value=btn.dataset.reviewPercentage || '';
-        document.getElementById('reviewFeedback').value=btn.dataset.reviewFeedback || '';
-        document.getElementById('reviewStatus').value=btn.dataset.reviewStatus === 'graded' ? 'graded' : 'submitted';
-        openModal('reviewModal');
-    }));
-
-    document.addEventListener('keydown',e=>{
-        if(e.key==='Escape'){
-            document.querySelectorAll('.icm-modal.open').forEach(closeModal);
-        }
-    });
 });
 </script>
 @endsection
