@@ -30,12 +30,10 @@ class AboutScreen extends StatelessWidget {
           padding: AppSpacing.listPadding,
           children: [
             const SizedBox(height: AppSpacing.lg),
-            const Center(
+            Center(
               child: ExcludeSemantics(
-                child: CircleAvatar(
-                  radius: 36,
-                  backgroundColor: AppColors.maroon,
-                  child: Icon(Icons.school_outlined, color: AppColors.gold, size: 36),
+                child: ClipOval(
+                  child: Image.asset('assets/logo.png', width: 72, height: 72),
                 ),
               ),
             ),
