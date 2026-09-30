@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends(auth()->check() && method_exists(auth()->user(), 'isStaff') && auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
 @section('title',$resource->title.' - ElevateHer360')
 @section('content')
 
@@ -36,9 +36,9 @@
 
 <aside class="library-detail-side">
 <div class="library-info-card">
-<div><span>Category</span><strong>{{ $resource->category?->name ?: '—' }}</strong></div>
+<div><span>Category</span><strong>{{ $resource->category?->name ?: 'â€”' }}</strong></div>
 <div><span>Language</span><strong>{{ $resource->language }}</strong></div>
-<div><span>Published</span><strong>{{ optional($resource->publication_date)->format('d M Y') ?: '—' }}</strong></div>
+<div><span>Published</span><strong>{{ optional($resource->publication_date)->format('d M Y') ?: 'â€”' }}</strong></div>
 <div><span>Views</span><strong>{{ number_format($resource->views_count) }}</strong></div>
 <div><span>Downloads</span><strong>{{ number_format($resource->downloads_count) }}</strong></div>
 </div>
@@ -66,3 +66,4 @@
 </aside>
 </div>
 @endsection
+

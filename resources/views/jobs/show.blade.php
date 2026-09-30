@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends(auth()->check() && method_exists(auth()->user(), 'isStaff') && auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
 @section('content')
 <div class="card"><h1>{{ $job->title }}</h1>
 <p><strong>{{ $job->employer->company_name }}</strong></p>
@@ -12,3 +12,4 @@
 @endif
 </div>
 @endsection
+

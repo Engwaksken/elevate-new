@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -9,6 +9,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 @include('partials.dynamic-branding')
+<meta name="theme-color" content="#800000">
+<link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+<link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
 </head>
 <body class="admin-app-body eh-admin-canonical-layout">
 
@@ -106,5 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
+@include('partials.pwa-install')
+<script src="{{ asset('pwa.js') }}" defer></script>
 </body>
 </html>
+

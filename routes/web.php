@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use App\Http\Controllers\Admin\ProgrammeManagement\ActivityController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -1013,7 +1013,7 @@ Route::prefix('admin/elearning/certificates/templates')
         Route::delete('/{template}', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'destroyTemplate'])
             ->name('destroy');
     });
-Route::middleware(['auth','staff','role:instructor,trainer'])
+Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-administrator,super-admin'])
     ->prefix('instructor/courses')->name('instructor.courses.')
     ->group(function () {
         Route::get('/{course}/manage', [\App\Http\Controllers\Instructor\CourseManagementController::class,'show'])->name('manage');
@@ -1034,9 +1034,9 @@ Route::middleware(['auth','staff','role:instructor,trainer'])
 | redirects to the shared dashboard.
 */
 Route::get('/admin/my-courses', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'myCourses'])
-    ->middleware(['auth','staff','role:instructor,trainer'])
+    ->middleware(['auth','staff','role:instructor,trainer,administrator,super-administrator,super-admin'])
     ->name('admin.my-courses');
-Route::middleware(['auth','staff','role:instructor,trainer'])
+Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-administrator,super-admin'])
     ->group(function () {
         Route::get(
             '/instructor/courses/{course}/modules/{module}/lessons/{lesson}/file',
@@ -1048,7 +1048,7 @@ Route::middleware(['auth','staff','role:instructor,trainer'])
             [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadAssessmentFile']
         )->name('instructor.courses.assessments.file');
     });
-Route::middleware(['auth','staff','role:instructor,trainer'])
+Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-administrator,super-admin'])
     ->prefix('instructor/courses')
     ->group(function () {
         Route::put(
@@ -1076,3 +1076,52 @@ Route::middleware(['auth','staff','role:instructor,trainer'])
             [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadSubmissionFile']
         )->name('instructor.courses.submissions.file');
     });
+
+/*
+|--------------------------------------------------------------------------
+| Instructor / Trainer Course Management Extensions
+|--------------------------------------------------------------------------
+*/
+Route::middleware([
+        'auth',
+        'staff',
+        'role:instructor,trainer,administrator,super-administrator,super-admin',
+    ])
+    ->prefix('instructor/courses')
+    ->name('instructor.courses.')
+    ->group(function () {
+        Route::put('/{course}/modules/{module}', [
+            \App\Http\Controllers\Instructor\CourseManagementController::class,
+            'updateModule',
+        ])->name('modules.update');
+
+        Route::put('/{course}/modules/{module}/lessons/{lesson}', [
+            \App\Http\Controllers\Instructor\CourseManagementController::class,
+            'updateLesson',
+        ])->name('lessons.update');
+
+        Route::put('/{course}/assessments/{assessment}', [
+            \App\Http\Controllers\Instructor\CourseManagementController::class,
+            'updateAssessment',
+        ])->name('assessments.update');
+
+        Route::delete('/{course}/assessments/{assessment}', [
+            \App\Http\Controllers\Instructor\CourseManagementController::class,
+            'destroyAssessment',
+        ])->name('assessments.destroy');
+
+        Route::get('/{course}/participants/{enrolment}/progress', [
+            \App\Http\Controllers\Instructor\CourseManagementController::class,
+            'participantProgress',
+        ])->name('participants.progress');
+
+        Route::get('/{course}/progress.csv', [
+            \App\Http\Controllers\Instructor\CourseManagementController::class,
+            'exportProgress',
+        ])->name('progress.export');
+    });
+
+if (! \Illuminate\Support\Facades\Route::has('offline')) {
+    Route::view('/offline', 'offline')->name('offline');
+}
+

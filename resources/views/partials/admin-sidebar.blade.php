@@ -440,6 +440,16 @@
     ];
 
     if ($isInstructor) {
+        $assignedCourses = $sidebarUser->instructedCourses()
+            ->orderBy('title')
+            ->get();
+
+        $routeCourse = request()->route('course');
+
+        $activeCourse = $routeCourse instanceof \App\Models\Course
+            ? $routeCourse
+            : $assignedCourses->first();
+
         $navGroups = [
             [
                 'label' => 'Instructor',
@@ -463,12 +473,64 @@
                         'icon' => 'fa-calendar-days',
                         'permissions' => [],
                     ],
-                    [
-                        'route' => 'admin.profile.edit',
-                        'label' => 'Profile',
-                        'icon' => 'fa-user',
-                        'permissions' => [],
-                    ],
+                ],
+            ],
+        ];
+
+        if ($activeCourse && Route::has('instructor.courses.manage')) {
+            $manageUrl = route('instructor.courses.manage', $activeCourse);
+
+            $navGroups[] = [
+                'label' => 'Course Delivery',
+                'colour' => 'delivery',
+                'items' => [
+                    ['url' => $manageUrl.'?tab=modules', 'label' => 'Modules', 'icon' => 'fa-layer-group'],
+                    ['url' => $manageUrl.'?tab=lessons', 'label' => 'Lessons', 'icon' => 'fa-book-open'],
+                    ['url' => $manageUrl.'?tab=materials', 'label' => 'Learning Materials', 'icon' => 'fa-folder-open'],
+                    ['url' => $manageUrl.'?tab=assignments', 'label' => 'Assignments', 'icon' => 'fa-list-check'],
+                    ['url' => $manageUrl.'?tab=quizzes', 'label' => 'Quizzes', 'icon' => 'fa-circle-question'],
+                    ['url' => $manageUrl.'?tab=exams', 'label' => 'Exams', 'icon' => 'fa-file-signature'],
+                    ['url' => $manageUrl.'?tab=announcements', 'label' => 'Announcements', 'icon' => 'fa-bullhorn'],
+                    ['url' => $manageUrl.'?tab=participants', 'label' => 'Course Participants', 'icon' => 'fa-users'],
+                    ['url' => $manageUrl.'?tab=progress', 'label' => 'Participant Progress', 'icon' => 'fa-chart-line'],
+                ],
+            ];
+        }
+
+        $navGroups[] = [
+            'label' => 'Opportunities & Support',
+            'colour' => 'people',
+            'items' => [
+                [
+                    'route' => 'mentorship.dashboard',
+                    'label' => 'Mentorship',
+                    'icon' => 'fa-handshake',
+                    'permissions' => [],
+                ],
+                [
+                    'route' => 'library.index',
+                    'label' => 'Library',
+                    'icon' => 'fa-book-open',
+                    'permissions' => [],
+                ],
+                [
+                    'route' => 'jobs.index',
+                    'label' => 'Jobs',
+                    'icon' => 'fa-briefcase',
+                    'permissions' => [],
+                ],
+            ],
+        ];
+
+        $navGroups[] = [
+            'label' => 'Account',
+            'colour' => 'assets',
+            'items' => [
+                [
+                    'route' => 'admin.profile.edit',
+                    'label' => 'Profile',
+                    'icon' => 'fa-user',
+                    'permissions' => [],
                 ],
             ],
         ];

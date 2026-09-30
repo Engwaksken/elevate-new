@@ -8,14 +8,27 @@ use Illuminate\Support\Facades\Storage;
 class Assessment extends Model
 {
     protected $fillable = [
-        'course_id','course_module_id','title','type','instructions','pass_mark',
-        'max_attempts','opens_at','due_at','attachment_path','is_published'
+        'course_id',
+        'course_module_id',
+        'title',
+        'type',
+        'instructions',
+        'pass_mark',
+        'max_attempts',
+        'opens_at',
+        'due_at',
+        'duration_minutes',
+        'total_marks',
+        'attachment_path',
+        'is_published',
     ];
 
     protected $casts = [
-        'opens_at'=>'datetime',
-        'due_at'=>'datetime',
-        'is_published'=>'boolean',
+        'opens_at' => 'datetime',
+        'due_at' => 'datetime',
+        'duration_minutes' => 'integer',
+        'total_marks' => 'decimal:2',
+        'is_published' => 'boolean',
     ];
 
     protected $appends = [
@@ -35,6 +48,11 @@ class Assessment extends Model
     public function course()
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function module()
+    {
+        return $this->belongsTo(CourseModule::class, 'course_module_id');
     }
 
     public function getAttachmentUrlAttribute(): ?string

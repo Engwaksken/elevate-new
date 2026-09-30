@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends(auth()->check() && method_exists(auth()->user(), 'isStaff') && auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
 @section('content')
 <div class="card"><h1>Mentor Profile</h1>
 <form method="POST" action="{{ route('mentorship.mentor-profile.update') }}">@csrf @method('PUT')
@@ -15,3 +15,4 @@
 <button>Submit Profile</button>
 </form></div>
 @endsection
+
