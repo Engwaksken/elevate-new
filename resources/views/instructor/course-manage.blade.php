@@ -15,6 +15,7 @@
         'quizzes' => ['Quizzes', 'fa-circle-question'],
         'exams' => ['Exams', 'fa-file-signature'],
         'submissions' => ['Submissions', 'fa-file-circle-check'],
+        'extensions' => ['Extension Requests', 'fa-clock'],
         'participants' => ['Participants', 'fa-users'],
         'progress' => ['Progress', 'fa-chart-line'],
         'announcements' => ['Announcements', 'fa-bullhorn'],
@@ -22,6 +23,7 @@
     ];
 
     $allModules = $course->modules()->orderBy('position')->get();
+    $pendingExtensionCount = (int) ($pendingExtensionCount ?? 0);
 @endphp
 
 <style>
@@ -50,6 +52,12 @@
 .icm-details{margin-top:12px;border-top:1px solid #eaecf0;padding-top:12px}
 .icm-progress{height:8px;background:#eaecf0;border-radius:999px;overflow:hidden}
 .icm-progress span{display:block;height:100%;background:#800000}
+.icm-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;margin-left:4px;border-radius:999px;background:#b42318;color:#fff;font-size:.72rem;font-weight:800;line-height:1}
+.icm-tabs a.active .icm-badge{background:#fff;color:#800000}
+.icm-status-pending{background:#fef0c7;color:#93370d}
+.icm-status-approved{background:#d1fadf;color:#05603a}
+.icm-status-rejected{background:#fee4e2;color:#b42318}
+.icm-notice{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 14px;margin-bottom:14px;border:1px solid #fedf89;background:#fffaeb;border-radius:10px}
 .table-responsive{overflow:auto}
 .admin-table{width:100%;border-collapse:collapse}
 .admin-table th,.admin-table td{padding:10px;border-bottom:1px solid #eaecf0;text-align:left;vertical-align:top}
@@ -86,6 +94,9 @@
         <a href="{{ route('instructor.courses.manage', ['course' => $course, 'tab' => $key]) }}"
            class="{{ $activeTab === $key ? 'active' : '' }}">
             <i class="fas {{ $icon }}"></i> {{ $label }}
+            @if(in_array($key, ['submissions', 'extensions'], true) && $pendingExtensionCount > 0)
+                <span class="icm-badge" title="Pending extension requests">{{ $pendingExtensionCount }}</span>
+            @endif
         </a>
     @endforeach
 </nav>
@@ -352,6 +363,12 @@
 @if($activeTab === 'submissions')
 <section class="icm-panel">
     <div class="icm-panel-head"><div><h2>Submissions</h2><p class="icm-muted">Review participant submissions and record marks and feedback.</p></div></div>
+    @if($pendingExtensionCount > 0)
+        <div class="icm-notice">
+            <span><i class="fas fa-clock"></i> <strong>{{ $pendingExtensionCount }}</strong> pending extension {{ \Illuminate\Support\Str::plural('request', $pendingExtensionCount) }} waiting for review.</span>
+            <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.manage', ['course' => $course, 'tab' => 'extensions']) }}">Review requests</a>
+        </div>
+    @endif
     <div class="table-responsive">
         <table class="admin-table">
             <thead><tr><th>Participant</th><th>Assessment</th><th>Status</th><th>Submitted</th><th>Review</th></tr></thead>
@@ -386,6 +403,76 @@
         </table>
     </div>
     <div style="margin-top:15px">{{ $submissions->appends(['tab'=>'submissions'])->links() }}</div>
+</section>
+@endif
+
+@if($activeTab === 'extensions')
+<section class="icm-panel">
+    <div class="icm-panel-head">
+        <div>
+            <h2>Extension Requests <span class="icm-chip icm-status-pending">{{ $pendingExtensionCount }} pending</span></h2>
+            <p class="icm-muted">Participants who missed, or are about to miss, an assignment deadline. Approving sets a new due date for that participant only.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead><tr><th>Participant</th><th>Assignment</th><th>Original due</th><th>Reason</th><th>Requested date</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+            @forelse(($extensionRequests ?? collect()) as $extension)
+                @php
+                    $defaultDue = $extension->requested_due_at && $extension->requested_due_at->isFuture()
+                        ? $extension->requested_due_at
+                        : now()->addDays(3);
+                @endphp
+                <tr>
+                    <td>{{ $extension->user?->name }}<br><small>{{ $extension->user?->email }}</small></td>
+                    <td>{{ $extension->assessment?->title }}<br><small>{{ ucfirst($extension->assessment?->type ?? '') }}</small></td>
+                    <td>{{ $extension->assessment?->due_at?->format('d M Y H:i') ?? '—' }}</td>
+                    <td style="max-width:320px;white-space:pre-line">{{ $extension->reason }}</td>
+                    <td>{{ $extension->requested_due_at?->format('d M Y H:i') ?? '—' }}<br><small class="icm-muted">Sent {{ $extension->created_at?->format('d M Y H:i') }}</small></td>
+                    <td>
+                        <span class="icm-chip icm-status-{{ $extension->status }}">{{ ucfirst($extension->status) }}</span>
+                        @if(! $extension->isPending())
+                            <br><small class="icm-muted">
+                                {{ $extension->reviewer?->name ?? 'Reviewed' }} · {{ $extension->reviewed_at?->format('d M Y H:i') }}
+                                @if($extension->approved_due_at)<br>New due: {{ $extension->approved_due_at->format('d M Y H:i') }}@endif
+                                @if($extension->reviewer_note)<br>Note: {{ $extension->reviewer_note }}@endif
+                            </small>
+                        @endif
+                    </td>
+                    <td>
+                        @if($extension->isPending())
+                            <details class="icm-details" open>
+                                <summary>Approve</summary>
+                                <form method="POST" action="{{ route('instructor.courses.extension-requests.approve', [$course, $extension]) }}" class="icm-form-grid" style="min-width:320px;margin-top:10px">
+                                    @csrf
+                                    <div class="full"><label>New due date</label><input type="datetime-local" name="approved_due_at" required min="{{ now()->format('Y-m-d\TH:i') }}" value="{{ $defaultDue->format('Y-m-d\TH:i') }}"></div>
+                                    <div class="full"><label>Note (optional)</label><textarea name="reviewer_note" maxlength="1000" style="min-height:60px"></textarea></div>
+                                    <div><button class="btn btn-primary btn-sm"><i class="fas fa-check"></i> Approve</button></div>
+                                </form>
+                            </details>
+                            <details class="icm-details">
+                                <summary>Reject</summary>
+                                <form method="POST" action="{{ route('instructor.courses.extension-requests.reject', [$course, $extension]) }}" class="icm-form-grid" style="min-width:320px;margin-top:10px" onsubmit="return confirm('Reject this extension request?')">
+                                    @csrf
+                                    <div class="full"><label>Note to participant (optional)</label><textarea name="reviewer_note" maxlength="1000" style="min-height:60px"></textarea></div>
+                                    <div><button class="btn btn-outline btn-sm"><i class="fas fa-xmark"></i> Reject</button></div>
+                                </form>
+                            </details>
+                        @else
+                            —
+                        @endif
+                    </td>
+                </tr>
+            @empty
+                <tr><td colspan="7">No extension requests for this course.</td></tr>
+            @endforelse
+            </tbody>
+        </table>
+    </div>
+    @if(isset($extensionRequests))
+        <div style="margin-top:15px">{{ $extensionRequests->appends(['tab'=>'extensions'])->links() }}</div>
+    @endif
 </section>
 @endif
 

@@ -221,25 +221,61 @@ class ParticipantLessonService
         return $storage->response($path, $name, ['Content-Type' => $mime], $disposition);
     }
 
+    /** Upper bound for a single reading-time delta (seconds). Larger values are clamped. */
+    public const MAX_TIME_DELTA_SECONDS = 3600;
+
+    /**
+     * Normalise the reading-time fields of a progress request/payload into the seconds to add.
+     * "time_spent_seconds_delta" (clamped to 0..3600) wins over the legacy additive "time_spent_seconds".
+     */
+    public function secondsToAdd(array $input): int
+    {
+        if (array_key_exists('time_spent_seconds_delta', $input) && $input['time_spent_seconds_delta'] !== null) {
+            return min(self::MAX_TIME_DELTA_SECONDS, max(0, (int) $input['time_spent_seconds_delta']));
+        }
+
+        return max(0, (int) ($input['time_spent_seconds'] ?? 0));
+    }
+
     /**
      * Record lesson progress and recalculate the enrolment's course progress.
+     * $completed = null leaves the completion state unchanged (reading-time only update).
+     * $seconds is ADDED to the stored time_spent_seconds.
      */
-    public function saveProgress(User $user, Lesson $lesson, bool $completed, int $seconds = 0): array
+    public function saveProgress(User $user, Lesson $lesson, ?bool $completed, int $seconds = 0): array
     {
         $lesson->loadMissing('module');
         $courseId = $lesson->module->course_id;
+        $seconds = max(0, $seconds);
 
-        $existing = LessonProgress::where('lesson_id', $lesson->id)->where('user_id', $user->id)->first();
+        $progress = DB::transaction(function () use ($user, $lesson, $completed, $seconds) {
+            $existing = LessonProgress::where('lesson_id', $lesson->id)
+                ->where('user_id', $user->id)
+                ->lockForUpdate()
+                ->first();
 
-        $progress = LessonProgress::updateOrCreate(
-            ['lesson_id' => $lesson->id, 'user_id' => $user->id],
-            [
+            $completedAt = match ($completed) {
+                true => $existing?->completed_at ?? now(),
+                false => null,
+                null => $existing?->completed_at,
+            };
+
+            $progress = $existing ?? new LessonProgress(['lesson_id' => $lesson->id, 'user_id' => $user->id]);
+            $progress->fill([
                 'first_opened_at' => $existing?->first_opened_at ?? now(),
                 'last_opened_at' => now(),
-                'completed_at' => $completed ? ($existing?->completed_at ?? now()) : null,
-                'time_spent_seconds' => (int) ($existing?->time_spent_seconds ?? 0) + max(0, $seconds),
-            ]
-        );
+                'completed_at' => $completedAt,
+            ]);
+            $progress->save();
+
+            if ($seconds > 0) {
+                // Atomic increment so concurrent deltas are never lost.
+                LessonProgress::whereKey($progress->id)->increment('time_spent_seconds', $seconds);
+                $progress->refresh();
+            }
+
+            return $progress;
+        });
 
         $total = DB::table('lessons')
             ->join('course_modules', 'course_modules.id', '=', 'lessons.course_module_id')
@@ -275,6 +311,7 @@ class ParticipantLessonService
             'completed' => (bool) $progress->completed_at,
             'completed_at' => $progress->completed_at?->toIso8601String(),
             'time_spent_seconds' => (int) $progress->time_spent_seconds,
+            'time_spent_seconds_added' => $seconds,
             'course_id' => $courseId,
             'course_progress_percent' => $percent,
             'course_status' => $enrolment?->status,

@@ -50,6 +50,11 @@ class Assessment extends Model
         return $this->belongsTo(Course::class);
     }
 
+    public function extensionRequests()
+    {
+        return $this->hasMany(AssignmentExtensionRequest::class);
+    }
+
     public function module()
     {
         return $this->belongsTo(CourseModule::class, 'course_module_id');

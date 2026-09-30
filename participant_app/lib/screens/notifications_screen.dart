@@ -5,10 +5,12 @@ import '../core/network/app_exception.dart';
 import '../core/theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/local_database.dart';
+import '../services/participant_data_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/cached_data.dart';
 import '../widgets/feedback.dart';
 import '../widgets/state_views.dart';
+import 'assignments_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -68,6 +70,25 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     if (mounted) showAppSnackBar(context, 'All notifications marked as read.');
   }
 
+  static bool _isExtensionDecision(Map<String, dynamic> item) =>
+      (item['type']?.toString() ?? '').startsWith('assignment_extension');
+
+  /// Extension decisions arrive only as notifications (no push): refresh
+  /// assignments so the new due date or reviewer note is shown.
+  Future<void> _openAssignments() async {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AssignmentsScreen()),
+    );
+    if (await SyncService.instance.isOnline()) {
+      try {
+        await ParticipantDataService.instance.refreshAssignments();
+        SyncService.instance.notifyLocalChange();
+      } catch (_) {
+        // The cached list is still shown; the next sync retries.
+      }
+    }
+  }
+
   void _open(Map<String, dynamic> item) {
     _markRead(item);
     final theme = Theme.of(context);
@@ -91,6 +112,17 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 plainParagraphs(item['message']?.toString()).join('\n\n'),
                 style: theme.textTheme.bodyLarge,
               ),
+              if (_isExtensionDecision(item)) ...[
+                const SizedBox(height: AppSpacing.lg),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _openAssignments();
+                  },
+                  icon: const Icon(Icons.assignment_outlined),
+                  label: const Text('View assignment'),
+                ),
+              ],
             ],
           ),
         ),

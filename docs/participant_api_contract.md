@@ -172,6 +172,7 @@ Streams one attached learning file (`files[].id`). The checks are the same as ab
 
 ### PUT /lessons/{lesson}/progress  (POST also accepted)
 Same access checks as lesson detail. Body (JSON): `completed` (boolean, required), `time_spent_seconds` (integer ≥0, optional, added to the stored total).
+**v2:** `completed` is now optional and `time_spent_seconds_delta` / `client_operation_id` were added. See "Reading time" in the v2 section below.
 200:
 ```json
 {"message":"Progress saved.","lesson_id":1,"completed":true,"completed_at":"2026-09-30T10:00:00+00:00",
@@ -242,6 +243,7 @@ Store `last_synced_at` and send it on the next call. `courses` here have no modu
 ### POST /offline-actions
 Body (JSON): `{"operations":[{"client_operation_id":"uuid","type":"lesson_progress|save_job|unsave_job|notification_read","payload":{...}}]}` (up to 100 operations).
 `actions` is accepted as an alias of `operations`, and `client_action_id` as an alias of `client_operation_id`.
+**v2:** there is also an `assignment_submission` type, and `lesson_progress` accepts `time_spent_seconds_delta` (see the v2 section).
 Payloads: `lesson_progress` → `{lesson_id, completed, time_spent_seconds}` · `save_job` / `unsave_job` → `{job_id}` · `notification_read` → `{notification_id}`.
 200:
 ```json
@@ -265,3 +267,206 @@ Body: `device_id` (required), `token` (required; `fcm_token` is accepted as an a
 ### DELETE /device-token
 Body (JSON) or query: `device_id` (required).
 200 `{"message":"Device unregistered.","removed":true}` (`removed:false` if the device wasn't registered).
+
+---
+
+## v2 additions (profile, tracking, extensions)
+
+All paths below are under the same authenticated participant base (`/api/v1/participant`) and use the same auth, error format and conventions as above. They **only add** fields to existing responses. Nothing existing was renamed or removed.
+Tests: `tests/Feature/Participant/ParticipantV2ApiTest.php`.
+
+Business-rule 422 responses in this section carry a machine-readable `code` next to `message`, e.g. `{"message":"...","code":"overdue"}`. Validation 422s keep the usual `{"message","errors":{...}}` shape.
+
+### Profile
+
+#### GET /profile
+200:
+```json
+{
+  "profile": {
+    "id": 5,
+    "name": "Jane Achieng",
+    "email": "jane@x.org",
+    "phone": "0700000000",
+    "photo_url": "https://site.elevateher360.org/api/v1/participant/profile/photo?v=1727690000",
+    "photo_path": "/profile/photo?v=1727690000",
+    "has_photo": true,
+    "surname": "Achieng", "given_name": "Jane", "other_name": null,
+    "gender": "female",
+    "date_of_birth": "1998-04-12",
+    "country": "Kenya", "district": "Kisumu", "location": "Kondele",
+    "education_level": "Diploma",
+    "employment_status": "Self-employed",
+    "career_interests": "Digital marketing, bookkeeping",
+    "preferred_language": "English",
+    "is_pwd": false,
+    "disability_types": [],
+    "disability_other": null,
+    "branch": {"id": 2, "name": "Kisumu"},
+    "user_type": "participant",
+    "status": "active",
+    "updated_at": "2026-09-30T10:00:00+00:00"
+  },
+  "editable_fields": ["name","phone","surname","given_name","other_name","gender","date_of_birth","country","district","location","education_level","employment_status","career_interests","preferred_language","is_pwd","disability_types","disability_other"]
+}
+```
+- `email`, `branch`, `user_type` and `status` are read-only because admins own them. There is no `bio` column. Use `career_interests` as the free-text "about me / interests" field.
+- `photo_url` is an **authenticated** URL (send the Bearer token), or `null`. The `?v=` suffix changes whenever the photo changes, so it can be used as a cache key. `photo_path` is the same URL relative to the participant base.
+- `gender`: `female|male|other|prefer_not_to_say|null`. `date_of_birth`: `YYYY-MM-DD|null`.
+- `is_pwd`, `disability_types` and `disability_other` are optional and sensitive. Show them only on the participant's own profile screen.
+- A participant with no `profiles` row gets the same shape with `null` values. The row is created on her first update.
+
+#### PUT /profile  (JSON)
+Partial update: send only the fields that change. Fields that are not in `editable_fields` (e.g. `email`, `branch_id`) are ignored.
+Rules:
+- `name`: string ≤255, cannot be empty
+- `phone`: ≤30
+- `surname`, `given_name`, `other_name`: ≤120
+- `gender`: the enum above
+- `date_of_birth`: a date after 1900-01-01 and before today
+- `country`, `district`, `location`, `education_level`, `employment_status`: ≤190
+- `career_interests`: ≤2000
+- `preferred_language`: ≤50 (null resets it to `English`)
+- `is_pwd`: boolean
+- `disability_types`: array of up to 20 strings, each ≤100
+- `disability_other`: ≤255
+
+200: same body as GET /profile. 422: `{"message":"...","errors":{"gender":["The selected gender is invalid."]}}`.
+
+#### POST /profile/photo  (multipart/form-data)
+Field `photo`: required, `jpg|jpeg|png|webp`, ≤ 5 MB. The photo is stored on the private (`local`) disk and the previous photo is deleted.
+200 `{"message":"Profile photo updated.","profile":{...},"editable_fields":[...]}` · 422 validation.
+
+#### GET /profile/photo
+Streams the photo (auth required, `Content-Disposition: inline`). 404 `{"message":"No profile photo."}` if there is none.
+
+#### DELETE /profile/photo
+200 `{"message":"Profile photo removed.","profile":{...},"editable_fields":[...]}`. It is idempotent and also succeeds when there was no photo.
+
+#### PUT /profile/password  (JSON)
+Body: `current_password`, `password`, `password_confirmation`. `password` uses Laravel `Password::defaults()` (min 8) and must differ from the current one.
+204 with no body on success. The current token stays valid; the participant's **other** API tokens are revoked.
+422 `{"message":"The current password is incorrect.","errors":{"current_password":["The current password is incorrect."]}}`, or the usual password rule errors.
+
+### GET /progress
+```json
+{
+  "summary": {
+    "courses_enrolled": 2, "courses_completed": 0,
+    "lessons_total": 12, "lessons_completed": 5, "time_spent_seconds": 5400,
+    "assignments_total": 4, "assignments_submitted": 2, "assignments_graded": 1,
+    "assignments_pending": 1, "assignments_overdue": 1,
+    "extension_requests_pending": 1,
+    "mentorship_sessions_total": 6, "mentorship_sessions_attended": 3,
+    "mentorship_sessions_missed": 1, "mentorship_sessions_upcoming": 2,
+    "events_attended": 1
+  },
+  "courses": [
+    {"id":1,"title":"Digital Marketing","status":"in_progress","progress_percent":41.67,"lessons_total":12,"lessons_completed":5,
+     "time_spent_seconds":5400,"last_activity_at":"2026-09-30T10:00:00+00:00"}
+  ],
+  "recent_activity": [
+    {"type":"lesson_completed","title":"Lesson 3","at":"2026-09-30T10:00:00+00:00","source_id":3,"course_id":1},
+    {"type":"assignment_submitted","title":"Brief","at":"...","source_id":7,"course_id":1},
+    {"type":"session_attended","title":"Goal setting","at":"...","source_id":4,"course_id":null}
+  ]
+}
+```
+Definitions:
+- A lesson counts only if the lesson **and** its module are published and the participant is enrolled in its course. `time_spent_seconds` is the sum of `lesson_progress.time_spent_seconds` over those lessons. `courses[].progress_percent` = lessons_completed / lessons_total × 100, rounded to 2 decimal places (0 when the course has no lessons). `last_activity_at` is the latest lesson-progress update or submission in that course, or null.
+- Assignments are the published assessments (`assignment|quiz|exam`) in enrolled courses, the same set as GET /assignments.
+  - `submitted`: has at least one submitted or graded attempt.
+  - `graded`: has a graded attempt.
+  - `pending`: not submitted and not overdue.
+  - `overdue`: not submitted and the effective due date (see below) has passed.
+  - `submitted + pending + overdue = total`.
+- Mentorship sessions are the sessions in matches where she is the mentee.
+  - `attended`: `mentee_attended = true`.
+  - `missed`: `mentee_attended = false`, or status `missed` without `mentee_attended = true`.
+  - `upcoming`: status `scheduled` and `scheduled_at` in the future.
+- `events_attended`: the number of distinct events where she has a `present` or `late` attendance record.
+- `recent_activity`: the latest 10 items across the three types, newest first. `source_id` is the lesson, assessment or session id.
+
+### Reading time: PUT|POST /lessons/{lesson}/progress (extended)
+Body (JSON). Every field is optional, but at least one of `completed`, `time_spent_seconds_delta` or `time_spent_seconds` must be sent (otherwise 422 with `errors.completed`):
+- `completed` boolean. **If omitted, the completion state is left unchanged.** It used to be required. `completed:false` still un-completes the lesson.
+- `time_spent_seconds_delta` integer ≥ 0. Values above 3600 are clamped to 3600 per call; negatives → 422. The delta is **added** to `lesson_progress.time_spent_seconds`.
+- `time_spent_seconds` (legacy) integer ≥ 0. It is also added to the total, as before. It is ignored when `time_spent_seconds_delta` is present, so never send both.
+- `client_operation_id` (optional string ≤190): idempotency key. If the same key was already processed (here or through /offline-actions), the stored result is returned with `"duplicate": true` and nothing is added again.
+
+The delta is additive, so the client must send only the seconds **not yet sent**: keep a per-lesson counter of unsent seconds and reset it after a 2xx. Send it when the lesson closes or the app goes to the background, and about every 60 s while the lesson is open. Use a new `client_operation_id` for each flush so that retries are safe.
+The 200 response is unchanged, plus it now always includes `time_spent_seconds` (the new total) and `time_spent_seconds_added` (what was actually added after clamping).
+
+Offline: the `lesson_progress` operation payload accepts the same fields: `{lesson_id, completed?, time_spent_seconds_delta?, time_spent_seconds?}`. The operation's `client_operation_id` already makes it idempotent.
+
+### Mentorship (extended)
+`GET /mentorship`: each `sessions[]` item has these fields (the ones marked * are new): `id, mentor_match_id, title, agenda, scheduled_at, duration_minutes, meeting_link, venue, status (scheduled|completed|cancelled|missed), session_notes, agreed_actions, next_session_at, updated_at, mentor_id, mentor_name, mentee_attended* (true|false|null), mentor_attended* (true|false|null), can_confirm_attendance* (bool)`. `/dashboard.next_mentorship_session` and `/sync.mentorship` use the same session shape, without `can_confirm_attendance`.
+
+#### POST /mentorship/sessions/{session}/attendance
+Body: `{"attended": true|false}` (required boolean).
+- 404 `{"message":"Mentorship session not found."}`
+- 403 `{"message":"You are not the mentee for this session."}`
+- 422 `{"message":"This session has not started yet.","code":"session_not_started"}` (scheduled_at > now)
+- 422 `{"message":"Attendance can only be confirmed within 14 days of the session.","code":"attendance_window_closed"}`
+- 422 `{"message":"This session was cancelled.","code":"session_cancelled"}`
+- 200 `{"message":"Attendance recorded.","session":{<session object as in GET /mentorship>}}`
+
+It sets only `mentee_attended`. The mentee never changes the session `status`; the mentor or staff mark sessions completed or missed. She can change her answer while the 14-day window is open.
+
+### Assignments: effective due date, overdue blocking, extension requests
+
+> Deployment: run the migrations `2026_09_30_170000_create_assignment_extension_requests_table` and `2026_09_30_170100_add_photo_path_to_profiles_table` before deploying this code, because `/assignments`, `/sync`, `/courses/{id}` and `/progress` read the new table.
+
+**Effective due date** for a participant = the `approved_due_at` of her latest approved extension request for that assessment, or else `assessment.due_at` (null means no deadline).
+
+#### Assessment object (extended)
+Every item of `GET /assignments`, `GET /sync` → `assignments[]` and `GET /courses/{course}` → `course.assessments[]` also has:
+```json
+{"effective_due_at":"2026-10-03T12:00:00+00:00"|null,
+ "is_overdue":false,
+ "can_submit":true,
+ "submissions_count":0,
+ "attempts_remaining":1,
+ "extension_request": null | {"id":4,"assessment_id":3,"status":"pending|approved|rejected","reason":"...","requested_due_at":"...|null",
+                              "approved_due_at":"...|null","reviewer_note":"...|null","created_at":"...","reviewed_at":"...|null"},
+ "can_request_extension":false}
+```
+- `is_overdue`: the effective due date is in the past.
+- `can_submit`: published AND not overdue AND `submissions_count < max_attempts`.
+- `extension_request`: her latest request for this assessment (any status), or null.
+- `can_request_extension`: no pending request AND attempts remain AND (overdue OR the effective due date is within 48 h).
+- `is_graded`: the latest attempt has status `graded` or a `graded_at`.
+- `latest_submission`: null, or `{id, attempt_number, status, submitted_at, graded_at, score, percentage, instructor_feedback}` for her latest attempt. `score`, `percentage` and `instructor_feedback` are null until the attempt is graded.
+
+#### POST /assignments/{assessment}/submit (extended)
+- New optional field `client_created_at` (ISO-8601): when the submission was made on the device. It is only honoured together with `client_submission_id`, i.e. for a queued offline submission.
+- If the effective due date has passed → **422** `{"message":"This assignment is past its due date. Request an extension from your instructor.","code":"overdue"}`.
+- **Offline grace window**: a queued submission is still accepted after the deadline if all of these hold:
+  - `client_created_at` ≤ the effective due date;
+  - the server receives it within **72 hours** of `client_created_at`;
+  - `client_created_at` is not in the future (5-minute allowance for clock skew).
+
+  Otherwise it is rejected with `code: "overdue"`.
+- The existing rules are unchanged. `Maximum attempts reached.` now also carries `"code":"max_attempts_reached"`. A repeated `client_submission_id` still returns 200 with `duplicate:true`, and that check runs before the deadline check.
+
+#### POST /offline-actions: new `assignment_submission` operation
+`{"client_operation_id":"uuid","type":"assignment_submission","client_created_at":"ISO-8601","payload":{"assessment_id":3,"submission_text":"...","client_created_at":"ISO-8601"}}`
+- Text only. `client_created_at` may be on the operation or in the payload.
+- The `client_operation_id` is used as the `client_submission_id`, and the same deadline and grace-window rules apply.
+- On failure the result is `{"status":"failed","code":422,"message":"This assignment is past its due date. ...","error_code":"overdue"}`.
+- Submissions with a **file** must still go to `POST /assignments/{id}/submit` (multipart) with `client_submission_id` + `client_created_at`.
+
+#### POST /assignments/{assessment}/extension-requests
+Body (JSON): `reason` (required, 10–1000 chars), `requested_due_at` (optional datetime, must be in the future).
+- 201 `{"message":"Extension request sent to your instructor.","extension_request":{...object above}}`
+- 403 not enrolled · 404 `{"message":"Assessment not found."}` (missing or unpublished)
+- 422 `{"message":"You already have a pending extension request for this assignment.","code":"extension_pending"}`
+- 422 `{"message":"Extensions can only be requested for assignments that are overdue or due within 48 hours.","code":"extension_not_needed"}`
+- 422 `{"message":"Maximum attempts reached.","code":"max_attempts_reached"}`
+- 422 validation (`reason`, `requested_due_at`)
+
+When a request is created, the course instructors get an in-app notification (`type: assignment_extension_requested`). When an instructor approves or rejects it, the participant gets a `user_notifications` row, which `GET /notifications` returns:
+- `type`: `assignment_extension_approved` or `assignment_extension_rejected`
+- `data`: `{"assessment_id","course_id","extension_request_id","approved_due_at"}`
+
+The backend has no server push (FCM) sender yet, so the app should pick these up through `/notifications` and `/sync`.

@@ -12,7 +12,11 @@ class Profile extends Model
         'date_of_birth','country','district','location','is_pwd',
         'disability_types','disability_other','education_level',
         'employment_status','career_interests','preferred_language','metadata',
+        'photo_path',
     ];
+
+    // Internal private-disk path; clients use the authenticated photo URL from GET /profile.
+    protected $hidden = ['photo_path'];
 
     protected $casts = [
         'date_of_birth' => 'date',

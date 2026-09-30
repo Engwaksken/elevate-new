@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\Participant\AuthController as ParticipantAuthController;
 use App\Http\Controllers\Api\V1\Participant\LessonController as ParticipantLessonController;
 use App\Http\Controllers\Api\V1\Participant\ParticipantController;
+use App\Http\Controllers\Api\V1\Participant\ProfileController as ParticipantProfileController;
+use App\Http\Controllers\Api\V1\Participant\ProgressController as ParticipantProgressController;
 use App\Http\Middleware\EnsureParticipantApi;
 
 // ElevateHer360 consolidated API routes.
@@ -36,8 +38,24 @@ Route::prefix('v1')->group(function () {
 
                 Route::get('/assignments',[ParticipantController::class,'assignments']);
                 Route::post('/assignments/{assessment}/submit',[ParticipantController::class,'submitAssignment']);
+                Route::post('/assignments/{assessment}/extension-requests',[ParticipantController::class,'requestExtension'])
+                    ->name('api.participant.assignments.extension-requests.store');
 
                 Route::get('/mentorship',[ParticipantController::class,'mentorship']);
+                Route::post('/mentorship/sessions/{session}/attendance',[ParticipantController::class,'confirmMentorshipAttendance'])
+                    ->whereNumber('session')
+                    ->name('api.participant.mentorship.sessions.attendance');
+
+                Route::get('/profile',[ParticipantProfileController::class,'show'])->name('api.participant.profile.show');
+                Route::put('/profile',[ParticipantProfileController::class,'update'])->name('api.participant.profile.update');
+                Route::put('/profile/password',[ParticipantProfileController::class,'updatePassword'])
+                    ->middleware('throttle:10,1')
+                    ->name('api.participant.profile.password');
+                Route::get('/profile/photo',[ParticipantProfileController::class,'photo'])->name('api.participant.profile.photo');
+                Route::post('/profile/photo',[ParticipantProfileController::class,'uploadPhoto'])->name('api.participant.profile.photo.store');
+                Route::delete('/profile/photo',[ParticipantProfileController::class,'deletePhoto'])->name('api.participant.profile.photo.destroy');
+
+                Route::get('/progress',[ParticipantProgressController::class,'show'])->name('api.participant.progress');
 
                 Route::get('/jobs',[ParticipantController::class,'jobs']);
                 Route::post('/jobs/{job}/save',[ParticipantController::class,'saveJob']);
