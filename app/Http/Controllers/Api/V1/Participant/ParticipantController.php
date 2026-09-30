@@ -11,19 +11,27 @@ use App\Models\Enrolment;
 use App\Models\LearningFile;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use App\Models\MentorshipSession;
 use App\Models\ParticipantDeviceToken;
+use App\Exceptions\ParticipantRuleException;
 use App\Services\Learning\ModuleAccessService;
+use App\Services\Participant\ParticipantAssignmentService;
 use App\Services\Participant\ParticipantLessonService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class ParticipantController extends Controller
 {
+    /** How long after a mentorship session the mentee may confirm attendance. */
+    private const ATTENDANCE_WINDOW_DAYS = 14;
+
     public function __construct(
         private readonly ParticipantLessonService $lessonService,
-        private readonly ModuleAccessService $moduleAccess
+        private readonly ModuleAccessService $moduleAccess,
+        private readonly ParticipantAssignmentService $assignments
     ) {
     }
 
@@ -78,7 +86,7 @@ class ParticipantController extends Controller
                 'status' => $enrolment->status,
                 'progress_percent' => (float) $enrolment->progress_percent,
             ])->values(),
-            'next_mentorship_session' => $nextSession,
+            'next_mentorship_session' => $this->presentSession($nextSession),
             'last_synced_at' => now()->toIso8601String(),
         ]);
     }
@@ -151,9 +159,8 @@ class ParticipantController extends Controller
             return $moduleData;
         })->values()->all();
 
-        $payload['assessments'] = $course->assessments
-            ->map(fn ($assessment) => $this->lessonService->presentAssessment($assessment))
-            ->values()
+        $payload['assessments'] = $this->assignments
+            ->presentMany($course->assessments, $user)
             ->all();
 
         return response()->json(['course' => $payload]);
@@ -176,10 +183,11 @@ class ParticipantController extends Controller
             $query->where('updated_at', '>', $request->get('updated_since'));
         }
 
+        $page = $query->orderByRaw('due_at IS NULL, due_at ASC')->paginate(20);
+        $context = $this->assignments->context($request->user(), $page->getCollection()->pluck('id'));
+
         return response()->json(
-            $query->orderByRaw('due_at IS NULL, due_at ASC')
-                ->paginate(20)
-                ->through(fn ($assessment) => $this->lessonService->presentAssessment($assessment))
+            $page->through(fn ($assessment) => $this->assignments->present($assessment, $context))
         );
     }
 
@@ -193,48 +201,54 @@ class ParticipantController extends Controller
             'submission_text' => ['nullable','string'],
             'submission_file' => ['nullable','file','max:51200','mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,zip,jpg,jpeg,png,webp'],
             'client_submission_id' => ['nullable','string','max:190'],
+            // When a queued offline submission was made on the device (offline grace window).
+            'client_created_at' => ['nullable','date'],
         ]);
 
-        if (! empty($data['client_submission_id'])) {
-            $duplicate = AssessmentAttempt::where('client_submission_id', $data['client_submission_id'])
-                ->where('user_id', $user->id)
-                ->first();
+        $result = $this->assignments->submit(
+            $user,
+            $assessment,
+            $data['submission_text'] ?? null,
+            $request->file('submission_file'),
+            $data['client_submission_id'] ?? null,
+            ! empty($data['client_created_at']) ? Carbon::parse($data['client_created_at']) : null
+        );
 
-            if ($duplicate) {
-                return response()->json([
-                    'message' => 'Submission already received.',
-                    'attempt' => $duplicate,
-                    'duplicate' => true,
-                ]);
-            }
+        if ($result['duplicate']) {
+            return response()->json([
+                'message' => 'Submission already received.',
+                'attempt' => $result['attempt'],
+                'duplicate' => true,
+            ]);
         }
 
-        $existingAttempts = AssessmentAttempt::where('assessment_id', $assessment->id)
-            ->where('user_id', $user->id)
-            ->count();
+        return response()->json(['message' => 'Submission received.', 'attempt' => $result['attempt']], 201);
+    }
 
-        abort_if($existingAttempts >= $assessment->max_attempts, 422, 'Maximum attempts reached.');
+    /**
+     * POST /assignments/{assessment}/extension-requests
+     */
+    public function requestExtension(Request $request, Assessment $assessment)
+    {
+        $this->ensureParticipantOwnsCourse($request, $assessment->course);
+        abort_unless($assessment->is_published, 404, 'Assessment not found.');
 
-        $filePath = $request->hasFile('submission_file')
-            ? $request->file('submission_file')->store(
-                'participant-submissions/'.$user->id.'/'.$assessment->id,
-                'local'
-            )
-            : null;
-
-        $attempt = AssessmentAttempt::create([
-            'assessment_id' => $assessment->id,
-            'user_id' => $user->id,
-            'attempt_number' => $existingAttempts + 1,
-            'client_submission_id' => $data['client_submission_id'] ?? null,
-            'submission_text' => $data['submission_text'] ?? null,
-            'submission_file_path' => $filePath,
-            'status' => 'submitted',
-            'started_at' => now(),
-            'submitted_at' => now(),
+        $data = $request->validate([
+            'reason' => ['required','string','min:10','max:1000'],
+            'requested_due_at' => ['nullable','date','after:now'],
         ]);
 
-        return response()->json(['message' => 'Submission received.', 'attempt' => $attempt], 201);
+        $extension = $this->assignments->createExtensionRequest(
+            $request->user(),
+            $assessment,
+            trim($data['reason']),
+            ! empty($data['requested_due_at']) ? Carbon::parse($data['requested_due_at']) : null
+        );
+
+        return response()->json([
+            'message' => 'Extension request sent to your instructor.',
+            'extension_request' => $extension->toApiArray(),
+        ], 201);
     }
 
     public function mentorship(Request $request)
@@ -255,7 +269,8 @@ class ParticipantController extends Controller
 
         $sessions = $this->mentorshipBase($userId)
             ->orderBy('ms.scheduled_at')
-            ->get();
+            ->get()
+            ->map(fn ($session) => $this->presentSession($session, true));
 
         $goals = DB::table('mentorship_goals as mg')
             ->join('mentor_matches as mm', 'mm.id', '=', 'mg.mentor_match_id')
@@ -268,6 +283,45 @@ class ParticipantController extends Controller
             'matches' => $matches,
             'sessions' => $sessions,
             'goals' => $goals,
+        ]);
+    }
+
+    /**
+     * POST /mentorship/sessions/{session}/attendance: the mentee confirms her own attendance.
+     * Only mentee_attended is set; the session status is left to the mentor/staff.
+     */
+    public function confirmMentorshipAttendance(Request $request, int $session)
+    {
+        $data = $request->validate(['attended' => ['required','boolean']]);
+        $userId = $request->user()->id;
+
+        $model = MentorshipSession::with('match')->find($session);
+        abort_unless($model, 404, 'Mentorship session not found.');
+        abort_unless((int) $model->match?->mentee_user_id === (int) $userId, 403, 'You are not the mentee for this session.');
+
+        if ($model->status === 'cancelled') {
+            throw new ParticipantRuleException('This session was cancelled.', 'session_cancelled');
+        }
+
+        if ($model->scheduled_at->isFuture()) {
+            throw new ParticipantRuleException('This session has not started yet.', 'session_not_started');
+        }
+
+        if ($model->scheduled_at->lt(now()->subDays(self::ATTENDANCE_WINDOW_DAYS))) {
+            throw new ParticipantRuleException(
+                'Attendance can only be confirmed within 14 days of the session.',
+                'attendance_window_closed'
+            );
+        }
+
+        $model->mentee_attended = (bool) $data['attended'];
+        $model->save();
+
+        $row = $this->mentorshipBase($userId)->where('ms.id', $model->id)->first();
+
+        return response()->json([
+            'message' => 'Attendance recorded.',
+            'session' => $this->presentSession($row, true),
         ]);
     }
 
@@ -428,8 +482,9 @@ class ParticipantController extends Controller
         $data = $request->validate([
             'operations' => ['required','array','max:100'],
             'operations.*.client_operation_id' => ['required','string','max:190'],
-            'operations.*.type' => ['required','string','in:lesson_progress,save_job,unsave_job,notification_read'],
+            'operations.*.type' => ['required','string','in:lesson_progress,save_job,unsave_job,notification_read,assignment_submission'],
             'operations.*.payload' => ['nullable','array'],
+            'operations.*.client_created_at' => ['nullable','date'],
         ]);
 
         $results = [];
@@ -453,6 +508,12 @@ class ParticipantController extends Controller
                 $payload = $operation['payload'] ?? [];
                 $result = match ($operation['type']) {
                     'lesson_progress' => $this->offlineLessonProgress($request, $payload),
+                    'assignment_submission' => $this->offlineAssignmentSubmission(
+                        $request,
+                        $payload,
+                        $operation['client_operation_id'],
+                        $operation['client_created_at'] ?? ($payload['client_created_at'] ?? null)
+                    ),
                     'save_job' => $this->saveJob($request,(int)($payload['job_id'] ?? 0))->getData(true),
                     'unsave_job' => $this->unsaveJob($request,(int)($payload['job_id'] ?? 0))->getData(true),
                     'notification_read' => $this->markNotificationRead($request,(int)($payload['notification_id'] ?? 0))->getData(true),
@@ -481,7 +542,7 @@ class ParticipantController extends Controller
                     'status'=>'failed',
                     'code'=>$e->getStatusCode(),
                     'message'=>$e->getMessage() ?: 'The operation could not be processed.',
-                ];
+                ] + ($e instanceof ParticipantRuleException ? ['error_code'=>$e->errorCode] : []);
             } catch (ModelNotFoundException $e) {
                 $results[] = [
                     'client_operation_id'=>$operation['client_operation_id'],
@@ -600,9 +661,9 @@ class ParticipantController extends Controller
             'last_synced_at'=>now()->toIso8601String(),
             'enrolments'=>$enrolments,
             'courses'=>$courses,
-            'assignments'=>$assignments->map(fn ($assessment) => $this->lessonService->presentAssessment($assessment))->values(),
+            'assignments'=>$this->assignments->presentMany($assignments, $user),
             'announcements'=>$announcements,
-            'mentorship'=>$mentorship,
+            'mentorship'=>$mentorship->map(fn ($session) => $this->presentSession($session))->values(),
             'jobs'=>$jobs,
             'events'=>$events,
             'notifications'=>$notifications,
@@ -664,12 +725,78 @@ class ParticipantController extends Controller
 
         $this->lessonService->authorize($user, $lesson);
 
+        abort_if(
+            (isset($payload['time_spent_seconds_delta']) && (int) $payload['time_spent_seconds_delta'] < 0)
+            || (isset($payload['time_spent_seconds']) && (int) $payload['time_spent_seconds'] < 0),
+            422,
+            'Time spent cannot be negative.'
+        );
+
+        // "completed" omitted = leave completion unchanged (reading-time only operation).
+        $completed = array_key_exists('completed', $payload) && $payload['completed'] !== null
+            ? filter_var($payload['completed'], FILTER_VALIDATE_BOOLEAN)
+            : null;
+
         return $this->lessonService->saveProgress(
             $user,
             $lesson,
-            filter_var($payload['completed'] ?? false, FILTER_VALIDATE_BOOLEAN),
-            (int) ($payload['time_spent_seconds'] ?? 0)
+            $completed,
+            $this->lessonService->secondsToAdd($payload)
         );
+    }
+
+    /**
+     * Apply a queued text-only assignment_submission operation
+     * (payload: assessment_id, submission_text, client_created_at).
+     */
+    private function offlineAssignmentSubmission(Request $request, array $payload, string $clientOperationId, ?string $clientCreatedAt): array
+    {
+        $assessment = Assessment::with('course')->findOrFail((int) ($payload['assessment_id'] ?? 0));
+        $this->ensureParticipantOwnsCourse($request, $assessment->course);
+        abort_unless($assessment->is_published, 404, 'Assessment not found.');
+
+        $text = isset($payload['submission_text']) ? (string) $payload['submission_text'] : null;
+        $createdAt = null;
+
+        if ($clientCreatedAt) {
+            try {
+                $createdAt = Carbon::parse($clientCreatedAt);
+            } catch (\Throwable) {
+                $createdAt = null;
+            }
+        }
+
+        $result = $this->assignments->submit($request->user(), $assessment, $text, null, $clientOperationId, $createdAt);
+
+        return [
+            'message' => $result['duplicate'] ? 'Submission already received.' : 'Submission received.',
+            'attempt' => $result['attempt']->toArray(),
+            'duplicate' => $result['duplicate'],
+        ];
+    }
+
+    /**
+     * Normalise a mentorship session row for the app.
+     */
+    private function presentSession(?object $session, bool $withConfirmFlag = false): ?array
+    {
+        if (! $session) {
+            return null;
+        }
+
+        $data = (array) $session;
+        $data['mentee_attended'] = $session->mentee_attended === null ? null : (bool) $session->mentee_attended;
+        $data['mentor_attended'] = $session->mentor_attended === null ? null : (bool) $session->mentor_attended;
+
+        if ($withConfirmFlag) {
+            $scheduled = $session->scheduled_at ? Carbon::parse($session->scheduled_at) : null;
+            $data['can_confirm_attendance'] = $scheduled !== null
+                && $session->status !== 'cancelled'
+                && $scheduled->lte(now())
+                && $scheduled->gte(now()->subDays(self::ATTENDANCE_WINDOW_DAYS));
+        }
+
+        return $data;
     }
 
     private function mentorshipBase(int $userId)
@@ -682,6 +809,7 @@ class ParticipantController extends Controller
                 'ms.id','ms.mentor_match_id','ms.title','ms.agenda','ms.scheduled_at',
                 'ms.duration_minutes','ms.meeting_link','ms.venue','ms.status',
                 'ms.session_notes','ms.agreed_actions','ms.next_session_at','ms.updated_at',
+                'ms.mentee_attended','ms.mentor_attended',
                 'mentor.id as mentor_id','mentor.name as mentor_name'
             );
     }

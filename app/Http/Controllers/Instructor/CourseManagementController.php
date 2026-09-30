@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
 use App\Models\AssessmentQuestion;
+use App\Models\AssignmentExtensionRequest;
 use App\Models\Course;
 use App\Models\CourseAnnouncement;
 use App\Models\CourseModule;
 use App\Models\Enrolment;
 use App\Models\Lesson;
+use App\Services\Participant\ParticipantAssignmentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -136,6 +139,19 @@ class CourseManagementController extends Controller
             ->paginate(20, ['*'], 'submissions_page')
             ->withQueryString();
 
+        $extensionRequests = AssignmentExtensionRequest::query()
+            ->with(['assessment', 'user', 'reviewer'])
+            ->whereHas('assessment', fn ($query) => $query->where('course_id', $course->id))
+            ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
+            ->latest()
+            ->paginate(20, ['*'], 'extensions_page')
+            ->withQueryString();
+
+        $pendingExtensionCount = AssignmentExtensionRequest::query()
+            ->where('status', AssignmentExtensionRequest::STATUS_PENDING)
+            ->whereHas('assessment', fn ($query) => $query->where('course_id', $course->id))
+            ->count();
+
         $announcements = $course->announcements()
             ->with('creator')
             ->latest('published_at')
@@ -152,6 +168,8 @@ class CourseManagementController extends Controller
             'participants' => $participants,
             'submissions' => $submissions,
             'announcements' => $announcements,
+            'extensionRequests' => $extensionRequests,
+            'pendingExtensionCount' => $pendingExtensionCount,
             'progressRows' => $progressRows,
             'stats' => [
                 'modules' => $course->modules()->count(),
@@ -543,6 +561,62 @@ class CourseManagementController extends Controller
         return back()->with('success', 'Submission review saved.');
     }
 
+    /**
+     * Approve a participant's assignment extension request with a new (future) due date.
+     */
+    public function approveExtension(
+        Request $request,
+        Course $course,
+        AssignmentExtensionRequest $extensionRequest,
+        ParticipantAssignmentService $assignments
+    ) {
+        $this->authoriseExtension($course, $extensionRequest);
+
+        $data = $request->validate([
+            'approved_due_at' => ['required', 'date', 'after:now'],
+            'reviewer_note' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'approved_due_at.after' => 'The new due date must be in the future.',
+        ]);
+
+        if (! $extensionRequest->isPending()) {
+            return back()->with('error', 'This extension request has already been reviewed.');
+        }
+
+        $assignments->approve(
+            $extensionRequest,
+            $request->user(),
+            Carbon::parse($data['approved_due_at']),
+            $data['reviewer_note'] ?? null
+        );
+
+        return back()->with('success', 'Extension approved. The participant has been notified.');
+    }
+
+    /**
+     * Reject a participant's assignment extension request (optional note).
+     */
+    public function rejectExtension(
+        Request $request,
+        Course $course,
+        AssignmentExtensionRequest $extensionRequest,
+        ParticipantAssignmentService $assignments
+    ) {
+        $this->authoriseExtension($course, $extensionRequest);
+
+        $data = $request->validate([
+            'reviewer_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        if (! $extensionRequest->isPending()) {
+            return back()->with('error', 'This extension request has already been reviewed.');
+        }
+
+        $assignments->reject($extensionRequest, $request->user(), $data['reviewer_note'] ?? null);
+
+        return back()->with('success', 'Extension request rejected. The participant has been notified.');
+    }
+
     public function downloadSubmissionFile(Course $course, AssessmentAttempt $attempt)
     {
         $this->authorise($course);
@@ -908,6 +982,13 @@ class CourseManagementController extends Controller
             && $user->instructedCourses()->whereKey($course->id)->exists(),
             403
         );
+    }
+
+    private function authoriseExtension(Course $course, AssignmentExtensionRequest $extensionRequest): void
+    {
+        $this->authorise($course);
+        $extensionRequest->loadMissing('assessment');
+        abort_unless((int) $extensionRequest->assessment?->course_id === (int) $course->id, 404);
     }
 
     private function authoriseModule(Course $course, CourseModule $module): void

@@ -1080,6 +1080,16 @@ Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-a
             '/{course}/submissions/{attempt}/file',
             [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadSubmissionFile']
         )->name('instructor.courses.submissions.file');
+
+        Route::post(
+            '/{course}/extension-requests/{extensionRequest}/approve',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'approveExtension']
+        )->name('instructor.courses.extension-requests.approve');
+
+        Route::post(
+            '/{course}/extension-requests/{extensionRequest}/reject',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'rejectExtension']
+        )->name('instructor.courses.extension-requests.reject');
     });
 
 /*
