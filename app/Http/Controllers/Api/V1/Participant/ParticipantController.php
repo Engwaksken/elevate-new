@@ -8,14 +8,25 @@ use App\Models\AssessmentAttempt;
 use App\Models\Course;
 use App\Models\CourseAnnouncement;
 use App\Models\Enrolment;
+use App\Models\LearningFile;
+use App\Models\Lesson;
+use App\Models\LessonProgress;
 use App\Models\ParticipantDeviceToken;
+use App\Services\Learning\ModuleAccessService;
+use App\Services\Participant\ParticipantLessonService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class ParticipantController extends Controller
 {
+    public function __construct(
+        private readonly ParticipantLessonService $lessonService,
+        private readonly ModuleAccessService $moduleAccess
+    ) {
+    }
+
     public function me(Request $request)
     {
         return response()->json([
@@ -81,6 +92,11 @@ class ParticipantController extends Controller
             ->with(['cohorts'])
             ->withCount('modules');
 
+        if ($request->filled('search')) {
+            $term = trim((string) $request->get('search'));
+            $query->where(fn ($q) => $q->where('title', 'like', "%{$term}%")->orWhere('code', 'like', "%{$term}%"));
+        }
+
         if ($request->filled('updated_since')) {
             $query->where('updated_at', '>', $request->get('updated_since'));
         }
@@ -103,21 +119,44 @@ class ParticipantController extends Controller
                 ->latest('published_at'),
         ]);
 
-        $course->modules->each(function ($module) {
-            $module->lessons->each(function ($lesson) {
-                $lesson->resource_url = $lesson->file_path
-                    ? Storage::disk('public')->url($lesson->file_path)
-                    : null;
-            });
-        });
+        $user = $request->user();
+        $lessonIds = $course->modules->flatMap(fn ($module) => $module->lessons->pluck('id'));
 
-        $course->assessments->each(function ($assessment) {
-            $assessment->attachment_url = $assessment->attachment_path
-                ? Storage::disk('public')->url($assessment->attachment_path)
-                : null;
-        });
+        $learningFiles = LearningFile::whereIn('lesson_id', $lessonIds)->orderBy('id')->get()->groupBy('lesson_id');
+        $progressRows = LessonProgress::where('user_id', $user->id)->whereIn('lesson_id', $lessonIds)->get()->keyBy('lesson_id');
 
-        return response()->json(['course' => $course]);
+        $payload = $course->toArray();
+        $enrolment = Enrolment::where('course_id', $course->id)->where('user_id', $user->id)->first();
+
+        $payload['enrolment'] = $enrolment ? [
+            'status' => $enrolment->status,
+            'progress_percent' => (float) $enrolment->progress_percent,
+        ] : null;
+
+        // Lessons are serialised through the shared presenter so the app gets an
+        // authenticated resource_url (API download route) instead of a public /storage URL.
+        $payload['modules'] = $course->modules->map(function ($module) use ($user, $learningFiles, $progressRows) {
+            $locked = ! $this->moduleAccess->canAccess($module, $user);
+            $moduleData = $module->withoutRelations()->toArray();
+            $moduleData['is_locked'] = $locked;
+            $moduleData['lessons'] = $module->lessons->map(fn ($lesson) => $this->lessonService->present(
+                $lesson->setRelation('module', $module),
+                $user,
+                $learningFiles->get($lesson->id, collect()),
+                $progressRows->get($lesson->id) ?? new LessonProgress(),
+                $locked,
+                true
+            ))->values()->all();
+
+            return $moduleData;
+        })->values()->all();
+
+        $payload['assessments'] = $course->assessments
+            ->map(fn ($assessment) => $this->lessonService->presentAssessment($assessment))
+            ->values()
+            ->all();
+
+        return response()->json(['course' => $payload]);
     }
 
     public function assignments(Request $request)
@@ -138,7 +177,9 @@ class ParticipantController extends Controller
         }
 
         return response()->json(
-            $query->orderByRaw('due_at IS NULL, due_at ASC')->paginate(20)
+            $query->orderByRaw('due_at IS NULL, due_at ASC')
+                ->paginate(20)
+                ->through(fn ($assessment) => $this->lessonService->presentAssessment($assessment))
         );
     }
 
@@ -146,7 +187,7 @@ class ParticipantController extends Controller
     {
         $user = $request->user();
         $this->ensureParticipantOwnsCourse($request, $assessment->course);
-        abort_unless($assessment->is_published, 404);
+        abort_unless($assessment->is_published, 404, 'Assessment not found.');
 
         $data = $request->validate([
             'submission_text' => ['nullable','string'],
@@ -276,7 +317,8 @@ class ParticipantController extends Controller
     {
         abort_unless(
             DB::table('jobs')->where('id',$job)->where('status','published')->whereNull('deleted_at')->exists(),
-            404
+            404,
+            'Job not found or no longer open.'
         );
 
         DB::table('saved_jobs')->updateOrInsert(
@@ -347,75 +389,9 @@ class ParticipantController extends Controller
         abort_unless($updated || DB::table('user_notifications')
             ->where('id',$notification)
             ->where('user_id',$request->user()->id)
-            ->exists(),404);
+            ->exists(),404,'Notification not found.');
 
         return response()->json(['message'=>'Notification marked as read.']);
-    }
-
-    public function lessonProgress(Request $request, int $lesson)
-    {
-        $user = $request->user();
-
-        $lessonRow = DB::table('lessons as l')
-            ->join('course_modules as cm','cm.id','=','l.course_module_id')
-            ->join('enrolments as e','e.course_id','=','cm.course_id')
-            ->where('l.id',$lesson)
-            ->where('e.user_id',$user->id)
-            ->select('l.id','cm.course_id')
-            ->first();
-
-        abort_unless($lessonRow,403);
-
-        $data = $request->validate([
-            'completed' => ['required','boolean'],
-            'time_spent_seconds' => ['nullable','integer','min:0'],
-        ]);
-
-        $existing = DB::table('lesson_progress')
-            ->where('lesson_id',$lesson)
-            ->where('user_id',$user->id)
-            ->first();
-
-        DB::table('lesson_progress')->updateOrInsert(
-            ['lesson_id'=>$lesson,'user_id'=>$user->id],
-            [
-                'first_opened_at'=>$existing?->first_opened_at ?? now(),
-                'last_opened_at'=>now(),
-                'completed_at'=>$data['completed'] ? now() : null,
-                'time_spent_seconds'=>($existing?->time_spent_seconds ?? 0) + (int)($data['time_spent_seconds'] ?? 0),
-                'created_at'=>$existing?->created_at ?? now(),
-                'updated_at'=>now(),
-            ]
-        );
-
-        $total = DB::table('lessons')
-            ->join('course_modules','course_modules.id','=','lessons.course_module_id')
-            ->where('course_modules.course_id',$lessonRow->course_id)
-            ->where('lessons.is_published',true)
-            ->count();
-
-        $completed = DB::table('lesson_progress')
-            ->join('lessons','lessons.id','=','lesson_progress.lesson_id')
-            ->join('course_modules','course_modules.id','=','lessons.course_module_id')
-            ->where('course_modules.course_id',$lessonRow->course_id)
-            ->where('lesson_progress.user_id',$user->id)
-            ->whereNotNull('lesson_progress.completed_at')
-            ->count();
-
-        $progress = $total > 0 ? round(($completed/$total)*100,2) : 0;
-
-        DB::table('enrolments')
-            ->where('course_id',$lessonRow->course_id)
-            ->where('user_id',$user->id)
-            ->update([
-                'progress_percent'=>$progress,
-                'status'=>$progress >= 100 ? 'completed' : 'in_progress',
-                'started_at'=>DB::raw('COALESCE(started_at, CURRENT_TIMESTAMP)'),
-                'completed_at'=>$progress >= 100 ? now() : null,
-                'updated_at'=>now(),
-            ]);
-
-        return response()->json(['message'=>'Progress saved.','course_progress_percent'=>$progress]);
     }
 
     public function announcements(Request $request)
@@ -437,6 +413,18 @@ class ParticipantController extends Controller
 
     public function processOfflineActions(Request $request)
     {
+        // The Flutter app posts {"actions":[...]}; the PWA posts {"operations":[...]}.
+        // Accept both, and "client_action_id" as an alias of "client_operation_id".
+        if (! $request->has('operations') && is_array($request->input('actions'))) {
+            $request->merge([
+                'operations' => collect($request->input('actions'))
+                    ->map(fn ($item) => is_array($item) ? $item + [
+                        'client_operation_id' => $item['client_action_id'] ?? null,
+                    ] : $item)
+                    ->all(),
+            ]);
+        }
+
         $data = $request->validate([
             'operations' => ['required','array','max:100'],
             'operations.*.client_operation_id' => ['required','string','max:190'],
@@ -464,13 +452,7 @@ class ParticipantController extends Controller
             try {
                 $payload = $operation['payload'] ?? [];
                 $result = match ($operation['type']) {
-                    'lesson_progress' => $this->lessonProgress(
-                        Request::create('/', 'POST', [
-                            'completed'=>(bool)($payload['completed'] ?? false),
-                            'time_spent_seconds'=>(int)($payload['time_spent_seconds'] ?? 0),
-                        ])->setUserResolver(fn () => $request->user()),
-                        (int)($payload['lesson_id'] ?? 0)
-                    )->getData(true),
+                    'lesson_progress' => $this->offlineLessonProgress($request, $payload),
                     'save_job' => $this->saveJob($request,(int)($payload['job_id'] ?? 0))->getData(true),
                     'unsave_job' => $this->unsaveJob($request,(int)($payload['job_id'] ?? 0))->getData(true),
                     'notification_read' => $this->markNotificationRead($request,(int)($payload['notification_id'] ?? 0))->getData(true),
@@ -493,11 +475,26 @@ class ParticipantController extends Controller
                     'status'=>'processed',
                     'result'=>$result,
                 ];
+            } catch (HttpExceptionInterface $e) {
+                $results[] = [
+                    'client_operation_id'=>$operation['client_operation_id'],
+                    'status'=>'failed',
+                    'code'=>$e->getStatusCode(),
+                    'message'=>$e->getMessage() ?: 'The operation could not be processed.',
+                ];
+            } catch (ModelNotFoundException $e) {
+                $results[] = [
+                    'client_operation_id'=>$operation['client_operation_id'],
+                    'status'=>'failed',
+                    'code'=>404,
+                    'message'=>'The item referenced by this operation no longer exists.',
+                ];
             } catch (\Throwable $e) {
                 report($e);
                 $results[] = [
                     'client_operation_id'=>$operation['client_operation_id'],
                     'status'=>'failed',
+                    'code'=>500,
                     'message'=>'The operation could not be processed.',
                 ];
             }
@@ -508,6 +505,11 @@ class ParticipantController extends Controller
 
     public function sync(Request $request)
     {
+        // "since" is accepted as an alias (used by the Flutter app).
+        if (! $request->filled('last_synced_at') && $request->filled('since')) {
+            $request->merge(['last_synced_at' => $request->get('since')]);
+        }
+
         $request->validate(['last_synced_at'=>['nullable','date']]);
 
         $user = $request->user();
@@ -598,7 +600,7 @@ class ParticipantController extends Controller
             'last_synced_at'=>now()->toIso8601String(),
             'enrolments'=>$enrolments,
             'courses'=>$courses,
-            'assignments'=>$assignments,
+            'assignments'=>$assignments->map(fn ($assessment) => $this->lessonService->presentAssessment($assessment))->values(),
             'announcements'=>$announcements,
             'mentorship'=>$mentorship,
             'jobs'=>$jobs,
@@ -611,6 +613,11 @@ class ParticipantController extends Controller
 
     public function deviceToken(Request $request)
     {
+        // The Flutter app sends "fcm_token"; accept it as an alias of "token".
+        if (! $request->filled('token') && $request->filled('fcm_token')) {
+            $request->merge(['token' => $request->input('fcm_token')]);
+        }
+
         $data = $request->validate([
             'device_id'=>['required','string','max:190'],
             'token'=>['required','string','max:4000'],
@@ -631,6 +638,40 @@ class ParticipantController extends Controller
         return response()->json(['message'=>'Device registered.','device'=>$device]);
     }
 
+    public function removeDeviceToken(Request $request)
+    {
+        $data = $request->validate([
+            'device_id'=>['required','string','max:190'],
+        ]);
+
+        $deleted = ParticipantDeviceToken::where('user_id',$request->user()->id)
+            ->where('device_id',$data['device_id'])
+            ->delete();
+
+        return response()->json([
+            'message'=>$deleted ? 'Device unregistered.' : 'Device was not registered.',
+            'removed'=>(bool) $deleted,
+        ]);
+    }
+
+    /**
+     * Apply a queued lesson_progress operation (payload: lesson_id, completed, time_spent_seconds).
+     */
+    private function offlineLessonProgress(Request $request, array $payload): array
+    {
+        $lesson = Lesson::findOrFail((int) ($payload['lesson_id'] ?? 0));
+        $user = $request->user();
+
+        $this->lessonService->authorize($user, $lesson);
+
+        return $this->lessonService->saveProgress(
+            $user,
+            $lesson,
+            filter_var($payload['completed'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            (int) ($payload['time_spent_seconds'] ?? 0)
+        );
+    }
+
     private function mentorshipBase(int $userId)
     {
         return DB::table('mentorship_sessions as ms')
@@ -645,13 +686,16 @@ class ParticipantController extends Controller
             );
     }
 
-    private function ensureParticipantOwnsCourse(Request $request, Course $course): void
+    private function ensureParticipantOwnsCourse(Request $request, ?Course $course): void
     {
+        abort_unless($course, 404, 'Course not found.');
+
         abort_unless(
             Enrolment::where('course_id',$course->id)
                 ->where('user_id',$request->user()->id)
                 ->exists(),
-            403
+            403,
+            'You are not enrolled in this course.'
         );
     }
 }
