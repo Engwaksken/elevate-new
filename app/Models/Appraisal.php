@@ -28,6 +28,19 @@ class Appraisal extends Model
         'employee_acknowledgement_name',
         'hr_finalised_at',
         'hr_finalised_by',
+        'achievements',
+        'challenges',
+        'support_required',
+        'learning_completed',
+        'development_needs',
+        'employee_final_comment',
+        'supervisor_final_comment',
+        'meeting_completed_at',
+        'employee_confirmed_at',
+        'supervisor_confirmed_at',
+        'locked_at',
+        'reopened_at',
+        'reopened_reason',
     ];
 
     protected $casts=[
@@ -50,5 +63,20 @@ class Appraisal extends Model
     public function kpiTemplate(){ return $this->belongsTo(HrKpiTemplate::class,'hr_kpi_template_id'); }
     public function kpiScores(){ return $this->hasMany(AppraisalKpiScore::class); }
     public function kpiWeeklyUpdates(){ return $this->hasMany(AppraisalKpiWeeklyUpdate::class); }
-    public function finalisedBy(){ return $this->belongsTo(User::class,'hr_finalised_by'); }
+    public function finalisedBy(){ return $this->belongsTo(User::class,'hr_finalised_by'); }    public function kras()
+    {
+        return $this->hasMany(AppraisalKra::class)->orderBy('position');
+    }
+    public function competencies()
+    {
+        return $this->hasMany(AppraisalCompetency::class);
+    }
+    public function meeting()
+    {
+        return $this->hasOne(AppraisalMeeting::class);
+    }
+    public function statusHistory()
+    {
+        return $this->hasMany(AppraisalStatusHistory::class);
+    }
 }

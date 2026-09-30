@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/formatters.dart';
 import '../core/theme/app_theme.dart';
+import 'progress_widgets.dart';
 
 /// Course summary card with an accessible progress indicator.
 class CourseCard extends StatelessWidget {
@@ -47,11 +48,21 @@ class CourseCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: scheme.primaryContainer,
-                  foregroundColor: scheme.onPrimaryContainer,
-                  child: Icon(done ? Icons.verified_outlined : Icons.menu_book_outlined),
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [scheme.primaryContainer, scheme.tertiaryContainer],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Icon(
+                    done ? Icons.verified_outlined : Icons.menu_book_outlined,
+                    color: scheme.onPrimaryContainer,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -69,10 +80,7 @@ class CourseCard extends StatelessWidget {
                         ),
                       ],
                       const SizedBox(height: AppSpacing.md),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        child: LinearProgressIndicator(value: percent / 100),
-                      ),
+                      ProgressBar(value: percent / 100),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         progressLabel,

@@ -1,0 +1,2 @@
+<?php
+namespace App\Http\Controllers\Admin;use App\Http\Controllers\Controller;class WorkspaceController extends Controller {public function learning(){return view('admin.workspaces.learning');}public function planningMeal(){return view('admin.workspaces.planning-meal');}public function mentorship(){return view('admin.workspaces.mentorship');}public function jobs(){return view('admin.workspaces.jobs');}public function reports(){return view('admin.workspaces.reports');}}

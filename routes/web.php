@@ -496,6 +496,14 @@ Route::prefix('admin/mentorship')->name('admin.mentorship.')->middleware(['auth'
 });
 
 Route::get('/jobs',[JobBrowseController::class,'index'])->name('jobs.index');
+
+// Static job paths must be declared before /jobs/{job} so they are not
+// interpreted as a job model key such as "saved" or "recommendations".
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/jobs/saved',[SavedJobController::class,'index'])->name('jobs.saved');
+    Route::get('/jobs/recommendations',[JobRecommendationController::class,'index'])->name('jobs.recommendations');
+});
+
 Route::get('/jobs/{job}',[JobBrowseController::class,'show'])->name('jobs.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -593,10 +601,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/career/resumes/{resume}/education',[ResumeSectionController::class,'addEducation'])->name('career.resume.education.store');
     Route::post('/career/resumes/{resume}/skills',[ResumeSectionController::class,'addSkill'])->name('career.resume.skill.store');
 
-    Route::get('/jobs/saved',[SavedJobController::class,'index'])->name('jobs.saved');
     Route::post('/jobs/{job}/save',[SavedJobController::class,'store'])->name('jobs.save');
     Route::delete('/jobs/{job}/save',[SavedJobController::class,'destroy'])->name('jobs.unsave');
-    Route::get('/jobs/recommendations',[JobRecommendationController::class,'index'])->name('jobs.recommendations');
 
     Route::post('/employer/applications/{application}/interviews',[InterviewController::class,'store'])->name('employer.interviews.store');
     Route::post('/employer/applications/{application}/offers',[OfferController::class,'store'])->name('employer.offers.store');
@@ -1080,6 +1086,16 @@ Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-a
             '/{course}/submissions/{attempt}/file',
             [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadSubmissionFile']
         )->name('instructor.courses.submissions.file');
+
+        Route::post(
+            '/{course}/extension-requests/{extensionRequest}/approve',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'approveExtension']
+        )->name('instructor.courses.extension-requests.approve');
+
+        Route::post(
+            '/{course}/extension-requests/{extensionRequest}/reject',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'rejectExtension']
+        )->name('instructor.courses.extension-requests.reject');
     });
 
 /*
@@ -1130,3 +1146,4 @@ if (! \Illuminate\Support\Facades\Route::has('offline')) {
     Route::view('/offline', 'offline')->name('offline');
 }
 
+require __DIR__ . '/workspaces.php';

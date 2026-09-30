@@ -67,7 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Data & offline')),
+      appBar: AppBar(title: const Text('Settings')),
       body: SafeArea(
         top: false,
         child: RefreshIndicator(
@@ -75,7 +75,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: ListView(
             padding: AppSpacing.listPadding,
             children: [
-              const SectionHeader(title: 'Downloads'),
+              const SectionHeader(title: 'Data and downloads'),
               Card(
                 child: Column(
                   children: [

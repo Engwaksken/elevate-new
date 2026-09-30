@@ -8,8 +8,11 @@ import '../services/api_service.dart';
 import '../services/download_service.dart';
 import '../services/lesson_progress_service.dart';
 import '../services/local_database.dart';
+import '../services/participant_data_service.dart';
+import '../services/reading_time_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/feedback.dart';
+import '../widgets/progress_widgets.dart';
 import '../widgets/state_views.dart';
 import 'lesson_detail_screen.dart';
 
@@ -33,13 +36,39 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   Object? _error;
   Set<int> _completed = {};
   Set<String> _downloaded = {};
+  int _timeSpentSeconds = 0;
 
   String get _cacheKey => 'course_${widget.courseId}';
 
   @override
   void initState() {
     super.initState();
+    ReadingTimeService.instance.version.addListener(_refreshLocalState);
     _load();
+  }
+
+  @override
+  void dispose() {
+    ReadingTimeService.instance.version.removeListener(_refreshLocalState);
+    super.dispose();
+  }
+
+  /// Best known course time: the larger of GET /progress's course total
+  /// and the per-lesson totals, each including unsent seconds.
+  Future<int> _courseSeconds() async {
+    final perLesson = <int, int>{};
+    for (final l in _allLessons) {
+      final id = l.id;
+      if (id == null) continue;
+      final progress = l.raw['progress'];
+      perLesson[id] = progress is Map ? asInt(progress['time_spent_seconds']) ?? 0 : 0;
+    }
+    final fromLessons = await ReadingTimeService.instance.lessonsTotal(perLesson);
+    final server = (await ParticipantDataService.instance.courseTimeSeconds())[widget.courseId];
+    if (server == null) return fromLessons;
+    final unsent = await ReadingTimeService.instance.unsentSeconds(lessonIds: perLesson.keys);
+    final fromProgress = server + unsent;
+    return fromProgress > fromLessons ? fromProgress : fromLessons;
   }
 
   List<Map<String, dynamic>> get _modules {
@@ -69,11 +98,13 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
     final downloads = await LocalDatabase.instance.downloads();
     final keys = downloads.map((row) => row['download_key'].toString()).toSet();
+    final seconds = await _courseSeconds();
 
     if (mounted) {
       setState(() {
         _completed = completed;
         _downloaded = keys;
+        _timeSpentSeconds = seconds;
       });
     }
   }
@@ -280,7 +311,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             const SizedBox(height: AppSpacing.lg),
           ],
           if (lessonCount > 0)
-            _ProgressSummary(percent: _percent, done: doneCount, total: lessonCount),
+            _ProgressSummary(
+              percent: _percent,
+              done: doneCount,
+              total: lessonCount,
+              seconds: _timeSpentSeconds,
+            ),
           if (modules.isEmpty)
             const Padding(
               padding: EdgeInsets.only(top: AppSpacing.xl),
@@ -315,11 +351,13 @@ class _ProgressSummary extends StatelessWidget {
     required this.percent,
     required this.done,
     required this.total,
+    required this.seconds,
   });
 
   final double percent;
   final int done;
   final int total;
+  final int seconds;
 
   @override
   Widget build(BuildContext context) {
@@ -329,7 +367,8 @@ class _ProgressSummary extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Semantics(
-          label: 'Course progress: $done of $total lessons complete',
+          label: 'Course progress: $done of $total lessons complete. '
+              'Time spent: ${spokenDuration(seconds)}',
           excludeSemantics: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,13 +382,10 @@ class _ProgressSummary extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                child: LinearProgressIndicator(value: percent / 100),
-              ),
+              ProgressBar(value: percent / 100),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '$done of $total lessons complete',
+                '$done of $total lessons complete · Time spent: ${formatDuration(seconds)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

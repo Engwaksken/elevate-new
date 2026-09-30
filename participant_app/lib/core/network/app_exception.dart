@@ -22,6 +22,7 @@ class AppException implements Exception {
     this.message, {
     this.statusCode,
     this.fieldErrors = const {},
+    this.code,
   });
 
   final AppErrorKind kind;
@@ -30,6 +31,14 @@ class AppException implements Exception {
 
   /// Laravel 422 `errors` map (field -> first message) for inline display.
   final Map<String, String> fieldErrors;
+
+  /// Machine-readable business-rule code from the API body (`code`), e.g.
+  /// `overdue` when an assignment's due date has passed.
+  final String? code;
+
+  /// True for the 422 "the due date has passed" rule on submissions.
+  bool get isOverdue =>
+      kind == AppErrorKind.validation && code?.toLowerCase() == 'overdue';
 
   String? fieldError(String field) => fieldErrors[field];
 
@@ -144,6 +153,7 @@ class AppException implements Exception {
         server ?? 'Please check the details you entered.',
         statusCode: 422,
         fieldErrors: _fieldErrors(data),
+        code: errorCode(data),
       );
     }
 
@@ -168,6 +178,13 @@ class AppException implements Exception {
       server ?? genericMessage,
       statusCode: status == 0 ? null : status,
     );
+  }
+
+  /// Reads a string `code` from an API error body, if present.
+  static String? errorCode(dynamic data) {
+    if (data is! Map) return null;
+    final value = data['code']?.toString().trim() ?? '';
+    return value.isEmpty ? null : value;
   }
 
   static Map<String, String> _fieldErrors(dynamic data) {

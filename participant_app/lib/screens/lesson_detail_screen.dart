@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,11 +8,13 @@ import '../core/formatters.dart';
 import '../core/lesson_info.dart';
 import '../core/logger.dart';
 import '../core/network/app_exception.dart';
+import '../core/reading_time_accumulator.dart';
 import '../core/theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/download_service.dart';
 import '../services/lesson_progress_service.dart';
 import '../services/local_database.dart';
+import '../services/reading_time_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/feedback.dart';
 import '../widgets/state_views.dart';
@@ -35,9 +39,19 @@ class LessonDetailScreen extends StatefulWidget {
   State<LessonDetailScreen> createState() => _LessonDetailScreenState();
 }
 
-class _LessonDetailScreenState extends State<LessonDetailScreen> {
+class _LessonDetailScreenState extends State<LessonDetailScreen>
+    with WidgetsBindingObserver {
   late LessonInfo _lesson = LessonInfo(widget.lesson);
-  final Stopwatch _timer = Stopwatch()..start();
+
+  /// Active reading time: only while this screen is visible, the app is in
+  /// the foreground and she interacted in the last 5 minutes.
+  final ReadingTimeAccumulator _reading = ReadingTimeAccumulator();
+  Timer? _ticker;
+  int _ticks = 0;
+
+  /// Best known total from the server and this device (excluding the
+  /// seconds still in [_reading]).
+  int _storedSeconds = 0;
 
   bool _completed = false;
   bool _saving = false;
@@ -49,7 +63,86 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _reading.setVisible(true);
+    // Save counted seconds every 15 s (crash-safe) and send them about
+    // every 60 s while the lesson is open, as the API recommends.
+    _ticker = Timer.periodic(const Duration(seconds: 15), (_) {
+      _ticks++;
+      _persistReading(flush: _ticks % 4 == 0);
+    });
     _init();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // False while another route covers this one.
+    _reading.setVisible(TickerMode.valuesOf(context).enabled);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final foreground = state == AppLifecycleState.resumed;
+    _reading.setForeground(foreground);
+    if (!foreground) _persistReading(flush: true);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _ticker?.cancel();
+    _reading.setVisible(false);
+    final id = _id;
+    final seconds = _reading.takeSeconds();
+    if (id != null) {
+      // Leaving the lesson: store what's left, then send it (or keep it
+      // queued until she is back online).
+      unawaited(() async {
+        await ReadingTimeService.instance.record(
+          lessonId: id,
+          courseId: widget.courseId,
+          seconds: seconds,
+        );
+        await ReadingTimeService.instance.flush(lessonId: id);
+      }());
+    }
+    super.dispose();
+  }
+
+  void _interacted() => _reading.recordInteraction();
+
+  int get _serverSeconds {
+    final progress = _lesson.raw['progress'];
+    return progress is Map ? asInt(progress['time_spent_seconds']) ?? 0 : 0;
+  }
+
+  Future<void> _refreshStoredSeconds() async {
+    final id = _id;
+    if (id == null) return;
+    final total = await ReadingTimeService.instance.lessonTotal(
+      id,
+      serverSeconds: _serverSeconds,
+    );
+    if (mounted) setState(() => _storedSeconds = total);
+  }
+
+  /// Moves counted seconds into SQLite; optionally sends them.
+  Future<void> _persistReading({bool flush = false}) async {
+    final id = _id;
+    if (id == null) return;
+    final seconds = _reading.takeSeconds();
+    try {
+      await ReadingTimeService.instance.record(
+        lessonId: id,
+        courseId: widget.courseId,
+        seconds: seconds,
+      );
+      if (flush) await ReadingTimeService.instance.flush(lessonId: id);
+    } catch (error) {
+      appLog('Saving reading time failed', error);
+    }
+    await _refreshStoredSeconds();
   }
 
   Future<void> _init() async {
@@ -60,6 +153,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     if (cached != null && mounted) {
       setState(() => _lesson = LessonInfo({...widget.lesson, ...cached}));
     }
+    await _refreshStoredSeconds();
     await _loadCompletion();
     await _fetch();
   }
@@ -89,6 +183,12 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         _lesson = LessonInfo({...widget.lesson, ...fresh});
         _accessError = null;
       });
+      await ReadingTimeService.instance.rememberServerTotal(
+        id,
+        _serverSeconds,
+        courseId: widget.courseId,
+      );
+      await _refreshStoredSeconds();
       await _loadCompletion();
     } catch (error) {
       final mapped = AppException.from(error);
@@ -124,11 +224,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         completed: target,
         courseId: widget.courseId,
         localCoursePercent: percent,
-        timeSpentSeconds: _timer.elapsed.inSeconds,
       );
-      _timer
-        ..reset()
-        ..start();
+      // Reading time goes separately as a delta (never with completed).
+      await _persistReading(flush: true);
       if (!mounted) return;
       showAppSnackBar(
         context,
@@ -213,6 +311,27 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         lesson.videoUrl != null ||
         lesson.externalUrl != null;
 
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _interacted(),
+      onPointerSignal: (_) => _interacted(),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (_) {
+          _interacted();
+          return false;
+        },
+        child: _scrollable(context, theme, lesson, paragraphs, hasAnything),
+      ),
+    );
+  }
+
+  Widget _scrollable(
+    BuildContext context,
+    ThemeData theme,
+    LessonInfo lesson,
+    List<String> paragraphs,
+    bool hasAnything,
+  ) {
     return RefreshIndicator(
       onRefresh: _fetch,
       child: ListView(
@@ -238,6 +357,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                         InfoChip(label: lesson.durationLabel!, icon: Icons.schedule),
                       if (_completed)
                         const InfoChip(label: 'Completed', icon: Icons.check),
+                      _TimeSpentChip(
+                        seconds: _storedSeconds + _reading.pendingSeconds,
+                      ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -569,6 +691,25 @@ class _FileCardState extends State<_FileCard> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// "Time spent: 12 min" on the lesson.
+class _TimeSpentChip extends StatelessWidget {
+  const _TimeSpentChip({required this.seconds});
+
+  final int seconds;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Time spent on this lesson: ${spokenDuration(seconds)}',
+      excludeSemantics: true,
+      child: InfoChip(
+        label: 'Time spent: ${formatDuration(seconds)}',
+        icon: Icons.timer_outlined,
       ),
     );
   }
