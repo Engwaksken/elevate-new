@@ -48,7 +48,6 @@ class _Tab {
 const _tabs = [
   _Tab(AppDestination.home, 'Home', 'Home'),
   _Tab(AppDestination.learning, 'My learning', 'Learning'),
-  _Tab(AppDestination.assignments, 'Assignments', 'Assignments'),
   _Tab(AppDestination.mentorship, 'Mentorship', 'Mentorship'),
   _Tab(AppDestination.jobs, 'Jobs & opportunities', 'Jobs'),
 ];
@@ -62,7 +61,6 @@ class _HomeScreenState extends State<HomeScreen> {
   late final List<Widget> _pages = [
     DashboardScreen(onOpen: _open),
     const LearningScreen(),
-    const AssignmentsScreen(embedded: true),
     const MentorshipScreen(),
     const JobsScreen(),
   ];
@@ -130,6 +128,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     switch (destination) {
+      case AppDestination.assignments:
+        _push(const AssignmentsScreen());
       case AppDestination.progress:
         _push(const ProgressScreen());
       case AppDestination.events:
