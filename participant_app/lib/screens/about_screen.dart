@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../core/app_config.dart';
 import '../core/theme/app_theme.dart';
+import '../widgets/decorations.dart';
 import '../widgets/feedback.dart';
 import '../widgets/state_views.dart';
 
@@ -21,6 +22,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final brand = BrandColors.of(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('About')),
@@ -29,32 +31,44 @@ class AboutScreen extends StatelessWidget {
         child: ListView(
           padding: AppSpacing.listPadding,
           children: [
-            const SizedBox(height: AppSpacing.lg),
-            Center(
-              child: ExcludeSemantics(
-                child: ClipOval(
-                  child: Image.asset('assets/logo.png', width: 72, height: 72),
-                ),
+            const SizedBox(height: AppSpacing.sm),
+            GradientHeader(
+              seed: 4,
+              child: Column(
+                children: [
+                  ExcludeSemantics(
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                      child: ClipOval(
+                        child: Image.asset('assets/logo.png', width: 72, height: 72),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    AppConfig.appName,
+                    style: theme.textTheme.headlineSmall?.copyWith(color: brand.onHeader),
+                    textAlign: TextAlign.center,
+                  ),
+                  Text(
+                    'Version ${AppConfig.appVersion}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: brand.onHeader.withValues(alpha: 0.92),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              AppConfig.appName,
-              style: theme.textTheme.headlineSmall,
-              textAlign: TextAlign.center,
-            ),
-            Text(
-              'Version ${AppConfig.appVersion}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'The ElevateHer360 participant app gives you your courses, '
               'assignments, mentorship sessions and opportunities, and keeps '
-              'working offline.',
+              'working offline. Made with care for the women of WitU.',
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),

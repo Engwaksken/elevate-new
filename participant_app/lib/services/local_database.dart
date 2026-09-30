@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../core/reading_time_ledger.dart';
+
 class LocalDatabase {
   static final LocalDatabase instance = LocalDatabase._();
   LocalDatabase._();
@@ -16,7 +18,7 @@ class LocalDatabase {
         join(await getDatabasesPath(), 'elevateher360_participant.db');
     _db = await openDatabase(
       dbPath,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE cached_items(
@@ -46,10 +48,16 @@ class LocalDatabase {
         ''');
 
         await _createDownloadsTable(db);
+        await _createReadingTimeTable(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
+        // Additive migrations only: existing cache, queue and downloads
+        // are kept.
         if (oldVersion < 2) {
           await _createDownloadsTable(db);
+        }
+        if (oldVersion < 3) {
+          await _createReadingTimeTable(db);
         }
       },
     );
@@ -65,6 +73,24 @@ class LocalDatabase {
         source_url TEXT NOT NULL,
         file_name TEXT NOT NULL,
         downloaded_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  /// Unsent reading time per lesson (v3). `pending_seconds` hasn't been
+  /// queued yet; `in_flight_seconds` is queued as offline operation
+  /// `in_flight_op_id` and is cleared only when the server acknowledges it.
+  /// `server_seconds` is the last total the server reported.
+  static Future<void> _createReadingTimeTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS reading_time(
+        lesson_id INTEGER PRIMARY KEY,
+        course_id INTEGER,
+        pending_seconds INTEGER NOT NULL DEFAULT 0,
+        in_flight_seconds INTEGER NOT NULL DEFAULT 0,
+        in_flight_op_id TEXT,
+        server_seconds INTEGER,
+        updated_at TEXT
       )
     ''');
   }
@@ -220,6 +246,7 @@ class LocalDatabase {
         'id': row['id'],
         'client_operation_id': row['client_operation_id'],
         'type': row['type'],
+        'created_at': row['created_at'],
         'payload': row['payload'] == null
             ? <String, dynamic>{}
             : Map<String, dynamic>.from(
@@ -407,7 +434,156 @@ class LocalDatabase {
     batch.delete('offline_operations');
     batch.delete('meta');
     batch.delete('offline_downloads');
+    batch.delete('reading_time');
 
     await batch.commit(noResult: true);
+  }
+
+  // ---------------------------------------------------------
+  // Reading time (see ReadingTimeService and ReadingTimeEntry)
+  // ---------------------------------------------------------
+
+  static Future<ReadingTimeEntry> _entry(Transaction txn, int lessonId) async {
+    final rows = await txn.query(
+      'reading_time',
+      where: 'lesson_id = ?',
+      whereArgs: [lessonId],
+      limit: 1,
+    );
+    return ReadingTimeEntry.fromRow(rows.isEmpty ? null : rows.first);
+  }
+
+  static Future<void> _saveEntry(
+    Transaction txn,
+    int lessonId,
+    ReadingTimeEntry entry, {
+    int? courseId,
+  }) async {
+    final row = {
+      ...entry.toRow(),
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    };
+    final updated = await txn.update(
+      'reading_time',
+      {...row, if (courseId != null) 'course_id': courseId},
+      where: 'lesson_id = ?',
+      whereArgs: [lessonId],
+    );
+    if (updated == 0) {
+      await txn.insert('reading_time', {
+        ...row,
+        'lesson_id': lessonId,
+        'course_id': courseId,
+      });
+    }
+  }
+
+  Future<void> addReadingSeconds({
+    required int lessonId,
+    int? courseId,
+    required int seconds,
+  }) async {
+    if (seconds <= 0) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      final entry = await _entry(txn, lessonId);
+      await _saveEntry(txn, lessonId, entry.add(seconds), courseId: courseId);
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> readingTimeRows() async {
+    final db = await database;
+    final rows = await db.query('reading_time');
+    return rows.map(Map<String, dynamic>.from).toList();
+  }
+
+  Future<Map<String, dynamic>?> readingTimeRow(int lessonId) async {
+    final db = await database;
+    final rows = await db.query(
+      'reading_time',
+      where: 'lesson_id = ?',
+      whereArgs: [lessonId],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : Map<String, dynamic>.from(rows.first);
+  }
+
+  /// Atomically moves up to [maxSeconds] of pending time into flight and
+  /// enqueues it as one offline operation. Returns false when nothing was
+  /// queued: no pending time, or a previous batch is still waiting for the
+  /// server (it is retried with its original operation id, never re-queued).
+  Future<bool> queueReadingTime({
+    required int lessonId,
+    required int maxSeconds,
+    required String clientOperationId,
+    required String type,
+    required Map<String, dynamic> Function(int seconds) payload,
+  }) async {
+    final db = await database;
+    return db.transaction((txn) async {
+      final entry = await _entry(txn, lessonId);
+      final next = entry.beginBatch(clientOperationId, maxSeconds: maxSeconds);
+      if (next == null) return false;
+
+      await txn.insert('offline_operations', {
+        'client_operation_id': clientOperationId,
+        'type': type,
+        'payload': jsonEncode(payload(next.inFlight)),
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      });
+      await _saveEntry(txn, lessonId, next);
+      return true;
+    });
+  }
+
+  /// Settles in-flight batches for the given operation ids: accepted ones
+  /// become part of the acknowledged total ([serverTotals] maps an id to the
+  /// lesson total the server reported); rejected ones are dropped.
+  Future<void> acknowledgeReadingTime(
+    Iterable<String> clientOperationIds, {
+    Map<String, int> serverTotals = const {},
+    bool accepted = true,
+  }) async {
+    final ids = clientOperationIds.toList();
+    if (ids.isEmpty) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      for (final id in ids) {
+        final rows = await txn.query(
+          'reading_time',
+          where: 'in_flight_op_id = ?',
+          whereArgs: [id],
+          limit: 1,
+        );
+        if (rows.isEmpty) continue;
+        final lessonId = rows.first['lesson_id'] as int;
+        final entry = ReadingTimeEntry.fromRow(rows.first);
+        await _saveEntry(
+          txn,
+          lessonId,
+          accepted
+              ? entry.acknowledge(id, serverTotal: serverTotals[id])
+              : entry.reject(id),
+        );
+      }
+    });
+  }
+
+  /// Records a server-reported lesson total (e.g. from a lesson payload).
+  Future<void> setServerReadingSeconds(
+    int lessonId,
+    int seconds, {
+    int? courseId,
+  }) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final entry = await _entry(txn, lessonId);
+      await _saveEntry(
+        txn,
+        lessonId,
+        entry.withServerTotal(seconds),
+        courseId: courseId,
+      );
+    });
   }
 }

@@ -213,6 +213,75 @@ class ApiService {
   Future<Map<String, dynamic>> dashboard() => _getMap('/dashboard');
 
   // =========================================================
+  // PROFILE
+  // =========================================================
+
+  /// GET /profile -> `{profile: {...}, editable_fields: [...]}`.
+  Future<Map<String, dynamic>> profile() => _getMap('/profile');
+
+  /// PUT /profile with the editable fields. 422 carries `errors`.
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> fields) =>
+      _guard(() async {
+        final response = await dio.put('/profile', data: fields);
+        return _mapResponse(response.data);
+      });
+
+  /// POST /profile/photo (multipart `photo`, jpg/png/webp, 5 MB max).
+  Future<Map<String, dynamic>> uploadProfilePhoto(String localPath) =>
+      _guard(() async {
+        final file = File(localPath);
+        final form = FormData.fromMap({
+          'photo': await MultipartFile.fromFile(
+            file.path,
+            filename: file.uri.pathSegments.last,
+          ),
+        });
+        final response = await dio.post(
+          '/profile/photo',
+          data: form,
+          options: Options(contentType: 'multipart/form-data'),
+        );
+        return _mapResponse(response.data);
+      });
+
+  /// DELETE /profile/photo.
+  Future<Map<String, dynamic>> deleteProfilePhoto() => _guard(() async {
+        final response = await dio.delete('/profile/photo');
+        return _mapResponse(response.data);
+      });
+
+  /// GET /profile/photo (authenticated image stream) saved to [savePath].
+  Future<void> downloadProfilePhoto(String savePath) => _guard(() async {
+        await dio.download(
+          '/profile/photo',
+          savePath,
+          options: Options(headers: {'Accept': 'image/*'}),
+        );
+      });
+
+  /// PUT /profile/password. 422 (e.g. wrong current password) has `errors`.
+  Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String password,
+    required String confirmation,
+  }) =>
+      _guard(() async {
+        final response = await dio.put('/profile/password', data: {
+          'current_password': currentPassword,
+          'password': password,
+          'password_confirmation': confirmation,
+        });
+        return _mapResponse(response.data);
+      });
+
+  // =========================================================
+  // PROGRESS
+  // =========================================================
+
+  /// GET /progress -> `{summary, courses, recent_activity}`.
+  Future<Map<String, dynamic>> progress() => _getMap('/progress');
+
+  // =========================================================
   // SYNCHRONISATION
   // =========================================================
 
@@ -326,7 +395,9 @@ class ApiService {
           '/lessons/$lessonId/progress',
           data: {
             'completed': completed,
-            'time_spent_seconds': seconds < 0 ? 0 : seconds,
+            // Reading time is sent separately as time_spent_seconds_delta
+            // (ReadingTimeService); legacy seconds only when given.
+            if (seconds > 0) 'time_spent_seconds': seconds,
           },
         );
         return _mapResponse(response.data);
@@ -339,11 +410,30 @@ class ApiService {
   Future<Map<String, dynamic>> assignments({int page = 1}) =>
       _getMap('/assignments', query: {'page': page});
 
+  /// POST /assignments/{id}/extension-requests -> 201 `{extension_request}`.
+  Future<Map<String, dynamic>> requestExtension({
+    required int assessmentId,
+    required String reason,
+    DateTime? requestedDueAt,
+  }) =>
+      _guard(() async {
+        final response = await dio.post(
+          '/assignments/$assessmentId/extension-requests',
+          data: {
+            'reason': reason.trim(),
+            if (requestedDueAt != null)
+              'requested_due_at': requestedDueAt.toUtc().toIso8601String(),
+          },
+        );
+        return _mapResponse(response.data);
+      });
+
   Future<Map<String, dynamic>> submitAssignment({
     required int assessmentId,
     String? text,
     String? localFilePath,
     String? clientSubmissionId,
+    String? clientCreatedAt,
   }) =>
       _guard(() async {
         MultipartFile? file;
@@ -364,6 +454,11 @@ class ApiService {
           if (clientSubmissionId != null &&
               clientSubmissionId.trim().isNotEmpty)
             'client_submission_id': clientSubmissionId.trim(),
+          // Only honoured with client_submission_id (queued submissions).
+          if (clientSubmissionId != null &&
+              clientCreatedAt != null &&
+              clientCreatedAt.trim().isNotEmpty)
+            'client_created_at': clientCreatedAt.trim(),
           if (file != null) 'submission_file': file,
         });
 
@@ -380,6 +475,20 @@ class ApiService {
   // =========================================================
 
   Future<Map<String, dynamic>> mentorship() => _getMap('/mentorship');
+
+  /// POST /mentorship/sessions/{id}/attendance `{attended}` (sessions from
+  /// the past 14 days only).
+  Future<Map<String, dynamic>> recordAttendance({
+    required int sessionId,
+    required bool attended,
+  }) =>
+      _guard(() async {
+        final response = await dio.post(
+          '/mentorship/sessions/$sessionId/attendance',
+          data: {'attended': attended},
+        );
+        return _mapResponse(response.data);
+      });
 
   Future<Map<String, dynamic>> jobs({int page = 1, String? search}) =>
       _getMap('/jobs', query: {

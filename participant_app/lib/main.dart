@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'core/app_config.dart';
 import 'core/session_events.dart';
@@ -15,6 +17,13 @@ final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Bundled Rubik font (SIL Open Font License 1.1), shown on the
+  // open-source licences page.
+  LicenseRegistry.addLicense(() async* {
+    final text = await rootBundle.loadString('assets/fonts/Rubik-OFL.txt');
+    yield LicenseEntryWithLineBreaks(const ['Rubik font'], text);
+  });
 
   await NotificationService.instance.initialise();
 

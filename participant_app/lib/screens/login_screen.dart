@@ -7,6 +7,7 @@ import '../core/session_events.dart';
 import '../core/theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/auth_flow.dart';
+import '../widgets/decorations.dart';
 import 'about_screen.dart';
 import 'home_screen.dart';
 
@@ -94,31 +95,28 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    const brandGradient = BoxDecoration(
-      gradient: LinearGradient(
-        colors: [AppColors.maroon, AppColors.maroonDark],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-    );
+    final brand = BrandColors.of(context);
 
-    final header = Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.xxl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-      ),
-      decoration: brandGradient,
-      child: SafeArea(
-        bottom: false,
-        child: Column(
+    Widget headerContent({required bool wide}) => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ExcludeSemantics(
-              child: ClipOval(
-                child: Image.asset('assets/logo.png', width: 88, height: 88),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: Image.asset('assets/logo.png', width: 84, height: 84),
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -126,26 +124,71 @@ class _LoginScreenState extends State<LoginScreen> {
               header: true,
               child: Text(
                 AppConfig.appName,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
-                ),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineMedium?.copyWith(color: brand.onHeader),
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Learn, connect and keep moving forward, even with limited data.',
+              'Learn, grow and shine. Your courses, mentors and opportunities, '
+              'even with limited data.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                // White at 90% on maroon keeps contrast above 7:1.
-                color: Colors.white.withValues(alpha: 0.9),
+                // Off-white on the brown gradient stays above 6.8:1.
+                color: brand.onHeader.withValues(alpha: 0.92),
               ),
             ),
           ],
+        );
+
+    Widget gradientPanel({required Widget child, BorderRadius? radius}) => ClipRRect(
+          borderRadius: radius ?? BorderRadius.zero,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: brand.headerGradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ExcludeSemantics(
+                    child: CustomPaint(
+                      painter: SoftBlobsPainter(
+                        colors: [brand.blobA, brand.blobB, brand.blobA],
+                        opacity: 0.22,
+                      ),
+                    ),
+                  ),
+                ),
+                child,
+              ],
+            ),
+          ),
+        );
+
+    final header = gradientPanel(
+      radius: const BorderRadius.vertical(bottom: Radius.circular(AppRadius.xl + 8)),
+      child: SizedBox(
+        width: double.infinity,
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.xl,
+              AppSpacing.xl,
+              AppSpacing.xxl,
+            ),
+            child: headerContent(wide: false),
+          ),
         ),
       ),
     );
 
-    final form = AutofillGroup(
+    final formFields = AutofillGroup(
       child: Form(
         key: _formKey,
         child: Column(
@@ -154,6 +197,11 @@ class _LoginScreenState extends State<LoginScreen> {
             Semantics(
               header: true,
               child: Text('Participant sign in', style: theme.textTheme.headlineSmall),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Welcome back! We are so glad to see you.',
+              style: theme.textTheme.bodyLarge?.copyWith(color: scheme.secondary),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
@@ -266,6 +314,13 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
+    final form = Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: formFields,
+      ),
+    );
+
     return Scaffold(
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -292,30 +347,47 @@ class _LoginScreenState extends State<LoginScreen> {
               return Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: brandGradient,
-                      alignment: Alignment.center,
-                      child: SingleChildScrollView(child: header),
+                    child: gradientPanel(
+                      child: SizedBox.expand(
+                        child: Center(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(AppSpacing.xl),
+                            child: SafeArea(child: headerContent(wide: true)),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  Expanded(child: formPanel),
+                  Expanded(child: SoftBackground(seed: 1, child: formPanel)),
                 ],
               );
             }
 
-            return SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              child: Column(
-                children: [
-                  header,
-                  SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.xl),
-                      child: form,
+            return SoftBackground(
+              seed: 1,
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Column(
+                  children: [
+                    header,
+                    SafeArea(
+                      top: false,
+                      child: Transform.translate(
+                        // The form card overlaps the curved header a little.
+                        offset: const Offset(0, -AppSpacing.xl),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 480),
+                              child: form,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
