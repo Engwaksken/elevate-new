@@ -9,6 +9,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:uuid/uuid.dart';
 
+import '../core/logger.dart';
 import 'api_service.dart';
 
 @pragma('vm:entry-point')
@@ -70,7 +71,13 @@ class NotificationService {
       '@mipmap/ic_launcher',
     );
 
-    const iosSettings = DarwinInitializationSettings();
+    // Don't prompt for notification permission at launch; it is requested
+    // after sign-in (see [requestPermission]), when the user knows why.
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
 
     await _local.initialize(
       const InitializationSettings(
@@ -103,12 +110,6 @@ class NotificationService {
 
       final messaging = FirebaseMessaging.instance;
 
-      await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-
       FirebaseMessaging.onMessage.listen(
         _showForegroundMessage,
       );
@@ -134,8 +135,55 @@ class NotificationService {
           await _registerToken(token);
         },
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      // Typically Firebase isn't configured for this build (e.g. an iOS
+      // build without GoogleService-Info.plist). The app keeps working;
+      // only push notifications are unavailable. Local reminders still work.
       _firebaseReady = false;
+      appLog(
+        'Firebase unavailable; continuing without push notifications',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
+  bool _permissionRequested = false;
+
+  /// Asks for notification permission once per app session. Called after
+  /// sign-in rather than at launch. The OS only shows its prompt the first
+  /// time; later calls just return the stored choice.
+  Future<void> requestPermission() async {
+    if (_permissionRequested) {
+      return;
+    }
+
+    _permissionRequested = true;
+
+    try {
+      if (_firebaseReady) {
+        // Covers local notifications too: on iOS both use the same
+        // UNUserNotificationCenter authorisation, and on Android 13+ this
+        // requests POST_NOTIFICATIONS.
+        await FirebaseMessaging.instance.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        return;
+      }
+
+      await _local
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+
+      await _local
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    } catch (error) {
+      appLog('Notification permission request failed', error);
     }
   }
 
@@ -172,6 +220,8 @@ class NotificationService {
   }
 
   Future<void> registerCurrentDevice() async {
+    await requestPermission();
+
     if (!_firebaseReady) {
       return;
     }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../core/logger.dart';
 import 'api_service.dart';
 import 'download_service.dart';
@@ -9,7 +11,13 @@ import 'sync_service.dart';
 /// sign-out action and the global 401 handler.
 abstract final class AuthFlow {
   static Future<void> afterSignIn() async {
-    await NotificationService.instance.registerCurrentDevice();
+    // Not awaited: the notification permission prompt must not hold the
+    // user on the login screen until they answer it.
+    unawaited(
+      NotificationService.instance.registerCurrentDevice().catchError(
+        (Object error) => appLog('Device registration failed', error),
+      ),
+    );
     try {
       await SyncService.instance.syncNow();
     } catch (error) {
