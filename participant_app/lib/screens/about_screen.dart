@@ -6,6 +6,7 @@ import '../core/theme/app_theme.dart';
 import '../widgets/decorations.dart';
 import '../widgets/feedback.dart';
 import '../widgets/state_views.dart';
+import 'help_support_screen.dart';
 
 /// About, legal and support links. A privacy policy link is required by
 /// both Google Play and the App Store.
@@ -117,16 +118,12 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
                   ListTile(
-                    leading: const Icon(Icons.mail_outline),
-                    title: const Text('Contact support'),
-                    subtitle: const Text(AppConfig.supportEmail),
-                    onTap: () => _open(
-                      context,
-                      Uri(
-                        scheme: 'mailto',
-                        path: AppConfig.supportEmail,
-                        queryParameters: {'subject': 'ElevateHer360 app support'},
-                      ),
+                    leading: const Icon(Icons.support_agent_outlined),
+                    title: const Text('Help & support'),
+                    subtitle: const Text('Email, phone, WhatsApp and support hours'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
                     ),
                   ),
                 ],
