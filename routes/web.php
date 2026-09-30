@@ -136,6 +136,11 @@ Route::get('/brand-assets/{type}', [BrandAssetController::class, 'show'])
 
 Route::view('/', 'home')->name('home');
 
+// Public legal pages. The participant app and the app store listings link
+// to these URLs, so they must stay public and keep these paths.
+Route::view('/privacy-policy', 'legal.privacy')->name('legal.privacy');
+Route::view('/terms', 'legal.terms')->name('legal.terms');
+
 Route::post('/support/chatbot',[ChatbotController::class, 'message'])
     ->middleware('throttle:30,1')
     ->name('support.chatbot.message');
