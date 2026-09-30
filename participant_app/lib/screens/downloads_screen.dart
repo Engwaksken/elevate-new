@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../core/formatters.dart';
+import '../core/theme/app_theme.dart';
 import '../services/download_service.dart';
 import '../services/local_database.dart';
+import '../widgets/feedback.dart';
+import '../widgets/state_views.dart';
 
 class DownloadsScreen extends StatefulWidget {
   const DownloadsScreen({super.key});
@@ -11,78 +15,94 @@ class DownloadsScreen extends StatefulWidget {
 }
 
 class _DownloadsScreenState extends State<DownloadsScreen> {
-  Future<List<Map<String, dynamic>>> _load() async {
-    final rows = await LocalDatabase.instance.downloads();
-    return rows.map(Map<String, dynamic>.from).toList();
+  List<Map<String, dynamic>>? _items;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final rows = await LocalDatabase.instance.downloads();
+      if (mounted) {
+        setState(() {
+          _items = rows.map(Map<String, dynamic>.from).toList();
+          _error = null;
+        });
+      }
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    }
   }
 
   Future<void> _open(Map<String, dynamic> item) async {
-    await DownloadService.instance.open(item['download_key'].toString());
+    try {
+      await DownloadService.instance.open(item['download_key'].toString());
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error);
+      await _load();
+    }
   }
 
   Future<void> _remove(Map<String, dynamic> item) async {
+    final ok = await confirmDialog(
+      context,
+      title: 'Remove offline copy?',
+      message: '"${item['file_name']}" will be deleted from this device.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    );
+    if (!ok) return;
     await DownloadService.instance.remove(item['download_key'].toString());
-    if (mounted) setState(() {});
+    await _load();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _load(),
-      builder: (context, snapshot) {
-        final items = snapshot.data ?? [];
+    return Scaffold(
+      appBar: AppBar(title: const Text('Offline downloads')),
+      body: SafeArea(top: false, child: _content()),
+    );
+  }
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+  Widget _content() {
+    if (_error != null) return ErrorState(error: _error!, onRetry: _load);
+    final items = _items;
+    if (items == null) return const LoadingSkeleton();
 
-        if (items.isEmpty) {
-          return const Center(
-            child: Text('No offline files have been downloaded yet.'),
-          );
-        }
-
-        return ListView.separated(
-          padding: const EdgeInsets.all(12),
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (context, index) {
-            final item = items[index];
-
-            return Card(
-              child: ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.download_done_outlined),
-                ),
-                title: Text(item['file_name']?.toString() ?? 'Offline file'),
-                subtitle: Text(
-                  item['downloaded_at']?.toString() ?? '',
-                ),
-                onTap: () => _open(item),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (value) async {
-                    if (value == 'open') {
-                      await _open(item);
-                    } else if (value == 'remove') {
-                      await _remove(item);
-                    }
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
-                      value: 'open',
-                      child: Text('Open'),
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: items.isEmpty
+          ? const EmptyState(
+              icon: Icons.download_outlined,
+              title: 'No downloads yet',
+              message: 'Download lesson files to read them without an internet connection.',
+            )
+          : ListView.separated(
+              padding: AppSpacing.listPadding,
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (context, index) {
+                final item = items[index];
+                final name = item['file_name']?.toString() ?? 'Offline file';
+                return Card(
+                  child: ListTile(
+                    leading: const CircleAvatar(child: Icon(Icons.description_outlined)),
+                    title: Text(name),
+                    subtitle: Text('Downloaded ${relativeTime(item['downloaded_at'])}'),
+                    onTap: () => _open(item),
+                    trailing: IconButton(
+                      tooltip: 'Remove $name',
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => _remove(item),
                     ),
-                    PopupMenuItem(
-                      value: 'remove',
-                      child: Text('Remove offline copy'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+                  ),
+                );
+              },
+            ),
     );
   }
 }
