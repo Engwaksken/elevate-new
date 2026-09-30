@@ -116,8 +116,10 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const ExcludeSemantics(
-              child: Icon(Icons.school_outlined, color: AppColors.gold, size: 56),
+            ExcludeSemantics(
+              child: ClipOval(
+                child: Image.asset('assets/logo.png', width: 88, height: 88),
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             Semantics(
