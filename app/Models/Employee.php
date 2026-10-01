@@ -9,4 +9,5 @@ class Employee extends Model
     public function contracts(){ return $this->hasMany(EmploymentContract::class); }
     public function leaveRequests(){ return $this->hasMany(LeaveRequest::class); }
     public function appraisals(){ return $this->hasMany(Appraisal::class); }
+    public function kpis(){ return $this->hasMany(StaffKpi::class)->orderBy('position'); }
 }

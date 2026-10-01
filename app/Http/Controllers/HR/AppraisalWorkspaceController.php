@@ -4,12 +4,14 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appraisal;
+use App\Models\StaffKpi;
 use App\Models\Task;
 use App\Models\AppraisalKpi;
 use App\Models\AppraisalKra;
 use App\Models\AppraisalMeeting;
 use App\Models\Employee;
 use App\Services\HR\AppraisalScoreService;
+use App\Services\StaffKpiService;
 use App\Services\HR\AppraisalWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -63,14 +65,41 @@ class AppraisalWorkspaceController extends Controller
 
         $competencyPercent = $scores->competencyPercent($appraisal);
 
-        // Tasks the employee linked to these KPIs in My Tasks, shown as evidence when scoring.
-        $kpiTasks = Task::whereIn('appraisal_kpi_id', $appraisal->kras->flatMap->kpis->pluck('id'))
-            ->where('assigned_to', $appraisal->employee?->user_id)
-            ->orderBy('due_date')
-            ->get()
-            ->groupBy('appraisal_kpi_id');
+        $kpiTasks = $this->kpiTasks($appraisal);
 
-        return view('hr.appraisals.workflow', compact('appraisal', 'competencyPercent', 'kpiTasks'));
+        // Approved contract KPIs not yet in this appraisal, offered to the employee to add.
+        $contract = $appraisal->employee ? app(StaffKpiService::class)->contractFor($appraisal->employee) : null;
+        $missingContractKpis = StaffKpi::where('employee_id', $appraisal->employee_id)
+            ->where('employment_contract_id', $contract?->id)
+            ->where('status', 'approved')
+            ->whereNotIn('id', $appraisal->kras->flatMap->kpis->pluck('staff_kpi_id')->filter())
+            ->count();
+
+        return view('hr.appraisals.workflow', compact('appraisal', 'competencyPercent', 'kpiTasks', 'missingContractKpis'));
+    }
+
+    /**
+     * Tasks from My Tasks that count as evidence for each KPI, keyed by appraisal KPI id:
+     * tasks linked to the appraisal KPI itself, and tasks linked to its contract KPI that were
+     * due or done within this appraisal's cycle (so each quarter shows its own work).
+     */
+    private function kpiTasks(Appraisal $appraisal)
+    {
+        $kpis = $appraisal->kras->flatMap->kpis;
+        $cycle = $appraisal->cycle;
+
+        $tasks = Task::where('assigned_to', $appraisal->employee?->user_id)
+            ->where(fn ($query) => $query
+                ->whereIn('appraisal_kpi_id', $kpis->pluck('id'))
+                ->orWhereIn('staff_kpi_id', $kpis->pluck('staff_kpi_id')->filter()))
+            ->orderBy('due_date')
+            ->get();
+
+        $inCycle = fn (Task $task) => ! $cycle?->start_date || ! $cycle?->end_date
+            || ($task->completed_at ?? $task->due_date)?->between($cycle->start_date, $cycle->end_date->copy()->endOfDay());
+
+        return $kpis->mapWithKeys(fn ($kpi) => [$kpi->id => $tasks->filter(fn (Task $task) => (int) $task->appraisal_kpi_id === $kpi->id
+            || ($kpi->staff_kpi_id && (int) $task->staff_kpi_id === (int) $kpi->staff_kpi_id && $inCycle($task)))->values()]);
     }
 
     public function saveEmployee(

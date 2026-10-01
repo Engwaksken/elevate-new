@@ -21,7 +21,7 @@
     <p>Plan daily and weekly work, link each task to a KPI in your appraisal, and keep a record of what was done.</p>
 </div>
 <div class="admin-page-actions">
-    <a href="{{ route('staff.performance.index') }}" class="btn btn-outline"><i class="fas fa-bullseye"></i> My KPIs</a>
+    <a href="{{ route('staff.kpis.index') }}" class="btn btn-outline"><i class="fas fa-bullseye"></i> My KPIs</a>
     <button type="button" class="btn btn-primary" data-modal-open="task-new"><i class="fas fa-plus"></i> New task</button>
 </div>
 </div>
@@ -119,7 +119,7 @@
         <select name="kpi">
             <option value="">All KPIs</option>
             @foreach($kpiSummary as $kpi)
-                <option value="{{ $kpi['id'] }}" @selected((int) request('kpi') === $kpi['id'])>{{ $kpi['title'] }}</option>
+                <option value="{{ $kpi['key'] }}" @selected(request('kpi') === $kpi['key'])>{{ $kpi['title'] }}</option>
             @endforeach
         </select>
         <input type="date" name="from" value="{{ request('from') }}" aria-label="Due from">
@@ -146,13 +146,13 @@
 <aside class="st-side">
 <section class="admin-panel">
     <div class="st-section-head"><h2><i class="fas fa-bullseye"></i> KPI progress</h2></div>
-    <p class="st-muted">Tasks linked to {{ $view === 'team' ? 'team' : 'your' }} current appraisal KPIs, for the week of {{ $weekStart->format('d M') }}.</p>
+    <p class="st-muted">Tasks linked to {{ $view === 'team' ? 'the team’s' : 'your' }} KPIs, for the week of {{ $weekStart->format('d M') }}.</p>
     @forelse($kpiSummary->groupBy('kra') as $kra => $kraKpis)
         <div class="st-kra">
             <h4>{{ $kra }}</h4>
             @foreach($kraKpis as $kpi)
                 @php $pct = $kpi['week_total'] ? round($kpi['week_completed'] / $kpi['week_total'] * 100) : 0; @endphp
-                <a class="st-kpi-row" href="{{ route('staff.tasks.index', ['view' => 'past', 'kpi' => $kpi['id']]) }}">
+                <a class="st-kpi-row" href="{{ route('staff.tasks.index', ['view' => 'past', 'kpi' => $kpi['key']]) }}">
                     <span class="st-kpi-title">{{ $kpi['title'] }}</span>
                     <span class="st-kpi-bar" role="img" aria-label="{{ $kpi['week_completed'] }} of {{ $kpi['week_total'] }} tasks done this week"><span style="width:{{ $pct }}%"></span></span>
                     <span class="st-kpi-count">{{ $kpi['week_completed'] }}/{{ $kpi['week_total'] }} this week · {{ $kpi['completed'] }} done overall</span>
@@ -160,7 +160,7 @@
             @endforeach
         </div>
     @empty
-        <div class="admin-empty"><i class="fas fa-bullseye"></i><strong>No KPIs yet</strong><span>KPIs appear once {{ $view === 'team' ? 'your team have' : 'you have' }} an appraisal with KRAs and KPIs.</span></div>
+        <div class="admin-empty"><i class="fas fa-bullseye"></i><strong>No KPIs yet</strong><span>@if($view === 'team')KPIs appear once your team set them under My KPIs.@else Set your contract KPIs under <a href="{{ route('staff.kpis.index') }}">My KPIs</a>.@endif</span></div>
     @endforelse
 </section>
 </aside>
@@ -225,7 +225,7 @@
         <button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark"></i></button>
     </div>
     <div class="eh-modal-body">
-        @if($task->kpi)<p class="st-muted"><i class="fas fa-bullseye"></i> Counts towards <strong>{{ $task->kpi->title }}</strong>.</p>@endif
+        @if($task->kpiTitle())<p class="st-muted"><i class="fas fa-bullseye"></i> Counts towards <strong>{{ $task->kpiTitle() }}</strong>.</p>@endif
         <div class="modal-grid"><div class="form-group full">
             <label for="task-complete-{{ $task->id }}-outcome">What was achieved? <span class="form-hint" style="display:inline">(optional, useful as appraisal evidence)</span></label>
             <textarea id="task-complete-{{ $task->id }}-outcome" name="outcome" rows="3" maxlength="5000">{{ $task->outcome }}</textarea>

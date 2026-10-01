@@ -20,8 +20,8 @@
                 <span class="{{ $overdue ? 'st-overdue' : '' }}"><i class="fas fa-calendar-day"></i> {{ $overdue ? 'Overdue · ' : '' }}Due {{ $task->due_date->isToday() ? 'today' : $task->due_date->format('D d M') }}</span>
             @endif
             @if($done && $task->completed_at)<span><i class="fas fa-circle-check"></i> Done {{ $task->completed_at->format('D d M H:i') }}</span>@endif
-            @if($task->kpi)
-                <span class="st-kpi" title="{{ $task->kpi->kra?->title }}"><i class="fas fa-bullseye"></i> {{ $task->kpi->title }}</span>
+            @if($task->kpiTitle())
+                <span class="st-kpi" title="{{ $task->staffKpi?->kra ?? $task->kpi?->kra?->title }}"><i class="fas fa-bullseye"></i> {{ $task->kpiTitle() }}</span>
             @elseif($task->activity)
                 <span><i class="fas fa-diagram-project"></i> {{ $task->activity->title }}</span>
             @endif

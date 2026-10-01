@@ -63,7 +63,7 @@ class StaffTasksTest extends TestCase
 
         $this->actingAs($this->staff)->post(route('staff.tasks.store'), [
             'title' => 'Call 10 graduates about openings',
-            'appraisal_kpi_id' => $this->kpi->id,
+            'kpi' => 'a:'.$this->kpi->id,
             'due_date' => '2026-10-01',
             'priority' => 'high',
         ])->assertSessionHas('success', 'Task added.');
@@ -136,7 +136,7 @@ class StaffTasksTest extends TestCase
         // Reopening clears the completion time.
         $this->actingAs($this->staff)->put(route('staff.tasks.update', $task), [
             'title' => $task->title, 'priority' => 'medium', 'status' => 'in_progress', 'progress_percent' => 50,
-            'appraisal_kpi_id' => $this->kpi->id, 'due_date' => '2026-10-01',
+            'kpi' => 'a:'.$this->kpi->id, 'due_date' => '2026-10-01',
         ])->assertSessionHas('success');
         $this->assertNull($task->fresh()->completed_at);
     }
@@ -146,7 +146,7 @@ class StaffTasksTest extends TestCase
         $this->actingAs($this->supervisor)->post(route('staff.tasks.store'), [
             'title' => 'Prepare placement report',
             'assigned_to' => $this->staff->id,
-            'appraisal_kpi_id' => $this->kpi->id,
+            'kpi' => 'a:'.$this->kpi->id,
             'due_date' => '2026-10-02',
             'priority' => 'urgent',
         ])->assertSessionHas('success', 'Task assigned.');
@@ -175,8 +175,8 @@ class StaffTasksTest extends TestCase
         ])->assertSessionHasErrors('assigned_to');
 
         $this->actingAs($outsider)->post(route('staff.tasks.store'), [
-            'title' => 'Borrowed KPI', 'appraisal_kpi_id' => $this->kpi->id, 'priority' => 'medium',
-        ])->assertSessionHasErrors('appraisal_kpi_id');
+            'title' => 'Borrowed KPI', 'kpi' => 'a:'.$this->kpi->id, 'priority' => 'medium',
+        ])->assertSessionHasErrors('kpi');
 
         $task = $this->task(['title' => 'Private task']);
         $this->actingAs($outsider)->patch(route('staff.tasks.complete', $task))->assertForbidden();

@@ -80,3 +80,18 @@ Route::middleware(['auth', 'staff'])
         Route::patch('/{task}/complete', [\App\Http\Controllers\Staff\StaffTaskController::class, 'complete'])->name('complete');
         Route::delete('/{task}', [\App\Http\Controllers\Staff\StaffTaskController::class, 'destroy'])->name('destroy');
     });
+
+// Contract KPIs: set per employment contract, approved by the supervisor, used each quarter.
+Route::middleware(['auth', 'staff'])
+    ->prefix('staff/kpis')
+    ->name('staff.kpis.')
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\Staff\StaffKpiController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Staff\StaffKpiController::class, 'store'])->name('store');
+        Route::post('/submit', [\App\Http\Controllers\Staff\StaffKpiController::class, 'submit'])->name('submit');
+        Route::post('/review/{employee}', [\App\Http\Controllers\Staff\StaffKpiController::class, 'review'])->name('review');
+        Route::post('/quarters/{cycle}/start', [\App\Http\Controllers\Staff\StaffKpiController::class, 'startQuarter'])->name('quarters.start');
+        Route::post('/appraisals/{appraisal}/import', [\App\Http\Controllers\Staff\StaffKpiController::class, 'import'])->name('appraisals.import');
+        Route::put('/{kpi}', [\App\Http\Controllers\Staff\StaffKpiController::class, 'update'])->name('update');
+        Route::delete('/{kpi}', [\App\Http\Controllers\Staff\StaffKpiController::class, 'destroy'])->name('destroy');
+    });

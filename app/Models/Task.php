@@ -15,6 +15,7 @@ class Task extends Model
         'activity_id',
         'milestone_id',
         'appraisal_kpi_id',
+        'staff_kpi_id',
         'title',
         'description',
         'assigned_to',
@@ -57,6 +58,19 @@ class Task extends Model
     public function kpi()
     {
         return $this->belongsTo(AppraisalKpi::class,'appraisal_kpi_id');
+    }
+
+    public function staffKpi()
+    {
+        return $this->belongsTo(StaffKpi::class);
+    }
+
+    /**
+     * Title of whichever KPI the task is linked to (contract KPI first).
+     */
+    public function kpiTitle(): ?string
+    {
+        return $this->staffKpi?->title ?? $this->kpi?->title;
     }
 
     public function scopeOpen(Builder $query): Builder
