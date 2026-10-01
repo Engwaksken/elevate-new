@@ -84,7 +84,7 @@ class FilePreviewService
     {
         $kind = $this->kind($name);
         $size = (int) @filesize($absolute);
-        $downloadUrl ??= $request->fullUrlWithoutQuery(['preview']);
+        $downloadUrl ??= $request->fullUrlWithoutQuery(['preview', 'embed']);
 
         if ($request->query('preview') === 'raw') {
             return $this->raw($absolute, $name, $kind);
@@ -101,6 +101,7 @@ class FilePreviewService
             'text' => null,
             'truncated' => false,
             'error' => null,
+            'embedded' => $request->boolean('embed'),
         ];
 
         if (! $data['tooLarge']) {

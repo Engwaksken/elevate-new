@@ -215,7 +215,7 @@
             <p class="icm-muted">{{ $lesson->module?->title }} · {{ $lesson->is_published ? 'Published' : 'Draft' }}</p>
 
             <div class="icm-actions">
-                @if($lesson->file_path)<a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson,'preview'=>1]) }}" target="_blank" rel="noopener"><i class="fas fa-eye"></i> Preview</a> <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson]) }}"><i class="fas fa-download"></i> File</a>@endif
+                @if($lesson->file_path)<a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="{{ $lesson->title }}"><i class="fas fa-eye"></i> Preview</a> <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson]) }}"><i class="fas fa-download"></i> File</a>@endif
                 @if($lesson->video_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->video_url }}" target="_blank"><i class="fas fa-video"></i> Video</a>@endif
                 @if($lesson->external_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->external_url }}" target="_blank"><i class="fas fa-link"></i> Link</a>@endif
             </div>
@@ -260,7 +260,7 @@
                 <h3>{{ $lesson->title }}</h3>
                 <p class="icm-muted">{{ $lesson->module?->title }}</p>
                 <div class="icm-actions">
-                    @if($lesson->file_path)<a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson,'preview'=>1]) }}" target="_blank" rel="noopener"><i class="fas fa-eye"></i> Preview</a> <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson]) }}"><i class="fas fa-download"></i> Download</a>@endif
+                    @if($lesson->file_path)<a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="{{ $lesson->title }}"><i class="fas fa-eye"></i> Preview</a> <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson]) }}"><i class="fas fa-download"></i> Download</a>@endif
                     @if($lesson->video_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->video_url }}" target="_blank"><i class="fas fa-video"></i> Video</a>@endif
                     @if($lesson->external_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->external_url }}" target="_blank"><i class="fas fa-link"></i> Resource</a>@endif
                 </div>
@@ -381,7 +381,7 @@
                     <td>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '—' }}</td>
                     <td>
                         @if($attempt->submission_file_path)
-                            <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt,'preview'=>1]) }}" target="_blank" rel="noopener"><i class="fas fa-eye"></i> Preview</a>
+                            <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="Submission · {{ $attempt->user?->name }}"><i class="fas fa-eye"></i> Preview</a>
                             <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt]) }}"><i class="fas fa-download"></i> File</a>
                         @endif
                         <details class="icm-details">
