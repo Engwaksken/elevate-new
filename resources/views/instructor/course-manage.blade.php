@@ -384,17 +384,7 @@
                             <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="Submission · {{ $attempt->user?->name }}"><i class="fas fa-eye"></i> Preview</a>
                             <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt]) }}"><i class="fas fa-download"></i> File</a>
                         @endif
-                        <details class="icm-details">
-                            <summary>Grade / feedback</summary>
-                            <form method="POST" action="{{ route('instructor.courses.submissions.review',[$course,$attempt]) }}" class="icm-form-grid" style="min-width:360px;margin-top:10px">
-                                @csrf @method('PUT')
-                                <div><label>Score</label><input type="number" name="score" min="0" step=".01" value="{{ $attempt->score }}"></div>
-                                <div><label>Percentage</label><input type="number" name="percentage" min="0" max="100" step=".01" value="{{ $attempt->percentage }}"></div>
-                                <div><label>Status</label><select name="status"><option value="submitted" @selected($attempt->status==='submitted')>Submitted</option><option value="graded" @selected($attempt->status==='graded')>Graded</option></select></div>
-                                <div class="full"><label>Feedback</label><textarea name="instructor_feedback">{{ $attempt->instructor_feedback }}</textarea></div>
-                                <div><button class="btn btn-primary btn-sm">Save Review</button></div>
-                            </form>
-                        </details>
+                        <button type="button" class="btn btn-primary btn-sm" data-modal-open="review-attempt-{{ $attempt->id }}"><i class="fas fa-pen-to-square"></i> Grade / feedback</button>
                     </td>
                 </tr>
             @empty
@@ -404,6 +394,75 @@
         </table>
     </div>
     <div style="margin-top:15px">{{ $submissions->appends(['tab'=>'submissions'])->links() }}</div>
+
+    @foreach($submissions as $attempt)
+        @php $reopen = $errors->any() && (int) old('review_attempt_id') === (int) $attempt->id; @endphp
+        <div class="eh-modal" id="review-attempt-{{ $attempt->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="review-attempt-{{ $attempt->id }}-title" @if($reopen) data-modal-autoopen @endif>
+            <div class="eh-modal-dialog">
+                <form method="POST" action="{{ route('instructor.courses.submissions.review',[$course,$attempt]) }}" class="eh-modal-form">
+                    @csrf @method('PUT')
+                    <input type="hidden" name="review_attempt_id" value="{{ $attempt->id }}">
+                    <div class="eh-modal-header">
+                        <div>
+                            <h2 id="review-attempt-{{ $attempt->id }}-title">Grade / feedback</h2>
+                            <p>{{ $attempt->user?->name }} · {{ $attempt->assessment?->title }}</p>
+                        </div>
+                        <button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="eh-modal-body">
+                        @if($reopen)
+                            <div class="icm-notice" role="alert"><span><i class="fas fa-triangle-exclamation"></i> {{ $errors->first() }}</span></div>
+                        @endif
+                        <dl class="audit-meta">
+                            <div><dt>Type</dt><dd>{{ ucfirst($attempt->assessment?->type ?? '—') }}</dd></div>
+                            <div><dt>Submitted</dt><dd>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '—' }}</dd></div>
+                            <div><dt>Total marks</dt><dd>{{ $attempt->assessment?->total_marks ?? '—' }}</dd></div>
+                            <div><dt>Pass mark</dt><dd>{{ $attempt->assessment?->pass_mark ?? '—' }}</dd></div>
+                        </dl>
+                        @if($attempt->submission_text)
+                            <div class="form-group full" style="margin-bottom:16px">
+                                <label>Submitted response</label>
+                                <div class="admin-readonly" style="max-height:220px;overflow:auto;white-space:pre-wrap">{{ $attempt->submission_text }}</div>
+                            </div>
+                        @endif
+                        @if($attempt->submission_file_path)
+                            <div style="display:flex;gap:8px;margin-bottom:16px">
+                                <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="Submission · {{ $attempt->user?->name }}"><i class="fas fa-eye"></i> Preview file</a>
+                                <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt]) }}"><i class="fas fa-download"></i> Download</a>
+                            </div>
+                        @endif
+                        <div class="modal-grid">
+                            <div class="form-group">
+                                <label for="review-{{ $attempt->id }}-score">Score</label>
+                                <input id="review-{{ $attempt->id }}-score" type="number" name="score" min="0" step=".01" @if($attempt->assessment?->total_marks) max="{{ $attempt->assessment->total_marks }}" @endif value="{{ $reopen ? old('score') : $attempt->score }}">
+                                @if($attempt->assessment?->total_marks)<small class="form-hint">Out of {{ $attempt->assessment->total_marks }}</small>@endif
+                            </div>
+                            <div class="form-group">
+                                <label for="review-{{ $attempt->id }}-percentage">Percentage</label>
+                                <input id="review-{{ $attempt->id }}-percentage" type="number" name="percentage" min="0" max="100" step=".01" value="{{ $reopen ? old('percentage') : $attempt->percentage }}">
+                            </div>
+                            <div class="form-group full">
+                                <label for="review-{{ $attempt->id }}-status">Status</label>
+                                @php $reviewStatus = $reopen ? old('status') : $attempt->status; @endphp
+                                <select id="review-{{ $attempt->id }}-status" name="status">
+                                    <option value="submitted" @selected($reviewStatus==='submitted')>Submitted (not yet graded)</option>
+                                    <option value="graded" @selected($reviewStatus==='graded')>Graded</option>
+                                </select>
+                            </div>
+                            <div class="form-group full">
+                                <label for="review-{{ $attempt->id }}-feedback">Feedback to participant</label>
+                                <textarea id="review-{{ $attempt->id }}-feedback" name="instructor_feedback" rows="6" maxlength="5000">{{ $reopen ? old('instructor_feedback') : $attempt->instructor_feedback }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="eh-modal-footer">
+                        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Save review</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endforeach
 </section>
 @endif
 

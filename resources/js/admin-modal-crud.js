@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.add('is-open');
         modal.setAttribute('aria-hidden', 'false');
         body.classList.add('modal-open');
-        modal.querySelector('input,select,textarea,button')?.focus();
+        modal.querySelector('input:not([type=hidden]),select,textarea,button')?.focus();
     };
 
     const closeModal = (modal) => {
@@ -34,6 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') closeModal(document.querySelector('.eh-modal.is-open'));
     });
+
+    // Re-open a modal after a failed submission so validation errors stay visible.
+    const autoOpen = document.querySelector('.eh-modal[data-modal-autoopen]');
+    if (autoOpen) openModal(autoOpen.id);
 
     document.querySelectorAll('[data-select-all]').forEach(master => {
         const table = master.closest('table');

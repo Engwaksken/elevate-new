@@ -53,7 +53,7 @@
 
 <div class="admin-table-wrap">
 <table class="admin-table">
-<thead><tr><th>Recipient</th><th>Type</th><th>Notification</th><th>Created</th><th>Read</th><th>Action URL</th></tr></thead>
+<thead><tr><th>Recipient</th><th>Type</th><th>Notification</th><th>Created</th><th>Read</th><th class="table-actions">Details</th></tr></thead>
 <tbody>
 @forelse($notifications as $notification)
 <tr>
@@ -62,7 +62,9 @@
     <td><strong>{{ $notification->title }}</strong><small class="admin-cell-hint">{{ Str::limit($notification->message,100) }}</small></td>
     <td>{{ optional($notification->created_at)->format('d M Y H:i') }}</td>
     <td><span class="status-chip {{ $notification->read_at ? 'active' : 'pending' }}">{{ $notification->read_at ? 'Read' : 'Unread' }}</span></td>
-    <td>{{ $notification->action_url ?: '—' }}</td>
+    <td class="table-actions">
+        <button type="button" class="btn btn-outline btn-sm" data-modal-open="notification-{{ $notification->id }}"><i class="fas fa-eye"></i> View</button>
+    </td>
 </tr>
 @empty
 <tr><td colspan="6"><div class="admin-empty">No notifications found.</div></td></tr>
@@ -73,4 +75,28 @@
 
 <div class="admin-pagination">{{ $notifications->links() }}</div>
 </div>
+
+@foreach($notifications as $notification)
+<div class="eh-modal" id="notification-{{ $notification->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="notification-{{ $notification->id }}-title">
+<div class="eh-modal-dialog eh-modal-sm">
+    <div class="eh-modal-header">
+        <div>
+            <h2 id="notification-{{ $notification->id }}-title">{{ $notification->title }}</h2>
+            <p>{{ ucfirst(str_replace('_',' ',$notification->type)) }}</p>
+        </div>
+        <button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="eh-modal-body">
+        <dl class="audit-meta" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+            <div><dt>Recipient</dt><dd>{{ data_get($notification,'user.name','—') }}@if(data_get($notification,'user.email'))<small>{{ data_get($notification,'user.email') }}</small>@endif</dd></div>
+            <div><dt>Status</dt><dd><span class="status-chip {{ $notification->read_at ? 'active' : 'pending' }}">{{ $notification->read_at ? 'Read' : 'Unread' }}</span>@if($notification->read_at)<small>{{ $notification->read_at->format('d M Y H:i') }}</small>@endif</dd></div>
+            <div><dt>Created</dt><dd>{{ optional($notification->created_at)->format('d M Y H:i') }}</dd></div>
+            <div><dt>Linked page</dt><dd>@if($notification->action_url)<a href="{{ $notification->action_url }}" target="_blank" rel="noopener">{{ \Illuminate\Support\Str::limit($notification->action_url, 60) }}</a>@else — @endif</dd></div>
+        </dl>
+        <p class="notification-detail-message">{{ $notification->message ?: 'No message body.' }}</p>
+    </div>
+    <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Close</button></div>
+</div>
+</div>
+@endforeach
 @endsection
