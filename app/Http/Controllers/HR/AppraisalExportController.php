@@ -4,16 +4,26 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appraisal;
+use App\Services\Files\FilePreviewService;
 use App\Services\HR\AppraisalWorkbookExportService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
 class AppraisalExportController extends Controller
 {
-    public function excel(Appraisal $appraisal, AppraisalWorkbookExportService $service)
+    public function excel(Request $request, Appraisal $appraisal, AppraisalWorkbookExportService $service, FilePreviewService $previews)
     {
         $this->authorise($appraisal);
 
         $path=$service->export($appraisal);
+
+        if($request->query('preview')==='1'){
+            try {
+                return $previews->respondForPath($request,$path,basename($path));
+            } finally {
+                File::delete($path);
+            }
+        }
 
         return response()
             ->download($path,basename($path))

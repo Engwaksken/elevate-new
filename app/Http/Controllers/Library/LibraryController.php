@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Library;
 use App\Http\Controllers\Controller;
 use App\Models\LibraryCategory;
 use App\Models\LibraryResource;
+use App\Services\Files\FilePreviewService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -78,6 +79,10 @@ class LibraryController extends Controller
             && Storage::disk('local')->exists($resource->file_path),
             404
         );
+
+        if(app(FilePreviewService::class)->wantsPreview(request())){
+            return app(FilePreviewService::class)->respond(request(),'local',$resource->file_path,basename($resource->file_path));
+        }
 
         if(auth()->check()){
             DB::table('library_downloads')->insert([

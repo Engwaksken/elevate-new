@@ -63,6 +63,9 @@
     <td class="table-actions">
         <div class="action-group">
             @if(Route::has('learning.files.download'))
+                <a class="btn-icon" href="{{ route('learning.files.download',[$file,'preview'=>1]) }}" target="_blank" rel="noopener" title="Preview">
+                    <i class="fas fa-eye"></i>
+                </a>
                 <a class="btn-icon" href="{{ route('learning.files.download',$file) }}" title="Download">
                     <i class="fas fa-download"></i>
                 </a>

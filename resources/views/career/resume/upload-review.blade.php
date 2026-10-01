@@ -35,6 +35,7 @@
                     @endif
 
                     <div class="form-actions">
+                        <a href="{{ route('career.resume.upload.original',[$upload,'preview'=>1]) }}" class="btn btn-outline" target="_blank" rel="noopener"><i class="fas fa-eye"></i> Preview</a>
                         <a href="{{ route('career.resume.upload.original',$upload) }}" class="btn btn-outline"><i class="fas fa-file-arrow-down"></i> Original File</a>
                         @if($upload->status==='failed')
                             <form method="POST" action="{{ route('career.resume.upload.retry',$upload) }}">@csrf<button class="btn btn-primary"><i class="fas fa-rotate"></i> Retry Analysis</button></form>
