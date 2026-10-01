@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Activity;
+use App\Models\Assessment;
+use App\Models\AssessmentAttempt;
 use App\Models\Appraisal;
 use App\Models\Asset;
 use App\Models\AssetAssignment;
@@ -10,12 +12,18 @@ use App\Models\AssetDisposal;
 use App\Models\AssetMaintenance;
 use App\Models\Certificate;
 use App\Models\Course;
+use App\Models\CourseAnnouncement;
+use App\Models\CourseApplication;
 use App\Models\Deliverable;
 use App\Models\Employee;
 use App\Models\Enrolment;
 use App\Models\Indicator;
+use App\Models\JobApplication;
 use App\Models\IndicatorResult;
 use App\Models\LeaveRequest;
+use App\Models\Lesson;
+use App\Models\MentorMatch;
+use App\Models\MentorshipSession;
 use App\Models\Milestone;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
@@ -26,6 +34,8 @@ use App\Models\Supplier;
 use App\Models\Task;
 use App\Models\Workplan;
 use App\Observers\AuditableObserver;
+use App\Observers\HrNotificationObserver;
+use App\Observers\LearningNotificationObserver;
 use App\Observers\OperationalNotificationObserver;
 use Illuminate\Support\ServiceProvider;
 
@@ -71,10 +81,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $notificationModels=[
-            Appraisal::class,
             Certificate::class,
             Deliverable::class,
-            LeaveRequest::class,
             PurchaseRequest::class,
             Task::class,
             Workplan::class,
@@ -84,6 +92,26 @@ class AppServiceProvider extends ServiceProvider
             if (class_exists($model)) {
                 $model::observe(OperationalNotificationObserver::class);
             }
+        }
+
+        // Leave and appraisal notices are routed to supervisor / HR / employee by status.
+        Appraisal::observe(HrNotificationObserver::class);
+        LeaveRequest::observe(HrNotificationObserver::class);
+
+        $learningNotificationModels=[
+            Enrolment::class,
+            Lesson::class,
+            Assessment::class,
+            AssessmentAttempt::class,
+            CourseAnnouncement::class,
+            CourseApplication::class,
+            MentorMatch::class,
+            MentorshipSession::class,
+            JobApplication::class,
+        ];
+
+        foreach($learningNotificationModels as $model){
+            $model::observe(LearningNotificationObserver::class);
         }
     }
 }

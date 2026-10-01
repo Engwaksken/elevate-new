@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Appraisal;
 use App\Services\HR\AppraisalProgressService;
 use App\Services\HR\AppraisalWorkflowService;
+use App\Services\UserNotificationService;
 use Illuminate\Http\Request;
 
 class AppraisalWorkflowController extends Controller
@@ -40,7 +41,7 @@ class AppraisalWorkflowController extends Controller
         return back()->with('success','Appraisal finalised and sent to the employee for acknowledgement.');
     }
 
-    public function lock(Request $request, Appraisal $appraisal, AppraisalWorkflowService $workflow)
+    public function lock(Request $request, Appraisal $appraisal, AppraisalWorkflowService $workflow, UserNotificationService $notifications)
     {
         abort_if($appraisal->locked_at,422,'The appraisal is already locked.');
 
@@ -48,6 +49,16 @@ class AppraisalWorkflowController extends Controller
 
         $appraisal->update(['locked_at'=>now()]);
         $workflow->note($appraisal,'Locked by HR'.(filled($data['reason'] ?? null) ? ': '.$data['reason'] : '.'));
+
+        $notifications->sendToManySafely(
+            [$appraisal->employee?->user_id,$appraisal->manager_user_id],
+            'appraisal',
+            'Appraisal locked',
+            'HR locked the appraisal'.($appraisal->employee?->user ? ' for '.$appraisal->employee->user->name : '').'. No further edits are possible until HR reopens it.'
+                .(filled($data['reason'] ?? null) ? ' Reason: '.$data['reason'] : ''),
+            route('staff.performance.show',$appraisal),
+            ['appraisal_id'=>$appraisal->id,'employee_id'=>$appraisal->employee_id,'status'=>$appraisal->status,'event'=>'locked']
+        );
 
         return back()->with('success','Appraisal locked. No further edits are possible until HR reopens it.');
     }

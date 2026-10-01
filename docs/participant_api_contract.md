@@ -224,6 +224,24 @@ Streams the instructor attachment. 403 if not enrolled; 404 if the assessment is
 | GET | `/notifications` | `page`, `unread_only` (bool), `updated_since` | paginator (30 per page) |
 | PUT | `/notifications/{notification}/read` | — | `{"message":"Notification marked as read."}` · 404 `{"message":"Notification not found."}` |
 
+Each notification has `id`, `type`, `title`, `message`, `action_url` (a web URL, may be null), `data` (JSON string or null), `read_at`, `created_at`, `updated_at`. `type` values sent to participants, with the ids found in `data`:
+
+| `type` | When | `data` keys |
+|---|---|---|
+| `enrolment` | Enrolled in a course, or enrolment status changed (active, completed, withdrawn, cancelled, failed) | `course_id`, `enrolment_id` (absent for bulk imports), `status`, `event` |
+| `lesson_published` | A lesson is published in an enrolled course | `course_id`, `module_id`, `lesson_id` |
+| `assignment_published` | An assignment/quiz/exam is published | `course_id`, `assessment_id`, `due_at` |
+| `assignment_due_date_changed` | A published assessment's due date changes | `course_id`, `assessment_id`, `due_at` |
+| `assignment_graded` / `assignment_feedback` | An instructor grades or comments on a submission | `course_id`, `assessment_id`, `attempt_id`, `score`, `percentage` |
+| `assignment_extension_approved` / `assignment_extension_rejected` | Extension request reviewed | `course_id`, `assessment_id`, `extension_request_id`, `approved_due_at` |
+| `course_announcement` | A course announcement is posted (scheduled ones are not notified) | `course_id`, `announcement_id` |
+| `course_application` | A course-call application is reviewed | `course_call_id`, `course_application_id`, `status` |
+| `mentorship_match` / `mentorship_session` | Match created/changed; session scheduled, rescheduled or status changed | `mentor_match_id`, `mentorship_session_id`, `scheduled_at`, `status` |
+| `job_application` | Job application status changed | `job_id`, `job_application_id`, `status` |
+| `certificate`, `event_reminder` | Certificate issued; event reminder | see payload |
+
+Unknown types should be shown with their `title` and `message`.
+
 ---
 
 ## Offline sync
