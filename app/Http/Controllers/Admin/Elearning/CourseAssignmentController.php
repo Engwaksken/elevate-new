@@ -36,7 +36,7 @@ class CourseAssignmentController extends Controller
 
         return view('admin.elearning.assignments.edit',[
             'course'=>$course->load(['instructors','cohorts']),
-            'instructors'=>User::where('user_type','staff')
+            'instructors'=>User::where('user_type','staff')->with('branches:id,name')->withCount('instructedCourses')
                 ->when($roleIds->isNotEmpty(),fn($q)=>$q->whereHas('roles',fn($r)=>$r->whereIn('roles.id',$roleIds)))
                 ->orderBy('name')->get(),
             'cohorts'=>Cohort::orderBy('name')->get(),

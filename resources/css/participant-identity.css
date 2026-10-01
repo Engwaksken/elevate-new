@@ -1,0 +1,19 @@
+/* Participant IDs, returning-participant and duplicate badges */
+.ph-badge{display:inline-flex;align-items:center;gap:5px;margin:2px 4px 2px 0;padding:3px 9px;border-radius:999px;font-size:.68rem;font-weight:700;white-space:nowrap;cursor:default}
+.ph-returning{background:#eff8ff;color:#175cd3}
+.ph-new{background:#f2f4f7;color:#475467}
+.ph-duplicate{background:#fffaeb;color:#b54708}
+.ph-details{margin-bottom:16px;padding:12px 14px;border:1px solid #e4e7ec;border-radius:10px;background:#fcfcfd}
+.ph-details h4{margin:0 0 6px;font-size:.8rem;color:#172033}
+.ph-muted{margin:0 0 6px;color:#667085;font-size:.74rem}
+.ph-course-list{margin:0;padding:0;list-style:none}
+.ph-course-list li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px dashed #e4e7ec;font-size:.78rem}
+.ph-course-list li span{color:#667085;white-space:nowrap}
+.ph-duplicate-box{margin-top:10px;padding:10px 12px;border:1px solid #fedf89;border-radius:8px;background:#fffaeb;font-size:.76rem;color:#7a2e0e}
+.ph-duplicate-box ul{margin:6px 0;padding-left:18px}
+.participant-code{display:inline-block;padding:2px 7px;border-radius:5px;background:#f2f4f7;color:#344054;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.72rem;font-weight:700;letter-spacing:.02em}
+.branch-chip{display:inline-block;margin:1px 3px 1px 0;padding:2px 7px;border-radius:5px;background:#fdf2f2;color:#800000;font-size:.68rem;font-weight:700}
+.participant-id-card{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border:1px dashed #d0b3b3;border-radius:10px;background:#fffafa;min-width:200px}
+.participant-id-card small{color:#667085;font-size:.66rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.participant-id-card strong{color:#800000;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:1.05rem;letter-spacing:.04em}
+.participant-id-card span{color:#667085;font-size:.68rem}

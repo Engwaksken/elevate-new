@@ -33,7 +33,7 @@
 <form method="GET" class="admin-toolbar">
     <div class="search-box">
         <i class="fas fa-magnifying-glass"></i>
-        <input name="search" value="{{ request('search') }}" placeholder="Search name, email or phone...">
+        <input name="search" value="{{ request('search') }}" placeholder="Search name, email, phone or participant ID...">
     </div>
 
     <select name="user_type">
@@ -46,6 +46,13 @@
         <option value="">All statuses</option>
         @foreach(['active','inactive','suspended','pending'] as $status)
         <option value="{{ $status }}" @selected(request('status')===$status)>{{ ucfirst($status) }}</option>
+        @endforeach
+    </select>
+
+    <select name="branch_id">
+        <option value="">All branches</option>
+        @foreach($branches as $branch)
+        <option value="{{ $branch->id }}" @selected((int) request('branch_id')===$branch->id)>{{ $branch->name }}</option>
         @endforeach
     </select>
 
@@ -68,6 +75,7 @@
     <th>Type</th>
     <th>Status</th>
     <th>Roles</th>
+    <th>Branches &amp; Courses</th>
     <th>Last Login</th>
     <th class="table-actions">Actions</th>
 </tr>
@@ -77,6 +85,7 @@
 <tr>
     <td>
         <strong>{{ $user->name }}</strong>
+        @if($user->participant_code)<span class="participant-code">{{ $user->participant_code }}</span>@endif
         <small class="admin-cell-hint">{{ $user->email }}</small>
     </td>
     <td>{{ $user->phone ?: '—' }}</td>
@@ -89,6 +98,16 @@
             <span class="admin-cell-hint">No roles</span>
         @endif
     </td>
+    <td>
+        @if($user->user_type === 'staff' && ($user->branches->isNotEmpty() || $user->instructedCourses->isNotEmpty()))
+            @foreach($user->branches as $branch)<span class="branch-chip">{{ $branch->name }}</span>@endforeach
+            @if($user->instructedCourses->isNotEmpty())
+                <small class="admin-cell-hint" title="{{ $user->instructedCourses->pluck('title')->join(', ') }}">{{ $user->instructedCourses->count() }} {{ \Illuminate\Support\Str::plural('course', $user->instructedCourses->count()) }}</small>
+            @endif
+        @else
+            <span class="admin-cell-hint">—</span>
+        @endif
+    </td>
     <td>{{ optional($user->last_login_at)->format('d M Y H:i') ?: '—' }}</td>
     <td class="table-actions">
         <button type="button" class="btn btn-outline btn-sm" data-modal-open="editUser{{ $user->id }}">
@@ -97,7 +116,7 @@
     </td>
 </tr>
 @empty
-<tr><td colspan="7"><div class="admin-empty">No users found.</div></td></tr>
+<tr><td colspan="8"><div class="admin-empty">No users found.</div></td></tr>
 @endforelse
 </tbody>
 </table>
@@ -110,6 +129,7 @@
     $userFormTabs = [
         'account' => ['label' => 'Account', 'icon' => 'fa-id-card', 'fields' => ['name', 'email', 'phone']],
         'access' => ['label' => 'Roles & Access', 'icon' => 'fa-user-shield', 'fields' => ['user_type', 'status', 'roles', 'roles.*']],
+        'assignments' => ['label' => 'Branches & Courses', 'icon' => 'fa-building', 'fields' => ['branches', 'branches.*', 'courses', 'courses.*']],
         'security' => ['label' => 'Security', 'icon' => 'fa-lock', 'fields' => ['password', 'password_confirmation']],
     ];
 @endphp
@@ -164,6 +184,10 @@
 </div>
 </x-form-tab>
 
+<x-form-tab name="assignments">
+@include('admin.users._assignments', ['assignedBranches' => old('branches', []), 'assignedCourses' => old('courses', []), 'prefix' => 'create'])
+</x-form-tab>
+
 <x-form-tab name="security">
 <div class="modal-grid">
     <div class="form-group"><label>Password *</label><input type="password" name="password" required autocomplete="new-password"><small class="form-hint">Minimum 8 characters, mixed case and a number.</small></div>
@@ -185,7 +209,7 @@
 <div class="eh-modal" id="editUser{{ $user->id }}" aria-hidden="true">
 <div class="eh-modal-dialog eh-modal-lg">
 <div class="eh-modal-header">
-    <div><h2>Edit User</h2><p>{{ $user->name }}</p></div>
+    <div><h2>Edit User</h2><p>{{ $user->name }}@if($user->participant_code) · Participant ID {{ $user->participant_code }}@endif</p></div>
     <button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button>
 </div>
 
@@ -230,6 +254,10 @@
         </div>
     </div>
 </div>
+</x-form-tab>
+
+<x-form-tab name="assignments">
+@include('admin.users._assignments', ['assignedBranches' => $user->branches->pluck('id')->all(), 'assignedCourses' => $user->instructedCourses->pluck('id')->all(), 'prefix' => 'edit-'.$user->id])
 </x-form-tab>
 
 <x-form-tab name="security">

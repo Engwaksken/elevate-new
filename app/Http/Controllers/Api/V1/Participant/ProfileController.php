@@ -189,6 +189,7 @@ class ProfileController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'participant_code' => $user->participant_code,
                 'phone' => $user->phone,
                 'photo_url' => $hasPhoto ? route('api.participant.profile.photo', ['v' => $version]) : null,
                 'photo_path' => $hasPhoto ? '/profile/photo?v='.$version : null,

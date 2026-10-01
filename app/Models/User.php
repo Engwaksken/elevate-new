@@ -31,6 +31,17 @@ class User extends Authenticatable
         ];
     }
 
+    protected static function booted(): void
+    {
+        // Every participant gets a permanent, human-readable ID, e.g. EH26-000123.
+        static::saved(function (User $user) {
+            if ($user->user_type === 'participant' && ! $user->participant_code) {
+                $user->participant_code = sprintf('EH%s-%06d', ($user->created_at ?? now())->format('y'), $user->id);
+                $user->saveQuietly();
+            }
+        });
+    }
+
     public function profile(): HasOne { return $this->hasOne(Profile::class); }
     public function consents(): HasMany { return $this->hasMany(Consent::class); }
 
@@ -86,6 +97,15 @@ class User extends Authenticatable
                 $query->whereIn('slug', $flattened->all())
                     ->orWhereIn('name', $flattened->all());
             })->exists();
+    }
+
+    /**
+     * Branches a staff member (e.g. an instructor or trainer) works across.
+     * Participants belong to a single branch through their profile.
+     */
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class)->withTimestamps();
     }
 
     public function instructedCourses(): BelongsToMany

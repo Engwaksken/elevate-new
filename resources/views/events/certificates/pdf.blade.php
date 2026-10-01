@@ -16,5 +16,5 @@
 <div class="event">{{ $event->title }}</div>
 <p>held on {{ $event->starts_at->format('d F Y') }}@if($event->venue), at {{ $event->venue }}@endif.</p>
 <div class="signature"><strong>{{ $event->certificate_signatory_name ?: 'Women in Technology Uganda' }}</strong><br>{{ $event->certificate_signatory_title ?: 'Authorised Signatory' }}</div>
-<p class="small">Certificate Code: {{ $certificate->certificate_code }} · Verify: {{ route('events.certificates.verify',$certificate->certificate_code) }}</p>
+<p class="small">@if($user->participant_code)Participant ID: {{ $user->participant_code }} · @endif Certificate Code: {{ $certificate->certificate_code }} · Verify: {{ route('events.certificates.verify',$certificate->certificate_code) }}</p>
 </div></div></body></html>

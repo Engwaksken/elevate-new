@@ -36,7 +36,7 @@ class CertificateRecommendationController extends Controller
 
         if ($search = trim((string) $request->get('search'))) {
             $query->where(function ($inner) use ($search) {
-                $inner->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
+                $inner->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")->orWhere('participant_code', 'like', "%{$search}%"))
                     ->orWhereHas('course', fn ($q) => $q->where('title', 'like', "%{$search}%"))
                     ->orWhereHas('event', fn ($q) => $q->where('title', 'like', "%{$search}%"));
             });

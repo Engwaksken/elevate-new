@@ -32,6 +32,7 @@ class BulkEnrolmentController extends Controller
         'course_id',
         'user_id',
         'email',
+        'participant_code',
         'cohort_id',
         'status',
         'enrolled_at',
@@ -81,6 +82,7 @@ class BulkEnrolmentController extends Controller
                 '1',                        // course_id
                 '',                         // user_id
                 'participant@example.com',  // email helper
+                '',                         // participant_code helper, e.g. EH26-000123
                 '',                         // cohort_id
                 'enrolled',                 // status
                 date('Y-m-d H:i:s'),        // enrolled_at
@@ -147,11 +149,11 @@ class BulkEnrolmentController extends Controller
             ]);
         }
 
-        if (! in_array('user_id', $header, true) && ! in_array('email', $header, true)) {
+        if (! array_intersect(['user_id', 'email', 'participant_code'], $header)) {
             fclose($handle);
 
             throw ValidationException::withMessages([
-                'file' => 'The CSV must contain user_id or email.',
+                'file' => 'The CSV must contain user_id, email or participant_code.',
             ]);
         }
 
@@ -332,9 +334,15 @@ class BulkEnrolmentController extends Controller
             $user = User::where('email', $email)->first();
         }
 
+        $code = strtoupper(trim((string) ($row['participant_code'] ?? '')));
+
+        if (! $user && $code !== '') {
+            $user = User::where('participant_code', $code)->first();
+        }
+
         if (! $user) {
             throw ValidationException::withMessages([
-                'user_id' => 'Participant not found using the supplied user_id/email.',
+                'user_id' => 'Participant not found using the supplied user_id, email or participant_code.',
             ]);
         }
 

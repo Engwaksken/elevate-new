@@ -74,7 +74,7 @@
                        aria-label="Select {{ $row['user']->name }}">
             @endunless
         </td>
-        <td><strong>{{ $row['user']->name }}</strong><small class="admin-cell-hint">{{ $row['user']->email }}</small></td>
+        <td><strong>{{ $row['user']->name }}</strong><small class="admin-cell-hint">{{ $row['user']->participant_code ?? '—' }} · {{ $row['user']->email }}</small></td>
         <td>{{ $row['detail'] }}</td>
         <td>
             @if($row['certificate'])

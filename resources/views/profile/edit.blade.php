@@ -9,6 +9,13 @@
     <h1>My Profile</h1>
     <p>Keep your personal, location, career, preferences and security information up to date.</p>
 </div>
+@if(auth()->user()->participant_code)
+<div class="participant-id-card" aria-label="Your participant ID">
+    <small>Participant ID</small>
+    <strong>{{ auth()->user()->participant_code }}</strong>
+    <span>Quote this when you contact us or apply for another course.</span>
+</div>
+@endif
 </div>
 
 @if(session('success'))
