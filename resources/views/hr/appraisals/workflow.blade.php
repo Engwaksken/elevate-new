@@ -365,6 +365,7 @@
                                     <div class="col-md-5">
                                         <strong>{{ $kpi->title }}</strong>
                                         <div class="small text-muted">Self score: {{ $kpi->employee_score ?? '—' }}</div>
+                                        @include('hr.appraisals._kpi-task-evidence', ['tasks' => $kpiTasks->get($kpi->id, collect())])
                                     </div>
 
                                     <div class="col-md-3">
@@ -506,6 +507,7 @@
                                 <div class="row g-2 border-top mt-2 pt-2 align-items-end">
                                     <div class="col-md-5">
                                         <strong>{{ $kpi->title }}</strong>
+                                        @include('hr.appraisals._kpi-task-evidence', ['tasks' => $kpiTasks->get($kpi->id, collect())])
                                     </div>
                                     <div class="col-md-2">Self: {{ $kpi->employee_score ?? '—' }}</div>
                                     <div class="col-md-2">Supervisor: {{ $kpi->supervisor_score ?? '—' }}</div>

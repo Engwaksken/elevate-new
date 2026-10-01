@@ -4,6 +4,7 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appraisal;
+use App\Models\Task;
 use App\Models\AppraisalKpi;
 use App\Models\AppraisalKra;
 use App\Models\AppraisalMeeting;
@@ -62,7 +63,14 @@ class AppraisalWorkspaceController extends Controller
 
         $competencyPercent = $scores->competencyPercent($appraisal);
 
-        return view('hr.appraisals.workflow', compact('appraisal', 'competencyPercent'));
+        // Tasks the employee linked to these KPIs in My Tasks, shown as evidence when scoring.
+        $kpiTasks = Task::whereIn('appraisal_kpi_id', $appraisal->kras->flatMap->kpis->pluck('id'))
+            ->where('assigned_to', $appraisal->employee?->user_id)
+            ->orderBy('due_date')
+            ->get()
+            ->groupBy('appraisal_kpi_id');
+
+        return view('hr.appraisals.workflow', compact('appraisal', 'competencyPercent', 'kpiTasks'));
     }
 
     public function saveEmployee(
