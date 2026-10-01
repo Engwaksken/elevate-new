@@ -84,7 +84,7 @@ class OperationalNotificationObserver
                 'task',
                 $event==='created' ? 'New task assigned' : 'Task updated',
                 "{$name}".($status ? " is now ".str_replace('_',' ',$status)."." : '.'),
-                '/admin/tasks',
+                $model->getAttribute('activity_id') ? '/admin/tasks' : '/staff/tasks',
             ],
             'Deliverable' => [
                 'deliverable',
