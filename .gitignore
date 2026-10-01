@@ -22,3 +22,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Local backups, database dumps and update packages
+*.bak
+*.sql
+/files/
