@@ -7,6 +7,8 @@ use App\Models\Cohort;
 use App\Models\Course;
 use App\Models\Enrolment;
 use App\Models\User;
+use App\Observers\LearningNotificationObserver;
+use App\Services\UserNotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -97,7 +99,7 @@ class BulkEnrolmentController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, UserNotificationService $notifications)
     {
         $data = $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
@@ -158,6 +160,7 @@ class BulkEnrolmentController extends Controller
         $skipped = 0;
         $failed = [];
         $rowNumber = 1;
+        $toNotify = [];
 
         while (($values = fgetcsv($handle)) !== false) {
             $rowNumber++;
@@ -171,7 +174,8 @@ class BulkEnrolmentController extends Controller
             $row = array_combine($header, array_slice($values, 0, count($header)));
 
             try {
-                $result = DB::transaction(function () use ($row, $data) {
+                // Per-row notifications are muted; they are sent in batches after the import.
+                [$result, $enrolment] = LearningNotificationObserver::withoutNotifications(fn () => DB::transaction(function () use ($row, $data) {
                     $user = $this->resolveUser($row);
 
                     $courseId = $this->nullableInt($row['course_id'] ?? null)
@@ -243,8 +247,12 @@ class BulkEnrolmentController extends Controller
                     $enrolment->fill($payload);
                     $enrolment->save();
 
-                    return $wasNew ? 'created' : 'updated';
-                });
+                    return [$wasNew ? 'created' : 'updated', $enrolment];
+                }));
+
+                if ($result === 'created' || $enrolment->wasChanged('status')) {
+                    $toNotify[] = [$result, $enrolment];
+                }
 
                 if ($result === 'created') {
                     $created++;
@@ -264,7 +272,9 @@ class BulkEnrolmentController extends Controller
 
         fclose($handle);
 
-        $message = "{$created} enrolment(s) created, {$updated} updated";
+        $this->notifyEnrolments($toNotify, $notifications);
+
+        $message ="{$created} enrolment(s) created, {$updated} updated";
 
         if ($skipped > 0) {
             $message .= ", {$skipped} row(s) skipped";
@@ -273,6 +283,38 @@ class BulkEnrolmentController extends Controller
         return back()
             ->with('success', $message.'.')
             ->with('bulk_import_errors', array_slice($failed, 0, 50));
+    }
+
+    /**
+     * Send one batched notification per course/event/status group. A failure is
+     * reported and never fails the import.
+     *
+     * @param  array<int, array{0: string, 1: Enrolment}>  $items
+     */
+    private function notifyEnrolments(array $items, UserNotificationService $notifications): void
+    {
+        try {
+            collect($items)
+                ->groupBy(fn (array $item) => $item[1]->course_id.'|'.$item[0].'|'.$item[1]->status)
+                ->each(function ($group) use ($notifications): void {
+                    [$event, $enrolment] = $group->first();
+                    $content = LearningNotificationObserver::enrolmentContent($enrolment, $event);
+
+                    if (! $content) {
+                        return;
+                    }
+
+                    unset($content[4]['enrolment_id']);
+                    $content[4]['bulk'] = true;
+
+                    $notifications->sendToManySafely(
+                        $group->map(fn (array $item) => $item[1]->user_id),
+                        ...$content
+                    );
+                });
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     private function resolveUser(array $row): User

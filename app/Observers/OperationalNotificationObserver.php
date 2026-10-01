@@ -2,7 +2,6 @@
 
 namespace App\Observers;
 
-use App\Models\Employee;
 use App\Models\UserNotification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
@@ -67,19 +66,8 @@ class OperationalNotificationObserver
             'PurchaseRequest' => $this->intOrNull($model->getAttribute('requester_user_id')),
             'Certificate' => $this->intOrNull($model->getAttribute('user_id')),
             'Workplan' => $this->intOrNull($model->getAttribute('responsible_user_id')),
-            'LeaveRequest' => $this->employeeUserId($model->getAttribute('employee_id')),
-            'Appraisal' => $this->employeeUserId($model->getAttribute('employee_id')),
             default => null,
         };
-    }
-
-    private function employeeUserId(mixed $employeeId): ?int
-    {
-        if (! $employeeId) return null;
-
-        return $this->intOrNull(
-            Employee::query()->whereKey($employeeId)->value('user_id')
-        );
     }
 
     private function content(Model $model,string $event): array
@@ -121,18 +109,6 @@ class OperationalNotificationObserver
                 'Workplan updated',
                 "{$name}".($status ? " is now ".str_replace('_',' ',$status)."." : '.'),
                 '/admin/workplans',
-            ],
-            'LeaveRequest' => [
-                'leave',
-                'Leave request updated',
-                $status ? "Your leave request is now ".str_replace('_',' ',$status)."." : 'Your leave request was updated.',
-                '/notifications',
-            ],
-            'Appraisal' => [
-                'appraisal',
-                'Appraisal updated',
-                $status ? "Your appraisal is now ".str_replace('_',' ',$status)."." : 'Your appraisal was updated.',
-                '/notifications',
             ],
             default => ['system','Record updated',"{$name} was updated.",'/notifications'],
         };
