@@ -35,3 +35,11 @@ a.admin-stat{text-decoration:none;color:inherit}
 .cert-template-actions{display:flex;gap:6px;padding:0 13px 12px}
 .cert-template-actions form{margin:0}
 [data-template-for][hidden]{display:none !important}
+.cert-course-picker-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.cert-course-picker-head label{margin:0}
+.cert-course-filter{max-width:220px;min-height:34px !important;padding:6px 10px !important}
+.cert-course-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;max-height:240px;overflow:auto;padding:8px;border:1px solid #e4e7ec;border-radius:8px;background:#fcfcfd}
+.cert-course-picker-actions{display:flex;align-items:center;gap:8px;margin-top:8px}
+.cert-template-courses{color:#344054}
+.cert-template-courses em{color:#667085;font-style:normal;font-weight:700}
+[data-course-name][hidden]{display:none !important}

@@ -43,6 +43,17 @@ class User extends Authenticatable
     }
 
     public function profile(): HasOne { return $this->hasOne(Profile::class); }
+
+    /**
+     * Full legal name from the profile (given, other, surname), falling back to the account name.
+     */
+    public function fullName(): string
+    {
+        $profile = $this->profile;
+        $parts = array_filter([$profile?->given_name, $profile?->other_name, $profile?->surname], fn ($part) => filled($part));
+
+        return $parts !== [] ? trim(preg_replace('/\s+/', ' ', implode(' ', $parts))) : (string) $this->name;
+    }
     public function consents(): HasMany { return $this->hasMany(Consent::class); }
 
     public function roles(): BelongsToMany

@@ -1026,6 +1026,9 @@ Route::prefix('admin/elearning/certificates/templates')
         Route::get('/{template}/preview', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'previewTemplate'])
             ->name('preview');
 
+        Route::put('/{template}', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'updateTemplate'])
+            ->name('update');
+
         Route::patch('/{template}/toggle', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'toggleTemplate'])
             ->name('toggle');
 

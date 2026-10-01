@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
 
 class CertificateTemplate extends Model
@@ -28,6 +29,14 @@ class CertificateTemplate extends Model
         return $this->belongsTo(Course::class);
     }
 
+    /**
+     * Courses a course template applies to; one design can serve several courses.
+     */
+    public function courses(): BelongsToMany
+    {
+        return $this->belongsToMany(Course::class, 'certificate_template_course');
+    }
+
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
@@ -49,7 +58,11 @@ class CertificateTemplate extends Model
             return $template;
         }
 
-        if ($courseId && $template = (clone $active)->where('context_type', 'course')->where('course_id', $courseId)->first()) {
+        if ($courseId && $template = (clone $active)->where('context_type', 'course')
+            ->where(fn ($query) => $query
+                ->whereHas('courses', fn ($courses) => $courses->whereKey($courseId))
+                ->orWhere('course_id', $courseId))
+            ->first()) {
             return $template;
         }
 

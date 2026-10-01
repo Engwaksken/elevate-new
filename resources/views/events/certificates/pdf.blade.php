@@ -11,10 +11,11 @@
 <div class="content">
 <div class="title">{{ $event->certificate_title ?: 'Certificate of Attendance' }}</div>
 <p>This certifies that</p>
-<div class="name">{{ $user->name }}</div>
+<div class="name">{{ $user->fullName() }}</div>
 <p>attended</p>
 <div class="event">{{ $event->title }}</div>
-<p>held on {{ $event->starts_at->format('d F Y') }}@if($event->venue), at {{ $event->venue }}@endif.</p>
+<p>held {{ $event->ends_at && ! $event->ends_at->isSameDay($event->starts_at) ? 'from '.$event->starts_at->format('d F').' to '.$event->ends_at->format('d F Y') : 'on '.$event->starts_at->format('d F Y') }}@if($event->venue), at {{ $event->venue }}@endif.</p>
+@if($event->cohort)<p>Cohort: <strong>{{ $event->cohort->name }}</strong></p>@endif
 <div class="signature"><strong>{{ $event->certificate_signatory_name ?: 'Women in Technology Uganda' }}</strong><br>{{ $event->certificate_signatory_title ?: 'Authorised Signatory' }}</div>
 <p class="small">@if($user->participant_code)Participant ID: {{ $user->participant_code }} · @endif Certificate Code: {{ $certificate->certificate_code }} · Verify: {{ route('events.certificates.verify',$certificate->certificate_code) }}</p>
 </div></div></body></html>

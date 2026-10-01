@@ -28,10 +28,9 @@ class CertificateController extends Controller
     {
         abort_unless((int) $certificate->user_id === (int) auth()->id(), 403);
 
-        if (! $certificate->pdf_path || ! Storage::disk('local')->exists($certificate->pdf_path)) {
-            $service->render($certificate);
-            $certificate->refresh();
-        }
+        // Regenerate on each download so name corrections, cohort details and template changes are applied.
+        $service->render($certificate);
+        $certificate->refresh();
 
         return Storage::disk('local')->download(
             $certificate->pdf_path,
