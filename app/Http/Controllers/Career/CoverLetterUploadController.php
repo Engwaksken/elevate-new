@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ParseCoverLetterUpload;
 use App\Models\CoverLetter;
 use App\Models\CoverLetterUpload;
+use App\Services\Files\FilePreviewService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -67,6 +68,7 @@ class CoverLetterUploadController extends Controller
     public function original(CoverLetterUpload $upload)
     {
         $this->authorise($upload);
+        if(app(FilePreviewService::class)->wantsPreview(request())) return app(FilePreviewService::class)->respond(request(),'local',$upload->path,$upload->original_name);
         return Storage::disk('local')->download($upload->path,$upload->original_name);
     }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ParseResumeUpload;
 use App\Models\Resume;
 use App\Models\ResumeUpload;
+use App\Services\Files\FilePreviewService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -99,6 +100,7 @@ class ResumeUploadController extends Controller
     public function original(ResumeUpload $upload)
     {
         $this->authorise($upload);
+        if(app(FilePreviewService::class)->wantsPreview(request())) return app(FilePreviewService::class)->respond(request(),'local',$upload->path,$upload->original_name);
         return Storage::disk('local')->download($upload->path,$upload->original_name);
     }
 

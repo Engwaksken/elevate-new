@@ -108,6 +108,7 @@ $stats=[
 @endif
 
 @if($appraisal->employee_submitted_at)
+<a class="btn-icon" href="{{ route('staff.appraisals.export.excel',[$appraisal,'preview'=>1]) }}" target="_blank" rel="noopener" title="Preview WITU Excel"><i class="fas fa-table"></i></a>
 <a class="btn-icon" href="{{ route('staff.appraisals.export.excel',$appraisal) }}" title="Export WITU Excel"><i class="fas fa-file-excel"></i></a>
 @endif
 

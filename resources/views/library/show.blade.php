@@ -51,6 +51,9 @@
 @endif
 
 @if($resource->file_path)
+<a class="btn btn-outline" href="{{ route('library.download',[$resource,'preview'=>1]) }}" target="_blank" rel="noopener">
+<i class="fas fa-eye"></i> Preview
+</a>
 <a class="btn btn-primary" href="{{ route('library.download',$resource) }}">
 <i class="fas fa-download"></i> Download Resource
 </a>

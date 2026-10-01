@@ -12,6 +12,7 @@ use App\Models\CourseAnnouncement;
 use App\Models\CourseModule;
 use App\Models\Enrolment;
 use App\Models\Lesson;
+use App\Services\Files\FilePreviewService;
 use App\Services\Participant\ParticipantAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -341,6 +342,10 @@ class CourseManagementController extends Controller
             404
         );
 
+        if ($this->previews()->wantsPreview(request())) {
+            return $this->previews()->respond(request(), 'public', $lesson->file_path);
+        }
+
         return Storage::disk('public')->download($lesson->file_path);
     }
 
@@ -434,6 +439,10 @@ class CourseManagementController extends Controller
             && Storage::disk('public')->exists($assessment->attachment_path),
             404
         );
+
+        if ($this->previews()->wantsPreview(request())) {
+            return $this->previews()->respond(request(), 'public', $assessment->attachment_path);
+        }
 
         return Storage::disk('public')->download($assessment->attachment_path);
     }
@@ -630,6 +639,10 @@ class CourseManagementController extends Controller
             404
         );
 
+        if ($this->previews()->wantsPreview(request())) {
+            return $this->previews()->respond(request(), 'local', $attempt->submission_file_path);
+        }
+
         return Storage::disk('local')->download($attempt->submission_file_path);
     }
 
@@ -764,6 +777,11 @@ class CourseManagementController extends Controller
 
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function previews(): FilePreviewService
+    {
+        return app(FilePreviewService::class);
     }
 
     private function validateLesson(Request $request): array
