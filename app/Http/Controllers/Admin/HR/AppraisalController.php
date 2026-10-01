@@ -23,6 +23,7 @@ class AppraisalController extends Controller
                 'manager',
                 'kpiTemplate',
             ])
+            ->withCount('kras')
             ->latest()
             ->paginate(25);
 
