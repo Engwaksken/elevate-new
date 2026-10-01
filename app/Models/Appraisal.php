@@ -74,7 +74,7 @@ class Appraisal extends Model
     }
     public function competencies()
     {
-        return $this->hasMany(AppraisalCompetency::class);
+        return $this->hasMany(AppraisalCompetency::class)->orderBy('id');
     }
     public function meeting()
     {

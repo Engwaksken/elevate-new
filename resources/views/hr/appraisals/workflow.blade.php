@@ -69,7 +69,7 @@
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card h-100 border-start border-primary border-4">
                 <div class="card-body">
                     <div class="text-muted small">Completion</div>
@@ -78,7 +78,7 @@
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card h-100 border-start border-success border-4">
                 <div class="card-body">
                     <div class="text-muted small">Agreed Performance</div>
@@ -89,7 +89,18 @@
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
+            <div class="card h-100 border-start border-info border-4">
+                <div class="card-body">
+                    <div class="text-muted small">Agreed Competencies</div>
+                    <div class="fs-4 fw-bold">
+                        {{ $competencyPercent !== null ? number_format($competencyPercent, 1).'%' : 'Pending' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
             <div class="card h-100 border-start border-secondary border-4">
                 <div class="card-body">
                     <div class="text-muted small">Appraisal ID</div>
@@ -267,6 +278,52 @@
                 @endforeach
             </div>
 
+            <div class="card mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="h5 mb-1">Behavioural Competencies</h2>
+                        <div class="text-muted small">Competency weights must total 100%.</div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="add-competency">
+                        <i class="fas fa-plus me-1"></i>Add Competency
+                    </button>
+                </div>
+
+                <div class="card-body">
+                    <input type="hidden" name="competencies_submitted" value="1">
+
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="min-width:200px">Competency</th>
+                                    <th style="min-width:100px">Weight %</th>
+                                    <th style="min-width:90px">Self</th>
+                                    <th style="min-width:200px">Comment</th>
+                                    <th style="min-width:90px">Agreed</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="competency-list">
+                                @foreach($appraisal->competencies as $competencyIndex => $competency)
+                                    <tr class="competency-row">
+                                        <td>
+                                            <input type="hidden" class="competency-id" name="competencies[{{ $competencyIndex }}][id]" value="{{ $competency->id }}">
+                                            <input class="form-control competency-name" name="competencies[{{ $competencyIndex }}][name]" value="{{ $competency->name }}" required>
+                                        </td>
+                                        <td><input type="number" min="0" max="100" step="0.01" class="form-control competency-weight" name="competencies[{{ $competencyIndex }}][weight]" value="{{ $competency->weight }}" required></td>
+                                        <td><input type="number" min="1" max="5" step="0.1" class="form-control competency-rating" name="competencies[{{ $competencyIndex }}][employee_rating]" value="{{ $competency->employee_rating }}"></td>
+                                        <td><input class="form-control competency-comment" name="competencies[{{ $competencyIndex }}][employee_comment]" value="{{ $competency->employee_comment }}"></td>
+                                        <td><strong>{{ $competency->agreed_rating ?? '—' }}</strong></td>
+                                        <td><button type="button" class="btn btn-sm btn-outline-danger remove-competency"><i class="fas fa-times"></i></button></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <button class="btn btn-primary">
                 <i class="fas fa-save me-1"></i>Save Draft
             </button>
@@ -363,6 +420,46 @@
                         </div>
                     @endforeach
 
+                    @if($appraisal->competencies->isNotEmpty())
+                        <div class="border rounded p-3 mb-3">
+                            <h3 class="h6">Behavioural Competencies</h3>
+
+                            @foreach($appraisal->competencies as $competency)
+                                <div class="row g-2 border-top py-2 align-items-end">
+                                    <div class="col-md-5">
+                                        <strong>{{ $competency->name }}</strong>
+                                        <div class="small text-muted">Weight {{ $competency->weight }}% · Self rating: {{ $competency->employee_rating ?? '—' }}</div>
+                                        @if($competency->employee_comment)
+                                            <div class="small text-muted">{{ $competency->employee_comment }}</div>
+                                        @endif
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label">Supervisor Rating</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="5"
+                                            step="0.1"
+                                            class="form-control"
+                                            name="competencies[{{ $competency->id }}][supervisor_rating]"
+                                            value="{{ $competency->supervisor_rating }}"
+                                        >
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label class="form-label">Comment</label>
+                                        <input
+                                            class="form-control"
+                                            name="competencies[{{ $competency->id }}][supervisor_comment]"
+                                            value="{{ $competency->supervisor_comment }}"
+                                        >
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
                     <label class="form-label">Overall Supervisor Comments</label>
                     <textarea class="form-control mb-3" rows="4" name="manager_comments">{{ $appraisal->manager_comments }}</textarea>
 
@@ -455,6 +552,32 @@
                             @endforeach
                         </div>
                     @endforeach
+
+                    @if($appraisal->competencies->isNotEmpty())
+                        <div class="border rounded p-3 mb-3">
+                            <strong>Behavioural Competencies</strong>
+
+                            @foreach($appraisal->competencies as $competency)
+                                <div class="row g-2 border-top mt-2 pt-2 align-items-end">
+                                    <div class="col-md-5">{{ $competency->name }}</div>
+                                    <div class="col-md-2">Self: {{ $competency->employee_rating ?? '—' }}</div>
+                                    <div class="col-md-2">Supervisor: {{ $competency->supervisor_rating ?? '—' }}</div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Agreed Rating</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="5"
+                                            step="0.1"
+                                            class="form-control"
+                                            name="competencies[{{ $competency->id }}][agreed_rating]"
+                                            value="{{ $competency->agreed_rating }}"
+                                        >
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
 
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -652,6 +775,17 @@
         </tr>
     </template>
 
+    <template id="competency-template">
+        <tr class="competency-row">
+            <td><input class="form-control competency-name" required></td>
+            <td><input type="number" min="0" max="100" step="0.01" class="form-control competency-weight" required></td>
+            <td><input type="number" min="1" max="5" step="0.1" class="form-control competency-rating"></td>
+            <td><input class="form-control competency-comment"></td>
+            <td>—</td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger remove-competency"><i class="fas fa-times"></i></button></td>
+        </tr>
+    </template>
+
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', function () {
@@ -773,6 +907,42 @@
                         reindex();
                     }
                 });
+
+                const competencyList = document.getElementById('competency-list');
+                const addCompetencyButton = document.getElementById('add-competency');
+                const competencyTemplate = document.getElementById('competency-template');
+
+                function reindexCompetencies() {
+                    const fields = {
+                        '.competency-id': 'id',
+                        '.competency-name': 'name',
+                        '.competency-weight': 'weight',
+                        '.competency-rating': 'employee_rating',
+                        '.competency-comment': 'employee_comment'
+                    };
+
+                    competencyList.querySelectorAll('.competency-row').forEach((row, index) => {
+                        Object.entries(fields).forEach(([selector, field]) => {
+                            const input = row.querySelector(selector);
+                            if (input) input.name = `competencies[${index}][${field}]`;
+                        });
+                    });
+                }
+
+                if (competencyList && addCompetencyButton && competencyTemplate) {
+                    addCompetencyButton.addEventListener('click', function () {
+                        competencyList.appendChild(competencyTemplate.content.firstElementChild.cloneNode(true));
+                        reindexCompetencies();
+                    });
+
+                    competencyList.addEventListener('click', function (event) {
+                        const remove = event.target.closest('.remove-competency');
+                        if (remove) {
+                            remove.closest('.competency-row').remove();
+                            reindexCompetencies();
+                        }
+                    });
+                }
 
                 prepareExistingRows();
                 reindex();

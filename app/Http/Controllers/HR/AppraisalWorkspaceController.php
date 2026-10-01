@@ -44,11 +44,14 @@ class AppraisalWorkspaceController extends Controller
             'manager',
             'cycle',
             'kras.kpis',
+            'competencies',
             'meeting',
             'statusHistory',
         ]);
 
-        return view('hr.appraisals.workflow', compact('appraisal'));
+        $competencyPercent = $scores->competencyPercent($appraisal);
+
+        return view('hr.appraisals.workflow', compact('appraisal', 'competencyPercent'));
     }
 
     public function saveEmployee(
@@ -103,6 +106,14 @@ class AppraisalWorkspaceController extends Controller
             'kras.*.kpis.*.employee_score' => 'nullable|numeric|min:1|max:5',
             'kras.*.kpis.*.evidence' => 'nullable|string|max:5000',
             'kras.*.kpis.*.employee_comment' => 'nullable|string|max:5000',
+
+            'competencies_submitted' => 'nullable|boolean',
+            'competencies' => 'nullable|array',
+            'competencies.*.id' => 'nullable|integer',
+            'competencies.*.name' => 'required|string|max:255',
+            'competencies.*.weight' => 'required|numeric|min:0|max:100',
+            'competencies.*.employee_rating' => 'nullable|numeric|min:1|max:5',
+            'competencies.*.employee_comment' => 'nullable|string|max:5000',
         ]);
 
         DB::transaction(function () use ($appraisal, $data) {
@@ -187,6 +198,36 @@ class AppraisalWorkspaceController extends Controller
                 $deleteKras->whereNotIn('id', $keptKraIds);
             }
             $deleteKras->delete();
+
+            // Only sync competencies when the form included the section, so a
+            // request without it cannot wipe existing rows.
+            if (! empty($data['competencies_submitted'])) {
+                $keptCompetencyIds = [];
+
+                foreach (($data['competencies'] ?? []) as $competencyData) {
+                    $fields = collect($competencyData)->only([
+                        'name',
+                        'weight',
+                        'employee_rating',
+                        'employee_comment',
+                    ])->all();
+
+                    if (! empty($competencyData['id'])) {
+                        $competency = $appraisal->competencies()->whereKey($competencyData['id'])->firstOrFail();
+                        $competency->update($fields);
+                    } else {
+                        $competency = $appraisal->competencies()->create($fields);
+                    }
+
+                    $keptCompetencyIds[] = $competency->id;
+                }
+
+                $deleteCompetencies = $appraisal->competencies();
+                if ($keptCompetencyIds !== []) {
+                    $deleteCompetencies->whereNotIn('id', $keptCompetencyIds);
+                }
+                $deleteCompetencies->delete();
+            }
         });
 
         if ($appraisal->status !== 'in_progress') {
@@ -254,6 +295,9 @@ class AppraisalWorkspaceController extends Controller
             'kras.*.kpis' => 'nullable|array',
             'kras.*.kpis.*.supervisor_score' => 'nullable|numeric|min:1|max:5',
             'kras.*.kpis.*.supervisor_comment' => 'nullable|string|max:5000',
+            'competencies' => 'nullable|array',
+            'competencies.*.supervisor_rating' => 'nullable|numeric|min:1|max:5',
+            'competencies.*.supervisor_comment' => 'nullable|string|max:5000',
         ]);
 
         DB::transaction(function () use ($appraisal, $data) {
@@ -279,6 +323,16 @@ class AppraisalWorkspaceController extends Controller
                             'supervisor_comment',
                         ])->all());
                 }
+            }
+
+            foreach (($data['competencies'] ?? []) as $competencyId => $competencyData) {
+                $appraisal->competencies()
+                    ->whereKey($competencyId)
+                    ->firstOrFail()
+                    ->update(collect($competencyData)->only([
+                        'supervisor_rating',
+                        'supervisor_comment',
+                    ])->all());
             }
         });
 
@@ -375,6 +429,8 @@ class AppraisalWorkspaceController extends Controller
             'kras.*.agreed_rating' => 'nullable|numeric|min:1|max:5',
             'kras.*.kpis' => 'nullable|array',
             'kras.*.kpis.*.agreed_score' => 'nullable|numeric|min:1|max:5',
+            'competencies' => 'nullable|array',
+            'competencies.*.agreed_rating' => 'nullable|numeric|min:1|max:5',
         ]);
 
         DB::transaction(function () use ($appraisal, $data) {
@@ -406,6 +462,13 @@ class AppraisalWorkspaceController extends Controller
                         ->firstOrFail()
                         ->update(collect($kpiData)->only(['agreed_score'])->all());
                 }
+            }
+
+            foreach (($data['competencies'] ?? []) as $competencyId => $competencyData) {
+                $appraisal->competencies()
+                    ->whereKey($competencyId)
+                    ->firstOrFail()
+                    ->update(collect($competencyData)->only(['agreed_rating'])->all());
             }
 
             $appraisal->update(['meeting_completed_at' => now()]);
