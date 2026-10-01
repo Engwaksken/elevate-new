@@ -1,3 +1,37 @@
 <?php
-namespace App\Http\Controllers\Admin\Reports;use App\Http\Controllers\Controller;use Illuminate\Support\Facades\DB;use Illuminate\Support\Facades\Schema;
-class TrackingReportsController extends Controller {public function mentorship(){$stats=['mentors'=>Schema::hasTable('mentor_profiles')?DB::table('mentor_profiles')->count():0,'matches'=>Schema::hasTable('mentor_matches')?DB::table('mentor_matches')->count():0,'sessions'=>Schema::hasTable('mentorship_sessions')?DB::table('mentorship_sessions')->count():0,'goals'=>Schema::hasTable('mentorship_goals')?DB::table('mentorship_goals')->count():0];return view('admin.reports.mentorship',compact('stats'));}public function jobs(){$events=Schema::hasTable('job_tracking_events')?DB::table('job_tracking_events')->latest()->limit(200)->get():collect();$funnel=$events->groupBy('event_type')->map->count()->sortDesc();return view('admin.reports.jobs',compact('events','funnel'));}}
+
+namespace App\Http\Controllers\Admin\Reports;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+class TrackingReportsController extends Controller
+{
+    public function mentorship()
+    {
+        $stats = [];
+
+        foreach (['mentors' => 'mentor_profiles', 'matches' => 'mentor_matches', 'sessions' => 'mentorship_sessions', 'goals' => 'mentorship_goals'] as $key => $table) {
+            $stats[$key] = Schema::hasTable($table) ? DB::table($table)->count() : 0;
+        }
+
+        return view('admin.reports.mentorship', compact('stats'));
+    }
+
+    public function jobs()
+    {
+        $events = Schema::hasTable('job_tracking_events')
+            ? DB::table('job_tracking_events')->latest()->limit(200)->get()
+            : collect();
+
+        $funnel = $events->groupBy('event_type')->map->count()->sortDesc();
+
+        $userNames = DB::table('users')->whereIn('id', $events->pluck('user_id')->filter()->unique())->pluck('name', 'id');
+        $jobTitles = Schema::hasTable('jobs') && Schema::hasColumn('jobs', 'title')
+            ? DB::table('jobs')->whereIn('id', $events->pluck('job_id')->filter()->unique())->pluck('title', 'id')
+            : collect();
+
+        return view('admin.reports.jobs', compact('events', 'funnel', 'userNames', 'jobTitles'));
+    }
+}

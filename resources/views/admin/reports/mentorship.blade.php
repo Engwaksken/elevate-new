@@ -1,1 +1,23 @@
-@extends('layouts.admin') @section('content')<div class="container-fluid py-4"><h1 class="h3">Mentorship Tracking</h1><div class="row g-3">@foreach(['Mentors'=>$stats['mentors'],'Matches'=>$stats['matches'],'Sessions'=>$stats['sessions'],'Goals'=>$stats['goals']] as $l=>$v)<div class="col-md-3"><div class="card"><div class="card-body"><small class="text-muted">{{$l}}</small><div class="h2">{{$v}}</div></div></div></div>@endforeach</div></div>@endsection
+@extends('layouts.admin')
+@section('title', 'Mentorship Tracking | ElevateHer360 Administration')
+
+@section('content')
+<div class="admin-page-header">
+    <div>
+        <span class="admin-eyebrow">Reports</span>
+        <h1>Mentorship Tracking</h1>
+        <p>Mentors, matches, sessions and goals across the programme.</p>
+    </div>
+</div>
+
+<div class="admin-stats-grid compact">
+    @foreach([
+        ['Mentors', $stats['mentors'], 'fa-user-tie'],
+        ['Matches', $stats['matches'], 'fa-people-arrows'],
+        ['Sessions', $stats['sessions'], 'fa-calendar-check'],
+        ['Goals', $stats['goals'], 'fa-bullseye'],
+    ] as [$label, $value, $icon])
+        <div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span><div><small>{{ $label }}</small><strong>{{ number_format($value) }}</strong></div></div>
+    @endforeach
+</div>
+@endsection

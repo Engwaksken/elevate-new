@@ -37,6 +37,7 @@ use App\Observers\AuditableObserver;
 use App\Observers\HrNotificationObserver;
 use App\Observers\LearningNotificationObserver;
 use App\Observers\OperationalNotificationObserver;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -48,6 +49,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Super administrators may perform every ability checked through Gates/Policies.
+        Gate::before(fn ($user) => method_exists($user,'isSuperAdmin') && $user->isSuperAdmin() ? true : null);
+
         $auditedModels=[
             Activity::class,
             Appraisal::class,

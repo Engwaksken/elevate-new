@@ -14,7 +14,7 @@ class EnsureStaffUser
 
         abort_unless($user, 403);
         abort_unless($user->isActive(), 403, 'Your account is not active.');
-        abort_unless($user->isStaff(), 403, 'Staff access only.');
+        abort_unless($user->isStaff() || $user->isSuperAdmin(), 403, 'Staff access only.');
 
         return $next($request);
     }

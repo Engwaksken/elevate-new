@@ -1,4 +1,9 @@
 @extends(auth()->user()?->isStaff() ? 'layouts.admin' : 'layouts.app')
+@section('title', ($appraisal->cycle?->name ?? 'Staff Appraisal').' | ElevateHer360')
+
+@push('head')
+    @include('partials.bootstrap-lite')
+@endpush
 
 @section('content')
 @php
@@ -26,7 +31,7 @@
         && in_array($appraisal->status, ['meeting_pending', 'meeting_completed'], true);
 @endphp
 
-<div class="container-fluid py-4">
+<div class="eh-bs">
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
@@ -46,68 +51,36 @@
         </div>
     @endif
 
-    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div class="admin-page-header">
         <div>
-            <h1 class="h3 mb-1">{{ $appraisal->cycle?->name ?? 'Staff Appraisal' }}</h1>
-            <div class="text-muted">
+            <span class="admin-eyebrow">Staff Appraisal</span>
+            <h1>{{ $appraisal->cycle?->name ?? 'Staff Appraisal' }}</h1>
+            <p>
                 {{ $appraisal->employee?->user?->name ?? 'Employee' }}
                 · Supervisor: {{ $appraisal->manager?->name ?? 'Not assigned' }}
-            </div>
+            </p>
         </div>
 
-        <div class="text-end">
-            <span class="badge bg-primary fs-6">
-                {{ ucwords(str_replace('_', ' ', $appraisal->status)) }}
-            </span>
-
+        <div class="admin-page-actions" style="flex-direction:column;align-items:flex-end;gap:4px">
+            <span class="status-chip {{ $appraisal->status }}">{{ ucwords(str_replace('_', ' ', $appraisal->status)) }}</span>
             @if($appraisal->locked_at)
-                <div class="text-danger small mt-1">
-                    <i class="fas fa-lock me-1"></i>Locked
-                </div>
+                <small class="text-danger"><i class="fas fa-lock me-1"></i>Locked {{ $appraisal->locked_at->format('d M Y') }}</small>
             @endif
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card h-100 border-start border-primary border-4">
-                <div class="card-body">
-                    <div class="text-muted small">Completion</div>
-                    <div class="fs-4 fw-bold">{{ number_format((float) $appraisal->completion_percent, 1) }}%</div>
-                </div>
+    <div class="admin-stats-grid compact">
+        @foreach([
+            ['Completion', number_format((float) $appraisal->completion_percent, 1).'%', 'fa-list-check'],
+            ['Agreed Performance', $appraisal->performance_percent !== null ? number_format((float) $appraisal->performance_percent, 1).'%' : 'Pending', 'fa-chart-line'],
+            ['Agreed Competencies', $competencyPercent !== null ? number_format($competencyPercent, 1).'%' : 'Pending', 'fa-people-group'],
+            ['Appraisal ID', '#'.$appraisal->id, 'fa-hashtag'],
+        ] as [$label, $value, $icon])
+            <div class="admin-stat">
+                <span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span>
+                <div><small>{{ $label }}</small><strong>{{ $value }}</strong></div>
             </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card h-100 border-start border-success border-4">
-                <div class="card-body">
-                    <div class="text-muted small">Agreed Performance</div>
-                    <div class="fs-4 fw-bold">
-                        {{ $appraisal->performance_percent !== null ? number_format((float) $appraisal->performance_percent, 1).'%' : 'Pending' }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card h-100 border-start border-info border-4">
-                <div class="card-body">
-                    <div class="text-muted small">Agreed Competencies</div>
-                    <div class="fs-4 fw-bold">
-                        {{ $competencyPercent !== null ? number_format($competencyPercent, 1).'%' : 'Pending' }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card h-100 border-start border-secondary border-4">
-                <div class="card-body">
-                    <div class="text-muted small">Appraisal ID</div>
-                    <div class="fs-4 fw-bold">#{{ $appraisal->id }}</div>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
     @if($canEmployeeEdit)

@@ -34,7 +34,10 @@
 <div class="admin-panel-head"><div><h2>Module Locks</h2><p>First module is available by default. Later modules can be released or locked for this cohort.</p></div></div>
 <div class="module-access-grid">
 @foreach($course->modules->sortBy('position') as $module)
-@php($release=$releases->get($module->id); $released=(bool)($release?->is_released))
+@php
+$release=$releases->get($module->id);
+$released=(bool)($release?->is_released);
+@endphp
 <article class="module-access-card">
 <div><span class="module-number">{{ $loop->iteration }}</span><strong>{{ $module->title }}</strong><small>{{ $module->lessons->count() }} lesson(s)</small></div>
 @if($loop->first)

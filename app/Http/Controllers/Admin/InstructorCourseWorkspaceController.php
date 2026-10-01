@@ -16,5 +16,5 @@ final class InstructorCourseWorkspaceController extends Controller {
   abort_unless($this->elevated($user)||$course->instructors()->whereKey($user->getKey())->exists(),403,'You do not have permission to perform this action.');
   $course->loadMissing(['modules.lessons','assignments','quizzes','participants']); return view('admin.my-courses.show',compact('course'));
  }
- private function elevated($user): bool { foreach(['admin','administrator','super_admin'] as $r) if(method_exists($user,'hasRole')&&$user->hasRole($r)) return true; return false; }
+ private function elevated($user): bool { return method_exists($user,'isSuperAdmin') && $user->isSuperAdmin(); }
 }

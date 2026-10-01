@@ -9,6 +9,7 @@
         ?: 'Staff Member';
 
     $isInstructor = method_exists($user, 'hasAnyRole')
+        && ! $user->isSuperAdmin()
         && $user->hasAnyRole(['instructor', 'trainer']);
 
     $groups = [
