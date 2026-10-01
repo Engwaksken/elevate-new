@@ -16,8 +16,8 @@ h1 { font-size:34px; margin:0 0 18px; color:#800000; }
 </head>
 <body>
 <div class="page">
-@if($template && $template->background_path)
-<img class="bg" src="{{ public_path('storage/'.$template->background_path) }}">
+@if($template?->backgroundFilePath())
+<img class="bg" src="{{ $template->backgroundFilePath() }}">
 @endif
 <div class="content">
 <h1>Certificate of Completion</h1>

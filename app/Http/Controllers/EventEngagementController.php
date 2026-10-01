@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
+use App\Models\CertificateTemplate;
 use App\Models\EventCertificate;
 use App\Models\EventFeedbackResponse;
 use Illuminate\Http\Request;
@@ -78,37 +79,48 @@ class EventEngagementController extends Controller
 
     public function certificate(Event $event)
     {
-        abort_unless($event->certificate_enabled,404);
-
-        $attendance=$event->attendanceRecords()
+        // A certificate issued by staff (e.g. an approved recommendation) is always downloadable.
+        $certificate=EventCertificate::where('event_id',$event->id)
             ->where('user_id',auth()->id())
-            ->whereIn('attendance_status',['present','late'])
-            ->firstOrFail();
+            ->whereNotNull('issued_by')
+            ->first();
 
-        if($event->certificate_requires_feedback){
-            abort_unless(
-                EventFeedbackResponse::where('event_id',$event->id)
-                    ->where('user_id',auth()->id())
-                    ->exists(),
-                403,
-                'Submit event feedback before downloading your certificate.'
+        if(! $certificate){
+            abort_unless($event->certificate_enabled,404);
+
+            $attendance=$event->attendanceRecords()
+                ->where('user_id',auth()->id())
+                ->whereIn('attendance_status',['present','late'])
+                ->firstOrFail();
+
+            if($event->certificate_requires_feedback){
+                abort_unless(
+                    EventFeedbackResponse::where('event_id',$event->id)
+                        ->where('user_id',auth()->id())
+                        ->exists(),
+                    403,
+                    'Submit event feedback before downloading your certificate.'
+                );
+            }
+
+            $certificate=EventCertificate::firstOrCreate(
+                ['event_id'=>$event->id,'user_id'=>auth()->id()],
+                [
+                    'event_attendance_record_id'=>$attendance->id,
+                    'certificate_code'=>(string)Str::uuid(),
+                    'issued_at'=>now(),
+                ]
             );
         }
 
-        $certificate=EventCertificate::firstOrCreate(
-            ['event_id'=>$event->id,'user_id'=>auth()->id()],
-            [
-                'event_attendance_record_id'=>$attendance->id,
-                'certificate_code'=>(string)Str::uuid(),
-                'issued_at'=>now(),
-            ]
-        );
+        $template=CertificateTemplate::resolveFor(null,$event->id);
 
         $pdf=Pdf::loadView('events.certificates.pdf',[
             'event'=>$event,
             'user'=>auth()->user(),
             'certificate'=>$certificate,
-        ])->setPaper('a4','landscape');
+            'template'=>$template,
+        ])->setPaper('a4',$template?->orientation ?: 'landscape');
 
         return $pdf->download('event-certificate-'.$event->id.'-'.$certificate->certificate_code.'.pdf');
     }

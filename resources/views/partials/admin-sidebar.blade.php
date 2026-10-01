@@ -231,6 +231,14 @@
                     'permissions' => ['calendar.manage'],
                 ],
                 [
+                    'route' => 'certificates.recommendations.index',
+                    'label' => 'Certificates',
+                    'icon' => 'fa-award',
+                    'permissions' => [],
+                    'roles' => \App\Services\CertificateRecommendationService::RECOMMENDER_ROLES,
+                    'active' => ['certificates.recommendations.*', 'admin.elearning.certificates.*'],
+                ],
+                [
                     'route' => 'admin.library.index',
                     'label' => 'Library',
                     'icon' => 'fa-book-open',
@@ -334,6 +342,13 @@
                         'icon' => 'fa-calendar-days',
                         'permissions' => [],
                     ],
+                    [
+                        'route' => 'certificates.recommendations.index',
+                        'label' => 'Certificate Recommendations',
+                        'icon' => 'fa-award',
+                        'permissions' => [],
+                        'active' => ['certificates.recommendations.*'],
+                    ],
                 ],
             ],
         ];
@@ -354,6 +369,7 @@
                     ['url' => $manageUrl.'?tab=announcements', 'label' => 'Announcements', 'icon' => 'fa-bullhorn'],
                     ['url' => $manageUrl.'?tab=participants', 'label' => 'Course Participants', 'icon' => 'fa-users'],
                     ['url' => $manageUrl.'?tab=progress', 'label' => 'Participant Progress', 'icon' => 'fa-chart-line'],
+                    ['url' => route('certificates.recommendations.create', ['course_id' => $activeCourse->id]), 'label' => 'Recommend Certificates', 'icon' => 'fa-award'],
                 ],
             ];
         }

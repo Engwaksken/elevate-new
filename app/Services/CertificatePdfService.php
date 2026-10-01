@@ -14,29 +14,7 @@ class CertificatePdfService
 
         $template = $certificate->template;
 
-        if (! $template) {
-            $template = CertificateTemplate::query()
-                ->where('is_active', true)
-                ->where(function ($query) use ($certificate) {
-                    if ($certificate->course_id) {
-                        $query->orWhere(function ($q) use ($certificate) {
-                            $q->where('context_type', 'course')
-                                ->where('course_id', $certificate->course_id);
-                        });
-                    }
-
-                    if ($certificate->event_id) {
-                        $query->orWhere(function ($q) use ($certificate) {
-                            $q->where('context_type', 'event')
-                                ->where('event_id', $certificate->event_id);
-                        });
-                    }
-
-                    $query->orWhere('context_type', 'default');
-                })
-                ->latest()
-                ->first();
-        }
+        $template ??= CertificateTemplate::resolveFor($certificate->course_id, $certificate->event_id);
 
         $html = view('certificates.pdf', compact('certificate', 'template'))->render();
 

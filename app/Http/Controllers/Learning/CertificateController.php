@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Learning;
 
 use App\Http\Controllers\Controller;
 use App\Models\Certificate;
+use App\Models\EventCertificate;
 use App\Services\CertificatePdfService;
 use Illuminate\Support\Facades\Storage;
 
@@ -16,6 +17,10 @@ class CertificateController extends Controller
                 ->where('user_id', auth()->id())
                 ->latest('issued_on')
                 ->paginate(20),
+            'eventCertificates' => EventCertificate::with('event')
+                ->where('user_id', auth()->id())
+                ->latest('issued_at')
+                ->get(),
         ]);
     }
 
