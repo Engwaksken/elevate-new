@@ -94,6 +94,20 @@ class CertificateAdminController extends Controller
         return back()->with('success','Certificate template uploaded.');
     }
 
+    public function previewTemplate(CertificateTemplate $template)
+    {
+        abort_unless($template->background_path && Storage::disk('public')->exists($template->background_path), 404);
+
+        return Storage::disk('public')->response($template->background_path);
+    }
+
+    public function toggleTemplate(CertificateTemplate $template)
+    {
+        $template->update(['is_active' => ! $template->is_active]);
+
+        return back()->with('success', $template->is_active ? 'Template activated.' : 'Template deactivated.');
+    }
+
     public function destroyTemplate(CertificateTemplate $template)
     {
         if ($template->background_path) {

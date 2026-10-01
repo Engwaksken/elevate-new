@@ -1,0 +1,37 @@
+/* Certificate recommendations */
+.cert-status{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:.68rem;font-weight:700;white-space:nowrap}
+.cert-status-pending{background:#fffaeb;color:#b54708}
+.cert-status-approved{background:#ecfdf3;color:#067647}
+.cert-status-rejected{background:#fef3f2;color:#b42318}
+.cert-context{display:block;margin-bottom:2px;color:#667085;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.cert-context i{margin-right:3px}
+.cert-note{margin-bottom:14px;padding:11px 13px;border:1px solid #eef0f3;border-radius:8px;background:#fcfcfd}
+.cert-note strong{display:block;margin-bottom:4px;color:#344054;font-size:.74rem}
+.cert-note p{margin:0;color:#475467;font-size:.82rem;white-space:pre-line;overflow-wrap:anywhere}
+.cert-picker{align-items:flex-end}
+.cert-picker-field{display:flex;flex-direction:column;gap:5px;flex:1 1 260px;min-width:0}
+.cert-picker-field span{color:#344054;font-size:.74rem;font-weight:700}
+.cert-picker-field select{width:100%}
+.cert-picker-or{align-self:center;padding:18px 4px 0;color:#667085;font-size:.74rem;font-weight:700}
+.cert-row-locked td{background:#fcfcfd}
+.cert-submit{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:end;margin-top:16px;padding-top:16px;border-top:1px solid #eef0f3}
+.cert-submit .form-group{margin:0}
+.cert-submit label{display:block;margin-bottom:6px;font-size:.78rem;font-weight:700;color:#172033}
+.cert-submit textarea{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #d0d5dd;border-radius:8px;font:inherit;font-size:.82rem;resize:vertical}
+.cert-submit-actions{display:flex;flex-wrap:wrap;gap:8px}
+a.admin-stat{text-decoration:none;color:inherit}
+@media(max-width:760px){.cert-submit{grid-template-columns:1fr}.cert-picker-or{padding:0}}
+
+/* Certificate templates */
+.cert-template-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:14px}
+.cert-template-card{display:flex;flex-direction:column;border:1px solid #e4e7ec;border-radius:10px;background:#fff;overflow:hidden}
+.cert-template-card.is-inactive{opacity:.6}
+.cert-template-thumb{display:block;aspect-ratio:297/210;background:#f2f4f7;border-bottom:1px solid #eef0f3}
+.cert-template-thumb.portrait{aspect-ratio:auto;height:200px}
+.cert-template-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+.cert-template-body{display:flex;flex-direction:column;gap:3px;padding:11px 13px;flex:1;font-size:.78rem;color:#475467}
+.cert-template-body strong{color:#172033;font-size:.86rem}
+.cert-template-meta{color:#667085;font-size:.7rem}
+.cert-template-actions{display:flex;gap:6px;padding:0 13px 12px}
+.cert-template-actions form{margin:0}
+[data-template-for][hidden]{display:none !important}

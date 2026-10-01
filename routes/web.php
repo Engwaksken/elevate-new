@@ -1023,6 +1023,12 @@ Route::prefix('admin/elearning/certificates/templates')
         Route::post('/', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'storeTemplate'])
             ->name('store');
 
+        Route::get('/{template}/preview', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'previewTemplate'])
+            ->name('preview');
+
+        Route::patch('/{template}/toggle', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'toggleTemplate'])
+            ->name('toggle');
+
         Route::delete('/{template}', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'destroyTemplate'])
             ->name('destroy');
     });
@@ -1149,3 +1155,32 @@ if (! \Illuminate\Support\Facades\Route::has('offline')) {
 }
 
 require __DIR__ . '/workspaces.php';
+
+/*
+|--------------------------------------------------------------------------
+| Certificate recommendations
+|--------------------------------------------------------------------------
+|
+| Instructors, trainers and programme staff recommend participants for course
+| or event certificates; administrators approve (issuing them) or reject.
+| Finer access rules live in CertificateRecommendationService.
+|
+*/
+
+Route::middleware(['auth', 'staff', 'role:'.implode(',', array_merge(
+        \App\Services\CertificateRecommendationService::RECOMMENDER_ROLES,
+        \App\Services\CertificateRecommendationService::APPROVER_ROLES,
+    ))])
+    ->prefix('certificates/recommendations')
+    ->name('certificates.recommendations.')
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\Certificates\CertificateRecommendationController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Certificates\CertificateRecommendationController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Certificates\CertificateRecommendationController::class, 'store'])->name('store');
+        Route::post('/review', [\App\Http\Controllers\Certificates\CertificateRecommendationController::class, 'review'])->name('review');
+    });
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/my-certificates', [CertificateController::class, 'index'])->name('certificates.mine');
+    Route::get('/my-certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
+});

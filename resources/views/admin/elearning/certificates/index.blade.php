@@ -9,6 +9,11 @@
         <h1>Course Certificates</h1>
         <p>Manage issued learner certificates and generate certificate PDFs.</p>
     </div>
+    <div class="admin-page-actions">
+        <a href="{{ route('admin.elearning.certificates.templates.index') }}" class="btn btn-outline"><i class="fas fa-image"></i> Templates</a>
+        <a href="{{ route('certificates.recommendations.index') }}" class="btn btn-outline"><i class="fas fa-list-check"></i> Recommendations</a>
+        <a href="{{ route('certificates.recommendations.create') }}" class="btn btn-primary"><i class="fas fa-award"></i> Issue certificates</a>
+    </div>
 </div>
 
 @if(session('success'))

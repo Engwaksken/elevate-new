@@ -538,7 +538,7 @@
 
 @if($activeTab === 'participants')
 <section class="icm-panel">
-    <div class="icm-panel-head"><div><h2>Course Participants</h2><p class="icm-muted">View and update enrolment status and course progress.</p></div></div>
+    <div class="icm-panel-head"><div><h2>Course Participants</h2><p class="icm-muted">View and update enrolment status and course progress.</p></div><a class="btn btn-primary" href="{{ route('certificates.recommendations.create', ['course_id' => $course->id]) }}"><i class="fas fa-award"></i> Recommend certificates</a></div>
     <form method="GET" class="icm-filter">
         <input type="hidden" name="tab" value="participants">
         <input name="participant_search" value="{{ request('participant_search') }}" placeholder="Search name or email">
@@ -586,7 +586,10 @@
 <section class="icm-panel">
     <div class="icm-panel-head">
         <div><h2>Participant Progress</h2><p class="icm-muted">Lesson completion, modules, assessments, attendance and overall progress.</p></div>
-        <a class="btn btn-outline" href="{{ route('instructor.courses.progress.export',$course) }}"><i class="fas fa-file-csv"></i> Export CSV</a>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a class="btn btn-outline" href="{{ route('instructor.courses.progress.export',$course) }}"><i class="fas fa-file-csv"></i> Export CSV</a>
+            <a class="btn btn-primary" href="{{ route('certificates.recommendations.create', ['course_id' => $course->id]) }}"><i class="fas fa-award"></i> Recommend certificates</a>
+        </div>
     </div>
     <div class="table-responsive">
         <table class="admin-table">

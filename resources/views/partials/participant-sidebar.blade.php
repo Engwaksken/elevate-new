@@ -104,6 +104,13 @@
         @endif
 
 
+        @if(Route::has('certificates.mine'))
+            <a href="{{ route('certificates.mine') }}" class="ps-link {{ request()->routeIs('certificates.mine') ? 'active' : '' }}">
+                <i class="fas fa-award"></i>
+                <span>My Certificates</span>
+            </a>
+        @endif
+
         @if(Route::has('notifications.index'))
 
             <a
