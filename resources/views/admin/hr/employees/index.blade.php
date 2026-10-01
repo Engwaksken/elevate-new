@@ -36,18 +36,33 @@
 <div class="eh-modal" id="createEmployeeModal" aria-hidden="true"><div class="eh-modal-dialog eh-modal-lg">
 <div class="eh-modal-header"><div><h2>New Employee</h2><p>Create an employee record for an existing staff user.</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
 <form method="POST" action="{{ route('admin.hr.employees.store') }}">@csrf
-<div class="eh-modal-body"><div class="modal-grid">
+@php
+$employeeFormTabs = [
+    'employee' => ['label' => 'Employee', 'icon' => 'fa-id-badge', 'fields' => ['user_id', 'employee_number', 'employment_type', 'status']],
+    'placement' => ['label' => 'Placement', 'icon' => 'fa-sitemap', 'fields' => ['department_id', 'position_id', 'supervisor_user_id', 'work_location']],
+    'dates' => ['label' => 'Dates', 'icon' => 'fa-calendar-days', 'fields' => ['start_date', 'probation_end_date']],
+];
+@endphp
+<div class="eh-modal-body">
+<x-form-tabs id="employee-create" label="Employee details" :tabs="$employeeFormTabs">
+<x-form-tab name="employee"><div class="modal-grid">
 <div class="form-group"><label>Staff User *</label><select name="user_id" required><option value="">Select staff user</option>@foreach($users as $u)<option value="{{ $u->id }}">{{ $u->name }} — {{ $u->email }}</option>@endforeach</select></div>
 <div class="form-group"><label>Employee Number *</label><input name="employee_number" required></div>
+<div class="form-group"><label>Employment Type</label><input name="employment_type" placeholder="Permanent, Contract, Consultant..."></div>
+<div class="form-group"><label>Status *</label><select name="status">@foreach(['active','probation','on_leave','suspended'] as $s)<option value="{{ $s }}">{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select></div>
+</div></x-form-tab>
+<x-form-tab name="placement"><div class="modal-grid">
 <div class="form-group"><label>Department</label><select name="department_id"><option value="">None</option>@foreach($departments as $x)<option value="{{ $x->id }}">{{ $x->name }}</option>@endforeach</select></div>
 <div class="form-group"><label>Position</label><select name="position_id"><option value="">None</option>@foreach($positions as $x)<option value="{{ $x->id }}">{{ $x->title }}</option>@endforeach</select></div>
 <div class="form-group"><label>Supervisor</label><select name="supervisor_user_id"><option value="">None</option>@foreach($users as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach</select></div>
-<div class="form-group"><label>Employment Type</label><input name="employment_type" placeholder="Permanent, Contract, Consultant..."></div>
 <div class="form-group"><label>Work Location</label><input name="work_location"></div>
+</div></x-form-tab>
+<x-form-tab name="dates"><div class="modal-grid">
 <div class="form-group"><label>Start Date</label><input type="date" name="start_date"></div>
 <div class="form-group"><label>Probation End Date</label><input type="date" name="probation_end_date"></div>
-<div class="form-group"><label>Status *</label><select name="status">@foreach(['active','probation','on_leave','suspended'] as $s)<option value="{{ $s }}">{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select></div>
-</div></div>
+</div></x-form-tab>
+</x-form-tabs>
+</div>
 <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Create Employee</button></div>
 </form></div></div>
 

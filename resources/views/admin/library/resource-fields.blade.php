@@ -1,4 +1,13 @@
-@php($editing=isset($resource) && $resource)
+@php
+$editing = isset($resource) && $resource;
+$formTabsConfig = [
+    'details' => ['label' => 'Details', 'icon' => 'fa-circle-info', 'fields' => ['title', 'author', 'library_category_id', 'language', 'publication_date', 'description', 'tags_text']],
+    'access' => ['label' => 'Access', 'icon' => 'fa-lock-open', 'fields' => ['access_level', 'is_active']],
+    'files' => ['label' => 'Files & Links', 'icon' => 'fa-paperclip', 'fields' => ['external_url', 'file', 'cover_image']],
+];
+@endphp
+<x-form-tabs :id="$editing ? 'library-edit-'.$resource->id : 'library-create'" label="Resource details" :tabs="$formTabsConfig">
+<x-form-tab name="details">
 <div class="modal-grid">
 <div class="form-group full"><label>Title *</label><input name="title" value="{{ old('title',$editing ? $resource->title : '') }}" required></div>
 
@@ -17,6 +26,13 @@
 
 <div class="form-group"><label>Publication Date</label><input type="date" name="publication_date" value="{{ old('publication_date',$editing ? optional($resource->publication_date)->format('Y-m-d') : '') }}"></div>
 
+<div class="form-group full"><label>Description</label><textarea name="description" rows="5">{{ old('description',$editing ? $resource->description : '') }}</textarea></div>
+
+<div class="form-group full"><label>Tags</label><input name="tags_text" value="{{ old('tags_text',$editing ? implode(', ',$resource->tags ?? []) : '') }}" placeholder="career, entrepreneurship, digital skills"></div>
+</div>
+</x-form-tab>
+<x-form-tab name="access">
+<div class="modal-grid">
 <div class="form-group"><label>Access *</label>
 <select name="access_level" required>
 @foreach(['public'=>'Public','authenticated'=>'Authenticated','staff'=>'Staff'] as $value=>$label)
@@ -26,14 +42,15 @@
 </div>
 
 <div class="form-group"><label class="modal-check"><input type="checkbox" name="is_active" value="1" @checked((bool)old('is_active',$editing ? $resource->is_active : true))><span>Active</span></label></div>
-
-<div class="form-group full"><label>Description</label><textarea name="description" rows="5">{{ old('description',$editing ? $resource->description : '') }}</textarea></div>
-
-<div class="form-group full"><label>Tags</label><input name="tags_text" value="{{ old('tags_text',$editing ? implode(', ',$resource->tags ?? []) : '') }}" placeholder="career, entrepreneurship, digital skills"></div>
-
+</div>
+</x-form-tab>
+<x-form-tab name="files">
+<div class="modal-grid">
 <div class="form-group full"><label>External URL</label><input type="url" name="external_url" value="{{ old('external_url',$editing ? $resource->external_url : '') }}" placeholder="https://..."></div>
 
 <div class="form-group full"><label>{{ $editing ? 'Replace Resource File' : 'Resource File' }}</label><input type="file" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4,.mp3,.zip">@if($editing && $resource->file_path)<small class="form-hint">A file is currently attached. Leave blank to keep it.</small>@endif</div>
 
 <div class="form-group full"><label>{{ $editing ? 'Replace Cover Image' : 'Cover Image' }}</label><input type="file" name="cover_image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">@if($editing && $resource->cover_image_path)<small class="form-hint">A cover image is currently attached. Leave blank to keep it.</small>@endif</div>
 </div>
+</x-form-tab>
+</x-form-tabs>
