@@ -54,6 +54,11 @@ class Appraisal extends Model
         'manager_acknowledged_at'=>'datetime',
         'employee_acknowledged_at'=>'datetime',
         'hr_finalised_at'=>'datetime',
+        'meeting_completed_at'=>'datetime',
+        'employee_confirmed_at'=>'datetime',
+        'supervisor_confirmed_at'=>'datetime',
+        'locked_at'=>'datetime',
+        'reopened_at'=>'datetime',
     ];
 
     public function employee(){ return $this->belongsTo(Employee::class); }
