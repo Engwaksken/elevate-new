@@ -109,6 +109,7 @@ use App\Http\Controllers\BrandAssetController;
 use App\Http\Controllers\Jobs\SavedJobController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\HR\StaffAppraisalController;
+use App\Http\Controllers\HR\StaffContractController;
 use App\Http\Controllers\Auth\StaffAuthController;
 use App\Http\Controllers\Admin\HR\StaffExitController;
 use App\Http\Controllers\Admin\Procurement\SupplierController;
@@ -668,6 +669,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/staff/appraisals/{appraisal}/export/excel',[AppraisalExportController::class,'excel'])->name('staff.appraisals.export.excel');
     Route::get('/staff/appraisals/{appraisal}/print',[AppraisalExportController::class,'print'])->name('staff.appraisals.print');
+
+    Route::get('/staff/contracts',[StaffContractController::class,'index'])->name('staff.contracts.index');
+    Route::get('/staff/contracts/{contract}',[StaffContractController::class,'show'])->name('staff.contracts.show');
+    Route::get('/staff/contracts/{contract}/document',[StaffContractController::class,'document'])->name('staff.contracts.document');
+    Route::get('/staff/contracts/{contract}/signature',[StaffContractController::class,'signature'])->name('staff.contracts.signature');
+    Route::get('/staff/contracts/{contract}/certificate',[StaffContractController::class,'certificate'])->name('staff.contracts.certificate');
+    Route::post('/staff/contracts/{contract}/sign',[StaffContractController::class,'sign'])->middleware('throttle:10,1')->name('staff.contracts.sign');
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function () {
@@ -691,7 +699,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         Route::get('/employees',[EmployeeController::class,'index'])->middleware('permission:hr.view')->name('employees.index');
         Route::post('/employees',[EmployeeController::class,'store'])->middleware('permission:hr.manage')->name('employees.store');
 
+        Route::get('/employees/{employee}/contracts',[ContractController::class,'index'])->middleware('permission:hr.view')->name('contracts.index');
         Route::post('/employees/{employee}/contracts',[ContractController::class,'store'])->middleware('permission:hr.manage')->name('contracts.store');
+        Route::post('/contracts/{contract}/document',[ContractController::class,'updateDocument'])->middleware('permission:hr.manage')->name('contracts.document.update');
+        Route::post('/contracts/{contract}/send',[ContractController::class,'send'])->middleware('permission:hr.manage')->name('contracts.send');
+        Route::get('/contracts/{contract}/document',[ContractController::class,'document'])->middleware('permission:hr.view')->name('contracts.document');
+        Route::get('/contracts/{contract}/signature',[ContractController::class,'signature'])->middleware('permission:hr.view')->name('contracts.signature');
+        Route::get('/contracts/{contract}/certificate',[ContractController::class,'certificate'])->middleware('permission:hr.view')->name('contracts.certificate');
 
         Route::get('/leave',[LeaveApprovalController::class,'index'])->middleware('permission:leave.view')->name('leave.index');
         Route::post('/leave/{leave}/supervisor-approve',[LeaveApprovalController::class,'supervisorApprove'])->middleware('permission:leave.approve')->name('leave.supervisor-approve');
