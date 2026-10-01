@@ -108,7 +108,7 @@
                                     </div>
                                     <div class="eh-data-row-actions">
                                         <a class="btn btn-outline btn-sm" href="{{ route('career.resume.upload.review',$upload) }}"><i class="fas fa-eye"></i> Review</a>
-                                        <a class="btn btn-outline btn-sm" href="{{ route('career.resume.upload.original',[$upload,'preview'=>1]) }}" target="_blank" rel="noopener"><i class="fas fa-eye"></i> Preview</a>
+                                        <a class="btn btn-outline btn-sm" href="{{ route('career.resume.upload.original',[$upload,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="{{ $upload->original_name }}"><i class="fas fa-eye"></i> Preview</a>
                                         <a class="btn btn-outline btn-sm" href="{{ route('career.resume.upload.original',$upload) }}"><i class="fas fa-download"></i> Original</a>
                                         @if($upload->status==='failed')
                                             <form method="POST" action="{{ route('career.resume.upload.retry',$upload) }}">@csrf<button class="btn btn-outline btn-sm"><i class="fas fa-rotate"></i> Retry</button></form>
@@ -142,7 +142,7 @@
                                     </div>
                                     <div class="eh-data-row-actions">
                                         <a class="btn btn-outline btn-sm" href="{{ route('career.cover-letter.upload.review',$upload) }}"><i class="fas fa-eye"></i> Review</a>
-                                        <a class="btn btn-outline btn-sm" href="{{ route('career.cover-letter.upload.original',[$upload,'preview'=>1]) }}" target="_blank" rel="noopener"><i class="fas fa-eye"></i> Preview</a>
+                                        <a class="btn btn-outline btn-sm" href="{{ route('career.cover-letter.upload.original',[$upload,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="{{ $upload->original_name }}"><i class="fas fa-eye"></i> Preview</a>
                                         <a class="btn btn-outline btn-sm" href="{{ route('career.cover-letter.upload.original',$upload) }}"><i class="fas fa-download"></i> Original</a>
                                         @if($upload->status==='failed')
                                             <form method="POST" action="{{ route('career.cover-letter.upload.retry',$upload) }}">@csrf<button class="btn btn-outline btn-sm"><i class="fas fa-rotate"></i> Retry</button></form>

@@ -35,7 +35,7 @@
                     @endif
 
                     <div class="form-actions">
-                        <a href="{{ route('career.cover-letter.upload.original',[$upload,'preview'=>1]) }}" class="btn btn-outline" target="_blank" rel="noopener"><i class="fas fa-eye"></i> Preview</a>
+                        <a href="{{ route('career.cover-letter.upload.original',[$upload,'preview'=>1]) }}" class="btn btn-outline" target="_blank" rel="noopener" data-file-preview data-file-preview-title="{{ $upload->original_name }}"><i class="fas fa-eye"></i> Preview</a>
                         <a href="{{ route('career.cover-letter.upload.original',$upload) }}" class="btn btn-outline"><i class="fas fa-file-arrow-down"></i> Original File</a>
                         @if($upload->status==='failed')
                             <form method="POST" action="{{ route('career.cover-letter.upload.retry',$upload) }}">@csrf<button class="btn btn-primary"><i class="fas fa-rotate"></i> Retry Analysis</button></form>

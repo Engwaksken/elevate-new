@@ -94,6 +94,7 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 </script>
 @include('partials.global-assistive-tools')
+@include('partials.file-preview-modal')
 @stack('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {

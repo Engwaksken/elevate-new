@@ -127,6 +127,25 @@ class FilePreviewTest extends TestCase
         $this->actingAs($this->staff)->get($this->previewUrl($zip, 'raw'))->assertNotFound();
     }
 
+    public function test_embedded_preview_hides_its_own_header(): void
+    {
+        $file = $this->storeFile('people.csv', "name\nAmina\n");
+
+        $this->actingAs($this->staff)->get($this->previewUrl($file))
+            ->assertOk()
+            ->assertSee('<header>', false);
+
+        $embedded = $this->actingAs($this->staff)
+            ->get(route('learning.files.download', [$file, 'preview' => 1, 'embed' => 1]))
+            ->assertOk()
+            ->assertSee('class="embedded"', false)
+            ->assertDontSee('<header>', false)
+            ->assertSee('Amina');
+
+        $this->assertStringNotContainsString('embed=1', $embedded->viewData('downloadUrl'));
+        $this->assertStringNotContainsString('preview=', $embedded->viewData('downloadUrl'));
+    }
+
     public function test_download_without_preview_is_still_an_attachment(): void
     {
         $file = $this->storeFile('people.csv', "name\nAmina\n");

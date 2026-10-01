@@ -27,10 +27,14 @@
     th, td { padding:6px 10px; border:1px solid var(--line); white-space:pre-wrap; vertical-align:top; max-width:420px; }
     th { position:sticky; top:0; background:var(--bg); color:var(--muted); font-weight:600; }
     td.n { position:sticky; left:0; background:var(--bg); color:var(--muted); text-align:right; }
+    body.embedded main { padding:12px; }
+    body.embedded .frame { height:calc(100vh - 26px); }
+    body.embedded .sheet { max-height:calc(100vh - 100px); }
     pre { margin:0; padding:16px; overflow:auto; background:var(--panel); border:1px solid var(--line); border-radius:8px; white-space:pre-wrap; word-break:break-word; }
 </style>
 </head>
-<body>
+<body @class(['embedded' => $embedded])>
+@unless($embedded)
 <header>
     <div style="min-width:0">
         <h1>{{ $name }}</h1>
@@ -38,6 +42,7 @@
     </div>
     <a class="btn" href="{{ $downloadUrl }}">Download</a>
 </header>
+@endunless
 
 <main>
     @if($tooLarge)
