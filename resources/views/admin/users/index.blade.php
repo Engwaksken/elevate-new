@@ -106,6 +106,14 @@
 <div class="admin-pagination">{{ $users->links() }}</div>
 </div>
 
+@php
+    $userFormTabs = [
+        'account' => ['label' => 'Account', 'icon' => 'fa-id-card', 'fields' => ['name', 'email', 'phone']],
+        'access' => ['label' => 'Roles & Access', 'icon' => 'fa-user-shield', 'fields' => ['user_type', 'status', 'roles', 'roles.*']],
+        'security' => ['label' => 'Security', 'icon' => 'fa-lock', 'fields' => ['password', 'password_confirmation']],
+    ];
+@endphp
+
 <div class="eh-modal" id="createUserModal" aria-hidden="true">
 <div class="eh-modal-dialog eh-modal-lg">
 <div class="eh-modal-header">
@@ -116,11 +124,17 @@
 <form method="POST" action="{{ route('admin.users.store') }}">
 @csrf
 <div class="eh-modal-body">
+<x-form-tabs id="user-create" label="New user details" :tabs="$userFormTabs">
+<x-form-tab name="account">
 <div class="modal-grid">
     <div class="form-group full"><label>Full Name *</label><input name="name" value="{{ old('name') }}" required></div>
     <div class="form-group"><label>Email *</label><input type="email" name="email" value="{{ old('email') }}" required></div>
     <div class="form-group"><label>Phone</label><input name="phone" value="{{ old('phone') }}"></div>
+</div>
+</x-form-tab>
 
+<x-form-tab name="access">
+<div class="modal-grid">
     <div class="form-group"><label>User Type *</label>
         <select name="user_type" required>
             <option value="participant" @selected(old('user_type')==='participant')>Participant</option>
@@ -136,9 +150,6 @@
         </select>
     </div>
 
-    <div class="form-group"><label>Password *</label><input type="password" name="password" required autocomplete="new-password"><small class="form-hint">Minimum 8 characters, mixed case and a number.</small></div>
-    <div class="form-group"><label>Confirm Password *</label><input type="password" name="password_confirmation" required autocomplete="new-password"></div>
-
     <div class="form-group full">
         <label>Roles</label>
         <div class="permission-check-grid">
@@ -151,6 +162,15 @@
         </div>
     </div>
 </div>
+</x-form-tab>
+
+<x-form-tab name="security">
+<div class="modal-grid">
+    <div class="form-group"><label>Password *</label><input type="password" name="password" required autocomplete="new-password"><small class="form-hint">Minimum 8 characters, mixed case and a number.</small></div>
+    <div class="form-group"><label>Confirm Password *</label><input type="password" name="password_confirmation" required autocomplete="new-password"></div>
+</div>
+</x-form-tab>
+</x-form-tabs>
 </div>
 
 <div class="eh-modal-footer">
@@ -172,11 +192,17 @@
 <form method="POST" action="{{ route('admin.users.update',$user) }}">
 @csrf @method('PUT')
 <div class="eh-modal-body">
+<x-form-tabs id="user-edit-{{ $user->id }}" label="User details" :tabs="$userFormTabs">
+<x-form-tab name="account">
 <div class="modal-grid">
     <div class="form-group full"><label>Full Name *</label><input name="name" value="{{ $user->name }}" required></div>
     <div class="form-group"><label>Email *</label><input type="email" name="email" value="{{ $user->email }}" required></div>
     <div class="form-group"><label>Phone</label><input name="phone" value="{{ $user->phone }}"></div>
+</div>
+</x-form-tab>
 
+<x-form-tab name="access">
+<div class="modal-grid">
     <div class="form-group"><label>User Type *</label>
         <select name="user_type" required>
             <option value="participant" @selected($user->user_type==='participant')>Participant</option>
@@ -192,9 +218,6 @@
         </select>
     </div>
 
-    <div class="form-group"><label>New Password</label><input type="password" name="password" autocomplete="new-password"><small class="form-hint">Leave blank to keep the current password.</small></div>
-    <div class="form-group"><label>Confirm New Password</label><input type="password" name="password_confirmation" autocomplete="new-password"></div>
-
     <div class="form-group full">
         <label>Roles</label>
         <div class="permission-check-grid">
@@ -207,6 +230,15 @@
         </div>
     </div>
 </div>
+</x-form-tab>
+
+<x-form-tab name="security">
+<div class="modal-grid">
+    <div class="form-group"><label>New Password</label><input type="password" name="password" autocomplete="new-password"><small class="form-hint">Leave blank to keep the current password.</small></div>
+    <div class="form-group"><label>Confirm New Password</label><input type="password" name="password_confirmation" autocomplete="new-password"></div>
+</div>
+</x-form-tab>
+</x-form-tabs>
 </div>
 
 <div class="eh-modal-footer">

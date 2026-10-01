@@ -85,6 +85,7 @@
 
     @include('partials.global-assistive-tools')
     @include('partials.file-preview-modal')
+    @include('partials.form-tabs-assets')
     @stack('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
