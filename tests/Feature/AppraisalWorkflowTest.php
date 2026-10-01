@@ -206,6 +206,60 @@ class AppraisalWorkflowTest extends TestCase
         $this->actingAs($this->employeeUser)->get($this->url())->assertOk()->assertSee('Add evidence');
     }
 
+    public function test_competencies_flow_through_employee_supervisor_and_meeting(): void
+    {
+        $payload = $this->employeePayload() + [
+            'competencies_submitted' => 1,
+            'competencies' => [
+                ['name' => 'Teamwork', 'weight' => 50, 'employee_rating' => 4, 'employee_comment' => 'Collaborative'],
+                ['name' => 'Communication', 'weight' => 50, 'employee_rating' => 3],
+            ],
+        ];
+
+        $this->actingAs($this->employeeUser)->put($this->url('/employee'), $payload)->assertSessionHasNoErrors();
+        $this->actingAs($this->employeeUser)->get($this->url())->assertOk()->assertSee('Teamwork');
+
+        [$teamwork, $communication] = $this->appraisal->fresh()->competencies->all();
+
+        // Editing keeps the row identity and drops removed rows.
+        $payload['competencies'] = [['id' => $teamwork->id, 'name' => 'Teamwork & collaboration', 'weight' => 100, 'employee_rating' => 4]];
+        $this->actingAs($this->employeeUser)->put($this->url('/employee'), $payload)->assertSessionHasNoErrors();
+
+        $this->assertSame('Teamwork & collaboration', $teamwork->fresh()->name);
+        $this->assertNull($communication->fresh());
+
+        $this->actingAs($this->employeeUser)->post($this->url('/submit'))->assertSessionHas('success');
+
+        $this->actingAs($this->supervisor)->get($this->url())->assertOk()->assertSee('Teamwork &amp; collaboration', false);
+        $this->actingAs($this->supervisor)
+            ->put($this->url('/supervisor'), ['competencies' => [$teamwork->id => ['supervisor_rating' => 3, 'supervisor_comment' => 'Solid']]])
+            ->assertSessionHasNoErrors();
+        $this->assertEquals(3, (float) $teamwork->fresh()->supervisor_rating);
+
+        $this->actingAs($this->supervisor)->post($this->url('/review-complete'));
+        $this->actingAs($this->supervisor)
+            ->put($this->url('/meeting'), ['meeting_at' => '2026-10-01 10:00', 'competencies' => [$teamwork->id => ['agreed_rating' => 4]]])
+            ->assertSessionHasNoErrors();
+
+        $this->assertEquals(4, (float) $teamwork->fresh()->agreed_rating);
+        $this->actingAs($this->supervisor)->get($this->url())->assertOk()->assertSee('80.0%');
+    }
+
+    public function test_competency_weights_must_total_100_and_missing_section_keeps_rows(): void
+    {
+        $payload = $this->employeePayload() + [
+            'competencies_submitted' => 1,
+            'competencies' => [['name' => 'Teamwork', 'weight' => 40]],
+        ];
+
+        $this->actingAs($this->employeeUser)->put($this->url('/employee'), $payload);
+        $this->actingAs($this->employeeUser)->post($this->url('/submit'))->assertSessionHas('error', fn ($e) => str_contains($e, 'Competency weights total 40%'));
+
+        // A save without the competencies section must not delete existing rows.
+        $this->actingAs($this->employeeUser)->put($this->url('/employee'), $this->employeePayload())->assertSessionHasNoErrors();
+        $this->assertCount(1, $this->appraisal->fresh()->competencies);
+    }
+
     private function hrAdmin(): User
     {
         $admin = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
