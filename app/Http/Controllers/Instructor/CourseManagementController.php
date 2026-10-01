@@ -98,7 +98,8 @@ class CourseManagementController extends Controller
                 $query->whereHas('user', function ($userQuery) use ($search) {
                     $userQuery->where(function ($inner) use ($search) {
                         $inner->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('participant_code', 'like', "%{$search}%");
                     });
                 });
             })
@@ -167,6 +168,8 @@ class CourseManagementController extends Controller
             'lessons' => $lessons,
             'assessments' => $assessments,
             'participants' => $participants,
+            'participantHistory' => app(\App\Services\ParticipantHistoryService::class)
+                ->summaries($participants->getCollection()->pluck('user_id'), $course->id),
             'submissions' => $submissions,
             'announcements' => $announcements,
             'extensionRequests' => $extensionRequests,

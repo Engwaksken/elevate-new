@@ -29,6 +29,7 @@ h1 { font-size:34px; margin:0 0 18px; color:#800000; }
 Issued: {{ $certificate->issued_on?->format('d M Y') ?? now()->format('d M Y') }}<br>
 Year: {{ $certificate->issued_on?->format('Y') ?? now()->format('Y') }}<br>
 Certificate No: {{ $certificate->certificate_number }}
+@if($certificate->user?->participant_code)<br>Participant ID: {{ $certificate->user->participant_code }}@endif
 </div>
 </div>
 </div>

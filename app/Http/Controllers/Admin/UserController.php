@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
+use App\Models\Course;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditService;
@@ -24,13 +26,14 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $query = User::with('roles')->latest();
+        $query = User::with(['roles', 'branches', 'instructedCourses:id,title'])->latest();
 
         if ($search = trim((string) $request->get('search'))) {
             $query->where(function ($q) use ($search) {
                 $q->where('name','like',"%{$search}%")
                     ->orWhere('email','like',"%{$search}%")
-                    ->orWhere('phone','like',"%{$search}%");
+                    ->orWhere('phone','like',"%{$search}%")
+                    ->orWhere('participant_code','like',"%{$search}%");
             });
         }
 
@@ -42,6 +45,12 @@ class UserController extends Controller
             $query->where('status', $status);
         }
 
+        if ($branchId = $request->integer('branch_id')) {
+            $query->where(fn ($q) => $q
+                ->whereHas('branches', fn ($b) => $b->whereKey($branchId))
+                ->orWhereHas('profile', fn ($p) => $p->where('branch_id', $branchId)));
+        }
+
         $perPage = in_array((int) $request->get('per_page'), [10,20,25,50,100], true)
             ? (int) $request->get('per_page')
             : 20;
@@ -49,6 +58,8 @@ class UserController extends Controller
         return view('admin.users.index', [
             'users' => $query->paginate($perPage)->withQueryString(),
             'roles' => Role::orderBy('name')->get(),
+            'branches' => Branch::orderBy('name')->get(['id','name','code','is_active']),
+            'courses' => Course::orderBy('title')->get(['id','title','code']),
             'stats' => [
                 'total' => User::count(),
                 'participants' => User::where('user_type','participant')->count(),
@@ -81,6 +92,7 @@ class UserController extends Controller
         ]);
 
         $user->roles()->sync($roleIds);
+        $this->syncAssignments($user, $data, $request->boolean('sync_assignments'));
 
         $audit->log(
             'users',
@@ -104,7 +116,7 @@ class UserController extends Controller
 
     public function update(Request $request, User $user, AuditService $audit)
     {
-        $old = $user->load('roles')->toArray();
+        $old = $user->load(['roles', 'branches', 'instructedCourses'])->toArray();
         $data = $this->validated($request, $user);
         $roleIds = $this->validatedRoleIds($data['user_type'], $data['roles'] ?? []);
 
@@ -133,13 +145,14 @@ class UserController extends Controller
         }
 
         $user->roles()->sync($roleIds);
+        $this->syncAssignments($user, $data, $request->boolean('sync_assignments'));
 
         $audit->log(
             'users',
             'updated',
             $user,
             $old,
-            $user->fresh('roles')->toArray()
+            $user->fresh(['roles', 'branches', 'instructedCourses'])->toArray()
         );
 
         return redirect()
@@ -167,7 +180,39 @@ class UserController extends Controller
             ],
             'roles' => ['nullable','array'],
             'roles.*' => ['integer','exists:roles,id'],
+            'branches' => ['nullable','array'],
+            'branches.*' => ['integer','exists:branches,id'],
+            'courses' => ['nullable','array'],
+            'courses.*' => ['integer','exists:courses,id'],
         ]);
+    }
+
+    /**
+     * Staff (instructors, trainers) can work across several branches and courses.
+     * Participant accounts keep their single branch on the profile and teach no courses.
+     */
+    private function syncAssignments(User $user, array $data, bool $submitted): void
+    {
+        // Forms without the Assignments tab must not wipe existing assignments.
+        if (! $submitted && $data['user_type'] === 'staff') {
+            return;
+        }
+
+        if ($data['user_type'] !== 'staff') {
+            $user->branches()->sync([]);
+            $user->instructedCourses()->sync([]);
+
+            return;
+        }
+
+        $user->branches()->sync($data['branches'] ?? []);
+
+        // Keep the lead-instructor flag on courses the user was already assigned to.
+        $leads = $user->instructedCourses()->wherePivot('is_lead', true)->pluck('courses.id')->all();
+
+        $user->instructedCourses()->sync(collect($data['courses'] ?? [])
+            ->mapWithKeys(fn ($courseId) => [(int) $courseId => ['is_lead' => in_array((int) $courseId, $leads, true)]])
+            ->all());
     }
 
     private function validatedRoleIds(string $userType, array $roleIds): array

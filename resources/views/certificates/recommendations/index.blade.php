@@ -34,7 +34,7 @@
 <form method="GET" class="admin-toolbar">
     <div class="search-box">
         <i class="fas fa-magnifying-glass"></i>
-        <input name="search" value="{{ request('search') }}" placeholder="Search participant, course or event...">
+        <input name="search" value="{{ request('search') }}" placeholder="Search participant, ID, course or event...">
     </div>
     <select name="status">
         <option value="">All statuses</option>
@@ -86,7 +86,7 @@
         @endif
     </td>
     @endif
-    <td><strong>{{ $recommendation->user?->name }}</strong><small class="admin-cell-hint">{{ $recommendation->user?->email }}</small></td>
+    <td><strong>{{ $recommendation->user?->name }}</strong><small class="admin-cell-hint">{{ $recommendation->user?->participant_code ?? '—' }} · {{ $recommendation->user?->email }}</small></td>
     <td>
         <span class="cert-context"><i class="fas {{ $recommendation->context_type === 'event' ? 'fa-calendar-days' : 'fa-graduation-cap' }}"></i> {{ $recommendation->context_type === 'event' ? 'Event' : 'Course' }}</span>
         <strong>{{ $recommendation->contextTitle() }}</strong>

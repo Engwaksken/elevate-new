@@ -541,7 +541,7 @@
     <div class="icm-panel-head"><div><h2>Course Participants</h2><p class="icm-muted">View and update enrolment status and course progress.</p></div><a class="btn btn-primary" href="{{ route('certificates.recommendations.create', ['course_id' => $course->id]) }}"><i class="fas fa-award"></i> Recommend certificates</a></div>
     <form method="GET" class="icm-filter">
         <input type="hidden" name="tab" value="participants">
-        <input name="participant_search" value="{{ request('participant_search') }}" placeholder="Search name or email">
+        <input name="participant_search" value="{{ request('participant_search') }}" placeholder="Search name, email or participant ID">
         <select name="participant_status"><option value="">All statuses</option>@foreach(['enrolled','in_progress','completed','withdrawn','failed'] as $status)<option value="{{ $status }}" @selected(request('participant_status')===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select>
         <select name="cohort_id"><option value="">All cohorts</option>@foreach($course->cohorts as $cohort)<option value="{{ $cohort->id }}" @selected((string)request('cohort_id')===(string)$cohort->id)>{{ $cohort->name }}</option>@endforeach</select>
         <span></span>
@@ -553,7 +553,7 @@
             <tbody>
             @forelse($participants as $enrolment)
             <tr>
-                <td>{{ $enrolment->user?->name }}<br><small>{{ $enrolment->user?->email }}</small></td>
+                <td>{{ $enrolment->user?->name }}<br><small>{{ $enrolment->user?->participant_code ?? '—' }} · {{ $enrolment->user?->email }}</small><br>@include('partials.participant-history-badge', ['history' => $participantHistory[$enrolment->user_id] ?? null])</td>
                 <td>{{ $enrolment->cohort?->name ?? '—' }}</td>
                 <td>{{ ucfirst(str_replace('_',' ',$enrolment->status)) }}</td>
                 <td>{{ number_format((float)$enrolment->progress_percent,1) }}%</td>

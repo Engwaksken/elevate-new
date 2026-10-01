@@ -7,6 +7,7 @@
     <span class="eh-kicker">Participant Dashboard</span>
     <h1>Welcome, {{ $user->profile?->given_name ?: $user->name }}</h1>
     <p>Continue your learning, mentorship, career and opportunity journey.</p>
+    @if($user->participant_code)<p><span class="participant-code" title="Your participant ID">ID {{ $user->participant_code }}</span></p>@endif
 </div>
 <div class="page-actions">
     @if(Route::has('profile.edit'))

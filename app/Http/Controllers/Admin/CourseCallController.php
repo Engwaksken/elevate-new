@@ -12,6 +12,7 @@ use App\Models\CourseCall;
 use App\Models\Enrolment;
 use App\Models\Programme;
 use App\Models\Project;
+use App\Services\ParticipantHistoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -192,7 +193,7 @@ class CourseCallController extends Controller
             ->with('success', 'Course call deleted.');
     }
 
-    public function applications(CourseCall $courseCall)
+    public function applications(CourseCall $courseCall, ParticipantHistoryService $history)
     {
         /*
          * A general Course Call can contain several courses. Staff with the
@@ -205,15 +206,21 @@ class CourseCallController extends Controller
             403
         );
 
+        $applications = $courseCall->applications()
+            ->with(['user.profile.branch', 'assessmentAttempt'])
+            ->latest()
+            ->paginate(30);
+
+        $users = $applications->getCollection()->pluck('user')->filter();
+
         return view('admin.course-applications.index', [
             'courseCall' => $courseCall->load([
                 'courses',
                 'entryAssessment',
             ]),
-            'applications' => $courseCall->applications()
-                ->with(['user', 'assessmentAttempt'])
-                ->latest()
-                ->paginate(30),
+            'applications' => $applications,
+            'history' => $history->summaries($users),
+            'duplicates' => $history->possibleDuplicates($users),
         ]);
     }
 

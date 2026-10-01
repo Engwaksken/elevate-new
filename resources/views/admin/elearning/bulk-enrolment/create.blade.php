@@ -129,7 +129,7 @@
             <div>
                 <i class="fas fa-table-columns"></i>
                 <strong>Full Template</strong>
-                <span>Contains all enrolment table columns plus email for participant lookup</span>
+                <span>Contains all enrolment table columns plus email or participant ID (participant_code) for participant lookup</span>
             </div>
 
             <div>
