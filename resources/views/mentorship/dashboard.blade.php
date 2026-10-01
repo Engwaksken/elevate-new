@@ -1,4 +1,4 @@
-﻿@extends(auth()->check() && method_exists(auth()->user(), 'isStaff') && auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
+@extends(auth()->check() && method_exists(auth()->user(), 'isStaff') && auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
 @section('title','Mentorship - ElevateHer360')
 @section('content')
 <div class="mentorship-dashboard-page">
