@@ -1,3 +1,5 @@
+{{-- Connection/sync status is only shown to participants on their dashboard. --}}
+@if(request()->routeIs('dashboard') && auth()->check() && ! auth()->user()->isStaff())
 <div class="eh-pwa-status" data-pwa-shell>
     <div class="eh-pwa-status__connection">
         <span class="eh-pwa-dot"></span>
@@ -17,6 +19,7 @@
         </button>
     </div>
 </div>
+@endif
 
 <div class="eh-pwa-update" data-pwa-update hidden>
     <span>
