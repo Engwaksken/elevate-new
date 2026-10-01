@@ -170,10 +170,18 @@
                     'permissions' => [],
                 ],
                 [
+                    'route' => 'staff.contracts.index',
+                    'label' => 'My Contracts',
+                    'icon' => 'fa-file-signature',
+                    'permissions' => [],
+                    'active' => ['staff.contracts.*'],
+                ],
+                [
                     'route' => 'admin.hr.employees.index',
                     'label' => 'Employees',
                     'icon' => 'fa-id-badge',
                     'permissions' => ['hr.view', 'hr.manage'],
+                    'active' => ['admin.hr.employees.*', 'admin.hr.contracts.*'],
                 ],
                 [
                     'route' => 'admin.hr.leave.index',

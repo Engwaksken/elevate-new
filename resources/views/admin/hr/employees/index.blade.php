@@ -26,7 +26,7 @@
 <td>{{ $employee->work_location ?: '—' }}</td>
 <td>{{ optional($employee->start_date)->format('d M Y') ?: '—' }}</td>
 <td><span class="status-chip {{ $employee->status }}">{{ ucfirst(str_replace('_',' ',$employee->status)) }}</span></td>
-<td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-modal-open="contract{{ $employee->id }}"><i class="fas fa-file-signature"></i> Add Contract</button></td>
+<td class="table-actions"><a href="{{ route('admin.hr.contracts.index',$employee) }}" class="btn btn-outline btn-sm"><i class="fas fa-folder-open"></i> Contracts</a> @if(auth()->user()?->hasPermission('hr.manage'))<button type="button" class="btn btn-outline btn-sm" data-modal-open="contract{{ $employee->id }}"><i class="fas fa-file-signature"></i> Add Contract</button>@endif</td>
 </tr>
 @empty<tr><td colspan="7"><div class="admin-empty">No employees found.</div></td></tr>@endforelse
 </tbody></table></div>
@@ -66,18 +66,9 @@ $employeeFormTabs = [
 <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Create Employee</button></div>
 </form></div></div>
 
+@if(auth()->user()?->hasPermission('hr.manage'))
 @foreach($employees as $employee)
-<div class="eh-modal" id="contract{{ $employee->id }}" aria-hidden="true"><div class="eh-modal-dialog">
-<div class="eh-modal-header"><div><h2>Add Contract</h2><p>{{ data_get($employee,'user.name','Employee') }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
-<form method="POST" action="{{ route('admin.hr.contracts.store',$employee) }}">@csrf
-<div class="eh-modal-body"><div class="modal-grid">
-<div class="form-group"><label>Contract Type</label><input name="contract_type"></div>
-<div class="form-group"><label>Status *</label><select name="status">@foreach(['draft','active','expired','terminated'] as $s)<option value="{{ $s }}">{{ ucfirst($s) }}</option>@endforeach</select></div>
-<div class="form-group"><label>Start Date *</label><input type="date" name="start_date" required></div>
-<div class="form-group"><label>End Date</label><input type="date" name="end_date"></div>
-<div class="form-group"><label>Gross Salary</label><input type="number" step=".01" min="0" name="gross_salary"></div>
-<div class="form-group"><label>Currency</label><input name="currency" value="UGX" maxlength="3"></div>
-</div></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Add Contract</button></div>
-</form></div></div>
+@include('admin.hr.employees.partials.contract-modal',['employee'=>$employee])
 @endforeach
+@endif
 @endsection
