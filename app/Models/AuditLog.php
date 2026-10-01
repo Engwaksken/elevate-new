@@ -40,29 +40,136 @@ class AuditLog extends Model
     }
 
     /**
-     * Human-readable field changes: [['field' => 'Status', 'old' => 'Draft', 'new' => 'Active'], ...].
+     * Human-readable field changes.
+     *
+     * Scalar fields: ['type' => 'value', 'field' => 'Status', 'old' => 'Draft', 'new' => 'Active'].
+     * Record lists (e.g. a role's permissions): ['type' => 'list', 'field' => 'Permissions',
+     * 'added' => [...], 'removed' => [...], 'unchanged' => [...]] where each item is
+     * ['label' => 'View Reports', 'group' => 'Reports'].
      */
     public function changeRows(): array
     {
         $old = $this->normaliseValues($this->old_values);
         $new = $this->normaliseValues($this->new_values);
         $keys = array_unique(array_merge(array_keys($old), array_keys($new)));
+        $comparing = $old !== [] && $new !== [];
 
         $rows = [];
         foreach ($keys as $key) {
-            // updated_at changes on every save and adds noise to update events.
-            if ($key === 'updated_at' && $this->action === 'updated') {
+            // Timestamps change on every save and add noise to update events.
+            if (in_array($key, ['updated_at', 'created_at'], true) && $comparing) {
+                continue;
+            }
+
+            $hasOld = array_key_exists($key, $old);
+            $hasNew = array_key_exists($key, $new);
+
+            // Snapshot-style logs (before/after toArray()) repeat untouched fields.
+            if ($comparing && $hasOld && $hasNew && $old[$key] == $new[$key] && ! $this->isRecordList($old[$key])) {
+                continue;
+            }
+
+            if ($this->isRecordList($old[$key] ?? null) || $this->isRecordList($new[$key] ?? null)) {
+                $row = $this->listRow((string) $key, $hasOld ? $old[$key] : null, $hasNew ? $new[$key] : null);
+
+                if ($comparing && $row['added'] === [] && $row['removed'] === []) {
+                    continue;
+                }
+
+                $rows[] = $row;
+
                 continue;
             }
 
             $rows[] = [
+                'type' => 'value',
                 'field' => $this->fieldLabel((string) $key),
-                'old' => array_key_exists($key, $old) ? $this->formatValue($old[$key]) : null,
-                'new' => array_key_exists($key, $new) ? $this->formatValue($new[$key]) : null,
+                'old' => $hasOld ? $this->formatValue($old[$key]) : null,
+                'new' => $hasNew ? $this->formatValue($new[$key]) : null,
             ];
         }
 
         return $rows;
+    }
+
+    /**
+     * A non-empty list of related records, e.g. [['id' => 1, 'name' => 'View Reports', ...], ...].
+     */
+    private function isRecordList(mixed $value): bool
+    {
+        if (is_string($value)) {
+            $value = json_decode($value, true);
+        }
+
+        if (! is_array($value) || $value === [] || ! array_is_list($value)) {
+            return false;
+        }
+
+        foreach ($value as $item) {
+            if (! is_array($item) || $this->recordLabel($item) === null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function listRow(string $key, mixed $old, mixed $new): array
+    {
+        $oldItems = $this->listItems($old);
+        $newItems = $this->listItems($new);
+
+        $sort = fn (array $items) => collect($items)
+            ->sortBy(fn ($item) => ($item['group'] ?? '').'|'.$item['label'], SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+
+        return [
+            'type' => 'list',
+            'field' => $this->fieldLabel($key),
+            'added' => $sort(array_diff_key($newItems, $oldItems)),
+            'removed' => $sort(array_diff_key($oldItems, $newItems)),
+            'unchanged' => $sort(array_intersect_key($newItems, $oldItems)),
+        ];
+    }
+
+    /**
+     * @return array<string, array{label: string, group: ?string}> keyed by record identity
+     */
+    private function listItems(mixed $value): array
+    {
+        if (is_string($value)) {
+            $value = json_decode($value, true);
+        }
+
+        $items = [];
+        foreach (is_array($value) ? $value : [] as $item) {
+            $label = is_array($item) ? $this->recordLabel($item) : null;
+            if ($label === null) {
+                continue;
+            }
+
+            $identity = (string) ($item['id'] ?? $item['slug'] ?? $label);
+            $group = $item['module'] ?? $item['group'] ?? $item['category'] ?? null;
+
+            $items[$identity] = [
+                'label' => $label,
+                'group' => is_scalar($group) && $group !== '' ? ucwords(str_replace(['_', '-', '.'], ' ', (string) $group)) : null,
+            ];
+        }
+
+        return $items;
+    }
+
+    private function recordLabel(array $record): ?string
+    {
+        foreach (['name', 'title', 'label', 'slug'] as $field) {
+            if (isset($record[$field]) && is_scalar($record[$field]) && $record[$field] !== '') {
+                return (string) $record[$field];
+            }
+        }
+
+        return null;
     }
 
     private function normaliseValues(mixed $values): array

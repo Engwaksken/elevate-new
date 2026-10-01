@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\UserNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class NotificationController extends Controller
@@ -41,12 +42,17 @@ class NotificationController extends Controller
         ]);
     }
 
-    public function read(Request $request, UserNotification $notification): RedirectResponse
+    public function read(Request $request, UserNotification $notification): RedirectResponse|Response
     {
         abort_unless($notification->user_id === $request->user()->id, 403);
 
         if ($notification->read_at === null) {
             $notification->update(['read_at' => now()]);
+        }
+
+        // Opening the detail modal marks it read in the background.
+        if ($request->expectsJson()) {
+            return response()->noContent();
         }
 
         if ($notification->action_url) {

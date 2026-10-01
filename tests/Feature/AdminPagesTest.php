@@ -2,9 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assessment;
+use App\Models\AssessmentAttempt;
+use App\Models\Course;
 use App\Models\AuditLog;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Blade;
@@ -128,5 +133,82 @@ class AdminPagesTest extends TestCase
 
         $this->actingAs($admin)->get('/admin/workspace/learning')->assertOk();
         $this->actingAs($admin)->get('/admin/hr/kpi-templates')->assertOk();
+    }
+
+    public function test_audit_log_lists_permission_changes_by_name(): void
+    {
+        $admin = $this->superAdmin();
+        $role = Role::create(['name' => 'Programme Officer', 'slug' => 'programme-officer']);
+        $view = Permission::create(['name' => 'View Reports', 'slug' => 'reports.view', 'module' => 'reports']);
+        $export = Permission::create(['name' => 'Export Reports', 'slug' => 'reports.export', 'module' => 'reports']);
+        $users = Permission::create(['name' => 'Manage Users', 'slug' => 'users.manage', 'module' => 'users']);
+        $role->permissions()->sync([$view->id, $users->id]);
+
+        $this->actingAs($admin)->put("/admin/roles/{$role->id}", [
+            'name' => 'Programme Officer',
+            'permissions' => [$view->id, $export->id],
+        ])->assertRedirect();
+
+        $rows = AuditLog::where('action', 'permissions_updated')->latest('id')->firstOrFail()->changeRows();
+
+        $this->assertSame(['Permissions'], array_column($rows, 'field'));
+        $this->assertSame(['Export Reports'], array_column($rows[0]['added'], 'label'));
+        $this->assertSame(['Manage Users'], array_column($rows[0]['removed'], 'label'));
+        $this->assertSame(['View Reports'], array_column($rows[0]['unchanged'], 'label'));
+
+        $this->actingAs($admin)->get('/admin/audit-logs')
+            ->assertOk()
+            ->assertSee('1 granted')
+            ->assertSee('1 revoked')
+            ->assertSee('Export Reports')
+            ->assertDontSee('&quot;pivot&quot;', false)
+            ->assertDontSee('Pivot:', false);
+    }
+
+    public function test_notification_modal_marks_read_and_mark_all_works(): void
+    {
+        $user = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
+        $first = UserNotification::create(['user_id' => $user->id, 'type' => 'general', 'title' => 'Welcome aboard', 'message' => 'Full welcome message body.']);
+        $second = UserNotification::create(['user_id' => $user->id, 'type' => 'general', 'title' => 'Second']);
+
+        $this->actingAs($user)->get('/notifications')
+            ->assertOk()
+            ->assertSee('id="notification-'.$first->id.'"', false)
+            ->assertSee('Full welcome message body.');
+
+        $this->actingAs($user)->patchJson("/notifications/{$first->id}/read")->assertNoContent();
+        $this->assertNotNull($first->fresh()->read_at);
+
+        $this->actingAs($user)->patch('/notifications/read-all')->assertRedirect();
+        $this->assertNotNull($second->fresh()->read_at);
+    }
+
+    public function test_submission_review_opens_in_a_modal_and_reopens_on_error(): void
+    {
+        $admin = $this->superAdmin();
+        $course = Course::create(['title' => 'Digital Marketing', 'status' => 'published']);
+        $assessment = Assessment::create(['course_id' => $course->id, 'title' => 'Essay', 'type' => 'assignment', 'total_marks' => 50, 'is_published' => true]);
+        $participant = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
+        $attempt = AssessmentAttempt::create([
+            'assessment_id' => $assessment->id, 'user_id' => $participant->id, 'attempt_number' => 1,
+            'submission_text' => 'My essay answer', 'status' => 'submitted', 'submitted_at' => now(),
+        ]);
+
+        $url = "/instructor/courses/{$course->id}/manage?tab=submissions";
+
+        $this->actingAs($admin)->get($url)
+            ->assertOk()
+            ->assertSee('data-modal-open="review-attempt-'.$attempt->id.'"', false)
+            ->assertSee('id="review-attempt-'.$attempt->id.'"', false)
+            ->assertSee('My essay answer')
+            ->assertSee('Out of 50')
+            ->assertDontSee('data-modal-autoopen', false);
+
+        $this->actingAs($admin)->from($url)
+            ->put("/instructor/courses/{$course->id}/submissions/{$attempt->id}/review", [
+                'review_attempt_id' => $attempt->id, 'percentage' => 150, 'status' => 'graded',
+            ])->assertRedirect($url);
+
+        $this->actingAs($admin)->get($url)->assertSee('data-modal-autoopen', false);
     }
 }

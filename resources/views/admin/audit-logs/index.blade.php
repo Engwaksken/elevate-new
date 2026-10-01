@@ -108,41 +108,94 @@
 </div>
 
 <div class="eh-modal-body">
-<div class="modal-grid">
-    <div class="form-group"><label>User</label><div class="admin-readonly">{{ data_get($log,'user.name','System') }}</div></div>
-    <div class="form-group"><label>Occurred At</label><div class="admin-readonly">{{ optional($log->occurred_at)->format('d M Y H:i:s') ?: '—' }}</div></div>
-    <div class="form-group"><label>IP Address</label><div class="admin-readonly">{{ $log->ip_address ?: '—' }}</div></div>
-    <div class="form-group"><label>Record</label><div class="admin-readonly">{{ $log->auditable_type ? class_basename($log->auditable_type).' #'.$log->auditable_id : '—' }}</div></div>
-    <div class="form-group full">
-        <label>Changes</label>
-        @php($changeRows = $log->changeRows())
-        @if($changeRows === [])
-            <div class="admin-readonly">No field values were recorded for this event.</div>
-        @else
-            <div class="admin-table-wrap">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Field</th>
-                            @if($log->action !== 'created')<th>Before</th>@endif
-                            @if($log->action !== 'deleted')<th>After</th>@endif
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($changeRows as $row)
-                            <tr>
-                                <td><strong>{{ $row['field'] }}</strong></td>
-                                @if($log->action !== 'created')<td style="white-space:pre-wrap">{{ $row['old'] ?? '—' }}</td>@endif
-                                @if($log->action !== 'deleted')<td style="white-space:pre-wrap">{{ $row['new'] ?? '—' }}</td>@endif
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+<dl class="audit-meta">
+    <div><dt>User</dt><dd>{{ data_get($log,'user.name','System') }}@if(data_get($log,'user.email'))<small>{{ data_get($log,'user.email') }}</small>@endif</dd></div>
+    <div><dt>Occurred At</dt><dd>{{ optional($log->occurred_at)->format('d M Y H:i:s') ?: '—' }}</dd></div>
+    <div><dt>Record</dt><dd>{{ $log->auditable_type ? class_basename($log->auditable_type).' #'.$log->auditable_id : '—' }}</dd></div>
+    <div><dt>IP Address</dt><dd>{{ $log->ip_address ?: '—' }}</dd></div>
+</dl>
+
+<h3 class="audit-section-title">Changes</h3>
+@php($changeRows = $log->changeRows())
+@php($valueRows = array_values(array_filter($changeRows, fn ($row) => $row['type'] === 'value')))
+@php($listRows = array_values(array_filter($changeRows, fn ($row) => $row['type'] === 'list')))
+@if($changeRows === [])
+    <div class="admin-readonly">No field values were recorded for this event.</div>
+@endif
+
+@foreach($listRows as $row)
+    @php($groups = [
+        'added' => ['Granted', 'fa-circle-plus', $row['added']],
+        'removed' => ['Revoked', 'fa-circle-minus', $row['removed']],
+    ])
+    <section class="audit-list-change">
+        <header>
+            <strong>{{ $row['field'] }}</strong>
+            <span class="audit-list-summary">
+                @if($row['added'] !== [])<span class="audit-pill added">+{{ count($row['added']) }} granted</span>@endif
+                @if($row['removed'] !== [])<span class="audit-pill removed">&minus;{{ count($row['removed']) }} revoked</span>@endif
+                @if($row['unchanged'] !== [])<span class="audit-pill">{{ count($row['unchanged']) }} unchanged</span>@endif
+            </span>
+        </header>
+
+        @if($log->action === 'created' || $log->action === 'deleted')
+            @php($groups = ['all' => [$log->action === 'created' ? 'Assigned' : 'Removed with record', 'fa-list-check', array_merge($row['added'], $row['removed'])]])
         @endif
+
+        @foreach($groups as $kind => [$title, $icon, $items])
+            @continue($items === [])
+            <div class="audit-list-group {{ $kind }}">
+                <h4><i class="fas {{ $icon }}"></i> {{ $title }}</h4>
+                @foreach(collect($items)->groupBy(fn ($item) => $item['group'] ?? '') as $module => $moduleItems)
+                    <div class="audit-chip-row">
+                        @if($module !== '')<span class="audit-chip-module">{{ $module }}</span>@endif
+                        @foreach($moduleItems as $item)<span class="audit-chip {{ $kind }}">{{ $item['label'] }}</span>@endforeach
+                    </div>
+                @endforeach
+            </div>
+        @endforeach
+
+        @if($row['unchanged'] !== [])
+            <details class="audit-list-unchanged">
+                <summary>Show {{ count($row['unchanged']) }} unchanged {{ \Illuminate\Support\Str::lower($row['field']) }}</summary>
+                @foreach(collect($row['unchanged'])->groupBy(fn ($item) => $item['group'] ?? '') as $module => $moduleItems)
+                    <div class="audit-chip-row">
+                        @if($module !== '')<span class="audit-chip-module">{{ $module }}</span>@endif
+                        @foreach($moduleItems as $item)<span class="audit-chip">{{ $item['label'] }}</span>@endforeach
+                    </div>
+                @endforeach
+            </details>
+        @endif
+    </section>
+@endforeach
+
+@if($valueRows !== [])
+    <div class="admin-table-wrap">
+        <table class="admin-table audit-change-table">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    @if($log->action !== 'created')<th>Before</th>@endif
+                    @if($log->action !== 'deleted')<th>After</th>@endif
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($valueRows as $row)
+                    <tr>
+                        <td><strong>{{ $row['field'] }}</strong></td>
+                        @if($log->action !== 'created')<td class="audit-old">{{ $row['old'] ?? '—' }}</td>@endif
+                        @if($log->action !== 'deleted')<td class="audit-new">{{ $row['new'] ?? '—' }}</td>@endif
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
     </div>
-    <div class="form-group full"><label>User Agent</label><div class="admin-readonly">{{ $log->user_agent ?: '—' }}</div></div>
-</div>
+@endif
+
+<details class="audit-agent">
+    <summary>Browser / device details</summary>
+    <div class="admin-readonly">{{ $log->user_agent ?: '—' }}</div>
+</details>
 </div>
 
 <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Close</button></div>
