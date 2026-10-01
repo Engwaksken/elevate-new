@@ -1,4 +1,4 @@
-﻿@extends(auth()->check() && method_exists(auth()->user(), 'isStaff') && auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
+@extends(auth()->check() && method_exists(auth()->user(), 'isStaff') && auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
 @section('title','Jobs - ElevateHer360')
 @section('content')
 <div class="page-header"><div><span class="eh-kicker">Opportunities</span><h1>Jobs</h1><p>Search current employment and internship opportunities.</p></div></div>

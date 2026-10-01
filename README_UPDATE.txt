@@ -1,17 +1,29 @@
-ElevateHer360 Appraisal + Reporting + Workspace Update
+ElevateHer360 Phase 2 update
 
-Implemented: end-to-end appraisal workspace with KRA/KPI self, supervisor and agreed scores; appraisal meeting and confirmations; status history; separate completion/performance calculations; KRA/KPI weight validation; CSV template + CSV/XLS/XLSX preview foundation; mentorship/jobs tracking reports; grouped Learning, Planning & MEAL, Mentorship, Jobs and Reports workspaces.
+This update continues the appraisal/workspace restructuring.
 
-Apply OUTSIDE the Laravel project:
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-.\apply_update.ps1 -ProjectPath "D:\projects\elevate_her"
+Changes:
+- Clean appraisal workspace routes.
+- Adds Return for Revision route.
+- Uses saveMeeting() consistently.
+- Employee KRA/KPI saving updates existing rows instead of deleting/recreating all rows.
+- Preserves supervisor and agreed scores when an employee edits existing KRA/KPI rows.
+- Supervisor review now records supervisor scores only.
+- Agreed scores are recorded at the appraisal meeting.
+- Employee confirmation and supervisor confirmation are separated in workflow history.
+- Dynamic Add KRA / Remove KRA / Add KPI / Remove KPI interface.
+- Compact admin sidebar grouped into Workspaces, People & Performance, Programme and Administration.
 
-Then:
-cd D:\projects\elevate_her
-php artisan migrate
-php artisan optimize:clear
-php artisan route:list --path=performance
-php artisan route:list --path=workspace
-php artisan route:list --path=import-centre
+Install:
+1. Extract the ZIP anywhere, including inside the Laravel project.
+2. From PowerShell run:
+   .\apply_update.ps1 -ProjectPath "D:\projects\elevate_her"
 
-The import centre intentionally previews before insertion. Legacy files should not be inserted silently without validation/mapping.
+Then run:
+   cd D:\projects\elevate_her
+   php -l routes\workspaces.php
+   php -l app\Http\Controllers\HR\AppraisalWorkspaceController.php
+   php artisan optimize:clear
+   php artisan route:list --path=staff/performance
+
+Expected appraisal route count: 10.

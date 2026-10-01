@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\Participant\LessonController as ParticipantLesso
 use App\Http\Controllers\Api\V1\Participant\ParticipantController;
 use App\Http\Controllers\Api\V1\Participant\ProfileController as ParticipantProfileController;
 use App\Http\Controllers\Api\V1\Participant\ProgressController as ParticipantProgressController;
+use App\Http\Controllers\Api\V1\Participant\SupportController as ParticipantSupportController;
 use App\Http\Middleware\EnsureParticipantApi;
 
 // ElevateHer360 consolidated API routes.
@@ -32,6 +33,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('/logout',[ParticipantAuthController::class,'logout']);
                 Route::get('/me',[ParticipantController::class,'me']);
                 Route::get('/dashboard',[ParticipantController::class,'dashboard']);
+                Route::get('/support',[ParticipantSupportController::class,'show']);
 
                 Route::get('/courses',[ParticipantController::class,'courses']);
                 Route::get('/courses/{course}',[ParticipantController::class,'course']);

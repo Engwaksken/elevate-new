@@ -169,6 +169,7 @@ class StatCard extends StatelessWidget {
     this.progress,
     this.tint,
     this.onTap,
+    this.compact = false,
   });
 
   final IconData icon;
@@ -183,10 +184,27 @@ class StatCard extends StatelessWidget {
   final Color? tint;
   final VoidCallback? onTap;
 
+  /// Puts the value beside the icon instead of below it, for dense grids
+  /// such as the dashboard's "At a glance".
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+
+    final bubble = Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: tint ?? scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Icon(icon, size: 20, color: scheme.onPrimaryContainer),
+    );
+    final labelText = Text(
+      label,
+      style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+    );
 
     final content = Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -194,20 +212,29 @@ class StatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: tint ?? scheme.primaryContainer,
-              borderRadius: BorderRadius.circular(AppRadius.md),
+          if (compact) ...[
+            Row(
+              children: [
+                bubble,
+                const SizedBox(width: AppSpacing.sm),
+                Flexible(
+                  child: Text(
+                    value,
+                    style: theme.textTheme.titleLarge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            child: Icon(icon, size: 20, color: scheme.onPrimaryContainer),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(value, style: theme.textTheme.titleLarge),
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-          ),
+            const SizedBox(height: AppSpacing.xs),
+            labelText,
+          ] else ...[
+            bubble,
+            const SizedBox(height: AppSpacing.sm),
+            Text(value, style: theme.textTheme.titleLarge),
+            labelText,
+          ],
           if (progress != null) ...[
             const SizedBox(height: AppSpacing.sm),
             ProgressBar(value: progress!, height: 6),

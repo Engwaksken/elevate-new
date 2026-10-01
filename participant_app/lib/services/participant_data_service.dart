@@ -21,6 +21,7 @@ class ParticipantDataService {
 
   static const _profileCollection = 'profile';
   static const _progressCollection = 'progress';
+  static const _supportCollection = 'support';
   static const _key = 'me';
   static const _photoSourceMeta = 'profile_photo_source';
 
@@ -193,6 +194,23 @@ class ParticipantDataService {
       payload: {...data, 'cached_at': DateTime.now().toUtc().toIso8601String()},
     );
     return data;
+  }
+
+  // ---------------------------------------------------------
+  // Help & support
+  // ---------------------------------------------------------
+
+  Future<Map<String, dynamic>?> cachedSupport() async {
+    final cached = await _db.readItem(_supportCollection, _key);
+    final support = cached?['support'];
+    return support is Map ? Map<String, dynamic>.from(support) : null;
+  }
+
+  Future<Map<String, dynamic>> refreshSupport() async {
+    final data = await _api.support();
+    await _db.cacheItem(collection: _supportCollection, itemId: _key, payload: data);
+    final support = data['support'];
+    return support is Map ? Map<String, dynamic>.from(support) : const {};
   }
 
   /// Server-reported time per course id, from the cached progress.

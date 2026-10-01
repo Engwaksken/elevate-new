@@ -33,6 +33,7 @@
 		<string>https</string>
 		<string>http</string>
 		<string>mailto</string>
+		<string>tel</string>
 	</array>
 	<key>NSAppleMusicUsageDescription</key>
 	<string>ElevateHer360 only opens your music library if you choose an audio file from it to attach to an assignment submission.</string>

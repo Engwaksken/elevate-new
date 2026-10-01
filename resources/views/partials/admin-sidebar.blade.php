@@ -37,11 +37,8 @@
             return true;
         }
 
-        if (! method_exists($sidebarUser, 'hasAnyRole')) {
-            return false;
-        }
-
-        return $sidebarUser->hasAnyRole($roles);
+        return method_exists($sidebarUser, 'hasAnyRole')
+            && $sidebarUser->hasAnyRole($roles);
     };
 
     $userHasAnyPermission = static function (array $permissions) use ($sidebarUser, $isSuperAdmin): bool {
@@ -49,11 +46,7 @@
             return false;
         }
 
-        if ($isSuperAdmin) {
-            return true;
-        }
-
-        if ($permissions === []) {
+        if ($isSuperAdmin || $permissions === []) {
             return true;
         }
 
@@ -92,8 +85,11 @@
         $excludeRoles = array_values(array_filter($item['exclude_roles'] ?? []));
         $permissions = array_values(array_filter($item['permissions'] ?? []));
 
-        if ($excludeRoles !== [] && method_exists($sidebarUser, 'hasAnyRole')
-            && $sidebarUser->hasAnyRole($excludeRoles)) {
+        if (
+            $excludeRoles !== []
+            && method_exists($sidebarUser, 'hasAnyRole')
+            && $sidebarUser->hasAnyRole($excludeRoles)
+        ) {
             return false;
         }
 
@@ -118,9 +114,72 @@
             ],
         ],
         [
-            'label' => 'People & Access',
-            'colour' => 'people',
+            'label' => 'Workspaces',
+            'colour' => 'delivery',
             'items' => [
+                [
+                    'route' => 'admin.workspace.learning',
+                    'label' => 'Learning',
+                    'icon' => 'fa-graduation-cap',
+                    'permissions' => ['courses.view', 'courses.edit', 'students.view', 'students.edit'],
+                ],
+                [
+                    'route' => 'admin.workspace.planning-meal',
+                    'label' => 'Planning & MEAL',
+                    'icon' => 'fa-chart-line',
+                    'permissions' => [
+                        'workplans.view',
+                        'workplans.edit',
+                        'workplans.approve',
+                        'tasks.manage',
+                        'indicators.view',
+                        'meal.view',
+                        'meal.manage',
+                        'reports.view',
+                    ],
+                ],
+                [
+                    'route' => 'admin.workspace.mentorship',
+                    'label' => 'Mentorship',
+                    'icon' => 'fa-handshake',
+                    'permissions' => ['mentors.manage', 'mentorship.match'],
+                ],
+                [
+                    'route' => 'admin.workspace.jobs',
+                    'label' => 'Jobs & Opportunities',
+                    'icon' => 'fa-briefcase',
+                    'permissions' => ['jobs.manage', 'hr.view', 'hr.manage'],
+                ],
+                [
+                    'route' => 'admin.workspace.reports',
+                    'label' => 'Reports',
+                    'icon' => 'fa-chart-column',
+                    'permissions' => ['reports.view', 'meal.view', 'meal.manage'],
+                ],
+            ],
+        ],
+        [
+            'label' => 'People & Performance',
+            'colour' => 'hr',
+            'items' => [
+                [
+                    'route' => 'staff.performance.index',
+                    'label' => 'Appraisals & Performance',
+                    'icon' => 'fa-clipboard-check',
+                    'permissions' => [],
+                ],
+                [
+                    'route' => 'admin.hr.employees.index',
+                    'label' => 'Employees',
+                    'icon' => 'fa-id-badge',
+                    'permissions' => ['hr.view', 'hr.manage'],
+                ],
+                [
+                    'route' => 'admin.hr.leave.index',
+                    'label' => 'Leave',
+                    'icon' => 'fa-calendar-minus',
+                    'permissions' => ['leave.view', 'leave.approve'],
+                ],
                 [
                     'route' => 'admin.users.index',
                     'label' => 'Users',
@@ -136,7 +195,7 @@
             ],
         ],
         [
-            'label' => 'Programme Management',
+            'label' => 'Programme',
             'colour' => 'programme',
             'items' => [
                 [
@@ -164,49 +223,6 @@
                     'icon' => 'fa-building',
                     'permissions' => ['programmes.manage'],
                 ],
-            ],
-        ],
-        [
-            'label' => 'Programme Delivery',
-            'colour' => 'delivery',
-            'items' => [
-                [
-                    'route' => 'admin.elearning.courses.index',
-                    'label' => 'Courses',
-                    'icon' => 'fa-graduation-cap',
-                    'permissions' => ['courses.edit'],
-                    'exclude_roles' => ['instructor', 'trainer'],
-                ],
-                [
-                    'route' => 'admin.course-calls.index',
-                    'label' => 'Course Calls',
-                    'icon' => 'fa-bullhorn',
-                    'permissions' => ['course_calls.view', 'course_calls.manage'],
-                ],
-                [
-                    'route' => 'admin.mentorship.mentors.index',
-                    'label' => 'Mentors',
-                    'icon' => 'fa-handshake-angle',
-                    'permissions' => ['mentors.manage'],
-                ],
-                [
-                    'route' => 'admin.mentorship.matches.index',
-                    'label' => 'Mentor Matches',
-                    'icon' => 'fa-people-arrows',
-                    'permissions' => ['mentorship.match'],
-                ],
-                [
-                    'route' => 'admin.jobs.index',
-                    'label' => 'Jobs',
-                    'icon' => 'fa-briefcase',
-                    'permissions' => ['jobs.manage'],
-                ],
-                [
-                    'route' => 'admin.library.index',
-                    'label' => 'Library',
-                    'icon' => 'fa-book-open',
-                    'permissions' => ['library.manage'],
-                ],
                 [
                     'route' => 'admin.events.index',
                     'label' => 'Events',
@@ -214,207 +230,34 @@
                     'permissions' => ['calendar.manage'],
                 ],
                 [
-                    'route' => 'admin.events.calendar',
-                    'label' => 'Events Calendar',
-                    'icon' => 'fa-calendar',
-                    'permissions' => ['calendar.manage'],
+                    'route' => 'admin.library.index',
+                    'label' => 'Library',
+                    'icon' => 'fa-book-open',
+                    'permissions' => ['library.manage'],
                 ],
+            ],
+        ],
+        [
+            'label' => 'Administration',
+            'colour' => 'assets',
+            'items' => [
                 [
-                    'route' => 'admin.elearning.assignments.index',
-                    'label' => 'Course Assignments',
-                    'icon' => 'fa-list-check',
-                    'permissions' => ['courses.edit'],
-                    'exclude_roles' => ['instructor', 'trainer'],
-                ],
-                [
-                    'route' => 'admin.elearning.enrolments.index',
-                    'label' => 'Enrolments',
-                    'icon' => 'fa-user-graduate',
-                    'permissions' => ['students.view', 'students.edit'],
-                    'exclude_roles' => ['instructor', 'trainer'],
-                ],
-                [
-                    'route' => 'admin.elearning.learning-files.index',
-                    'label' => 'Learning Files',
-                    'icon' => 'fa-folder-open',
-                    'permissions' => ['courses.view', 'courses.edit'],
-                    'exclude_roles' => ['instructor', 'trainer'],
-                ],
-                [
-                    'route' => 'admin.elearning.certificates.index',
-                    'label' => 'Certificates',
-                    'icon' => 'fa-certificate',
-                    'permissions' => ['courses.view', 'courses.edit'],
-                    'exclude_roles' => ['instructor', 'trainer'],
-                ],
-                [
-                    'route' => 'admin.elearning.bulk-enrolment.create',
-                    'label' => 'Bulk Enrolment',
+                    'route' => 'admin.import-centre.index',
+                    'label' => 'Import Centre',
                     'icon' => 'fa-file-import',
-                    'permissions' => ['students.edit'],
-                    'exclude_roles' => ['instructor', 'trainer'],
-                ],
-            ],
-        ],
-        [
-            'label' => 'Planning & MEAL',
-            'colour' => 'meal',
-            'items' => [
-                [
-                    'route' => 'admin.workplans.index',
-                    'label' => 'Workplans',
-                    'icon' => 'fa-calendar-check',
-                    'permissions' => ['workplans.view', 'workplans.edit', 'workplans.approve'],
-                ],
-                [
-                    'route' => 'admin.tasks.index',
-                    'label' => 'Tasks',
-                    'icon' => 'fa-list-check',
-                    'permissions' => ['tasks.manage'],
-                ],
-                [
-                    'route' => 'admin.deliverables.index',
-                    'label' => 'Deliverables',
-                    'icon' => 'fa-box-open',
-                    'permissions' => ['tasks.manage'],
-                ],
-                [
-                    'route' => 'admin.indicators.index',
-                    'label' => 'Indicators',
-                    'icon' => 'fa-bullseye',
-                    'permissions' => ['indicators.view', 'indicators.manage', 'indicators.verify'],
-                ],
-                [
-                    'route' => 'admin.results-framework.index',
-                    'label' => 'Results Framework',
-                    'icon' => 'fa-sitemap',
-                    'permissions' => ['meal.view', 'meal.manage'],
-                ],
-                [
-                    'route' => 'admin.meal.dashboard',
-                    'label' => 'MEAL Dashboard',
-                    'icon' => 'fa-chart-line',
-                    'permissions' => ['meal.view', 'meal.manage'],
-                ],
-                [
-                    'route' => 'admin.surveys.index',
-                    'label' => 'M&E Surveys',
-                    'icon' => 'fa-square-poll-vertical',
-                    'permissions' => ['surveys.view', 'surveys.manage', 'meal.view', 'meal.manage'],
-                ],
-                [
-                    'route' => 'admin.course-attendance-report.index',
-                    'label' => 'Course Attendance',
-                    'icon' => 'fa-clipboard-user',
-                    'permissions' => ['meal.view', 'meal.manage', 'reports.view'],
-                ],
-                [
-                    'route' => 'admin.participant-attendance-summary.index',
-                    'label' => 'Participant Attendance',
-                    'icon' => 'fa-user-check',
-                    'permissions' => ['meal.view', 'meal.manage', 'reports.view'],
-                ],
-                [
-                    'route' => 'admin.attendance-analytics.index',
-                    'label' => 'Attendance Analytics',
-                    'icon' => 'fa-chart-column',
-                    'permissions' => ['meal.view', 'meal.manage', 'reports.view'],
-                ],
-                [
-                    'route' => 'admin.events.meal-report',
-                    'label' => 'Event MEAL Report',
-                    'icon' => 'fa-chart-simple',
-                    'permissions' => ['meal.view', 'meal.manage', 'reports.view'],
-                ],
-            ],
-        ],
-        [
-            'label' => 'Human Resources',
-            'colour' => 'hr',
-            'items' => [
-                [
-                    'route' => 'admin.hr.employees.index',
-                    'label' => 'Employees',
-                    'icon' => 'fa-id-badge',
-                    'permissions' => ['hr.view', 'hr.manage'],
-                ],
-                [
-                    'route' => 'admin.hr.leave.index',
-                    'label' => 'Leave',
-                    'icon' => 'fa-calendar-minus',
-                    'permissions' => ['leave.view', 'leave.approve'],
-                ],
-                [
-                    'route' => 'admin.hr.appraisals.index',
-                    'label' => 'Appraisals',
-                    'icon' => 'fa-clipboard-check',
-                    'permissions' => ['appraisals.view', 'appraisals.manage'],
-                ],
-                [
-                    'route' => 'admin.hr.kpi-templates.index',
-                    'label' => 'KPI Templates',
-                    'icon' => 'fa-table-list',
-                    'permissions' => ['appraisals.view', 'appraisals.manage'],
-                ],
-                [
-                    'route' => 'admin.hr.exits.index',
-                    'label' => 'Staff Exits',
-                    'icon' => 'fa-person-walking-arrow-right',
-                    'permissions' => ['staff_exit.manage'],
-                ],
-            ],
-        ],
-        [
-            'label' => 'Procurement',
-            'colour' => 'procurement',
-            'items' => [
-                [
-                    'route' => 'admin.procurement.suppliers.index',
-                    'label' => 'Suppliers',
-                    'icon' => 'fa-truck-field',
-                    'permissions' => ['procurement.view', 'procurement.create', 'procurement.approve'],
+                    'permissions' => ['settings.manage'],
                 ],
                 [
                     'route' => 'admin.procurement.requests.index',
-                    'label' => 'Purchase Requests',
-                    'icon' => 'fa-cart-plus',
+                    'label' => 'Procurement',
+                    'icon' => 'fa-cart-shopping',
                     'permissions' => ['procurement.view', 'procurement.create', 'procurement.approve'],
                 ],
-                [
-                    'route' => 'admin.procurement.purchase-orders.index',
-                    'label' => 'Purchase Orders',
-                    'icon' => 'fa-file-invoice-dollar',
-                    'permissions' => ['procurement.view', 'procurement.approve', 'procurement.receive'],
-                ],
-            ],
-        ],
-        [
-            'label' => 'Assets & Operations',
-            'colour' => 'assets',
-            'items' => [
                 [
                     'route' => 'admin.assets.index',
                     'label' => 'Assets',
                     'icon' => 'fa-laptop-file',
                     'permissions' => ['assets.view', 'assets.manage', 'assets.dispose'],
-                ],
-                [
-                    'route' => 'admin.migrations.index',
-                    'label' => 'Data Migrations',
-                    'icon' => 'fa-database',
-                    'permissions' => ['settings.manage'],
-                ],
-                [
-                    'route' => 'admin.settings.index',
-                    'label' => 'System Settings',
-                    'icon' => 'fa-gears',
-                    'permissions' => ['settings.manage'],
-                ],
-                [
-                    'route' => 'admin.platform-settings.index',
-                    'label' => 'Platform Configuration',
-                    'icon' => 'fa-sliders',
-                    'permissions' => ['settings.manage'],
                 ],
                 [
                     'route' => 'admin.audit-logs.index',
@@ -429,11 +272,28 @@
                     'permissions' => ['reports.view'],
                 ],
                 [
-                    'route' => 'admin.support-settings.edit',
-                    'label' => 'Help & Support',
-                    'icon' => 'fa-circle-question',
+                    'route' => 'admin.platform-settings.index',
+                    'label' => 'Platform Configuration',
+                    'icon' => 'fa-sliders',
                     'permissions' => ['settings.manage'],
-                    'roles' => ['administrator', 'super-administrator', 'super-admin'],
+                ],
+                [
+                    'route' => 'admin.settings.index',
+                    'label' => 'System Settings',
+                    'icon' => 'fa-gears',
+                    'permissions' => ['settings.manage'],
+                ],
+            ],
+        ],
+        [
+            'label' => 'Account',
+            'colour' => 'people',
+            'items' => [
+                [
+                    'route' => 'admin.profile.edit',
+                    'label' => 'Profile',
+                    'icon' => 'fa-user',
+                    'permissions' => [],
                 ],
             ],
         ],
@@ -579,17 +439,13 @@
             class="eh-admin-sidebar__user-card"
             aria-label="Open profile"
         >
-            <span class="eh-admin-sidebar__avatar">
-                {{ $sidebarInitial }}
-            </span>
+            <span class="eh-admin-sidebar__avatar">{{ $sidebarInitial }}</span>
 
             <span class="eh-admin-sidebar__user-copy">
                 <strong>{{ $sidebarName }}</strong>
 
                 @if($sidebarEmail !== '')
-                    <small title="{{ $sidebarEmail }}">
-                        {{ $sidebarEmail }}
-                    </small>
+                    <small title="{{ $sidebarEmail }}">{{ $sidebarEmail }}</small>
                 @endif
             </span>
 
@@ -621,9 +477,7 @@
                     <div class="eh-admin-sidebar__links">
                         @foreach($visibleItems as $item)
                             @php
-                                $href = $item['url']
-                                    ?? route($item['route']);
-
+                                $href = $item['url'] ?? route($item['route']);
                                 $active = $isActiveItem($item);
                             @endphp
 

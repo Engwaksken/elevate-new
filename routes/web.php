@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\Admin\ProgrammeManagement\ActivityController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -712,6 +712,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         Route::post('/appraisals/{appraisal}/objectives',[AppraisalController::class,'addObjective'])->middleware('permission:appraisals.manage')->name('appraisals.objectives.store');
         Route::post('/appraisals/{appraisal}/recalculate',[AppraisalController::class,'recalculate'])->middleware('permission:appraisals.manage')->name('appraisals.recalculate');
         Route::post('/appraisals/{appraisal}/finalise',[AppraisalWorkflowController::class,'finalise'])->middleware('permission:appraisals.manage')->name('appraisals.finalise');
+        Route::post('/appraisals/{appraisal}/lock',[AppraisalWorkflowController::class,'lock'])->middleware('permission:appraisals.manage')->name('appraisals.lock');
+        Route::post('/appraisals/{appraisal}/reopen',[AppraisalWorkflowController::class,'reopen'])->middleware('permission:appraisals.manage')->name('appraisals.reopen');
 
         Route::get('/exits',[StaffExitController::class,'index'])->middleware('permission:staff_exit.manage')->name('exits.index');
         Route::post('/exits',[StaffExitController::class,'store'])->middleware('permission:staff_exit.manage')->name('exits.store');

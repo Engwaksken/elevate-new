@@ -281,6 +281,9 @@ class ApiService {
   /// GET /progress -> `{summary, courses, recent_activity}`.
   Future<Map<String, dynamic>> progress() => _getMap('/progress');
 
+  /// Help & Support contacts managed in Admin > Support Settings.
+  Future<Map<String, dynamic>> support() => _getMap('/support');
+
   // =========================================================
   // SYNCHRONISATION
   // =========================================================
