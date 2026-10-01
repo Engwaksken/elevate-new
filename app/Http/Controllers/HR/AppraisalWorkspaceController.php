@@ -31,7 +31,18 @@ class AppraisalWorkspaceController extends Controller
             ->latest()
             ->get();
 
-        return view('hr.appraisals.workspace', compact('mine', 'team'));
+        $myActionStatuses = ['draft', 'in_progress', 'returned_for_revision', 'goal_setting', 'self_assessment', 'meeting_completed'];
+        $teamActionStatuses = ['submitted', 'supervisor_review', 'meeting_pending', 'employee_confirmation'];
+
+        $stats = [
+            'mine' => $mine->count(),
+            'team' => $team->count(),
+            'action' => $mine->whereIn('status', $myActionStatuses)->count()
+                + $team->whereIn('status', $teamActionStatuses)->count(),
+            'completed' => $mine->where('status', 'completed')->count() + $team->where('status', 'completed')->count(),
+        ];
+
+        return view('hr.appraisals.workspace', compact('mine', 'team', 'stats', 'myActionStatuses', 'teamActionStatuses'));
     }
 
     public function show(Appraisal $appraisal, AppraisalScoreService $scores)

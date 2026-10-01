@@ -113,8 +113,34 @@
     <div class="form-group"><label>Occurred At</label><div class="admin-readonly">{{ optional($log->occurred_at)->format('d M Y H:i:s') ?: '—' }}</div></div>
     <div class="form-group"><label>IP Address</label><div class="admin-readonly">{{ $log->ip_address ?: '—' }}</div></div>
     <div class="form-group"><label>Record</label><div class="admin-readonly">{{ $log->auditable_type ? class_basename($log->auditable_type).' #'.$log->auditable_id : '—' }}</div></div>
-    <div class="form-group full"><label>Old Values</label><pre class="admin-code-block">{{ json_encode($log->old_values, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES) ?: '{}' }}</pre></div>
-    <div class="form-group full"><label>New Values</label><pre class="admin-code-block">{{ json_encode($log->new_values, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES) ?: '{}' }}</pre></div>
+    <div class="form-group full">
+        <label>Changes</label>
+        @php($changeRows = $log->changeRows())
+        @if($changeRows === [])
+            <div class="admin-readonly">No field values were recorded for this event.</div>
+        @else
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            @if($log->action !== 'created')<th>Before</th>@endif
+                            @if($log->action !== 'deleted')<th>After</th>@endif
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($changeRows as $row)
+                            <tr>
+                                <td><strong>{{ $row['field'] }}</strong></td>
+                                @if($log->action !== 'created')<td style="white-space:pre-wrap">{{ $row['old'] ?? '—' }}</td>@endif
+                                @if($log->action !== 'deleted')<td style="white-space:pre-wrap">{{ $row['new'] ?? '—' }}</td>@endif
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
     <div class="form-group full"><label>User Agent</label><div class="admin-readonly">{{ $log->user_agent ?: '—' }}</div></div>
 </div>
 </div>

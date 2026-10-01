@@ -32,8 +32,8 @@
     $routeExists = static fn (?string $name): bool =>
         filled($name) && Route::has($name);
 
-    $userHasAnyRole = static function (array $roles) use ($sidebarUser): bool {
-        if (! $sidebarUser || $roles === []) {
+    $userHasAnyRole = static function (array $roles) use ($sidebarUser, $isSuperAdmin): bool {
+        if (! $sidebarUser || $roles === [] || $isSuperAdmin) {
             return true;
         }
 
@@ -87,6 +87,7 @@
 
         if (
             $excludeRoles !== []
+            && ! $isSuperAdmin
             && method_exists($sidebarUser, 'hasAnyRole')
             && $sidebarUser->hasAnyRole($excludeRoles)
         ) {
