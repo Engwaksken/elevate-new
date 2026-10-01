@@ -1,4 +1,61 @@
 <?php
-use App\Http\Controllers\Admin\DataImportCentreController;use App\Http\Controllers\Admin\Reports\TrackingReportsController;use App\Http\Controllers\Admin\WorkspaceController;use App\Http\Controllers\HR\AppraisalWorkspaceController;use Illuminate\Support\Facades\Route;
-Route::middleware(['auth','verified'])->group(function(){Route::get('/staff/performance',[AppraisalWorkspaceController::class,'index'])->name('staff.performance.index');Route::get('/staff/performance/{appraisal}',[AppraisalWorkspaceController::class,'show'])->name('staff.performance.show');Route::put('/staff/performance/{appraisal}/employee',[AppraisalWorkspaceController::class,'saveEmployee'])->name('staff.performance.employee.save');Route::post('/staff/performance/{appraisal}/submit',[AppraisalWorkspaceController::class,'submitEmployee'])->name('staff.performance.employee.submit');Route::put('/staff/performance/{appraisal}/supervisor',[AppraisalWorkspaceController::class,'saveSupervisor'])->name('staff.performance.supervisor.save');Route::post('/staff/performance/{appraisal}/review-complete',[AppraisalWorkspaceController::class,'reviewComplete'])->name('staff.performance.review.complete');Route::put('/staff/performance/{appraisal}/meeting',[AppraisalWorkspaceController::class,'meeting'])->name('staff.performance.meeting.save');Route::post('/staff/performance/{appraisal}/employee-confirm',[AppraisalWorkspaceController::class,'employeeConfirm'])->name('staff.performance.employee.confirm');Route::post('/staff/performance/{appraisal}/supervisor-confirm',[AppraisalWorkspaceController::class,'supervisorConfirm'])->name('staff.performance.supervisor.confirm');});
-Route::prefix('admin')->name('admin.')->middleware(['auth','staff'])->group(function(){Route::get('/workspace/learning',[WorkspaceController::class,'learning'])->name('workspace.learning');Route::get('/workspace/planning-meal',[WorkspaceController::class,'planningMeal'])->name('workspace.planning-meal');Route::get('/workspace/mentorship',[WorkspaceController::class,'mentorship'])->name('workspace.mentorship');Route::get('/workspace/jobs',[WorkspaceController::class,'jobs'])->name('workspace.jobs');Route::get('/workspace/reports',[WorkspaceController::class,'reports'])->name('workspace.reports');Route::get('/import-centre',[DataImportCentreController::class,'index'])->name('import-centre.index');Route::get('/import-centre/template/{m}',[DataImportCentreController::class,'template'])->name('import-centre.template');Route::post('/import-centre/upload',[DataImportCentreController::class,'upload'])->name('import-centre.upload');Route::get('/import-centre/{dataImport}/preview',[DataImportCentreController::class,'preview'])->name('import-centre.preview');Route::get('/reports/mentorship-tracking',[TrackingReportsController::class,'mentorship'])->name('reports.mentorship-tracking');Route::get('/reports/jobs-tracking',[TrackingReportsController::class,'jobs'])->name('reports.jobs-tracking');});
+
+use App\Http\Controllers\Admin\DataImportCentreController;
+use App\Http\Controllers\Admin\Reports\TrackingReportsController;
+use App\Http\Controllers\Admin\WorkspaceController;
+use App\Http\Controllers\HR\AppraisalWorkspaceController;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/staff/performance', [AppraisalWorkspaceController::class, 'index'])
+        ->name('staff.performance.index');
+
+    Route::get('/staff/performance/{appraisal}', [AppraisalWorkspaceController::class, 'show'])
+        ->name('staff.performance.show');
+
+    Route::put('/staff/performance/{appraisal}/employee', [AppraisalWorkspaceController::class, 'saveEmployee'])
+        ->name('staff.performance.employee.save');
+
+    Route::post('/staff/performance/{appraisal}/submit', [AppraisalWorkspaceController::class, 'submitEmployee'])
+        ->name('staff.performance.employee.submit');
+
+    Route::put('/staff/performance/{appraisal}/supervisor', [AppraisalWorkspaceController::class, 'saveSupervisor'])
+        ->name('staff.performance.supervisor.save');
+
+    Route::post('/staff/performance/{appraisal}/return', [AppraisalWorkspaceController::class, 'returnForRevision'])
+        ->name('staff.performance.return');
+
+    Route::post('/staff/performance/{appraisal}/review-complete', [AppraisalWorkspaceController::class, 'reviewComplete'])
+        ->name('staff.performance.review.complete');
+
+    Route::put('/staff/performance/{appraisal}/meeting', [AppraisalWorkspaceController::class, 'saveMeeting'])
+        ->name('staff.performance.meeting.save');
+
+    Route::post('/staff/performance/{appraisal}/employee-confirm', [AppraisalWorkspaceController::class, 'employeeConfirm'])
+        ->name('staff.performance.employee.confirm');
+
+    Route::post('/staff/performance/{appraisal}/supervisor-confirm', [AppraisalWorkspaceController::class, 'supervisorConfirm'])
+        ->name('staff.performance.supervisor.confirm');
+});
+
+Route::prefix('admin')
+    ->name('admin.')
+    ->middleware(['auth', 'staff'])
+    ->group(function () {
+        Route::get('/workspace/learning', [WorkspaceController::class, 'learning'])->name('workspace.learning');
+        Route::get('/workspace/planning-meal', [WorkspaceController::class, 'planningMeal'])->name('workspace.planning-meal');
+        Route::get('/workspace/mentorship', [WorkspaceController::class, 'mentorship'])->name('workspace.mentorship');
+        Route::get('/workspace/jobs', [WorkspaceController::class, 'jobs'])->name('workspace.jobs');
+        Route::get('/workspace/reports', [WorkspaceController::class, 'reports'])->name('workspace.reports');
+
+        Route::get('/import-centre', [DataImportCentreController::class, 'index'])->name('import-centre.index');
+        Route::get('/import-centre/template/{m}', [DataImportCentreController::class, 'template'])->name('import-centre.template');
+        Route::post('/import-centre/upload', [DataImportCentreController::class, 'upload'])->name('import-centre.upload');
+        Route::get('/import-centre/{dataImport}/preview', [DataImportCentreController::class, 'preview'])->name('import-centre.preview');
+
+        Route::get('/reports/mentorship-tracking', [TrackingReportsController::class, 'mentorship'])
+            ->name('reports.mentorship-tracking');
+
+        Route::get('/reports/jobs-tracking', [TrackingReportsController::class, 'jobs'])
+            ->name('reports.jobs-tracking');
+    });
