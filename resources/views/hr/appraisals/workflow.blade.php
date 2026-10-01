@@ -83,6 +83,14 @@
         @endforeach
     </div>
 
+    @if($canEmployeeEdit && ($missingContractKpis ?? 0) > 0)
+        <form method="POST" action="{{ route('staff.kpis.appraisals.import', $appraisal) }}" class="alert alert-info d-flex flex-wrap justify-content-between align-items-center gap-2">
+            @csrf
+            <span><i class="fas fa-bullseye me-1"></i> You have {{ $missingContractKpis }} approved contract {{ \Illuminate\Support\Str::plural('KPI', $missingContractKpis) }} not in this appraisal yet. Unsaved changes below will be lost, so save first.</span>
+            <button class="btn btn-primary btn-sm"><i class="fas fa-download me-1"></i>Add my contract KPIs</button>
+        </form>
+    @endif
+
     @if($canEmployeeEdit)
         <form method="POST" action="{{ route('staff.performance.employee.save', $appraisal) }}" id="employee-appraisal-form">
             @csrf

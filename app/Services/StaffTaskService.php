@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appraisal;
 use App\Models\AppraisalKpi;
 use App\Models\Employee;
+use App\Models\StaffKpi;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,16 +53,36 @@ class StaffTaskService
     }
 
     /**
-     * KPIs from each person's current (not yet completed) appraisals, ready for a grouped select.
+     * KPIs a task can be linked to, for a select: each person's contract KPIs (key "s:<id>")
+     * plus KPIs typed directly into a current appraisal that did not come from the contract ("a:<id>").
      *
-     * @return Collection<int, array{id: int, owner_id: int, kra: string, title: string, cycle: ?string}>
+     * @return Collection<int, array{key: string, type: string, id: int, owner_id: int, kra: string, title: string, source: ?string}>
      */
     public function linkableKpis(iterable $userIds): Collection
     {
         $userIds = collect($userIds)->map(fn ($id) => (int) $id)->unique();
+        $employees = Employee::whereIn('user_id', $userIds)->pluck('user_id', 'id');
 
-        return AppraisalKpi::query()
+        $contractKpis = StaffKpi::with('contract')
+            ->whereIn('employee_id', $employees->keys())
+            ->where(fn (Builder $query) => $query
+                ->whereNull('employment_contract_id')
+                ->orWhereHas('contract', fn (Builder $contract) => $contract->whereIn('status', ['active', 'draft'])))
+            ->orderBy('position')
+            ->get()
+            ->map(fn (StaffKpi $kpi) => [
+                'key' => 's:'.$kpi->id,
+                'type' => 'staff',
+                'id' => $kpi->id,
+                'owner_id' => (int) $employees[$kpi->employee_id],
+                'kra' => $kpi->kra,
+                'title' => $kpi->title,
+                'source' => 'Contract KPIs'.($kpi->status === 'approved' ? '' : ' ('.$kpi->status.')'),
+            ]);
+
+        $appraisalKpis = AppraisalKpi::query()
             ->with('kra.appraisal.cycle', 'kra.appraisal.employee:id,user_id')
+            ->whereNull('staff_kpi_id')
             ->whereHas('kra.appraisal', fn (Builder $appraisal) => $appraisal
                 ->where('status', '!=', 'completed')
                 ->whereHas('employee', fn (Builder $employee) => $employee->whereIn('user_id', $userIds)))
@@ -69,12 +90,36 @@ class StaffTaskService
             ->orderBy('position')
             ->get()
             ->map(fn (AppraisalKpi $kpi) => [
+                'key' => 'a:'.$kpi->id,
+                'type' => 'appraisal',
                 'id' => $kpi->id,
                 'owner_id' => (int) $kpi->kra->appraisal->employee->user_id,
                 'kra' => $kpi->kra->title,
                 'title' => $kpi->title,
-                'cycle' => $kpi->kra->appraisal->cycle?->name,
+                'source' => $kpi->kra->appraisal->cycle?->name,
             ]);
+
+        return $contractKpis->concat($appraisalKpis)->values();
+    }
+
+    /**
+     * Turn a "s:<id>" / "a:<id>" key into task columns, if it belongs to the given person.
+     */
+    public function kpiColumns(?string $key, int $userId): ?array
+    {
+        if (! $key) {
+            return ['staff_kpi_id' => null, 'appraisal_kpi_id' => null];
+        }
+
+        $kpi = $this->linkableKpis([$userId])->firstWhere('key', $key);
+
+        if (! $kpi) {
+            return null;
+        }
+
+        return $kpi['type'] === 'staff'
+            ? ['staff_kpi_id' => $kpi['id'], 'appraisal_kpi_id' => null]
+            : ['staff_kpi_id' => null, 'appraisal_kpi_id' => $kpi['id']];
     }
 
     /**
@@ -138,7 +183,10 @@ class StaffTaskService
             ->when(($filters['outcome'] ?? null) === 'missed', fn (Builder $q) => $q->open())
             ->when($filters['from'] ?? null, fn (Builder $q, $from) => $q->whereDate('due_date', '>=', $from))
             ->when($filters['to'] ?? null, fn (Builder $q, $to) => $q->whereDate('due_date', '<=', $to))
-            ->when($filters['kpi'] ?? null, fn (Builder $q, $kpi) => $q->where('appraisal_kpi_id', $kpi))
+            ->when($filters['kpi'] ?? null, function (Builder $q, string $key) {
+                [$type, $id] = array_pad(explode(':', $key, 2), 2, null);
+                $q->where($type === 's' ? 'staff_kpi_id' : 'appraisal_kpi_id', (int) $id);
+            })
             ->orderByDesc('due_date')
             ->orderByDesc('completed_at');
     }
@@ -153,11 +201,15 @@ class StaffTaskService
         }
 
         $weekEnd = $weekStart->copy()->endOfWeek();
-        $tasks = Task::whereIn('appraisal_kpi_id', $kpis->pluck('id'))
-            ->get(['id', 'appraisal_kpi_id', 'status', 'due_date', 'completed_at']);
+        $tasks = Task::query()
+            ->where(fn (Builder $query) => $query
+                ->whereIn('staff_kpi_id', $kpis->where('type', 'staff')->pluck('id'))
+                ->orWhereIn('appraisal_kpi_id', $kpis->where('type', 'appraisal')->pluck('id')))
+            ->get(['id', 'staff_kpi_id', 'appraisal_kpi_id', 'status', 'due_date', 'completed_at']);
 
         return $kpis->map(function (array $kpi) use ($tasks, $weekStart, $weekEnd) {
-            $linked = $tasks->where('appraisal_kpi_id', $kpi['id']);
+            $column = $kpi['type'] === 'staff' ? 'staff_kpi_id' : 'appraisal_kpi_id';
+            $linked = $tasks->where($column, $kpi['id']);
             $thisWeek = $linked->filter(fn (Task $task) => ($task->completed_at ?? $task->due_date)?->between($weekStart, $weekEnd));
 
             return $kpi + [
@@ -183,7 +235,7 @@ class StaffTaskService
 
     private function base(Collection $userIds): Builder
     {
-        return Task::with(['kpi.kra', 'assignee:id,name', 'creator:id,name', 'activity:id,title'])
+        return Task::with(['kpi.kra', 'staffKpi', 'assignee:id,name', 'creator:id,name', 'activity:id,title'])
             ->whereIn('assigned_to', $userIds);
     }
 }

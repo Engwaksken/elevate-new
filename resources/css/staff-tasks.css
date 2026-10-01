@@ -63,3 +63,35 @@
 .kpi-evidence li span{display:block;color:#667085;font-size:.68rem}
 .kpi-evidence li p{margin:3px 0 0;color:#344054;white-space:pre-line}
 .kpi-evidence-empty{margin-top:4px;color:#98a2b3;font-size:.7rem}
+/* Contract KPIs (My KPIs) */
+.kpi-weight{display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;padding:5px 11px;border-radius:999px;font-size:.74rem;font-weight:700}
+.kpi-weight.is-ok{background:#ecfdf3;color:#067647}
+.kpi-weight.is-off{background:#fffaeb;color:#b54708}
+.kpi-kra{margin-bottom:14px}
+.kpi-kra h3{display:flex;align-items:center;gap:8px;margin:0 0 6px;color:#344054;font-size:.82rem}
+.kpi-kra h3 span{padding:1px 8px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:.68rem}
+.kpi-item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;margin-bottom:6px;padding:10px 12px;border:1px solid #e4e7ec;border-radius:9px;background:#fff}
+.kpi-item strong{font-size:.86rem;color:#172033}
+.kpi-status{padding:3px 9px;border-radius:999px;font-size:.66rem;font-weight:800;white-space:nowrap}
+.kpi-status-draft{background:#f2f4f7;color:#475467}
+.kpi-status-submitted{background:#fffaeb;color:#b54708}
+.kpi-status-approved{background:#ecfdf3;color:#067647}
+.kpi-status-returned{background:#fef3f2;color:#b42318}
+.kpi-return-note{margin:6px 0 0;padding:6px 9px;border-radius:6px;background:#fef3f2;color:#7a271a;font-size:.74rem}
+.kpi-submit{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;padding:12px;border:1px dashed #d0d5dd;border-radius:9px;color:#475467;font-size:.78rem}
+.kpi-quarters{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.kpi-quarter{display:flex;flex-direction:column;padding:12px;border:1px solid #e4e7ec;border-radius:10px;background:#fff}
+.kpi-quarter.is-current{border-color:#800000;box-shadow:0 0 0 2px rgba(128,0,0,.08)}
+.kpi-quarter header{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.kpi-quarter header span{color:#667085;font-size:.72rem}
+.kpi-quarter header em{align-self:flex-start;padding:1px 8px;border-radius:999px;background:#800000;color:#fff;font-size:.62rem;font-style:normal;font-weight:800}
+.kpi-quarter-total{margin-bottom:6px;color:#067647;font-size:.76rem;font-weight:700}
+.kpi-quarter ul{flex:1;margin:0 0 10px;padding:0;list-style:none}
+.kpi-quarter li{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px dashed #eef0f3;font-size:.74rem;color:#475467}
+.kpi-quarter footer form{margin:0}
+.kpi-review{margin-bottom:16px}
+.kpi-review h3{margin:0 0 8px;font-size:.88rem}
+.kpi-review h3 small{color:#667085;font-weight:400}
+.kpi-review-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.kpi-review-actions input{flex:1 1 240px;min-height:34px;padding:6px 10px;border:1px solid #d0d5dd;border-radius:8px;font:inherit;font-size:.8rem}
+.kpi-review-panel{border-color:#fedf89 !important}

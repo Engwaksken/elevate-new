@@ -177,6 +177,13 @@
                     'active' => ['staff.tasks.*'],
                 ],
                 [
+                    'route' => 'staff.kpis.index',
+                    'label' => 'My KPIs',
+                    'icon' => 'fa-bullseye',
+                    'permissions' => [],
+                    'active' => ['staff.kpis.*'],
+                ],
+                [
                     'route' => 'admin.hr.employees.index',
                     'label' => 'Employees',
                     'icon' => 'fa-id-badge',
@@ -355,6 +362,13 @@
                         'icon' => 'fa-list-check',
                         'permissions' => [],
                         'active' => ['staff.tasks.*'],
+                    ],
+                    [
+                        'route' => 'staff.kpis.index',
+                        'label' => 'My KPIs',
+                        'icon' => 'fa-bullseye',
+                        'permissions' => [],
+                        'active' => ['staff.kpis.*'],
                     ],
                     [
                         'route' => 'certificates.recommendations.index',

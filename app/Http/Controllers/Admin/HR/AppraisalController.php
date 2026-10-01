@@ -46,7 +46,7 @@ class AppraisalController extends Controller
     {
         AppraisalCycle::create($request->validate([
             'name'=>['required','string','max:190'],
-            'cycle_type'=>['required','in:probation,mid_year,annual,special'],
+            'cycle_type'=>['required','in:quarterly,probation,mid_year,annual,special'],
             'start_date'=>['required','date'],
             'end_date'=>['required','date','after_or_equal:start_date'],
             'self_assessment_due'=>['nullable','date'],

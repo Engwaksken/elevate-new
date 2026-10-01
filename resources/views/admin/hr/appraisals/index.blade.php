@@ -147,7 +147,7 @@ $stats=[
 @csrf
 <div class="eh-modal-body"><div class="modal-grid">
 <div class="form-group full"><label>Cycle Name *</label><input name="name" required placeholder="e.g. Q3 2026 Performance Appraisal"><small class="form-hint">Include the quarter/year where applicable.</small></div>
-<div class="form-group"><label>Type *</label><select name="cycle_type"><option value="annual">Annual</option><option value="mid_year">Mid-Year</option><option value="probation">Probation</option><option value="special">Special</option></select></div>
+<div class="form-group"><label>Type *</label><select name="cycle_type"><option value="quarterly">Quarterly</option><option value="annual">Annual</option><option value="mid_year">Mid-Year</option><option value="probation">Probation</option><option value="special">Special</option></select></div>
 <div class="form-group"><label>Start Date *</label><input type="date" name="start_date" required></div>
 <div class="form-group"><label>End Date *</label><input type="date" name="end_date" required></div>
 <div class="form-group"><label>Self Assessment Due</label><input type="date" name="self_assessment_due"></div>

@@ -115,7 +115,7 @@ class StaffTaskController extends Controller
             'title' => ['required', 'string', 'max:190'],
             'description' => ['nullable', 'string', 'max:5000'],
             'assigned_to' => ['nullable', 'integer'],
-            'appraisal_kpi_id' => ['nullable', 'integer'],
+            'kpi' => ['nullable', 'string', 'max:30'],
             'start_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'priority' => ['required', Rule::in(Task::PRIORITIES)],
@@ -128,15 +128,15 @@ class StaffTaskController extends Controller
             throw ValidationException::withMessages(['assigned_to' => 'You can only assign tasks to yourself or your team.']);
         }
 
-        if ($data['appraisal_kpi_id'] ?? null) {
-            $kpi = $this->tasks->linkableKpis([$data['assigned_to']])->firstWhere('id', (int) $data['appraisal_kpi_id']);
+        $columns = $this->tasks->kpiColumns($data['kpi'] ?? null, $data['assigned_to']);
 
-            if (! $kpi) {
-                throw ValidationException::withMessages(['appraisal_kpi_id' => 'Choose a KPI from the assignee’s current appraisal.']);
-            }
+        if ($columns === null) {
+            throw ValidationException::withMessages(['kpi' => 'Choose one of the assignee’s own KPIs.']);
         }
 
-        return $data;
+        unset($data['kpi']);
+
+        return $data + $columns;
     }
 
     private function completion(Task $task, string $status, mixed $progress): array

@@ -30,17 +30,18 @@
 
     <div class="form-group full">
         <label for="{{ $prefix }}-kpi">Linked KPI</label>
-        <select id="{{ $prefix }}-kpi" name="appraisal_kpi_id" data-task-kpi>
+        @php $currentKpi = $task?->staff_kpi_id ? 's:'.$task->staff_kpi_id : ($task?->appraisal_kpi_id ? 'a:'.$task->appraisal_kpi_id : null); @endphp
+        <select id="{{ $prefix }}-kpi" name="kpi" data-task-kpi>
             <option value="">Not linked to a KPI</option>
-            @foreach($kpis->groupBy(fn ($kpi) => $kpi['owner_id'].'|'.$kpi['kra']) as $group => $groupKpis)
-                <optgroup label="{{ $groupKpis->first()['kra'] }}{{ $groupKpis->first()['cycle'] ? ' · '.$groupKpis->first()['cycle'] : '' }}" data-owner="{{ $groupKpis->first()['owner_id'] }}">
+            @foreach($kpis->groupBy(fn ($kpi) => $kpi['owner_id'].'|'.$kpi['type'].'|'.$kpi['kra']) as $group => $groupKpis)
+                <optgroup label="{{ $groupKpis->first()['kra'] }}{{ $groupKpis->first()['source'] ? ' · '.$groupKpis->first()['source'] : '' }}" data-owner="{{ $groupKpis->first()['owner_id'] }}">
                     @foreach($groupKpis as $kpi)
-                        <option value="{{ $kpi['id'] }}" data-owner="{{ $kpi['owner_id'] }}" @selected((int) $task?->appraisal_kpi_id === $kpi['id'])>{{ $kpi['title'] }}</option>
+                        <option value="{{ $kpi['key'] }}" data-owner="{{ $kpi['owner_id'] }}" @selected($currentKpi === $kpi['key'])>{{ $kpi['title'] }}</option>
                     @endforeach
                 </optgroup>
             @endforeach
         </select>
-        <small class="form-hint">KPIs come from the assignee’s current appraisal (Appraisals &amp; Performance).</small>
+        <small class="form-hint">Contract KPIs are set under <a href="{{ route('staff.kpis.index') }}">My KPIs</a>; KPIs added directly to a current appraisal are listed too.</small>
     </div>
 
     <div class="form-group"><label for="{{ $prefix }}-start">Start date</label><input id="{{ $prefix }}-start" type="date" name="start_date" value="{{ $task?->start_date?->toDateString() }}"></div>
