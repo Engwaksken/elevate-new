@@ -1,0 +1,56 @@
+/* Staff tasks: daily / weekly / past tracking linked to KPIs */
+.st-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;padding:4px;border:1px solid #e4e7ec;border-radius:10px;background:#fff;width:fit-content;max-width:100%}
+.st-tabs a{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:7px;color:#475467;font-size:.8rem;font-weight:700;text-decoration:none}
+.st-tabs a:hover{background:#f9fafb}
+.st-tabs a.active{background:#800000;color:#fff}
+.st-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start}
+.st-main>.admin-panel,.st-side>.admin-panel{margin-bottom:14px}
+.st-section-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.st-section-head h2{margin:0;font-size:1rem}
+.st-week-nav{display:flex;gap:6px}
+.st-muted{margin:0 0 10px;color:#667085;font-size:.76rem}
+.st-stat-alert{border-color:#fecdca !important;background:#fffbfa !important}
+.st-group{margin-bottom:14px}
+.st-group h3{display:flex;align-items:center;gap:6px;margin:0 0 6px;color:#344054;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
+.st-group h3 span{margin-left:auto;padding:1px 8px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:.68rem}
+.st-group-overdue h3{color:#b42318}
+.st-task{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;margin-bottom:6px;padding:10px 12px;border:1px solid #e4e7ec;border-left:4px solid #d0d5dd;border-radius:9px;background:#fff}
+.st-task.is-overdue{border-left-color:#d92d20;background:#fffbfa}
+.st-task.is-done{border-left-color:#12b76a;background:#fcfffd}
+.st-task.is-done .st-task-title strong{color:#667085;text-decoration:line-through}
+.st-check{width:26px;height:26px;display:grid;place-items:center;border:2px solid #d0d5dd;border-radius:50%;background:#fff;color:transparent;cursor:pointer;font-size:.7rem}
+.st-check:hover,.st-check:focus-visible{border-color:#12b76a;color:#12b76a}
+.st-check.is-checked{border-color:#12b76a;background:#12b76a;color:#fff;cursor:default}
+.st-task-title{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.st-task-title strong{font-size:.86rem;color:#172033}
+.st-task-meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;color:#667085;font-size:.72rem}
+.st-task-meta i{margin-right:3px}
+.st-overdue{color:#b42318;font-weight:700}
+.st-kpi{color:#175cd3;font-weight:700}
+.st-outcome{margin:6px 0 0;padding:6px 9px;border-radius:6px;background:#f6fef9;color:#344054;font-size:.76rem;white-space:pre-line}
+.st-priority{padding:1px 7px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:.62rem;font-weight:800;text-transform:uppercase}
+.st-priority-high{background:#fffaeb;color:#b54708}
+.st-priority-urgent{background:#fef3f2;color:#b42318}
+.st-priority-low{background:#f0f9ff;color:#026aa2}
+.st-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.st-day{min-width:0;padding:8px;border:1px solid #eef0f3;border-radius:9px;background:#fcfcfd}
+.st-day.is-today{border-color:#800000;box-shadow:0 0 0 2px rgba(128,0,0,.08)}
+.st-day.is-weekend{background:#f9fafb}
+.st-day h3{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px;margin:0 0 8px;font-size:.8rem;color:#172033}
+.st-day h3 span{color:#667085;font-weight:400;font-size:.72rem}
+.st-day h3 small{width:100%;color:#067647;font-size:.66rem}
+.st-day .st-task{grid-template-columns:auto minmax(0,1fr);padding:7px}
+.st-day .st-task>.btn{grid-column:2;justify-self:start}
+.st-empty-day{margin:0;color:#98a2b3;font-size:.7rem}
+.st-kra{margin-bottom:12px}
+.st-kra h4{margin:0 0 6px;color:#344054;font-size:.76rem}
+.st-kpi-row{display:block;margin-bottom:8px;padding:8px 10px;border:1px solid #eef0f3;border-radius:8px;color:inherit;text-decoration:none}
+.st-kpi-row:hover{border-color:#b2ccff;background:#f5f8ff}
+.st-kpi-title{display:block;color:#172033;font-size:.78rem;font-weight:700}
+.st-kpi-bar{display:block;height:6px;margin:6px 0 4px;border-radius:999px;background:#eef0f3;overflow:hidden}
+.st-kpi-bar span{display:block;height:100%;background:#12b76a}
+.st-kpi-count{color:#667085;font-size:.68rem}
+.st-delete{margin-right:auto}
+@media(max-width:1200px){.st-week{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:980px){.st-layout{grid-template-columns:1fr}}
+@media(max-width:560px){.st-week{grid-template-columns:1fr}.st-tabs{width:100%}.st-tabs a{flex:1;justify-content:center}}

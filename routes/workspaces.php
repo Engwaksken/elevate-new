@@ -59,3 +59,24 @@ Route::prefix('admin')
         Route::get('/reports/jobs-tracking', [TrackingReportsController::class, 'jobs'])
             ->name('reports.jobs-tracking');
     });
+
+/*
+|--------------------------------------------------------------------------
+| Staff tasks
+|--------------------------------------------------------------------------
+|
+| Personal daily / weekly / past task tracking for staff, linked to the KPIs
+| in their appraisal. Supervisors can assign to and follow their team.
+|
+*/
+
+Route::middleware(['auth', 'staff'])
+    ->prefix('staff/tasks')
+    ->name('staff.tasks.')
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\Staff\StaffTaskController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Staff\StaffTaskController::class, 'store'])->name('store');
+        Route::put('/{task}', [\App\Http\Controllers\Staff\StaffTaskController::class, 'update'])->name('update');
+        Route::patch('/{task}/complete', [\App\Http\Controllers\Staff\StaffTaskController::class, 'complete'])->name('complete');
+        Route::delete('/{task}', [\App\Http\Controllers\Staff\StaffTaskController::class, 'destroy'])->name('destroy');
+    });

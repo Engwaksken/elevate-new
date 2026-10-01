@@ -170,6 +170,13 @@
                     'permissions' => [],
                 ],
                 [
+                    'route' => 'staff.tasks.index',
+                    'label' => 'My Tasks',
+                    'icon' => 'fa-list-check',
+                    'permissions' => [],
+                    'active' => ['staff.tasks.*'],
+                ],
+                [
                     'route' => 'admin.hr.employees.index',
                     'label' => 'Employees',
                     'icon' => 'fa-id-badge',
@@ -341,6 +348,13 @@
                         'label' => 'Calendar',
                         'icon' => 'fa-calendar-days',
                         'permissions' => [],
+                    ],
+                    [
+                        'route' => 'staff.tasks.index',
+                        'label' => 'My Tasks',
+                        'icon' => 'fa-list-check',
+                        'permissions' => [],
+                        'active' => ['staff.tasks.*'],
                     ],
                     [
                         'route' => 'certificates.recommendations.index',
