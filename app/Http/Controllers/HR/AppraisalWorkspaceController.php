@@ -487,7 +487,8 @@ class AppraisalWorkspaceController extends Controller
         $allowed = $this->employee($appraisal)
             || $this->supervisor($appraisal)
             || ($user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
-            || ($user && method_exists($user, 'hasAnyRole') && $user->hasAnyRole(['hr', 'HR', 'administrator']));
+            || ($user && method_exists($user, 'hasAnyRole') && $user->hasAnyRole(['hr', 'HR', 'administrator']))
+            || ($user && method_exists($user, 'hasPermission') && $user->hasPermission('appraisals.view'));
 
         abort_unless($allowed, 403);
     }

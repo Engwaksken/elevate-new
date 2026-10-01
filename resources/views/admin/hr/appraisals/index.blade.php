@@ -9,6 +9,9 @@
             $appraisalAdminUser->isSuperAdmin()
             || $appraisalAdminUser->hasAnyRole(['hr', 'HR'])
         );
+    $canManageAppraisals = $appraisalAdminUser && $appraisalAdminUser->hasPermission('appraisals.manage');
+    $workspaceStatuses = \App\Services\HR\AppraisalWorkflowService::WORKSPACE_STATUSES;
+    $usesWorkspace = fn ($appraisal) => in_array($appraisal->status, $workspaceStatuses, true) || $appraisal->kras_count > 0;
 @endphp
 <div class="admin-page-header">
 <div>
@@ -76,7 +79,10 @@ $stats=[
 <small class="admin-cell-hint">{{ $appraisal->kpiTemplate?->name ?: 'No template assigned' }}</small>
 </td>
 
-<td><span class="status-chip {{ $appraisal->status }}">{{ ucwords(str_replace('_',' ',$appraisal->status)) }}</span></td>
+<td>
+<span class="status-chip {{ $appraisal->status }}">{{ ucwords(str_replace('_',' ',$appraisal->status)) }}</span>
+@if($appraisal->locked_at)<small class="admin-cell-hint"><i class="fas fa-lock"></i> Locked {{ $appraisal->locked_at->format('d M Y') }}</small>@endif
+</td>
 
 <td>
 <div class="table-progress">
@@ -95,13 +101,25 @@ $stats=[
 <a class="btn-icon" href="{{ route('admin.hr.appraisals.kpis',$appraisal) }}" title="Admin KPI Form"><i class="fas fa-chart-line"></i></a>
 @endif
 
+@if($usesWorkspace($appraisal))
+<a class="btn-icon" href="{{ route('staff.performance.show',$appraisal) }}" title="View Appraisal Workflow"><i class="fas fa-eye"></i></a>
+@else
 <a class="btn-icon" href="{{ route('staff.appraisals.show',$appraisal) }}" title="View Appraisal"><i class="fas fa-eye"></i></a>
+@endif
 
 @if($appraisal->employee_submitted_at)
 <a class="btn-icon" href="{{ route('staff.appraisals.export.excel',$appraisal) }}" title="Export WITU Excel"><i class="fas fa-file-excel"></i></a>
 @endif
 
-@if($appraisal->manager_submitted_at && !$appraisal->hr_finalised_at)
+@if($canManageAppraisals && !$appraisal->locked_at)
+<button type="button" class="btn-icon" data-modal-open="lockAppraisal{{ $appraisal->id }}" title="Lock Appraisal"><i class="fas fa-lock"></i></button>
+@endif
+
+@if($canManageAppraisals && ($appraisal->locked_at || $appraisal->status === 'completed'))
+<button type="button" class="btn-icon" data-modal-open="reopenAppraisal{{ $appraisal->id }}" title="Reopen Appraisal"><i class="fas fa-lock-open"></i></button>
+@endif
+
+@if($appraisal->manager_submitted_at && !$appraisal->hr_finalised_at && !$usesWorkspace($appraisal))
 <button type="button" class="btn-icon" data-modal-open="finaliseAppraisal{{ $appraisal->id }}" title="HR Finalise"><i class="fas fa-circle-check"></i></button>
 @endif
 </div>
@@ -166,7 +184,39 @@ $stats=[
 @endif
 
 @foreach($appraisals as $appraisal)
-@if($appraisal->manager_submitted_at && !$appraisal->hr_finalised_at)
+@if($canManageAppraisals && !$appraisal->locked_at)
+<div class="eh-modal" id="lockAppraisal{{ $appraisal->id }}" aria-hidden="true">
+<div class="eh-modal-dialog eh-modal-sm">
+<div class="eh-modal-header"><div><h2>Lock Appraisal?</h2><p>{{ $appraisal->employee?->user?->name }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+<form method="POST" action="{{ route('admin.hr.appraisals.lock',$appraisal) }}">
+@csrf
+<div class="eh-modal-body">
+<p>Locking freezes the appraisal. The employee and supervisor can no longer edit, submit or confirm it until HR reopens it.</p>
+<div class="form-group"><label>Reason</label><textarea name="reason" rows="2" placeholder="Optional, e.g. cycle closed"></textarea></div>
+</div>
+<div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Lock Appraisal</button></div>
+</form>
+</div>
+</div>
+@endif
+
+@if($canManageAppraisals && ($appraisal->locked_at || $appraisal->status === 'completed'))
+<div class="eh-modal" id="reopenAppraisal{{ $appraisal->id }}" aria-hidden="true">
+<div class="eh-modal-dialog eh-modal-sm">
+<div class="eh-modal-header"><div><h2>Reopen Appraisal?</h2><p>{{ $appraisal->employee?->user?->name }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+<form method="POST" action="{{ route('admin.hr.appraisals.reopen',$appraisal) }}">
+@csrf
+<div class="eh-modal-body">
+<p>Reopening unlocks the appraisal, clears submissions and confirmations, and returns it to the employee for revision. Existing scores are kept.</p>
+<div class="form-group"><label>Reason *</label><textarea name="reason" rows="2" required placeholder="Why is this appraisal being reopened?"></textarea></div>
+</div>
+<div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Reopen Appraisal</button></div>
+</form>
+</div>
+</div>
+@endif
+
+@if($appraisal->manager_submitted_at && !$appraisal->hr_finalised_at && !$usesWorkspace($appraisal))
 <div class="eh-modal" id="finaliseAppraisal{{ $appraisal->id }}" aria-hidden="true">
 <div class="eh-modal-dialog eh-modal-sm">
 <div class="eh-modal-header"><div><h2>Finalise Appraisal?</h2><p>{{ $appraisal->employee?->user?->name }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
