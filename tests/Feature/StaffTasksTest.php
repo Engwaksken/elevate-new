@@ -191,4 +191,23 @@ class StaffTasksTest extends TestCase
 
         $this->actingAs($participant)->get(route('staff.tasks.index'))->assertForbidden();
     }
+
+    public function test_supervisor_sees_linked_tasks_as_evidence_when_reviewing_the_appraisal(): void
+    {
+        $this->task(['title' => 'Placed three graduates', 'appraisal_kpi_id' => $this->kpi->id, 'due_date' => '2026-09-20',
+            'status' => 'completed', 'completed_at' => '2026-09-20 12:00:00', 'outcome' => 'Placed at MTN, Stanbic and Andela.']);
+        $this->task(['title' => 'Follow up two more', 'appraisal_kpi_id' => $this->kpi->id, 'due_date' => '2026-10-10']);
+        $this->task(['title' => 'Unrelated errand', 'due_date' => '2026-09-20']);
+
+        $appraisal = $this->kpi->kra->appraisal;
+        $appraisal->update(['status' => 'supervisor_review']);
+
+        $this->actingAs($this->supervisor)->get(route('staff.performance.show', $appraisal))
+            ->assertOk()
+            ->assertSee('1 task done')
+            ->assertSee('1 open')
+            ->assertSee('Placed three graduates')
+            ->assertSee('Placed at MTN, Stanbic and Andela.')
+            ->assertDontSee('Unrelated errand');
+    }
 }

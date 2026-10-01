@@ -54,3 +54,12 @@
 @media(max-width:1200px){.st-week{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:980px){.st-layout{grid-template-columns:1fr}}
 @media(max-width:560px){.st-week{grid-template-columns:1fr}.st-tabs{width:100%}.st-tabs a{flex:1;justify-content:center}}
+/* Task evidence on appraisal KPIs */
+.kpi-evidence{margin-top:4px;font-size:.74rem}
+.kpi-evidence summary{cursor:pointer;color:#175cd3;font-weight:700}
+.kpi-evidence ul{margin:6px 0 0;padding:0;list-style:none;max-height:220px;overflow:auto}
+.kpi-evidence li{padding:6px 8px;border-left:3px solid #12b76a;border-radius:4px;background:#f6fef9;margin-bottom:4px}
+.kpi-evidence li.is-open{border-left-color:#d0d5dd;background:#f9fafb}
+.kpi-evidence li span{display:block;color:#667085;font-size:.68rem}
+.kpi-evidence li p{margin:3px 0 0;color:#344054;white-space:pre-line}
+.kpi-evidence-empty{margin-top:4px;color:#98a2b3;font-size:.7rem}
