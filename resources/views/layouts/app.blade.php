@@ -15,6 +15,10 @@
 @php
 $participantShell=auth()->check() && method_exists(auth()->user(),'isStaff') && !auth()->user()->isStaff();
 $inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.login') || request()->routeIs('register');
+$brandLogoPath = app(\App\Services\SettingsService::class)->get('branding.logo_path');
+$brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('branding.asset')
+    ? route('branding.asset', ['type' => 'logo', 'v' => md5((string) $brandLogoPath)])
+    : null;
 @endphp
 <body class="{{ $participantShell?'participant-app-body':'' }}">
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -26,7 +30,7 @@ $inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.log
 <div class="participant-app-main">
 <header class="participant-mobile-header">
 <button type="button" data-sidebar-toggle aria-controls="participantSidebar" aria-expanded="false" aria-label="Open navigation"><i class="fas fa-bars"></i></button>
-<a href="{{ route('dashboard') }}" class="participant-mobile-brand"><span class="ps-mobile-mark">E360</span><strong>ElevateHer360</strong></a>
+<a href="{{ route('dashboard') }}" class="participant-mobile-brand">@if($brandLogoUrl)<img src="{{ $brandLogoUrl }}" alt="ElevateHer360" style="max-width:36px;max-height:36px;object-fit:contain">@else<span class="ps-mobile-mark">E360</span>@endif<strong>ElevateHer360</strong></a>
 @if(Route::has('notifications.index'))<a href="{{ route('notifications.index') }}" class="participant-mobile-action" aria-label="Notifications"><i class="fas fa-bell"></i></a>@else<span></span>@endif
 </header>
 <main id="main-content" class="site-main participant-site-main">
@@ -43,7 +47,7 @@ $inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.log
 @php($cmsHeader = app(\App\Services\CmsContentService::class)->published('site-header'))
 @if($cmsHeader['body'] ?? null)<div class="container cms-content">{!! app(\App\Services\CmsContentService::class)->render($cmsHeader['body']) !!}</div>@endif
 <div class="nav">
-<a href="{{ route('home') }}" class="brand" aria-label="ElevateHer360 home">@if($cmsHeader['image_path'] ?? null)<img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($cmsHeader['image_path']) }}" alt="" style="max-width:64px;max-height:48px">@else<span class="brand-mark">E360</span>@endif<span>{{ $cmsHeader['title'] ?? 'ElevateHer360' }}<small>{{ $cmsHeader['summary'] ?? 'Women in Technology Uganda' }}</small></span></a>
+<a href="{{ route('home') }}" class="brand" aria-label="ElevateHer360 home">@if($brandLogoUrl)<img src="{{ $brandLogoUrl }}" alt="" style="max-width:64px;max-height:48px;object-fit:contain">@elseif($cmsHeader['image_path'] ?? null)<img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($cmsHeader['image_path']) }}" alt="" style="max-width:64px;max-height:48px">@else<span class="brand-mark">E360</span>@endif<span>{{ $cmsHeader['title'] ?? 'ElevateHer360' }}<small>{{ $cmsHeader['summary'] ?? 'Women in Technology Uganda' }}</small></span></a>
 <nav class="nav-links" aria-label="Main navigation">
 @if($cmsHeader)
 @foreach(data_get($cmsHeader, 'settings.links', []) as $link)<a href="{{ $link['url'] }}">{{ $link['label'] }}</a>@endforeach

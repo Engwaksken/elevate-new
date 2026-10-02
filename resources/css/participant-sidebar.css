@@ -131,6 +131,23 @@
         0 8px 18px rgba(0, 0, 0, 0.15);
 }
 
+.ps-mark-logo {
+    flex: 0 0 auto;
+
+    width: 43px;
+    height: 43px;
+
+    border-radius: 12px;
+
+    object-fit: contain;
+    background: #ffffff;
+
+    padding: 3px;
+
+    box-shadow:
+        0 8px 18px rgba(0, 0, 0, 0.15);
+}
+
 .ps-brand-link > span:last-child,
 .ps-user-copy {
     min-width: 0;

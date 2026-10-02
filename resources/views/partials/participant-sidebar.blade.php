@@ -3,6 +3,12 @@
     class="participant-sidebar"
     aria-label="Participant navigation"
 >
+@php
+    $psLogoPath = app(\App\Services\SettingsService::class)->get('branding.logo_path');
+    $psLogoUrl = $psLogoPath && \Illuminate\Support\Facades\Route::has('branding.asset')
+        ? route('branding.asset', ['type' => 'logo', 'v' => md5((string) $psLogoPath)])
+        : null;
+@endphp
 
     <div class="ps-brand">
 
@@ -10,9 +16,13 @@
             href="{{ route('dashboard') }}"
             class="ps-brand-link"
         >
-            <span class="ps-mark">
-                E360
-            </span>
+            @if($psLogoUrl)
+                <img src="{{ $psLogoUrl }}" alt="ElevateHer360" class="ps-mark-logo">
+            @else
+                <span class="ps-mark">
+                    E360
+                </span>
+            @endif
 
             <span class="ps-brand-copy">
                 <strong>

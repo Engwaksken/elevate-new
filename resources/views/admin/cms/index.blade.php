@@ -6,7 +6,10 @@
 @foreach(['admin.elearning.courses.index'=>'Courses','admin.jobs.index'=>'Jobs','admin.library.index'=>'Library','admin.events.index'=>'Events','admin.mentorship.mentors.index'=>'Mentors','admin.jobs.employers.index'=>'Employers'] as $route=>$label)@if(Route::has($route))<a class="btn btn-outline" href="{{ route($route) }}">Manage {{ $label }}</a>@endif @endforeach
 </div></div>
 <div class="admin-panel"><table class="admin-table"><thead><tr><th>Page / section</th><th>Publication</th><th>Actions</th></tr></thead><tbody>
-@foreach($pages as $page)<tr><td>{{ $page->title }}<small>{{ $page->slug }}</small></td><td>{{ $page->published_at ? 'Published '.$page->published_at->format('d M Y H:i') : 'Draft / built-in content' }}</td><td><a class="btn btn-outline btn-sm" href="{{ route('admin.cms.edit', $page) }}">Edit</a> <a href="{{ route('admin.cms.preview', $page) }}">Preview draft</a>@if($url = app(\App\Services\CmsContentService::class)->publicUrl($page)) · <a href="{{ $url }}" target="_blank" rel="noopener">View page</a>@endif</td></tr>@endforeach
+@foreach($pages as $page)
+@php($pageRole = ['home'=>'Frontend homepage','site-header'=>'Header navigation','site-footer'=>'Footer navigation','register'=>'Registration page','login'=>'Login page'][$page->slug] ?? null)
+<tr><td><strong>{{ $page->title }}</strong>@if($pageRole)<span class="status-chip active" style="margin-left:8px">{{ $pageRole }}</span>@endif<small>{{ $page->slug }}</small></td><td>{{ $page->published_at ? 'Published '.$page->published_at->format('d M Y H:i') : 'Draft / built-in content' }}</td><td><a class="btn btn-outline btn-sm" href="{{ route('admin.cms.edit', $page) }}">Edit</a> <a href="{{ route('admin.cms.preview', $page) }}">Preview draft</a>@if($url = app(\App\Services\CmsContentService::class)->publicUrl($page)) · <a href="{{ $url }}" target="_blank" rel="noopener">View page</a>@endif</td></tr>
+@endforeach
 </tbody></table></div>
 <div class="admin-panel"><h2>Add a custom page</h2><p>Create a draft page, then edit its content, preview and publish from the page list above.</p></div>
 
