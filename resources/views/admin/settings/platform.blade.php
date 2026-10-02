@@ -7,7 +7,7 @@
     $faviconPath = $settings->get('branding.favicon_path');
     $logoUrl = $logoPath ? \Illuminate\Support\Facades\Storage::disk('public')->url($logoPath) : null;
     $faviconUrl = $faviconPath ? \Illuminate\Support\Facades\Storage::disk('public')->url($faviconPath) : null;
-    $activeConfigTab = session('platform_settings_tab', 'branding');
+    $activeConfigTab = session('platform_settings_tab', old('provider') ? 'ai' : 'branding');
 @endphp
 
 <div class="admin-page-header">
@@ -35,6 +35,7 @@
     <button class="appraisal-admin-kra-tab" type="button" data-config-tab="branding">Branding & Theme</button>
     <button class="appraisal-admin-kra-tab" type="button" data-config-tab="backup">Backup & Storage</button>
     <button class="appraisal-admin-kra-tab" type="button" data-config-tab="maintenance">Maintenance</button>
+    <button class="appraisal-admin-kra-tab" type="button" data-config-tab="ai">AI Provider</button>
 </div>
 
 <section data-config-panel="branding">
@@ -145,6 +146,20 @@
 </div>
 </section>
 
+<section data-config-panel="ai" hidden><div class="admin-panel">
+<h2>System-wide AI Provider</h2><p>The active provider is used for resume and cover-letter parsing, writing, tailoring, ATS reviews and other system AI requests. Keys are stored encrypted and are never displayed.</p>
+<form method="POST" action="{{ route('admin.platform-settings.ai') }}">@csrf @method('PUT')
+<div class="eh-form-grid">
+<div><label>Provider</label><select name="provider">@foreach(['openai'=>'OpenAI','gemini'=>'Google Gemini','compatible'=>'OpenAI-compatible API'] as $value=>$label)<option value="{{ $value }}" @selected(old('provider', $aiConfig->provider ?? 'openai') === $value)>{{ $label }}</option>@endforeach</select></div>
+<div><label>Model ID</label><input name="model" value="{{ old('model', $aiConfig->model) }}" required maxlength="190" placeholder="Your provider's model ID"></div>
+<div class="full"><label>HTTPS API endpoint (optional except for compatible providers)</label><input type="url" name="endpoint" value="{{ old('endpoint', $aiConfig->endpoint) }}" maxlength="255" placeholder="https://..."></div>
+<div class="full"><label>API key {{ $aiConfig->apiKey() ? '(configured — leave blank to retain)' : '(not configured)' }}</label><input type="password" name="api_key" value="" autocomplete="new-password" maxlength="1000"></div>
+<div><label>Daily system request limit</label><input type="number" min="1" max="100000" name="daily_limit" value="{{ old('daily_limit', data_get($aiConfig->settings, 'daily_limit', 1000)) }}"></div>
+<div><label>Daily request limit per user</label><input type="number" min="1" max="1000" name="user_daily_limit" value="{{ old('user_daily_limit', data_get($aiConfig->settings, 'user_daily_limit', 20)) }}"></div>
+<div><label>Temperature (optional, if supported by the model)</label><input type="number" min="0" max="2" step="0.1" name="temperature" value="{{ old('temperature', data_get($aiConfig->settings, 'temperature')) }}"></div>
+</div><label><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $aiConfig->enabled))> Activate AI across the system</label>
+<button class="btn btn-primary">Save AI configuration</button></form>
+</div></section>
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
     const tabs=[...document.querySelectorAll('[data-config-tab]')];

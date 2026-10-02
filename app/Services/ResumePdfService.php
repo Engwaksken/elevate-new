@@ -8,7 +8,7 @@ class ResumePdfService
 {
     public function render(Resume $resume): string
     {
-        $resume->load(['user.profile','experiences','education','skills','certifications','languages','projects']);
+        $resume->load(['user.profile','experiences','education','skills','certifications','languages','projects','referees','portfolioFiles']);
 
         if (! class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
             throw new \RuntimeException('DOMPDF package is not installed.');

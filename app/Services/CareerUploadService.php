@@ -39,6 +39,7 @@ class CareerUploadService
             return $draft;
         }
         $draft = ['title' => $title, 'template' => 'modern', 'professional_summary' => mb_substr(is_string($parsed['professional_summary'] ?? null) ? $parsed['professional_summary'] : ($upload->extracted_text ?? ''), 0, 10000)];
+        $draft['portfolio_url'] = is_string($parsed['portfolio_url'] ?? null) ? $parsed['portfolio_url'] : null;
         foreach (CareerDocumentEditorService::SECTIONS as $relation => $fields) {
             $rows = is_array($parsed[$relation] ?? null) ? $parsed[$relation] : [];
             if ($relation === 'skills') $rows = array_map(fn ($row) => is_string($row) ? ['skill' => $row] : $row, $rows);

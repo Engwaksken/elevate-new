@@ -82,6 +82,7 @@ class ParticipantController extends Controller
             ],
             'courses' => $enrolments->map(fn ($enrolment) => [
                 'enrolment_code' => $enrolment->enrolment_code,
+                'participant_code' => $user->participant_code,
                 'id' => $enrolment->course?->id,
                 'title' => $enrolment->course?->title,
                 'status' => $enrolment->status,
@@ -141,6 +142,7 @@ class ParticipantController extends Controller
 
         $payload['enrolment'] = $enrolment ? [
             'enrolment_code' => $enrolment->enrolment_code,
+            'participant_code' => $user->participant_code,
             'status' => $enrolment->status,
             'progress_percent' => (float) $enrolment->progress_percent,
         ] : null;
@@ -673,6 +675,7 @@ class ParticipantController extends Controller
             'notifications'=>$notifications,
             'lesson_progress'=>$lessonProgress,
             'local_reminders'=>$reminders->values(),
+            'timetable_reminders' => app(\App\Services\TimetableReminderService::class)->forParticipant($user),
         ]);
     }
 

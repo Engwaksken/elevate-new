@@ -9,6 +9,7 @@ class Resume extends Model
     protected $fillable = [
         'user_id','title','template','professional_summary','source',
         'ai_enhanced','completion_percent','is_default',
+        'portfolio_url',
     ];
 
     protected $casts = [
@@ -24,6 +25,8 @@ class Resume extends Model
     public function certifications(){ return $this->hasMany(ResumeCertification::class); }
     public function languages(){ return $this->hasMany(ResumeLanguage::class); }
     public function projects(){ return $this->hasMany(ResumeProject::class); }
+    public function referees(){ return $this->hasMany(ResumeReferee::class)->orderBy('position'); }
+    public function portfolioFiles(){ return $this->hasMany(ResumePortfolioFile::class); }
     public function uploads(){ return $this->hasMany(ResumeUpload::class); }
     public function versions(){ return $this->hasMany(ResumeVersion::class); }
     public function coverLetters(){ return $this->hasMany(CoverLetter::class); }

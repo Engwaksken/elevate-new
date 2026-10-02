@@ -1,0 +1,6 @@
+@php($fields = $section === 'projects' ? ['name'=>'Project name','description'=>'Description','url'=>'Project / portfolio URL','start_date'=>'Start date','end_date'=>'End date'] : ['name'=>'Referee name','job_title'=>'Job title','organisation'=>'Organisation','email'=>'Email','phone'=>'Phone','relationship'=>'Relationship'])
+<form method="POST" action="{{ $item ? route('career.resume.extras.update', [$resume, $section, $item->id]) : route('career.resume.extras.store', [$resume, $section]) }}">@csrf @if($item) @method('PUT') @endif
+<div class="form-grid">@foreach($fields as $field=>$label)<div class="form-group"><label>{{ $label }}</label>
+@if($field === 'description')<textarea name="{{ $field }}" rows="4">{{ $item?->{$field} }}</textarea>
+@else<input name="{{ $field }}" type="{{ str_ends_with($field, '_date') ? 'date' : ($field === 'email' ? 'email' : ($field === 'url' ? 'url' : 'text')) }}" value="{{ str_ends_with($field, '_date') ? $item?->{$field}?->format('Y-m-d') : $item?->{$field} }}" @required($field === 'name')>@endif
+</div>@endforeach</div><button class="btn btn-primary btn-sm">{{ $item ? 'Save changes' : 'Add '.ucfirst($section === 'referees' ? 'referee' : 'project') }}</button></form>

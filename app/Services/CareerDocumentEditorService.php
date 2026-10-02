@@ -16,6 +16,8 @@ class CareerDocumentEditorService
         'experiences' => ['job_title', 'organisation', 'location', 'start_date', 'end_date', 'is_current', 'description'],
         'education' => ['institution', 'qualification', 'field_of_study', 'start_date', 'end_date', 'description'],
         'skills' => ['skill', 'level'],
+        'projects' => ['name', 'description', 'url', 'start_date', 'end_date'],
+        'referees' => ['name', 'job_title', 'organisation', 'email', 'phone', 'relationship'],
     ];
 
     public function validate(array $data, bool $resume, int $userId): array
@@ -39,6 +41,14 @@ class CareerDocumentEditorService
                 'education.*.field_of_study' => ['nullable', 'string', 'max:190'], 'education.*.start_date' => ['nullable', 'date'],
                 'education.*.end_date' => ['nullable', 'date', 'after_or_equal:education.*.start_date'], 'education.*.description' => ['nullable', 'string', 'max:10000'],
                 'skills.*.skill' => ['required', 'string', 'max:100'], 'skills.*.level' => ['nullable', 'string', 'max:50'],
+                'portfolio_url' => ['nullable', 'url:http,https', 'max:2048'],
+                'projects' => ['sometimes', 'array', 'max:50'], 'projects.*.name' => ['required', 'string', 'max:190'],
+                'projects.*.description' => ['nullable', 'string', 'max:10000'], 'projects.*.url' => ['nullable', 'url:http,https', 'max:255'],
+                'projects.*.start_date' => ['nullable', 'date'], 'projects.*.end_date' => ['nullable', 'date', 'after_or_equal:projects.*.start_date'],
+                'referees' => ['sometimes', 'array', 'max:20'], 'referees.*.name' => ['required', 'string', 'max:190'],
+                'referees.*.job_title' => ['nullable', 'string', 'max:190'], 'referees.*.organisation' => ['nullable', 'string', 'max:190'],
+                'referees.*.email' => ['nullable', 'email', 'max:190'], 'referees.*.phone' => ['nullable', 'string', 'max:50'],
+                'referees.*.relationship' => ['nullable', 'string', 'max:190'],
             ];
         }
         $validated = Validator::make($data, $rules)->validate();
@@ -73,6 +83,7 @@ class CareerDocumentEditorService
                     }
                 }
                 $document->load(array_keys(self::SECTIONS));
+                $document->load('portfolioFiles');
             }
             return $document;
         });

@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\AiIntegration;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+
+class SystemAiSettingsService
+{
+    public function save(Request $request): AiIntegration
+    {
+        if (is_string($key = $request->input('api_key'))) $request->merge(['api_key' => trim($key)]);
+        $validator = Validator::make($request->all(), [
+            'provider' => ['required', 'in:openai,gemini,compatible'], 'model' => ['required', 'string', 'max:190'],
+            'endpoint' => ['required_if:provider,compatible', 'nullable', 'url:https', 'max:255'],
+            'api_key' => ['nullable', 'string', 'max:1000'], 'enabled' => ['nullable', 'boolean'],
+            'daily_limit' => ['nullable', 'integer', 'min:1', 'max:100000'], 'user_daily_limit' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'temperature' => ['nullable', 'numeric', 'min:0', 'max:2'],
+        ]);
+        if ($validator->fails()) {
+            $request->merge(['api_key' => null]);
+            throw new ValidationException($validator);
+        }
+        $data = $validator->validated();
+        return DB::transaction(function () use ($request, $data) {
+            // Lock existing configuration rows so provider switches are serialized.
+            AiIntegration::query()->lockForUpdate()->get();
+            $config = AiIntegration::firstOrNew(['feature' => 'system_ai']);
+            if ($request->boolean('enabled') && blank($data['api_key'] ?? null) && (! $config->apiKey() || ($config->exists && $config->provider !== $data['provider']))) {
+                $request->merge(['api_key' => null]);
+                throw ValidationException::withMessages(['api_key' => 'Enter an API key when activating a provider for the first time or switching providers.']);
+            }
+            if ($config->provider && $config->provider !== $data['provider']) {
+                $config->encrypted_api_key = null;
+                $config->endpoint = null;
+            }
+            $config->fill(collect($data)->only(['provider', 'model', 'endpoint'])->all());
+            $config->enabled = $request->boolean('enabled');
+            $config->settings = ['daily_limit' => $data['daily_limit'] ?? 1000, 'user_daily_limit' => $data['user_daily_limit'] ?? 20, 'temperature' => $data['temperature'] ?? null];
+            $config->setApiKey($data['api_key'] ?? null);
+            AiIntegration::where('feature', '!=', 'system_ai')->where('enabled', true)->update(['enabled' => false]);
+            $config->save();
+            return $config;
+        });
+    }
+}

@@ -10,6 +10,17 @@ use Illuminate\Support\Facades\URL;
 
 class CareerDocumentService
 {
+    public function deleteResume(Resume $resume): void
+    {
+        $paths = $resume->portfolioFiles()->pluck('path');
+        \Illuminate\Support\Facades\DB::transaction(function () use ($resume, $paths) {
+            $resume->delete();
+            \Illuminate\Support\Facades\DB::afterCommit(function () use ($paths) {
+                foreach ($paths as $path) Storage::disk('local')->delete($path);
+            });
+        });
+    }
+
     public function download(Resume|CoverLetter $document)
     {
         if ($document instanceof Resume) {

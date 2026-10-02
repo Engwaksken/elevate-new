@@ -17,7 +17,14 @@ class PlatformSettingsController extends Controller
         return view('admin.settings.platform', [
             'backups' => PlatformBackup::latest()->limit(20)->get(),
             'settings' => $settings,
+            'aiConfig' => \App\Models\AiIntegration::firstOrNew(['feature' => 'system_ai']),
         ]);
+    }
+
+    public function updateAi(Request $request, \App\Services\SystemAiSettingsService $ai)
+    {
+        $ai->save($request);
+        return back()->with('success', 'System AI configuration saved. All AI features use this provider when active.')->with('platform_settings_tab', 'ai');
     }
 
     public function updateBranding(Request $request, SettingsService $settings)

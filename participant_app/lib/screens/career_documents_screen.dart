@@ -338,10 +338,14 @@ class _DocumentEditorState extends State<_DocumentEditor> {
   late final TextEditingController _employer;
   late final TextEditingController _job;
   late final TextEditingController _recipient;
+  late final TextEditingController _portfolioUrl;
   late String _template;
   late List<Map<String, dynamic>> _experiences;
   late List<Map<String, dynamic>> _education;
   late List<Map<String, dynamic>> _skills;
+  late List<Map<String, dynamic>> _projects;
+  late List<Map<String, dynamic>> _referees;
+  late List<Map<String, dynamic>> _portfolioFiles;
   bool _saving = false;
   int? _documentId;
 
@@ -358,6 +362,8 @@ class _DocumentEditorState extends State<_DocumentEditor> {
     _job = TextEditingController(text: data['job_title']?.toString());
     _recipient =
         TextEditingController(text: data['recipient_name']?.toString());
+    _portfolioUrl =
+        TextEditingController(text: data['portfolio_url']?.toString());
     _template = data['template']?.toString() ?? widget.templates.first;
     if (!widget.templates.contains(_template)) {
       _template = widget.templates.first;
@@ -368,6 +374,9 @@ class _DocumentEditorState extends State<_DocumentEditor> {
     _experiences = rows('experiences');
     _education = rows('education');
     _skills = rows('skills');
+    _projects = rows('projects');
+    _referees = rows('referees');
+    _portfolioFiles = rows('portfolio_files');
     if (widget.startWithAi) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _ai();
@@ -377,7 +386,14 @@ class _DocumentEditorState extends State<_DocumentEditor> {
 
   @override
   void dispose() {
-    for (final controller in [_title, _body, _employer, _job, _recipient]) {
+    for (final controller in [
+      _title,
+      _body,
+      _employer,
+      _job,
+      _recipient,
+      _portfolioUrl
+    ]) {
       controller.dispose();
     }
     super.dispose();
@@ -391,6 +407,9 @@ class _DocumentEditorState extends State<_DocumentEditor> {
           'experiences': _experiences,
           'education': _education,
           'skills': _skills,
+          'projects': _projects,
+          'referees': _referees,
+          'portfolio_url': _portfolioUrl.text.trim(),
         } else ...{
           'body': _body.text.trim(),
           'employer_name': _employer.text.trim(),
@@ -421,6 +440,8 @@ class _DocumentEditorState extends State<_DocumentEditor> {
         _experiences = rows('experiences');
         _education = rows('education');
         _skills = rows('skills');
+        if (draft['projects'] is List) _projects = rows('projects');
+        // Referee identities and contacts are never changed by AI suggestions.
       }
     });
     showAppSnackBar(context,
@@ -443,6 +464,96 @@ class _DocumentEditorState extends State<_DocumentEditor> {
         await ApiService.instance.saveCareerDocument(
             resume: widget.resume, id: _documentId, data: _fields());
         if (mounted) Navigator.of(context).pop(true);
+      }
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _addPortfolioFile() async {
+    if (_documentId == null) return;
+    setState(() => _saving = true);
+    try {
+      final picked = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: [
+            'pdf',
+            'doc',
+            'docx',
+            'jpg',
+            'jpeg',
+            'png',
+            'webp',
+            'zip',
+            'txt'
+          ]);
+      if (picked == null || !mounted) return;
+      final file = picked.files.single;
+      if (file.size > 10 * 1024 * 1024 || file.path == null) {
+        showAppSnackBar(context, 'Choose a readable file no larger than 10 MB.',
+            error: true);
+        return;
+      }
+      final attachment = await ApiService.instance
+          .uploadPortfolioFile(_documentId!, file.path!);
+      if (mounted) setState(() => _portfolioFiles.add(attachment));
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _portfolioAction(
+      Map<String, dynamic> attachment, bool remove) async {
+    if (_documentId == null) return;
+    if (remove &&
+        !await confirmDialog(context,
+            title: 'Remove portfolio file?',
+            message: 'This removes the attached file from your resume.',
+            confirmLabel: 'Remove',
+            destructive: true)) {
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _saving = true);
+    try {
+      final id = (attachment['id'] as num).toInt();
+      if (remove) {
+        await ApiService.instance.deletePortfolioFile(_documentId!, id);
+        if (mounted) {
+          setState(
+              () => _portfolioFiles.removeWhere((file) => file['id'] == id));
+        }
+      } else {
+        final dir = await getTemporaryDirectory();
+        final ext = attachment['original_name']
+            .toString()
+            .split('.')
+            .last
+            .toLowerCase();
+        final safe = [
+          'pdf',
+          'doc',
+          'docx',
+          'jpg',
+          'jpeg',
+          'png',
+          'webp',
+          'zip',
+          'txt'
+        ].contains(ext)
+            ? ext
+            : 'bin';
+        final path = '${dir.path}/portfolio-$_documentId-$id.$safe';
+        await ApiService.instance.downloadApiFile(
+            path: attachment['download_path'].toString(), savePath: path);
+        final result = await OpenFilex.open(path);
+        if (mounted && result.type != ResultType.done) {
+          showAppSnackBar(context, result.message);
+        }
       }
     } catch (error) {
       if (mounted) showErrorSnackBar(context, error);
@@ -572,6 +683,52 @@ class _DocumentEditorState extends State<_DocumentEditor> {
                 }),
                 _sectionList('Skills', _skills,
                     {'skill': 'Skill', 'level': 'Level'}, {'skill'}),
+                _field(_portfolioUrl, 'Portfolio URL', max: 2048),
+                _sectionList('Projects', _projects, {
+                  'name': 'Project name',
+                  'description': 'Description',
+                  'url': 'Project / portfolio URL',
+                  'start_date': 'Start date (YYYY-MM-DD)',
+                  'end_date': 'End date (YYYY-MM-DD)'
+                }, {
+                  'name'
+                }),
+                _sectionList('Referees', _referees, {
+                  'name': 'Referee name',
+                  'job_title': 'Job title',
+                  'organisation': 'Organisation',
+                  'email': 'Email',
+                  'phone': 'Phone',
+                  'relationship': 'Relationship'
+                }, {
+                  'name'
+                }),
+                const SizedBox(height: 12),
+                Text('Portfolio files',
+                    style: Theme.of(context).textTheme.titleMedium),
+                for (final file in _portfolioFiles)
+                  ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title:
+                          Text(file['label']?.toString() ?? 'Portfolio file'),
+                      subtitle: Text(file['original_name']?.toString() ?? ''),
+                      onTap:
+                          _saving ? null : () => _portfolioAction(file, false),
+                      trailing: IconButton(
+                          tooltip: 'Remove portfolio file',
+                          onPressed: _saving
+                              ? null
+                              : () => _portfolioAction(file, true),
+                          icon: const Icon(Icons.delete_outline))),
+                OutlinedButton.icon(
+                    onPressed: _saving || _documentId == null
+                        ? null
+                        : _addPortfolioFile,
+                    icon: const Icon(Icons.attach_file),
+                    label: const Text('Upload portfolio file')),
+                if (_documentId == null)
+                  const Text(
+                      'Save or import the resume first to attach files.'),
               ] else ...[
                 _field(_employer, 'Employer'),
                 _field(_job, 'Job title'),
@@ -638,6 +795,19 @@ class _SectionEditorState extends State<_SectionEditor> {
   String? _validate(String key, String? value) {
     final text = value?.trim() ?? '';
     if (widget.requiredFields.contains(key) && text.isEmpty) return 'Required';
+    if (key == 'url' && text.isNotEmpty) {
+      final uri = Uri.tryParse(text);
+      if (uri == null ||
+          !['http', 'https'].contains(uri.scheme) ||
+          uri.host.isEmpty) {
+        return 'Enter a valid http(s) URL';
+      }
+    }
+    if (key == 'email' &&
+        text.isNotEmpty &&
+        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(text)) {
+      return 'Enter a valid email address';
+    }
     if (key.endsWith('_date') && text.isNotEmpty) {
       final date = DateTime.tryParse(text);
       if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(text) ||
@@ -688,11 +858,15 @@ class _SectionEditorState extends State<_SectionEditor> {
                                   field.key == 'end_date'),
                               maxLength: field.key == 'description'
                                   ? 10000
-                                  : (field.key == 'skill'
-                                      ? 100
-                                      : field.key == 'level'
+                                  : field.key == 'url'
+                                      ? 255
+                                      : field.key == 'phone'
                                           ? 50
-                                          : 190),
+                                          : (field.key == 'skill'
+                                              ? 100
+                                              : field.key == 'level'
+                                                  ? 50
+                                                  : 190),
                               decoration: InputDecoration(
                                   labelText:
                                       '${field.value}${widget.requiredFields.contains(field.key) ? ' *' : ''}'),

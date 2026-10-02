@@ -10,6 +10,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:uuid/uuid.dart';
 
 import '../core/logger.dart';
+import '../core/timetable_reminder_info.dart';
 import 'api_service.dart';
 
 @pragma('vm:entry-point')
@@ -402,7 +403,9 @@ class NotificationService {
 
     final sourceId = reminder['source_id']?.toString() ?? scheduledRaw;
 
-    final id = '$type-$sourceId'.hashCode & 0x7fffffff;
+    final id = type == 'timetable_lesson'
+        ? TimetableReminderInfo(reminder).notificationId
+        : '$type-$sourceId'.hashCode & 0x7fffffff;
 
     if (scheduled.isBefore(
       DateTime.now(),
@@ -419,6 +422,7 @@ class NotificationService {
     if (notifyAt.isBefore(
       DateTime.now(),
     )) {
+      if (type == 'timetable_lesson') await _local.cancel(id);
       return;
     }
 
@@ -451,6 +455,8 @@ class NotificationService {
     DateTime scheduledAt,
   ) {
     switch (type) {
+      case 'timetable_lesson':
+        return scheduledAt.subtract(const Duration(minutes: 10));
       case 'assignment_deadline':
         return scheduledAt.subtract(
           const Duration(hours: 1),
@@ -507,6 +513,32 @@ class NotificationService {
     }
   }
 
+  Future<void> scheduleTimetableReminders(List<dynamic> reminders) async {
+    final prefs = await SharedPreferences.getInstance();
+    final previous = prefs.getStringList('timetable_reminder_ids') ?? [];
+    final current = <String>[];
+    for (final raw in reminders) {
+      if (raw is! Map) continue;
+      final data = Map<String, dynamic>.from(raw);
+      final info = TimetableReminderInfo(data);
+      if (info.sourceId.isEmpty || info.startsAt == null) continue;
+      current.add(info.notificationId.toString());
+      await _scheduleReminder(data);
+    }
+    for (final id in previous.where((id) => !current.contains(id))) {
+      await _local.cancel(int.parse(id));
+    }
+    await prefs.setStringList('timetable_reminder_ids', current);
+  }
+
+  Future<void> cancelTimetableReminders() async {
+    final prefs = await SharedPreferences.getInstance();
+    for (final id in prefs.getStringList('timetable_reminder_ids') ?? []) {
+      await _local.cancel(int.parse(id));
+    }
+    await prefs.remove('timetable_reminder_ids');
+  }
+
   /// Schedules a local reminder about an hour before a mentorship session.
   /// Returns false when that moment has already passed.
   Future<bool> scheduleSessionReminder({
@@ -514,7 +546,8 @@ class NotificationService {
     required String title,
     required DateTime scheduledAt,
   }) async {
-    final notifyAt = _notificationTimeFor('mentorship_session', scheduledAt.toLocal());
+    final notifyAt =
+        _notificationTimeFor('mentorship_session', scheduledAt.toLocal());
     if (!notifyAt.isAfter(DateTime.now())) return false;
 
     await requestPermission();
@@ -533,7 +566,9 @@ class NotificationService {
     required String type,
     required Object sourceId,
   }) async {
-    final id = '$type-$sourceId'.hashCode & 0x7fffffff;
+    final id = type == 'timetable_lesson'
+        ? TimetableReminderInfo({'source_id': sourceId}).notificationId
+        : '$type-$sourceId'.hashCode & 0x7fffffff;
 
     await _local.cancel(id);
   }

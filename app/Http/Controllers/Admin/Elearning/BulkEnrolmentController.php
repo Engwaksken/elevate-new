@@ -338,6 +338,7 @@ class BulkEnrolmentController extends Controller
 
         if (! $user && $code !== '') {
             $user = User::where('participant_code', $code)->first();
+            $user ??= User::whereHas('participantIdAliases', fn ($q) => $q->where('alias', $code))->first();
         }
 
         if (! $user) {

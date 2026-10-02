@@ -365,6 +365,8 @@ class SyncService {
       if (reminders is List) {
         await NotificationService.instance.scheduleFromSync(reminders);
       }
+      final timetable = data['timetable_reminders'];
+      if (timetable is List) await NotificationService.instance.scheduleTimetableReminders(timetable);
 
       await _prefetchCourseTrees(data['courses']);
 

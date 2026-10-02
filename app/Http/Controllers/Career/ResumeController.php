@@ -36,6 +36,7 @@ class ResumeController extends Controller
             'title'=>['required','string','max:190'],
             'template'=>['required',Rule::in($this->templates())],
             'professional_summary'=>['nullable','string'],
+            'portfolio_url'=>['nullable','url:http,https','max:2048'],
         ]);
 
         $resume = Resume::create($data + [
@@ -49,7 +50,7 @@ class ResumeController extends Controller
     public function edit(Resume $resume)
     {
         $this->authorise($resume);
-        $resume->load(['experiences','education','skills','certifications','languages','projects']);
+        $resume->load(['experiences','education','skills','certifications','languages','projects','referees','portfolioFiles']);
         return view('career.resume.form', compact('resume'));
     }
 
@@ -61,6 +62,7 @@ class ResumeController extends Controller
             'title'=>['required','string','max:190'],
             'template'=>['required',Rule::in($this->templates())],
             'professional_summary'=>['nullable','string'],
+            'portfolio_url'=>['nullable','url:http,https','max:2048'],
         ]));
 
         return back()->with('success','Resume updated.');
@@ -92,7 +94,7 @@ class ResumeController extends Controller
     public function destroy(Resume $resume)
     {
         $this->authorise($resume);
-        $resume->delete();
+        app(\App\Services\CareerDocumentService::class)->deleteResume($resume);
         return redirect()->route('career.resume.index')->with('success','Resume deleted.');
     }
 

@@ -58,7 +58,7 @@ class _CareerAiDialogState extends State<CareerAiDialog> {
   String _preview(Map<String, dynamic> draft) {
     if (!widget.resume) return draft['body']?.toString() ?? '';
     final parts = <String>[draft['professional_summary']?.toString() ?? ''];
-    for (final key in ['experiences', 'education', 'skills']) {
+    for (final key in ['experiences', 'education', 'skills', 'projects']) {
       parts.add('\n${key[0].toUpperCase()}${key.substring(1)}');
       for (final row in draft[key] as List? ?? []) {
         if (row is Map) {

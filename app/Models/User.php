@@ -43,6 +43,7 @@ class User extends Authenticatable
     }
 
     public function profile(): HasOne { return $this->hasOne(Profile::class); }
+    public function participantIdAliases(): HasMany { return $this->hasMany(ParticipantIdAlias::class); }
     public function consents(): HasMany { return $this->hasMany(Consent::class); }
 
     public function roles(): BelongsToMany

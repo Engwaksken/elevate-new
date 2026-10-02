@@ -9,6 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('events:send-reminders')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('timetable:send-reminders')->everyMinute()->withoutOverlapping();
 
 // Cached Word-to-PDF previews are rebuilt on demand, so old ones can go.
 Schedule::call(function () {

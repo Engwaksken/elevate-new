@@ -27,7 +27,7 @@
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Learner</th><th>Course</th><th>Cohort</th><th>Status</th><th>Enrolled</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($enrolments as $enrolment)
 <tr>
-<td><strong>{{ $enrolment->user?->name ?: '—' }}</strong><small class="admin-cell-hint">{{ $enrolment->user?->email }}</small><small class="admin-cell-hint">{{ $enrolment->enrolment_code }}</small></td>
+<td><strong>{{ $enrolment->user?->name ?: '—' }}</strong><small class="admin-cell-hint">{{ $enrolment->user?->email }}</small><small class="admin-cell-hint">Participant ID: {{ $enrolment->user?->participant_code }}</small></td>
 <td>{{ $enrolment->course?->title ?: '—' }}</td>
 <td>{{ $enrolment->cohort?->name ?: '—' }}</td>
 <td><span class="status-chip {{ in_array($enrolment->status,['completed','enrolled','in_progress']) ? 'active':'inactive' }}">{{ ucwords(str_replace('_',' ',$enrolment->status)) }}</span></td>

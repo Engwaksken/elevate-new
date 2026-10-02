@@ -501,6 +501,16 @@ class ApiService {
 
   Future<Map<String, dynamic>> careerDocuments() => _getMap('/career/documents');
 
+  Future<Map<String, dynamic>> uploadPortfolioFile(int resumeId, String path) => _guard(() async {
+    final response = await dio.post('/career/resumes/$resumeId/portfolio-files',
+      data: FormData.fromMap({'file': await MultipartFile.fromFile(path)}));
+    return Map<String, dynamic>.from(_mapResponse(response.data)['file'] as Map);
+  });
+
+  Future<void> deletePortfolioFile(int resumeId, int fileId) => _guard(() async {
+    await dio.delete('/career/resumes/$resumeId/portfolio-files/$fileId');
+  });
+
   Future<Map<String, dynamic>> saveCareerDocument({
     required bool resume,
     int? id,

@@ -21,7 +21,7 @@ class ParseResumeUpload implements ShouldQueue {
             $parsed=['professional_summary'=>$text,'experiences'=>[],'education'=>[],'skills'=>[]];
             try{
                 $r=$ai->generate('resume_parsing',
-                    'Extract resume data and return valid JSON only with keys title, professional_summary, experiences, education, skills, certifications, projects, languages. Never invent facts.',
+                    'Extract resume data and return valid JSON only with keys title, professional_summary, experiences, education, skills, certifications, projects, languages, referees, portfolio_url. Never invent facts or referee contact details.',
                     mb_substr($text, 0, 30000),$u->user_id);
                 $clean=preg_replace('/```(?:json)?|```/','',$r['text']);
                 $candidate=json_decode(trim($clean),true,512,JSON_THROW_ON_ERROR);

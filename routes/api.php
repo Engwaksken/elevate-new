@@ -46,6 +46,9 @@ Route::prefix('v1')->group(function () {
                 Route::post('/career/documents/{type}/{id}/ai', [\App\Http\Controllers\Api\V1\Participant\CareerAiController::class, 'assist'])
                     ->where('type', 'resume|cover-letter')->whereNumber('id')->middleware('throttle:10,1');
                 Route::post('/career/resumes', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'storeResume']);
+                Route::post('/career/resumes/{resume}/portfolio-files', [\App\Http\Controllers\Career\ResumePortfolioController::class, 'store']);
+                Route::get('/career/resumes/{resume}/portfolio-files/{file}', [\App\Http\Controllers\Career\ResumePortfolioController::class, 'download']);
+                Route::delete('/career/resumes/{resume}/portfolio-files/{file}', [\App\Http\Controllers\Career\ResumePortfolioController::class, 'destroy']);
                 Route::put('/career/resumes/{resume}', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'updateResume']);
                 Route::delete('/career/resumes/{resume}', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'destroyResume']);
                 Route::get('/career/resumes/{resume}/download', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'downloadResume']);

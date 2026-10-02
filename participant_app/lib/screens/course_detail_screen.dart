@@ -307,10 +307,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       child: ListView(
         padding: AppSpacing.listPadding,
         children: [
-          if (course['enrolment'] is Map && course['enrolment']['enrolment_code'] != null)
+          if (course['enrolment'] is Map && (course['enrolment']['participant_code'] ?? course['enrolment']['enrolment_code']) != null)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: SelectableText('Enrollment ID: ${course['enrolment']['enrolment_code']}'),
+              child: SelectableText('Participant ID: ${course['enrolment']['participant_code'] ?? course['enrolment']['enrolment_code']}'),
             ),
           if (summary.isNotEmpty) ...[
             Text(summary, style: theme.textTheme.bodyLarge),

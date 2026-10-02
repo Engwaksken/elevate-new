@@ -258,4 +258,48 @@ void main() {
     expect(
         tester.widget<TextFormField>(body).controller!.text, 'Original body');
   });
+
+  testWidgets('resume editor saves project links and referee details',
+      (tester) async {
+    await open(tester);
+    await tester.tap(find.text('Create resume'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'Complete CV');
+
+    Future<void> addSection(String name, Map<int, String> values) async {
+      await tester.scrollUntilVisible(find.text(name), 250,
+          scrollable: find.byType(Scrollable).last);
+      await tester.pumpAndSettle();
+      final row =
+          find.ancestor(of: find.text(name), matching: find.byType(Row)).first;
+      final add = find.descendant(of: row, matching: find.text('Add'));
+      await tester.ensureVisible(add);
+      await tester.pumpAndSettle();
+      await tester.tap(add);
+      await tester.pumpAndSettle();
+      final fields = find.descendant(
+          of: find.byType(AlertDialog), matching: find.byType(TextFormField));
+      for (final value in values.entries) {
+        await tester.ensureVisible(fields.at(value.key));
+        await tester.enterText(fields.at(value.key), value.value);
+      }
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+    }
+
+    await addSection(
+        'Projects', {0: 'Learning App', 2: 'https://example.test/project'});
+    await addSection('Referees',
+        {0: 'Mary Example', 3: 'mary@example.test', 4: '0700000001'});
+    await tester.scrollUntilVisible(find.text('Save document'), 250,
+        scrollable: find.byType(Scrollable).last);
+    await tester.pumpAndSettle();
+    await tapVisible(tester, 'Save document');
+    final request =
+        adapter.requests.singleWhere((request) => request.method == 'POST');
+    expect(request.data['projects'][0]['url'], 'https://example.test/project');
+    expect(request.data['referees'][0]['email'], 'mary@example.test');
+    expect(request.data['referees'][0]['phone'], '0700000001');
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -8,9 +8,11 @@ use Illuminate\Support\Facades\Http;
 
 class CareerAiService {
     public function generate(string $feature,string $system,string $user,?int $userId=null):array {
-        $cfg=AiIntegration::where('feature',$feature)->where('enabled',true)->first()
-            ?? AiIntegration::where('feature','career_ai')->where('enabled',true)->first();
-        if(!$cfg || !$cfg->apiKey()) throw new \RuntimeException('AI_UNAVAILABLE');
+        $cfg=AiIntegration::where('feature','system_ai')->where('enabled',true)->first();
+        if(!$cfg || !$cfg->apiKey() || !$cfg->model) throw new \RuntimeException('AI_UNAVAILABLE');
+        $usage = AiUsageLog::where('created_at', '>=', now()->startOfDay())->where('status', 'success');
+        if ((clone $usage)->count() >= ($cfg->settings['daily_limit'] ?? 1000)
+            || ($userId && (clone $usage)->where('user_id', $userId)->count() >= ($cfg->settings['user_daily_limit'] ?? 20))) throw new \RuntimeException('AI_UNAVAILABLE');
         $started=microtime(true);
         try{
             $result=strtolower($cfg->provider)==='gemini'
@@ -30,9 +32,9 @@ class CareerAiService {
     private function openAi(AiIntegration $c,string $system,string $user):array {
         $endpoint=$c->endpoint ?: 'https://api.openai.com/v1/chat/completions';
         $r=Http::timeout(60)->withToken($c->apiKey())->post($endpoint,[
-            'model'=>$c->model ?: 'gpt-5.6',
+            'model'=>$c->model,
             'messages'=>[['role'=>'system','content'=>$system],['role'=>'user','content'=>$user]],
-            'temperature'=>$c->settings['temperature']??0.4,
+            ...(isset($c->settings['temperature']) ? ['temperature' => $c->settings['temperature']] : []),
         ])->throw()->json();
         return ['text'=>data_get($r,'choices.0.message.content',''),'input_tokens'=>(int)data_get($r,'usage.prompt_tokens',0),'output_tokens'=>(int)data_get($r,'usage.completion_tokens',0)];
     }
@@ -40,7 +42,7 @@ class CareerAiService {
     private function gemini(AiIntegration $c,string $system,string $user):array {
         $model=$c->model ?: 'gemini-2.5-flash';
         $endpoint=$c->endpoint ?: "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
-        $r=Http::timeout(60)->post($endpoint.'?key='.urlencode($c->apiKey()),[
+        $r=Http::timeout(60)->withHeaders(['x-goog-api-key' => $c->apiKey()])->post($endpoint,[
             'system_instruction'=>['parts'=>[['text'=>$system]]],
             'contents'=>[['parts'=>[['text'=>$user]]]],
         ])->throw()->json();

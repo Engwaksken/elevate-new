@@ -31,6 +31,8 @@ abstract final class AuthFlow {
   static Future<void> signOut({bool remote = true}) async {
     await SyncService.instance.stopAutoSync();
     await NotificationService.instance.unregisterDeviceToken();
+    try { await NotificationService.instance.cancelTimetableReminders(); }
+    catch (error) { appLog('Unable to clear timetable reminders', error); }
 
     if (remote) {
       await ApiService.instance.logout();

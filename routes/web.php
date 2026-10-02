@@ -126,6 +126,8 @@ Route::get('/brand-assets/{type}', [BrandAssetController::class, 'show'])
     ->whereIn('type', ['logo', 'favicon'])
     ->name('branding.asset');
 
+Route::get('/shared/career/portfolio/{file}', [\App\Http\Controllers\Career\ResumePortfolioController::class, 'shared'])->middleware(['signed', 'throttle:30,1'])->name('career.portfolio.shared');
+
 /*
 |--------------------------------------------------------------------------
 | ElevateHer360 Web Routes
@@ -600,6 +602,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/career/resumes',[ResumeController::class,'index'])->name('career.resume.index');
     Route::get('/career/resumes/create',[ResumeController::class,'create'])->name('career.resume.create');
     Route::post('/career/resumes',[ResumeController::class,'store'])->name('career.resume.store');
+    Route::post('/career/resumes/{resume}/portfolio-files', [\App\Http\Controllers\Career\ResumePortfolioController::class, 'store'])->name('career.portfolio.store');
+    Route::post('/career/resumes/{resume}/extras/{section}', [\App\Http\Controllers\Career\ResumeExtrasController::class, 'store'])->where('section', 'projects|referees')->name('career.resume.extras.store');
+    Route::put('/career/resumes/{resume}/extras/{section}/{id}', [\App\Http\Controllers\Career\ResumeExtrasController::class, 'update'])->where('section', 'projects|referees')->whereNumber('id')->name('career.resume.extras.update');
+    Route::delete('/career/resumes/{resume}/extras/{section}/{id}', [\App\Http\Controllers\Career\ResumeExtrasController::class, 'destroy'])->where('section', 'projects|referees')->whereNumber('id')->name('career.resume.extras.destroy');
+    Route::get('/career/resumes/{resume}/portfolio-files/{file}', [\App\Http\Controllers\Career\ResumePortfolioController::class, 'download'])->name('career.portfolio.download');
+    Route::delete('/career/resumes/{resume}/portfolio-files/{file}', [\App\Http\Controllers\Career\ResumePortfolioController::class, 'destroy'])->name('career.portfolio.destroy');
     Route::get('/career/resumes/{resume}/edit',[ResumeController::class,'edit'])->name('career.resume.edit');
     Route::put('/career/resumes/{resume}',[ResumeController::class,'update'])->name('career.resume.update');
     Route::put('/career/resumes/{resume}/template',[ResumeController::class,'updateTemplate'])->name('career.resume.template');
@@ -967,6 +975,7 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/platform-settings',[PlatformSettingsController::class,'index'])
         ->middleware('permission:settings.manage')
         ->name('platform-settings.index');
+    Route::put('/platform-settings/ai', [PlatformSettingsController::class, 'updateAi'])->middleware('permission:settings.manage')->name('platform-settings.ai');
 
     Route::put('/platform-settings/branding',[PlatformSettingsController::class,'updateBranding'])
         ->middleware('permission:settings.branding')

@@ -10,6 +10,7 @@
 <div class="eh-tab-section"><form method="POST" action="{{ route('learning.enrol',$course) }}">@csrf<button class="btn btn-primary">Enrol Now</button></form></div>
 @elseif($enrolment)
 <div class="eh-stats">
+<div class="eh-stat"><span class="eh-stat-label">Participant ID</span><strong class="eh-stat-value">{{ auth()->user()->participant_code }}</strong></div>
 <div class="eh-stat"><span class="eh-stat-label">Course Progress</span><strong class="eh-stat-value">{{ number_format((float)$enrolment->progress_percent,0) }}%</strong></div>
 <div class="eh-stat"><span class="eh-stat-label">Modules</span><strong class="eh-stat-value">{{ $course->modules->count() }}</strong></div>
 </div>

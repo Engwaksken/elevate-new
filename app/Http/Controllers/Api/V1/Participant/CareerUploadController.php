@@ -52,7 +52,7 @@ class CareerUploadController extends Controller
             $upload->update([$type === 'resume' ? 'resume_id' : 'cover_letter_id' => $document->id]);
             return $document;
         });
-        if ($type === 'resume') $document->load(['experiences', 'education', 'skills']);
+        if ($type === 'resume') $document->load(['experiences', 'education', 'skills', 'projects', 'referees', 'portfolioFiles']);
         return response()->json(['document' => $document], 201);
     }
 

@@ -19,7 +19,7 @@ class CareerDocumentController extends Controller
     public function index(Request $request, CareerUploadService $uploads)
     {
         return response()->json([
-            'resumes' => Resume::where('user_id', $request->user()->id)->with(['experiences', 'education', 'skills'])->latest()->get(),
+            'resumes' => Resume::where('user_id', $request->user()->id)->with(['experiences', 'education', 'skills', 'projects', 'referees', 'portfolioFiles'])->latest()->get(),
             'cover_letters' => CoverLetter::where('user_id', $request->user()->id)->latest()->get(),
             'resume_uploads' => ResumeUpload::where('user_id', $request->user()->id)->latest()->get()->map(fn ($upload) => $uploads->present($upload)),
             'cover_letter_uploads' => CoverLetterUpload::where('user_id', $request->user()->id)->latest()->get()->map(fn ($upload) => $uploads->present($upload)),
@@ -41,7 +41,7 @@ class CareerDocumentController extends Controller
     public function destroyResume(Request $request, Resume $resume)
     {
         $this->owner($request, $resume);
-        $resume->delete();
+        app(CareerDocumentService::class)->deleteResume($resume);
         return response()->noContent();
     }
 

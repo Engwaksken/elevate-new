@@ -34,6 +34,7 @@
             <button class="eh-tab-button" data-eh-tab="experience"><i class="fas fa-briefcase"></i> Experience</button>
             <button class="eh-tab-button" data-eh-tab="education"><i class="fas fa-graduation-cap"></i> Education</button>
             <button class="eh-tab-button" data-eh-tab="skills"><i class="fas fa-lightbulb"></i> Skills</button>
+            <button class="eh-tab-button" data-eh-tab="extras"><i class="fas fa-folder-open"></i> Projects, Portfolio & Referees</button>
             <button class="eh-tab-button" data-eh-tab="ai"><i class="fas fa-wand-magic-sparkles"></i> AI Tools</button>
             <button class="eh-tab-button" data-eh-tab="preview"><i class="fas fa-eye"></i> Preview</button>
         @endif
@@ -85,6 +86,7 @@
                         </div>
 
                         <div class="form-actions">
+                            <div class="form-group"><label>Portfolio URL</label><input type="url" name="portfolio_url" value="{{ old('portfolio_url', $resume->portfolio_url) }}" maxlength="2048" placeholder="https://..."></div>
                             <button class="btn btn-primary"><i class="fas fa-floppy-disk"></i> {{ $resume->exists ? 'Save Changes' : 'Create Resume' }}</button>
                         </div>
                     </form>
@@ -93,6 +95,19 @@
         </section>
 
         @if($resume->exists)
+        <section class="eh-tab-pane" data-eh-pane="extras"><div class="eh-tab-section">
+            @foreach(['projects'=>'Projects / portfolio links','referees'=>'Referees'] as $section=>$heading)
+                <h2>{{ $heading }}</h2>
+                @foreach($resume->{$section} as $item)
+                    <div class="career-form-panel"><strong>{{ $item->name }}</strong><details><summary>Edit details</summary>@include('career.resume.extras-form')</details>
+                    <form method="POST" action="{{ route('career.resume.extras.destroy', [$resume, $section, $item->id]) }}">@csrf @method('DELETE')<button class="btn btn-outline btn-sm">Remove</button></form></div>
+                @endforeach
+                <div class="career-form-panel">@include('career.resume.extras-form', ['item'=>null])</div>
+            @endforeach
+            <h2>Portfolio files</h2>
+            @foreach($resume->portfolioFiles as $file)<div class="eh-data-row"><a href="{{ route('career.portfolio.download', [$resume, $file]) }}">{{ $file->label }} — {{ $file->original_name }}</a><form method="POST" action="{{ route('career.portfolio.destroy', [$resume, $file]) }}">@csrf @method('DELETE')<button class="btn btn-outline btn-sm">Remove file</button></form></div>@endforeach
+            <form method="POST" enctype="multipart/form-data" action="{{ route('career.portfolio.store', $resume) }}">@csrf<div class="form-group"><label>File label / project name</label><input name="label" maxlength="190"></div><div class="form-group"><label>Portfolio file (up to 10 MB)</label><input type="file" name="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.zip,.txt" required></div><button class="btn btn-primary">Upload portfolio file</button></form>
+        </div></section>
         <section class="eh-tab-pane" data-eh-pane="experience">
             <div class="eh-tab-section">
                 <div class="eh-tab-section-header"><div><h2>Work Experience</h2><p>Add employment, internship, volunteer and consulting experience that supports your career goals.</p></div></div>

@@ -28,7 +28,7 @@ class EnrolmentIdentityService
         $prefix = implode('/', [
             $this->segment($project?->code ?: $programme?->code, 'PRG'),
             $this->segment($branch?->code, 'BR'),
-            $this->segment($cohort?->code, '0'),
+            $this->cohortSegment($cohort?->code),
             $year,
         ]);
 
@@ -58,5 +58,23 @@ class EnrolmentIdentityService
     private function segment(?string $code, string $fallback): string
     {
         return substr(preg_replace('/[^A-Z0-9_-]/', '', strtoupper(trim($code ?? ''))), 0, 40) ?: $fallback;
+    }
+
+    public function cohortSegment(?string $code): string
+    {
+        $segment = $this->segment($code, '0');
+        if (preg_match('/^(?:C(?:OHORT)?[-_]?)?0*(\d+)$/', $segment, $matches)) {
+            return 'C'.(ltrim($matches[1], '0') ?: '0');
+        }
+        return str_starts_with($segment, 'C') ? $segment : 'C'.$segment;
+    }
+
+    public function normalizeCode(string $code): string
+    {
+        $parts = explode('/', $code);
+        if (count($parts) !== 5 || ! ctype_digit($parts[4])) return $code;
+        $parts[2] = $this->cohortSegment($parts[2]);
+        $parts[4] = str_pad($parts[4], 3, '0', STR_PAD_LEFT);
+        return implode('/', $parts);
     }
 }
