@@ -6,7 +6,9 @@
 <div class="admin-panel"><form method="POST" action="{{ route('admin.cms.update', $page) }}" enctype="multipart/form-data">@csrf @method('PUT')
 <div class="form-group"><label>Title / brand name</label><input name="title" value="{{ old('title', $page->title) }}" required maxlength="190"></div>
 <div class="form-group"><label>Summary / tagline / meta description</label><textarea name="summary" rows="3">{{ old('summary', $page->summary) }}</textarea></div>
-<div class="form-group"><label>Page content (Markdown)</label><textarea name="body" rows="20">{{ old('body', $page->body) }}</textarea></div>
+@php($sections = old('sections', data_get($page->settings, 'sections', [])))
+@include('cms.builder', ['sections' => $sections])
+<div class="form-group"><label>Page content (Markdown) — optional when using sections</label><textarea name="body" rows="14">{{ old('body', $page->body) }}</textarea><small>Raw HTML and unsafe links are removed. Sections above are rendered first, followed by this Markdown content.</small></div>
 <div class="form-group"><label>Image (PNG, JPG, WEBP, up to 5 MB)</label><input type="file" name="image" accept=".png,.jpg,.jpeg,.webp">@if($page->image_path)<label><input type="checkbox" name="remove_image" value="1"> Remove image</label>@endif</div>
 <div class="form-group"><label>{{ in_array($page->slug, ['site-header','site-footer']) ? 'Navigation links' : 'Page action links' }} — one per line: Label | /path</label><textarea name="links_text" rows="6">{{ old('links_text', collect(data_get($page->settings, 'links', []))->map(fn($link) => $link['label'].' | '.$link['url'])->join("\n")) }}</textarea><small>Example: FAQs | /faqs · Become a Mentor | /mentors/signup · Employers | /employers/signup</small></div>
 @if(in_array($page->slug, ['mentor-signup','employer-signup'], true))

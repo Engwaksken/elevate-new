@@ -81,4 +81,11 @@ class EmployerAdminController extends Controller
 
         return back()->with('success','Employer rejected.');
     }
+
+    public function destroy(Employer $employer)
+    {
+        $employer->delete();
+
+        return back()->with('success','Employer deleted.');
+    }
 }

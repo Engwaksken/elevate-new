@@ -524,11 +524,17 @@ Route::prefix('admin/mentorship')->name('admin.mentorship.')->middleware(['auth'
         ->middleware('permission:mentors.manage')->name('mentors.approve');
     Route::post('/mentors/{mentor}/reject',[MentorAdminController::class,'reject'])
         ->middleware('permission:mentors.manage')->name('mentors.reject');
+    Route::delete('/mentors/{mentor}',[MentorAdminController::class,'destroy'])
+        ->middleware('permission:mentors.manage')->name('mentors.destroy');
 
     Route::get('/matches',[MentorMatchController::class,'index'])
         ->middleware('permission:mentorship.match')->name('matches.index');
     Route::post('/matches',[MentorMatchController::class,'store'])
         ->middleware('permission:mentorship.match')->name('matches.store');
+    Route::put('/matches/{match}',[MentorMatchController::class,'update'])
+        ->middleware('permission:mentorship.match')->name('matches.update');
+    Route::delete('/matches/{match}',[MentorMatchController::class,'destroy'])
+        ->middleware('permission:mentorship.match')->name('matches.destroy');
 });
 
 Route::get('/jobs',[JobBrowseController::class,'index'])->name('jobs.index');
@@ -572,6 +578,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         ->middleware('permission:employers.approve')->name('jobs.employers.approve');
     Route::post('/jobs/employers/{employer}/reject',[EmployerAdminController::class,'reject'])
         ->middleware('permission:employers.approve')->name('jobs.employers.reject');
+    Route::delete('/jobs/employers/{employer}',[EmployerAdminController::class,'destroy'])
+        ->middleware('permission:employers.approve')->name('jobs.employers.destroy');
 
     Route::get('/jobs',[JobAdminController::class,'index'])
         ->middleware('permission:jobs.manage')->name('jobs.index');

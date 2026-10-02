@@ -1,4 +1,5 @@
 @php($account = $profile->exists ? ($type === 'mentor' ? $profile->user : $profile->owner) : null)
+@php($fieldLabels = $fieldLabels ?? [])
 <div class="form-grid">
 @foreach(['name' => 'Contact / account name', 'email' => 'Account email', 'phone' => 'Phone', 'country' => 'Country'] as $field => $label)
 <div class="form-group"><label for="partner-{{ $field }}">{{ $fieldLabels[$field] ?? $label }}</label><input id="partner-{{ $field }}" name="{{ $field }}" type="{{ $field === 'email' ? 'email' : 'text' }}" maxlength="{{ $field === 'phone' ? 30 : 190 }}" value="{{ old($field, $field === 'country' ? $profile->country : $account?->{$field}) }}"></div>

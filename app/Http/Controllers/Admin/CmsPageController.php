@@ -35,7 +35,9 @@ class CmsPageController extends Controller
             'links_text' => ['nullable', 'string', 'max:10000'], 'field_labels_text' => ['nullable', 'string', 'max:10000'],
             'button_label' => ['nullable', 'string', 'max:100'], 'signup_open' => ['nullable', 'boolean'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'], 'remove_image' => ['nullable', 'boolean'],
+            'sections' => ['nullable', 'array', 'max:50'],
         ]);
+        $sections = $this->parseSections($request->input('sections', []));
         $links = [];
         foreach (preg_split('/\r?\n/', trim($data['links_text'] ?? '')) as $line) {
             if (trim($line) === '') continue;
@@ -56,11 +58,11 @@ class CmsPageController extends Controller
             }
             $labels[$key] = $label;
         }
-        if ($data['action'] === 'publish' && ! in_array($page->slug, ['site-header','site-footer','learning','jobs','library','events','mentor-signup','employer-signup','register','login'], true) && blank($data['body'] ?? null)) {
+        if ($data['action'] === 'publish' && ! in_array($page->slug, ['site-header','site-footer','learning','jobs','library','events','mentor-signup','employer-signup','register','login'], true) && blank($data['body'] ?? null) && empty($sections)) {
             throw ValidationException::withMessages(['body' => 'Add page content before publishing.']);
         }
         $attributes = collect($data)->only(['title', 'summary', 'body'])->all();
-        $attributes['settings'] = ['links' => $links, 'field_labels' => $labels, 'button_label' => $data['button_label'] ?? null, 'signup_open' => $request->boolean('signup_open')];
+        $attributes['settings'] = ['links' => $links, 'field_labels' => $labels, 'sections' => $sections, 'button_label' => $data['button_label'] ?? null, 'signup_open' => $request->boolean('signup_open')];
         $attributes['updated_by'] = $request->user()->id;
         if ($request->hasFile('image')) $attributes['image_path'] = $request->file('image')->store('cms', 'public');
         elseif ($request->boolean('remove_image')) $attributes['image_path'] = null;
@@ -86,5 +88,68 @@ class CmsPageController extends Controller
         abort_if(array_key_exists($page->slug, CmsContentService::PAGES), 422, 'Core pages cannot be deleted.');
         $page->delete();
         return redirect()->route('admin.cms.index')->with('success', 'Page deleted.');
+    }
+
+    private function parseSections(array $input): array
+    {
+        $cms = app(CmsContentService::class);
+        $sections = [];
+        foreach (array_values($input) as $raw) {
+            if (! is_array($raw)) continue;
+            $type = (string) ($raw['type'] ?? '');
+            if (! array_key_exists($type, CmsContentService::BLOCKS)) continue;
+            $text = fn ($key, $max = 10000) => mb_substr(strip_tags((string) ($raw[$key] ?? '')), 0, $max);
+            $short = fn ($key, $max = 190) => mb_substr(strip_tags((string) ($raw[$key] ?? '')), 0, $max);
+            $url = function (string $key) use ($raw, $cms) {
+                $value = trim((string) ($raw[$key] ?? ''));
+                return $cms->safeUrl($value) ? $value : '';
+            };
+            $section = ['type' => $type];
+            if ($type === 'hero') {
+                $section += [
+                    'eyebrow' => $short('eyebrow', 100), 'title' => $short('title'), 'text' => $text('text', 2000),
+                    'primary_label' => $short('primary_label', 100), 'primary_url' => $url('primary_url'),
+                    'secondary_label' => $short('secondary_label', 100), 'secondary_url' => $url('secondary_url'),
+                    'image_url' => $url('image_url'),
+                ];
+            } elseif ($type === 'text') {
+                $section += ['title' => $short('title'), 'content' => $text('content')];
+            } elseif ($type === 'image_text') {
+                $section += ['title' => $short('title'), 'content' => $text('content'), 'image_url' => $url('image_url'), 'reverse' => ! empty($raw['reverse'])];
+            } elseif ($type === 'cta') {
+                $section += ['title' => $short('title'), 'content' => $text('content', 2000), 'button_label' => $short('button_label', 100), 'button_url' => $url('button_url')];
+            } elseif ($type === 'features') {
+                $section['title'] = $short('title');
+                $section['intro'] = $text('intro', 2000);
+                $section['items'] = $this->parseItems($raw['items'] ?? [], ['icon' => 80, 'title' => 190, 'text' => 1000], 12);
+            } elseif ($type === 'stats') {
+                $section['title'] = $short('title');
+                $section['items'] = $this->parseItems($raw['items'] ?? [], ['value' => 80, 'label' => 190], 8);
+            }
+            if (! $this->isEmptySection($section)) $sections[] = $section;
+        }
+        return $sections;
+    }
+
+    private function parseItems(array $input, array $fields, int $max): array
+    {
+        $items = [];
+        foreach (array_values($input) as $raw) {
+            if (! is_array($raw)) continue;
+            $item = [];
+            foreach ($fields as $key => $limit) {
+                $item[$key] = mb_substr(strip_tags((string) ($raw[$key] ?? '')), 0, $limit);
+            }
+            if (array_filter(array_map('trim', $item))) $items[] = $item;
+            if (count($items) >= $max) break;
+        }
+        return $items;
+    }
+
+    private function isEmptySection(array $section): bool
+    {
+        unset($section['type']);
+        $flat = collect($section)->flatten()->map(fn ($v) => trim((string) $v))->filter()->all();
+        return count($flat) === 0;
     }
 }

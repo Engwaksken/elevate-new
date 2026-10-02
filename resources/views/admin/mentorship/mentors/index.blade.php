@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Programme Delivery</span><h1>Mentors</h1><p>Review mentor applications and manage approval status.</p></div>
-<a class="btn btn-primary" href="{{ route('admin.mentorship.mentors.create') }}">Add Mentor</a>
+<button type="button" class="btn btn-primary" data-modal-open="createMentorModal"><i class="fas fa-plus"></i> Add Mentor</button>
 </div>
 
 <div class="admin-stats-grid compact">
@@ -33,11 +33,12 @@
 <td><span class="status-chip {{ $mentor->status }}">{{ ucfirst($mentor->status) }}</span></td>
 <td>{{ optional($mentor->created_at)->format('d M Y') ?: '—' }}</td>
 <td class="table-actions"><div class="action-group">
-<a class="btn-icon" title="Edit mentor" href="{{ route('admin.mentorship.mentors.edit', $mentor) }}"><i class="fas fa-pen"></i></a>
+<button type="button" class="btn-icon" title="Edit mentor" data-modal-open="editMentor{{ $mentor->id }}"><i class="fas fa-pen"></i></button>
 @if($mentor->status==='pending')
 <button type="button" class="btn-icon" title="Approve" data-modal-open="approveMentor{{ $mentor->id }}"><i class="fas fa-check"></i></button>
 <button type="button" class="btn-icon danger" title="Reject" data-modal-open="rejectMentor{{ $mentor->id }}"><i class="fas fa-xmark"></i></button>
 @endif
+<button type="button" class="btn-icon danger" title="Delete" data-modal-open="deleteMentor{{ $mentor->id }}"><i class="fas fa-trash"></i></button>
 </div></td>
 </tr>
 @empty<tr><td colspan="6"><div class="admin-empty">No mentor applications found.</div></td></tr>@endforelse
@@ -47,7 +48,24 @@
 <div class="admin-pagination">{{ $mentors->links() }}</div>
 </div>
 
+@php($mentorUsers = \App\Models\User::where('user_type', 'participant')->orderBy('name')->get())
+<div class="eh-modal" id="createMentorModal" aria-hidden="true"><div class="eh-modal-dialog eh-modal-lg">
+<div class="eh-modal-header"><div><h2>Add Mentor</h2><p>Enter details directly or link a participant account.</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+@include('admin.partners.form-modal', ['type'=>'mentor', 'profile'=>new \App\Models\MentorProfile(), 'users'=>$mentorUsers, 'prefix'=>'admin.mentorship.mentors.', 'fieldLabels'=>[]])
+</div></div>
+
 @foreach($mentors as $mentor)
+<div class="eh-modal" id="editMentor{{ $mentor->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-lg">
+<div class="eh-modal-header"><div><h2>Edit Mentor</h2><p>{{ data_get($mentor,'user.name','Mentor') }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+@include('admin.partners.form-modal', ['type'=>'mentor', 'profile'=>$mentor->load('user'), 'users'=>collect(), 'prefix'=>'admin.mentorship.mentors.', 'fieldLabels'=>[]])
+</div></div>
+
+<div class="eh-modal" id="deleteMentor{{ $mentor->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-sm">
+<div class="eh-modal-header"><div><h2>Delete Mentor?</h2><p>{{ data_get($mentor,'user.name','Mentor') }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+<div class="eh-modal-body"><p>Delete this mentor profile? This cannot be undone.</p></div>
+<div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><form method="POST" action="{{ route('admin.mentorship.mentors.destroy',$mentor) }}">@csrf @method('DELETE')<button class="btn btn-danger"><i class="fas fa-trash"></i> Delete</button></form></div>
+</div></div>
+
 <div class="eh-modal" id="approveMentor{{ $mentor->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-sm">
 <div class="eh-modal-header"><div><h2>Approve Mentor?</h2><p>{{ data_get($mentor,'user.name','Mentor') }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
 <div class="eh-modal-body"><p>Approve this mentor application and make the mentor available for matching?</p></div>
@@ -60,4 +78,14 @@
 <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><form method="POST" action="{{ route('admin.mentorship.mentors.reject',$mentor) }}">@csrf<button class="btn btn-danger"><i class="fas fa-xmark"></i> Reject</button></form></div>
 </div></div>
 @endforeach
+@php($mentorModal = old('_partner_modal'))
+@if($mentorModal)
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+    const value=@json($mentorModal);
+    const id=value==='create' ? 'createMentorModal' : (value.startsWith('edit-') ? 'editMentor'+value.substring(5) : null);
+    if(id) document.querySelector(`[data-modal-open="${id}"]`)?.click();
+});
+</script>
+@endif
 @endsection

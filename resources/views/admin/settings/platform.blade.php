@@ -147,12 +147,25 @@
 </section>
 
 <section data-config-panel="ai" hidden><div class="admin-panel">
-<h2>System-wide AI Provider</h2><p>The active provider is used for resume and cover-letter parsing, writing, tailoring, ATS reviews and other system AI requests. Keys are stored encrypted and are never displayed.</p>
+<h2>System-wide AI Provider</h2><p>The active provider is used for resume and cover-letter parsing, writing, tailoring, ATS reviews and other system AI requests. Pick any supported provider or use a custom endpoint for any other OpenAI/Anthropic-compatible API. Keys are stored encrypted and are never displayed.</p>
+@php($aiProviders = \App\Services\AiProviderRegistry::PROVIDERS)
+@php($activeProvider = old('provider', $aiConfig->provider ?? 'openai'))
 <form method="POST" action="{{ route('admin.platform-settings.ai') }}">@csrf @method('PUT')
 <div class="eh-form-grid">
-<div><label>Provider</label><select name="provider">@foreach(['openai'=>'OpenAI','gemini'=>'Google Gemini','compatible'=>'OpenAI-compatible API'] as $value=>$label)<option value="{{ $value }}" @selected(old('provider', $aiConfig->provider ?? 'openai') === $value)>{{ $label }}</option>@endforeach</select></div>
-<div><label>Model ID</label><input name="model" value="{{ old('model', $aiConfig->model) }}" required maxlength="190" placeholder="Your provider's model ID"></div>
-<div class="full"><label>HTTPS API endpoint (optional except for compatible providers)</label><input type="url" name="endpoint" value="{{ old('endpoint', $aiConfig->endpoint) }}" maxlength="255" placeholder="https://..."></div>
+<div><label>Provider</label>
+    <select name="provider" data-ai-provider>
+        @foreach($aiProviders as $value=>$meta)<option value="{{ $value }}" data-endpoint="{{ $meta['endpoint'] ?? '' }}" data-required="{{ ($meta['endpoint_required'] ?? false) ? '1' : '0' }}" @selected($activeProvider === $value)>{{ $meta['label'] }}</option>@endforeach
+    </select>
+</div>
+<div><label>Model ID</label><input name="model" list="ai-model-options" value="{{ old('model', $aiConfig->model) }}" required maxlength="190" placeholder="Select or type a model ID">
+    <datalist id="ai-model-options">
+        @foreach($aiProviders as $meta)
+            @foreach($meta['models'] as $m)<option value="{{ $m }}"></option>
+            @endforeach
+        @endforeach
+    </datalist>
+</div>
+<div class="full"><label>API endpoint <span data-ai-endpoint-label></span></label><input type="url" name="endpoint" data-ai-endpoint value="{{ old('endpoint', $aiConfig->endpoint) }}" maxlength="255" placeholder="https://..."></div>
 <div class="full"><label>API key {{ $aiConfig->apiKey() ? '(configured — leave blank to retain)' : '(not configured)' }}</label><input type="password" name="api_key" value="" autocomplete="new-password" maxlength="1000"></div>
 <div><label>Daily system request limit</label><input type="number" min="1" max="100000" name="daily_limit" value="{{ old('daily_limit', data_get($aiConfig->settings, 'daily_limit', 1000)) }}"></div>
 <div><label>Daily request limit per user</label><input type="number" min="1" max="1000" name="user_daily_limit" value="{{ old('user_daily_limit', data_get($aiConfig->settings, 'user_daily_limit', 20)) }}"></div>
@@ -174,6 +187,19 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     activate(requestedTab);
     tabs.forEach((tab)=>tab.addEventListener('click',()=>activate(tab.dataset.configTab)));
+
+    const providerSelect=document.querySelector('[data-ai-provider]');
+    const endpointInput=document.querySelector('[data-ai-endpoint]');
+    const endpointLabel=document.querySelector('[data-ai-endpoint-label]');
+    const syncProvider=()=>{
+        if(!providerSelect)return;
+        const option=providerSelect.options[providerSelect.selectedIndex];
+        const def=option?.dataset.endpoint||'';
+        const required=option?.dataset.required==='1';
+        if(endpointInput){ endpointInput.required=required; endpointInput.placeholder=def||'https://...'; }
+        if(endpointLabel){ endpointLabel.textContent=required?'(required)':'(optional)'; }
+    };
+    if(providerSelect){ providerSelect.addEventListener('change',syncProvider); syncProvider(); }
 
     document.querySelectorAll('[data-image-input]').forEach((input)=>{
         input.addEventListener('change',()=>{

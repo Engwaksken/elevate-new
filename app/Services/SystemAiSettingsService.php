@@ -6,6 +6,7 @@ use App\Models\AiIntegration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class SystemAiSettingsService
@@ -13,9 +14,17 @@ class SystemAiSettingsService
     public function save(Request $request): AiIntegration
     {
         if (is_string($key = $request->input('api_key'))) $request->merge(['api_key' => trim($key)]);
+        $provider = (string) ($request->input('provider') ?? 'openai');
+        $registry = AiProviderRegistry::resolve($provider);
+        $requiredEndpoint = collect(AiProviderRegistry::PROVIDERS)
+            ->filter(fn (array $p) => ($p['endpoint_required'] ?? false))
+            ->keys()->all();
+        $endpointRules = $registry['auth'] === 'none'
+            ? ['nullable', 'url', 'max:255']
+            : ['nullable', 'url:https', 'max:255'];
         $validator = Validator::make($request->all(), [
-            'provider' => ['required', 'in:openai,gemini,compatible'], 'model' => ['required', 'string', 'max:190'],
-            'endpoint' => ['required_if:provider,compatible', 'nullable', 'url:https', 'max:255'],
+            'provider' => ['required', Rule::in(AiProviderRegistry::keys())], 'model' => ['required', 'string', 'max:190'],
+            'endpoint' => ['nullable', Rule::requiredIf(in_array($provider, $requiredEndpoint, true)), ...$endpointRules],
             'api_key' => ['nullable', 'string', 'max:1000'], 'enabled' => ['nullable', 'boolean'],
             'daily_limit' => ['nullable', 'integer', 'min:1', 'max:100000'], 'user_daily_limit' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'temperature' => ['nullable', 'numeric', 'min:0', 'max:2'],

@@ -18,44 +18,24 @@
 </div>
 </div>
 
-@if($pendingReviews->isNotEmpty())
-<section class="admin-panel kpi-review-panel">
-    <div class="st-section-head"><h2><i class="fas fa-user-check"></i> Team KPIs awaiting your approval</h2></div>
-    @foreach($pendingReviews as $employeeId => $teamKpis)
-        @php $member = $teamKpis->first()->employee; @endphp
-        <form method="POST" action="{{ route('staff.kpis.review', $member) }}" class="kpi-review">
-            @csrf
-            <h3>{{ $member->user?->name }} <small>{{ $teamKpis->first()->contract ? 'Contract from '.$teamKpis->first()->contract->start_date->format('d M Y') : 'No contract' }} · {{ (float) $teamKpis->sum('weight') }}% weight</small></h3>
-            <div class="admin-table-wrap">
-            <table class="admin-table">
-                <thead><tr><th style="width:34px"><input type="checkbox" data-select-all checked aria-label="Select all"></th><th>KRA</th><th>KPI</th><th>Target</th><th>Weight</th></tr></thead>
-                <tbody>
-                @foreach($teamKpis as $kpi)
-                    <tr>
-                        <td><input type="checkbox" name="kpi_ids[]" value="{{ $kpi->id }}" checked data-row-select aria-label="Select {{ $kpi->title }}"></td>
-                        <td>{{ $kpi->kra }}</td>
-                        <td><strong>{{ $kpi->title }}</strong>@if($kpi->measurement_method)<small class="admin-cell-hint">{{ $kpi->measurement_method }}</small>@endif</td>
-                        <td>{{ $kpi->target ?: '—' }} {{ $kpi->unit }}</td>
-                        <td>{{ (float) $kpi->weight }}%</td>
-                    </tr>
-                @endforeach
-                </tbody>
-            </table>
-            </div>
-            <div class="kpi-review-actions">
-                <input name="review_comment" maxlength="2000" placeholder="Comment (required when returning)" aria-label="Review comment">
-                <button name="decision" value="return" class="btn btn-outline btn-sm"><i class="fas fa-rotate-left"></i> Return</button>
-                <button name="decision" value="approve" class="btn btn-primary btn-sm"><i class="fas fa-check"></i> Approve selected</button>
-            </div>
-        </form>
-    @endforeach
-</section>
-@endif
-
 @if(! $employee)
 <div class="admin-panel"><div class="admin-empty"><i class="fas fa-id-badge"></i><strong>No employee record yet</strong><span>Ask HR to set up your employee record and contract, then set your KPIs here.</span></div></div>
-@else
+@endif
 
+@if($employee || $pendingReviews->isNotEmpty())
+<div class="appraisal-admin-kra-tabs" data-kpi-tabs>
+    @if($employee)
+    <button type="button" class="appraisal-admin-kra-tab active" data-kpi-tab="kpis"><i class="fas fa-file-signature"></i> My KPIs</button>
+    <button type="button" class="appraisal-admin-kra-tab" data-kpi-tab="quarters"><i class="fas fa-calendar-days"></i> Quarterly Progress &amp; Appraisals</button>
+    @endif
+    @if($pendingReviews->isNotEmpty())
+    <button type="button" class="appraisal-admin-kra-tab @if(! $employee) active @endif" data-kpi-tab="review"><i class="fas fa-user-check"></i> Team Review <small>{{ $pendingReviews->sum(fn ($k) => $k->count()) }}</small></button>
+    @endif
+</div>
+@endif
+
+@if($employee)
+<div class="appraisal-admin-kra-panel active" data-kpi-panel="kpis">
 <section class="admin-panel">
     <div class="st-section-head">
         <h2><i class="fas fa-file-signature"></i>
@@ -118,7 +98,9 @@
         @endif
     @endif
 </section>
+</div>
 
+<div class="appraisal-admin-kra-panel" data-kpi-panel="quarters">
 <section class="admin-panel">
     <div class="st-section-head"><h2><i class="fas fa-calendar-days"></i> Quarterly progress &amp; appraisals</h2></div>
     @if($quarters->isEmpty())
@@ -158,6 +140,7 @@
     </div>
     @endif
 </section>
+</div>
 
 <datalist id="kra-suggestions">
     @foreach($kpis->pluck('kra')->unique() as $kra)<option value="{{ $kra }}">@endforeach
@@ -211,4 +194,53 @@
 </div>
 @endforeach
 @endif
+
+@if($pendingReviews->isNotEmpty())
+<div class="appraisal-admin-kra-panel @if(! $employee) active @endif" data-kpi-panel="review">
+<section class="admin-panel kpi-review-panel">
+    <div class="st-section-head"><h2><i class="fas fa-user-check"></i> Team KPIs awaiting your approval</h2></div>
+    @foreach($pendingReviews as $employeeId => $teamKpis)
+        @php $member = $teamKpis->first()->employee; @endphp
+        <form method="POST" action="{{ route('staff.kpis.review', $member) }}" class="kpi-review">
+            @csrf
+            <h3>{{ $member->user?->name }} <small>{{ $teamKpis->first()->contract ? 'Contract from '.$teamKpis->first()->contract->start_date->format('d M Y') : 'No contract' }} · {{ (float) $teamKpis->sum('weight') }}% weight</small></h3>
+            <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr><th style="width:34px"><input type="checkbox" data-select-all checked aria-label="Select all"></th><th>KRA</th><th>KPI</th><th>Target</th><th>Weight</th></tr></thead>
+                <tbody>
+                @foreach($teamKpis as $kpi)
+                    <tr>
+                        <td><input type="checkbox" name="kpi_ids[]" value="{{ $kpi->id }}" checked data-row-select aria-label="Select {{ $kpi->title }}"></td>
+                        <td>{{ $kpi->kra }}</td>
+                        <td><strong>{{ $kpi->title }}</strong>@if($kpi->measurement_method)<small class="admin-cell-hint">{{ $kpi->measurement_method }}</small>@endif</td>
+                        <td>{{ $kpi->target ?: '—' }} {{ $kpi->unit }}</td>
+                        <td>{{ (float) $kpi->weight }}%</td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+            </div>
+            <div class="kpi-review-actions">
+                <input name="review_comment" maxlength="2000" placeholder="Comment (required when returning)" aria-label="Review comment">
+                <button name="decision" value="return" class="btn btn-outline btn-sm"><i class="fas fa-rotate-left"></i> Return</button>
+                <button name="decision" value="approve" class="btn btn-primary btn-sm"><i class="fas fa-check"></i> Approve selected</button>
+            </div>
+        </form>
+    @endforeach
+</section>
+</div>
+@endif
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const root = document.querySelector('[data-kpi-tabs]');
+    if (!root) return;
+    const buttons = [...root.querySelectorAll('[data-kpi-tab]')];
+    const panels = [...document.querySelectorAll('[data-kpi-panel]')];
+    buttons.forEach((button) => button.addEventListener('click', () => {
+        buttons.forEach((b) => b.classList.toggle('active', b === button));
+        panels.forEach((p) => p.classList.toggle('active', p.dataset.kpiPanel === button.dataset.kpiTab));
+    }));
+});
+</script>
 @endsection

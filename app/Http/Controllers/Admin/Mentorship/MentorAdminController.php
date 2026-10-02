@@ -78,4 +78,10 @@ class MentorAdminController extends Controller
         $mentor->update(['status'=>'rejected']);
         return back()->with('success','Mentor rejected.');
     }
+
+    public function destroy(MentorProfile $mentor)
+    {
+        $mentor->delete();
+        return back()->with('success','Mentor deleted.');
+    }
 }

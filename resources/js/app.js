@@ -24,3 +24,4 @@ import './admin-appraisal-kra-tabs';
 
 import './admin-profile-dropdown';
 import './phase25-survey-builder';
+import './cms-builder';
