@@ -172,6 +172,7 @@ class CourseManagementController extends Controller
                 ->summaries($participants->getCollection()->pluck('user_id'), $course->id),
             'submissions' => $submissions,
             'announcements' => $announcements,
+            'timeSlots' => $course->timeSlots()->orderBy('starts_at')->paginate(20, ['*'], 'timetable_page')->withQueryString(),
             'extensionRequests' => $extensionRequests,
             'pendingExtensionCount' => $pendingExtensionCount,
             'progressRows' => $progressRows,

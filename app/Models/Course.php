@@ -53,4 +53,9 @@ class Course extends Model
     {
         return $this->hasMany(CourseAnnouncement::class);
     }
+
+    public function timeSlots()
+    {
+        return $this->hasMany(CourseTimeSlot::class);
+    }
 }

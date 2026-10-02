@@ -12,6 +12,7 @@ import '../services/participant_data_service.dart';
 import '../services/reading_time_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/feedback.dart';
+import '../widgets/course_timetable.dart';
 import '../widgets/progress_widgets.dart';
 import '../widgets/state_views.dart';
 import 'lesson_detail_screen.dart';
@@ -315,6 +316,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             Text(summary, style: theme.textTheme.bodyLarge),
             const SizedBox(height: AppSpacing.lg),
           ],
+          CourseTimetable(
+            key: PageStorageKey('course-timetable-${widget.courseId}'),
+            slots: (course['timetable'] as List? ?? [])
+                .whereType<Map>().map(Map<String, dynamic>.from).toList(),
+          ),
+          const SizedBox(height: AppSpacing.md),
           if (lessonCount > 0)
             _ProgressSummary(
               percent: _percent,

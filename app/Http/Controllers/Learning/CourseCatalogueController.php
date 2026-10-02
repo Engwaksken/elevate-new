@@ -58,6 +58,9 @@ class CourseCatalogueController extends Controller
             ]);
         }
 
-        return view('learning.courses.show',compact('course','enrolment','moduleAccess'));
+        $canViewTimetable = $enrolment && auth()->user()->isParticipant() && auth()->user()->isActive();
+        $timetable = $canViewTimetable ? app(\App\Services\CourseTimetableService::class)->forCourse($course) : [];
+
+        return view('learning.courses.show',compact('course','enrolment','moduleAccess','timetable','canViewTimetable'));
     }
 }

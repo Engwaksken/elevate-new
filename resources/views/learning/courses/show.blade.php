@@ -14,6 +14,33 @@
 </div>
 @endif
 
+@if($canViewTimetable)
+<section class="eh-tab-section" aria-labelledby="course-timetable-title">
+    <h2 id="course-timetable-title"><i class="fas fa-calendar-days"></i> Course Timetable</h2>
+    <p>All session times are shown in their listed timezone.</p>
+    <div class="eh-data-list">
+        @forelse($timetable as $session)
+            <article class="eh-data-row">
+                <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-calendar-days"></i></span>
+                    <div class="eh-data-row-copy">
+                        <strong>{{ $session['title'] }}</strong>
+                        <span>{{ $session['date_label'] }} · {{ $session['time_label'] }} · {{ $session['timezone'] }}</span>
+                        <span>{{ $session['status'] === 'cancelled' ? 'Cancelled' : ($session['is_past'] ? 'Past session' : 'Scheduled') }}</span>
+                        @if($session['venue'])<span>Venue: {{ $session['venue'] }}</span>@endif
+                        @if($session['notes'])<p style="white-space:pre-wrap">{{ $session['notes'] }}</p>@endif
+                    </div>
+                </div>
+                @if($session['meeting_link'] && $session['status'] === 'scheduled')
+                    <a class="btn btn-outline btn-sm" href="{{ $session['meeting_link'] }}" target="_blank" rel="noopener noreferrer">Online meeting</a>
+                @endif
+            </article>
+        @empty
+            <p>Your instructor has not added any time slots yet.</p>
+        @endforelse
+    </div>
+</section>
+@endif
+
 <div class="learning-module-grid">
 @foreach($course->modules as $module)
 @php($state=$moduleAccess->get($module->id,['accessible'=>!$enrolment,'complete'=>false]))

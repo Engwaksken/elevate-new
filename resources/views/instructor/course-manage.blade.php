@@ -8,6 +8,7 @@
 
     $tabs = [
         'overview' => ['Overview', 'fa-gauge-high'],
+        'timetable' => ['Timetable', 'fa-calendar-days'],
         'modules' => ['Modules', 'fa-layer-group'],
         'lessons' => ['Lessons', 'fa-book-open'],
         'materials' => ['Learning Materials', 'fa-folder-open'],
@@ -109,6 +110,7 @@
     <div class="icm-card-grid">
         @foreach([
             ['modules','Modules','Create, edit, publish and reorder modules.','fa-layer-group'],
+            ['timetable','Course Timetable','Schedule, edit and cancel course sessions.','fa-calendar-days'],
             ['lessons','Lessons','Create and maintain lesson content and resources.','fa-book-open'],
             ['assignments','Assignments','Create assignments, due dates and files.','fa-list-check'],
             ['quizzes','Quizzes','Create quizzes, questions, attempts and pass marks.','fa-circle-question'],
@@ -123,6 +125,10 @@
         @endforeach
     </div>
 </section>
+@endif
+
+@if($activeTab === 'timetable')
+    @include('instructor.partials.timetable')
 @endif
 
 @if($activeTab === 'modules')

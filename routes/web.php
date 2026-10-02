@@ -1044,6 +1044,9 @@ Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-a
     ->prefix('instructor/courses')->name('instructor.courses.')
     ->group(function () {
         Route::get('/{course}/manage', [\App\Http\Controllers\Instructor\CourseManagementController::class,'show'])->name('manage');
+        Route::post('/{course}/timetable', [\App\Http\Controllers\Instructor\CourseTimetableController::class, 'store'])->name('timetable.store');
+        Route::put('/{course}/timetable/{slot}', [\App\Http\Controllers\Instructor\CourseTimetableController::class, 'update'])->name('timetable.update');
+        Route::delete('/{course}/timetable/{slot}', [\App\Http\Controllers\Instructor\CourseTimetableController::class, 'destroy'])->name('timetable.destroy');
         Route::post('/{course}/modules', [\App\Http\Controllers\Instructor\CourseManagementController::class,'storeModule'])->name('modules.store');
         Route::delete('/{course}/modules/{module}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'destroyModule'])->name('modules.destroy');
         Route::post('/{course}/modules/{module}/lessons', [\App\Http\Controllers\Instructor\CourseManagementController::class,'storeLesson'])->name('lessons.store');

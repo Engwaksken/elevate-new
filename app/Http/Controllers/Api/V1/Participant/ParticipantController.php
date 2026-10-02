@@ -135,6 +135,7 @@ class ParticipantController extends Controller
         $progressRows = LessonProgress::where('user_id', $user->id)->whereIn('lesson_id', $lessonIds)->get()->keyBy('lesson_id');
 
         $payload = $course->toArray();
+        $payload['timetable'] = app(\App\Services\CourseTimetableService::class)->forCourse($course);
         $enrolment = Enrolment::where('course_id', $course->id)->where('user_id', $user->id)->first();
 
         $payload['enrolment'] = $enrolment ? [
