@@ -28,6 +28,11 @@ class CertificateTemplate extends Model
         return $this->belongsTo(Course::class);
     }
 
+    public function courses(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Course::class, 'certificate_template_course');
+    }
+
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
@@ -49,7 +54,9 @@ class CertificateTemplate extends Model
             return $template;
         }
 
-        if ($courseId && $template = (clone $active)->where('context_type', 'course')->where('course_id', $courseId)->first()) {
+        if ($courseId && $template = (clone $active)->where('context_type', 'course')
+            ->where(fn ($query) => $query->where('course_id', $courseId)
+                ->orWhereHas('courses', fn ($courses) => $courses->where('courses.id', $courseId)))->first()) {
             return $template;
         }
 

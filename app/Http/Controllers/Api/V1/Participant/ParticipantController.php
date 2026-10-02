@@ -81,6 +81,7 @@ class ParticipantController extends Controller
                 'unread_notifications' => $unread,
             ],
             'courses' => $enrolments->map(fn ($enrolment) => [
+                'enrolment_code' => $enrolment->enrolment_code,
                 'id' => $enrolment->course?->id,
                 'title' => $enrolment->course?->title,
                 'status' => $enrolment->status,
@@ -137,6 +138,7 @@ class ParticipantController extends Controller
         $enrolment = Enrolment::where('course_id', $course->id)->where('user_id', $user->id)->first();
 
         $payload['enrolment'] = $enrolment ? [
+            'enrolment_code' => $enrolment->enrolment_code,
             'status' => $enrolment->status,
             'progress_percent' => (float) $enrolment->progress_percent,
         ] : null;

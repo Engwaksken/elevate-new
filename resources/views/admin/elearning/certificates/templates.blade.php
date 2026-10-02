@@ -5,7 +5,7 @@
     <div>
         <span class="admin-eyebrow">Certificates</span>
         <h1>Certificate Templates</h1>
-        <p>Upload the background design for a specific course, a specific event, or the default certificate. Participant details are printed on top.</p>
+        <p>Upload one background design for multiple courses, a specific event, or the default certificate. Participant details are printed on top.</p>
     </div>
     <div class="admin-page-actions">
         <a href="{{ route('certificates.recommendations.index') }}" class="btn btn-outline"><i class="fas fa-list-check"></i> Recommendations</a>
@@ -26,7 +26,8 @@
             <i class="fas {{ ['event' => 'fa-calendar-days', 'course' => 'fa-graduation-cap'][$template->context_type] ?? 'fa-star' }}"></i>
             {{ $template->context_type === 'default' ? 'Default template' : ucfirst($template->context_type) }}
         </span>
-        @if($template->course)<span>{{ $template->course->title }}</span>@endif
+        @foreach($template->courses as $course)<span>{{ $course->title }}</span>@endforeach
+        @if($template->courses->isEmpty() && $template->course)<span>{{ $template->course->title }}</span>@endif
         @if($template->event)<span>{{ $template->event->title }}</span>@endif
         <span class="cert-template-meta">{{ ucfirst($template->orientation) }} · {{ $template->is_active ? 'Active' : 'Inactive' }}</span>
     </div>
@@ -68,7 +69,7 @@
         <div class="form-group">
             <label for="tpl-context">Use for</label>
             <select id="tpl-context" name="context_type" required data-template-context>
-                <option value="course" @selected(old('context_type','course')==='course')>A specific course</option>
+                <option value="course" @selected(old('context_type','course')==='course')>Selected courses</option>
                 <option value="event" @selected(old('context_type')==='event')>A specific event</option>
                 <option value="default" @selected(old('context_type')==='default')>Default (all others)</option>
             </select>
@@ -83,13 +84,16 @@
         </div>
 
         <div class="form-group full" data-template-for="course">
-            <label for="tpl-course">Course</label>
-            <select id="tpl-course" name="course_id">
-                <option value="">Select course</option>
-                @foreach($courses as $course)
-                    <option value="{{ $course->id }}" @selected((int) old('course_id')===$course->id)>{{ $course->title }}</option>
-                @endforeach
-            </select>
+            <label>Courses (select one or more)</label>
+            <div style="max-height:240px;overflow:auto;border:1px solid #ddd;padding:12px">
+            @foreach($courses as $course)
+                <label style="display:flex;gap:10px;align-items:center;padding:6px 0" for="tpl-course-{{ $course->id }}">
+                    <input style="width:auto" id="tpl-course-{{ $course->id }}" type="checkbox" name="course_ids[]" value="{{ $course->id }}" @checked(in_array($course->id, old('course_ids', [])))>
+                    {{ $course->title }}
+                </label>
+            @endforeach
+            </div>
+            <small>One uploaded template will be used for every selected course.</small>
         </div>
 
         <div class="form-group full" data-template-for="event">
@@ -123,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!context) return;
     const sync = () => document.querySelectorAll('[data-template-for]').forEach(field => {
         field.hidden = field.dataset.templateFor !== context.value;
+        field.querySelectorAll('input,select').forEach(input => input.disabled = field.hidden);
     });
     context.addEventListener('change', sync);
     sync();

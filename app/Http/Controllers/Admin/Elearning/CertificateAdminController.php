@@ -53,7 +53,7 @@ class CertificateAdminController extends Controller
     public function templates()
     {
         return view('admin.elearning.certificates.templates', [
-            'templates' => CertificateTemplate::with(['course','event'])->latest()->paginate(20),
+            'templates' => CertificateTemplate::with(['course','courses','event'])->latest()->paginate(20),
             'courses' => Course::orderBy('title')->get(),
             'events' => Event::latest('starts_at')->get(),
         ]);
@@ -61,18 +61,19 @@ class CertificateAdminController extends Controller
 
     public function storeTemplate(Request $request)
     {
+        // Accept the previous single-course form as well as the multi-course form.
+        if (! $request->has('course_ids') && $request->filled('course_id')) {
+            $request->merge(['course_ids' => [$request->input('course_id')]]);
+        }
         $data = $request->validate([
             'name' => ['required','string','max:190'],
             'context_type' => ['required','in:course,event,default'],
-            'course_id' => ['nullable','exists:courses,id'],
+            'course_ids' => ['required_if:context_type,course','nullable','array','min:1'],
+            'course_ids.*' => ['integer','distinct', \Illuminate\Validation\Rule::exists('courses', 'id')->whereNull('deleted_at')],
             'event_id' => ['nullable','exists:events,id'],
             'orientation' => ['required','in:landscape,portrait'],
             'background' => ['required','file','mimes:png,jpg,jpeg,webp','max:10240'],
         ]);
-
-        if ($data['context_type'] === 'course') {
-            $request->validate(['course_id' => ['required','exists:courses,id']]);
-        }
 
         if ($data['context_type'] === 'event') {
             $request->validate(['event_id' => ['required','exists:events,id']]);
@@ -80,16 +81,26 @@ class CertificateAdminController extends Controller
 
         $path = $request->file('background')->store('certificate-templates', 'public');
 
-        CertificateTemplate::create([
-            'name' => $data['name'],
-            'context_type' => $data['context_type'],
-            'course_id' => $data['context_type'] === 'course' ? $data['course_id'] : null,
-            'event_id' => $data['context_type'] === 'event' ? $data['event_id'] : null,
-            'background_path' => $path,
-            'orientation' => $data['orientation'],
-            'is_active' => true,
-            'created_by' => auth()->id(),
-        ]);
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($data, $path) {
+                $template = CertificateTemplate::create([
+                    'name' => $data['name'],
+                    'context_type' => $data['context_type'],
+                    'course_id' => null,
+                    'event_id' => $data['context_type'] === 'event' ? $data['event_id'] : null,
+                    'background_path' => $path,
+                    'orientation' => $data['orientation'],
+                    'is_active' => true,
+                    'created_by' => auth()->id(),
+                ]);
+                if ($data['context_type'] === 'course') {
+                    $template->courses()->sync($data['course_ids']);
+                }
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('public')->delete($path);
+            throw $exception;
+        }
 
         return back()->with('success','Certificate template uploaded.');
     }

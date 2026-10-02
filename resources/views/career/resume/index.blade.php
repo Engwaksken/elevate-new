@@ -56,6 +56,7 @@
                                     <div class="eh-data-row-actions">
                                         <a href="{{ route('career.resume.edit',$resume) }}" class="btn btn-outline btn-sm"><i class="fas fa-pen"></i> Edit</a>
                                         <a href="{{ route('career.resume.download',$resume) }}" class="btn btn-primary btn-sm"><i class="fas fa-file-pdf"></i> PDF</a>
+                                        <button type="button" class="btn btn-outline btn-sm" data-document-share="{{ route('career.documents.share',['type'=>'resume','id'=>$resume->id]) }}"><i class="fas fa-share-nodes"></i> Share</button>
                                         <form method="POST" action="{{ route('career.resume.destroy',$resume) }}" onsubmit="return confirm('Delete this resume? This cannot be undone.')">@csrf @method('DELETE')
                                             <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</button>
                                         </form>
@@ -196,6 +197,21 @@
                             @forelse($coverLetters as $letter)
                                 <div class="eh-data-row">
                                     <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-envelope-open-text"></i></span><div class="eh-data-row-copy"><strong>{{ $letter->title }}</strong><span>{{ $letter->employer_name ?: 'General' }} @if($letter->ai_generated) · AI generated @endif</span></div></div>
+                                    <div class="eh-data-row-actions">
+                                        <a class="btn btn-primary btn-sm" href="{{ route('career.cover-letter.download',$letter) }}">PDF</a>
+                                        <button type="button" class="btn btn-outline btn-sm" data-document-share="{{ route('career.documents.share',['type'=>'cover-letter','id'=>$letter->id]) }}">Share</button>
+                                        <details><summary class="btn btn-outline btn-sm">Edit</summary>
+                                            <form method="POST" action="{{ route('career.cover-letter.update',$letter) }}">@csrf @method('PUT')
+                                                <div class="form-group"><label>Title</label><input name="title" value="{{ $letter->title }}" required maxlength="190"></div>
+                                                <div class="form-group"><label>Employer</label><input name="employer_name" value="{{ $letter->employer_name }}" maxlength="190"></div>
+                                                <div class="form-group"><label>Job title</label><input name="job_title" value="{{ $letter->job_title }}" maxlength="190"></div>
+                                                <div class="form-group"><label>Recipient</label><input name="recipient_name" value="{{ $letter->recipient_name }}" maxlength="190"></div>
+                                                <div class="form-group"><label>Body</label><textarea name="body" rows="10" required>{{ $letter->body }}</textarea></div>
+                                                <button class="btn btn-primary btn-sm">Save changes</button>
+                                            </form>
+                                        </details>
+                                        <form method="POST" action="{{ route('career.cover-letter.destroy',$letter) }}" onsubmit="return confirm('Delete this cover letter?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm">Delete</button></form>
+                                    </div>
                                 </div>
                             @empty
                                 <div class="eh-empty"><p>No saved cover letters yet.</p></div>
@@ -279,6 +295,26 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-document-share]').forEach(button => {
+        button.addEventListener('click', async () => {
+            button.disabled = true;
+            try {
+                const response = await fetch(button.dataset.documentShare, {
+                    method: 'POST',
+                    headers: {'Accept':'application/json','X-CSRF-TOKEN': @json(csrf_token())}
+                });
+                if (!response.ok) throw new Error('Unable to create a share link. Please try again.');
+                const data = await response.json();
+                if (navigator.share) {
+                    try { await navigator.share({title: 'Career document', text: 'Link expires in seven days.', url: data.url}); }
+                    catch (error) { if (error.name !== 'AbortError') window.prompt('Copy this link (expires in seven days):', data.url); }
+                } else {
+                    window.prompt('Copy this link (expires in seven days):', data.url);
+                }
+            } catch (error) { window.alert(error.message); }
+            finally { button.disabled = false; }
+        });
+    });
     const select = document.getElementById('template-resume-select');
     if (!select) return;
     document.querySelectorAll('[data-template-form]').forEach(form => {

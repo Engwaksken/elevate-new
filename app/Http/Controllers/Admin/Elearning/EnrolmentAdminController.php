@@ -15,8 +15,10 @@ class EnrolmentAdminController extends Controller
         $query=Enrolment::with(['course','user','cohort'])->latest();
 
         if($search=trim((string)$request->get('search'))){
-            $query->whereHas('user',fn($q)=>$q->where('name','like',"%{$search}%")
-                ->orWhere('email','like',"%{$search}%"));
+            $query->where(fn ($q) => $q->where('enrolment_code', 'like', "%{$search}%")
+                ->orWhereHas('user',fn($user)=>$user->where('name','like',"%{$search}%")
+                    ->orWhere('participant_code','like',"%{$search}%")
+                    ->orWhere('email','like',"%{$search}%")));
         }
 
         if($courseId=$request->get('course_id')) $query->where('course_id',$courseId);

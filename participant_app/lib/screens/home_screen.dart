@@ -15,6 +15,7 @@ import '../widgets/feedback.dart';
 import 'about_screen.dart';
 import 'assignments_screen.dart';
 import 'cached_list_screen.dart';
+import 'career_documents_screen.dart';
 import 'dashboard_screen.dart';
 import 'downloads_screen.dart';
 import 'help_support_screen.dart';
@@ -127,6 +128,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     switch (destination) {
+      case AppDestination.careerDocuments:
+        _push(const CareerDocumentsScreen());
       case AppDestination.assignments:
         _push(const AssignmentsScreen());
       case AppDestination.progress:

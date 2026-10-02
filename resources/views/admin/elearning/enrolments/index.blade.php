@@ -17,7 +17,7 @@
 
 <div class="admin-panel">
 <form method="GET" class="admin-toolbar">
-<div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search learner name or email..."></div>
+<div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search learner name, email or ID..."></div>
 <select name="course_id"><option value="">All courses</option>@foreach($courses as $course)<option value="{{ $course->id }}" @selected((string)request('course_id')===(string)$course->id)>{{ $course->title }}</option>@endforeach</select>
 <select name="cohort_id"><option value="">All cohorts</option>@foreach($cohorts as $cohort)<option value="{{ $cohort->id }}" @selected((string)request('cohort_id')===(string)$cohort->id)>{{ $cohort->name }}</option>@endforeach</select>
 <select name="status"><option value="">All statuses</option>@foreach(['enrolled','in_progress','completed','withdrawn','failed'] as $status)<option value="{{ $status }}" @selected(request('status')===$status)>{{ ucwords(str_replace('_',' ',$status)) }}</option>@endforeach</select>
@@ -27,7 +27,7 @@
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Learner</th><th>Course</th><th>Cohort</th><th>Status</th><th>Enrolled</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($enrolments as $enrolment)
 <tr>
-<td><strong>{{ $enrolment->user?->name ?: '—' }}</strong><small class="admin-cell-hint">{{ $enrolment->user?->email }}</small></td>
+<td><strong>{{ $enrolment->user?->name ?: '—' }}</strong><small class="admin-cell-hint">{{ $enrolment->user?->email }}</small><small class="admin-cell-hint">{{ $enrolment->enrolment_code }}</small></td>
 <td>{{ $enrolment->course?->title ?: '—' }}</td>
 <td>{{ $enrolment->cohort?->name ?: '—' }}</td>
 <td><span class="status-chip {{ in_array($enrolment->status,['completed','enrolled','in_progress']) ? 'active':'inactive' }}">{{ ucwords(str_replace('_',' ',$enrolment->status)) }}</span></td>

@@ -499,6 +499,32 @@ class ApiService {
         if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
       });
 
+  Future<Map<String, dynamic>> careerDocuments() => _getMap('/career/documents');
+
+  Future<void> saveCareerDocument({
+    required bool resume,
+    int? id,
+    required Map<String, dynamic> data,
+  }) => _guard(() async {
+    final path = '/career/${resume ? 'resumes' : 'cover-letters'}';
+    if (id == null) {
+      await dio.post(path, data: data);
+    } else {
+      await dio.put('$path/$id', data: data);
+    }
+  });
+
+  Future<void> deleteCareerDocument({required bool resume, required int id}) =>
+      _guard(() async {
+        await dio.delete('/career/${resume ? 'resumes' : 'cover-letters'}/$id');
+      });
+
+  Future<Map<String, dynamic>> shareCareerDocument({required bool resume, required int id}) =>
+      _guard(() async {
+        final response = await dio.post('/career/documents/${resume ? 'resume' : 'cover-letter'}/$id/share');
+        return _mapResponse(response.data);
+      });
+
   Future<Map<String, dynamic>> saveJob(int jobId) => _guard(() async {
         final response = await dio.post('/jobs/$jobId/save');
         return _mapResponse(response.data);

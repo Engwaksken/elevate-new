@@ -9,6 +9,31 @@ use App\Services\CareerAiService;
 use Illuminate\Http\Request;
 
 class CoverLetterController extends Controller {
+    public function download(Request $request, CoverLetter $letter, \App\Services\CareerDocumentService $service)
+    {
+        abort_unless($letter->user_id === $request->user()->id, 403);
+        return $service->download($letter);
+    }
+
+    public function update(Request $request, CoverLetter $letter)
+    {
+        abort_unless($letter->user_id === $request->user()->id, 403);
+        $letter->update($request->validate([
+            'title' => ['required', 'string', 'max:190'],
+            'employer_name' => ['nullable', 'string', 'max:190'],
+            'job_title' => ['nullable', 'string', 'max:190'],
+            'recipient_name' => ['nullable', 'string', 'max:190'],
+            'body' => ['required', 'string', 'max:50000'],
+        ]));
+        return back()->with('success', 'Cover letter updated.');
+    }
+
+    public function destroy(Request $request, CoverLetter $letter)
+    {
+        abort_unless($letter->user_id === $request->user()->id, 403);
+        $letter->delete();
+        return back()->with('success', 'Cover letter deleted.');
+    }
     public function store(Request $request){
         $d=$request->validate([
             'title'=>['required','string','max:190'],'resume_id'=>['nullable','integer'],'job_id'=>['nullable','integer'],

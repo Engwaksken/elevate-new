@@ -34,6 +34,16 @@ Route::prefix('v1')->group(function () {
                 Route::get('/me',[ParticipantController::class,'me']);
                 Route::get('/dashboard',[ParticipantController::class,'dashboard']);
                 Route::get('/support',[ParticipantSupportController::class,'show']);
+                Route::get('/career/documents', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'index']);
+                Route::post('/career/resumes', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'storeResume']);
+                Route::put('/career/resumes/{resume}', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'updateResume']);
+                Route::delete('/career/resumes/{resume}', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'destroyResume']);
+                Route::get('/career/resumes/{resume}/download', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'downloadResume']);
+                Route::post('/career/cover-letters', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'storeLetter']);
+                Route::put('/career/cover-letters/{letter}', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'updateLetter']);
+                Route::delete('/career/cover-letters/{letter}', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'destroyLetter']);
+                Route::get('/career/cover-letters/{letter}/download', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'downloadLetter']);
+                Route::post('/career/documents/{type}/{id}/share', [\App\Http\Controllers\Career\DocumentShareController::class, 'share'])->where('type', 'resume|cover-letter')->whereNumber('id');
 
                 Route::get('/courses',[ParticipantController::class,'courses']);
                 Route::get('/courses/{course}',[ParticipantController::class,'course']);

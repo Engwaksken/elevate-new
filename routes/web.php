@@ -104,6 +104,10 @@ use App\Http\Controllers\Career\ResumeSectionController;
 use App\Http\Controllers\Career\ResumeUploadController;
 use App\Http\Controllers\Admin\RoleController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/shared/career/{type}/{id}', [\App\Http\Controllers\Career\DocumentShareController::class, 'shared'])
+    ->where('type', 'resume|cover-letter')->whereNumber('id')
+    ->middleware(['signed', 'throttle:30,1'])->name('career.documents.shared');
 use App\Http\Controllers\BrandAssetController;
 
 use App\Http\Controllers\Jobs\SavedJobController;
@@ -586,6 +590,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/career/resumes/{resume}/ai/tailor',[ResumeAiController::class,'tailor'])->name('career.resume.ai.tailor');
 
     Route::post('/career/cover-letters',[CoverLetterController::class,'store'])->name('career.cover-letter.store');
+    Route::get('/career/cover-letters/{letter}/download', [CoverLetterController::class, 'download'])->name('career.cover-letter.download');
+    Route::put('/career/cover-letters/{letter}', [CoverLetterController::class, 'update'])->name('career.cover-letter.update');
+    Route::delete('/career/cover-letters/{letter}', [CoverLetterController::class, 'destroy'])->name('career.cover-letter.destroy');
+    Route::post('/career/documents/{type}/{id}/share', [\App\Http\Controllers\Career\DocumentShareController::class, 'share'])->where('type', 'resume|cover-letter')->whereNumber('id')->name('career.documents.share');
     Route::post('/career/cover-letters/generate',[CoverLetterController::class,'generate'])->name('career.cover-letter.generate');
 
     Route::post('/career/cover-letters/upload',[CoverLetterUploadController::class,'store'])->name('career.cover-letter.upload.store');
