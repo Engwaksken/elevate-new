@@ -10,6 +10,7 @@
 </div>
 @if(Route::has('instructor.dashboard'))
 <div class="admin-page-actions">
+<a href="{{ route('instructor.attendance.daily',$course) }}" class="btn btn-outline"><i class="fas fa-table"></i> Daily Matrix</a>
 <a href="{{ route('instructor.dashboard') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Instructor Dashboard</a>
 </div>
 @endif

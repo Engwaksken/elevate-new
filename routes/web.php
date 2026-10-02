@@ -469,6 +469,11 @@ Route::prefix('instructor')
             '/courses/{course}/attendance',
             [AttendanceController::class, 'store']
         )->name('attendance.store');
+
+        Route::get(
+            '/courses/{course}/attendance/daily',
+            [DailyAttendanceController::class, 'index']
+        )->name('attendance.daily');
     });
 
 Route::middleware(['auth', 'verified'])->group(function () {

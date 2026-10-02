@@ -21,6 +21,13 @@
     <div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-certificate"></i></span><div><small>Certificate</small><strong>{{ $certificate ? 'Issued' : 'Not issued' }}</strong></div></div>
 </div>
 
+<div class="appraisal-admin-kra-tabs" data-progress-tabs>
+    <button type="button" class="appraisal-admin-kra-tab active" data-progress-tab="lessons"><i class="fas fa-book-open"></i> Lessons <small>{{ $lessons->count() }}</small></button>
+    <button type="button" class="appraisal-admin-kra-tab" data-progress-tab="assessments"><i class="fas fa-clipboard-check"></i> Assignments, Quizzes &amp; Exams <small>{{ $attempts->count() }}</small></button>
+    <button type="button" class="appraisal-admin-kra-tab" data-progress-tab="attendance"><i class="fas fa-user-check"></i> Attendance <small>{{ $attendance->count() }}</small></button>
+</div>
+
+<div class="appraisal-admin-kra-panel active" data-progress-panel="lessons">
 <section class="admin-panel">
     <div class="admin-panel-head"><div><h2>Lessons</h2><p>Lesson-by-lesson activity and completion.</p></div></div>
     <div class="table-responsive">
@@ -43,7 +50,9 @@
         </table>
     </div>
 </section>
+</div>
 
+<div class="appraisal-admin-kra-panel" data-progress-panel="assessments">
 <section class="admin-panel">
     <div class="admin-panel-head"><div><h2>Assignments, Quizzes & Exams</h2><p>Submission and grading history.</p></div></div>
     <div class="table-responsive">
@@ -67,7 +76,9 @@
         </table>
     </div>
 </section>
+</div>
 
+<div class="appraisal-admin-kra-panel" data-progress-panel="attendance">
 <section class="admin-panel">
     <div class="admin-panel-head"><div><h2>Attendance</h2><p>Course attendance records.</p></div></div>
     <div class="table-responsive">
@@ -89,4 +100,18 @@
         </table>
     </div>
 </section>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const root = document.querySelector('[data-progress-tabs]');
+    if (!root) return;
+    const buttons = [...root.querySelectorAll('[data-progress-tab]')];
+    const panels = [...document.querySelectorAll('[data-progress-panel]')];
+    buttons.forEach((button) => button.addEventListener('click', () => {
+        buttons.forEach((b) => b.classList.toggle('active', b === button));
+        panels.forEach((p) => p.classList.toggle('active', p.dataset.progressPanel === button.dataset.progressTab));
+    }));
+});
+</script>
 @endsection
