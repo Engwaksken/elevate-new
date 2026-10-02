@@ -28,6 +28,10 @@
 .eh-brand-preview--favicon img{width:48px;height:48px}
 .eh-brand-preview-empty{color:#848990;font-size:13px;text-align:center;padding:20px}
 .eh-brand-file-input{margin-top:12px}
+.ai-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}
+.ai-test-result{font-size:.82rem;font-weight:600;color:#667085}
+.ai-test-result.is-ok{color:#067647}
+.ai-test-result.is-fail{color:#b42318}
 @media(max-width:720px){.eh-brand-assets{grid-template-columns:1fr}}
 </style>
 
@@ -171,7 +175,7 @@
 <div><label>Daily request limit per user</label><input type="number" min="1" max="1000" name="user_daily_limit" value="{{ old('user_daily_limit', data_get($aiConfig->settings, 'user_daily_limit', 20)) }}"></div>
 <div><label>Temperature (optional, if supported by the model)</label><input type="number" min="0" max="2" step="0.1" name="temperature" value="{{ old('temperature', data_get($aiConfig->settings, 'temperature')) }}"></div>
 </div><label><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $aiConfig->enabled))> Activate AI across the system</label>
-<button class="btn btn-primary">Save AI configuration</button></form>
+<div class="ai-actions"><button class="btn btn-primary">Save AI configuration</button><button type="button" class="btn btn-outline" data-ai-test><i class="fas fa-plug"></i> Test connection</button><span class="ai-test-result" data-ai-test-result role="status"></span></div></form>
 </div></section>
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
@@ -200,6 +204,35 @@ document.addEventListener('DOMContentLoaded',()=>{
         if(endpointLabel){ endpointLabel.textContent=required?'(required)':'(optional)'; }
     };
     if(providerSelect){ providerSelect.addEventListener('change',syncProvider); syncProvider(); }
+
+    const testBtn=document.querySelector('[data-ai-test]');
+    const testResult=document.querySelector('[data-ai-test-result]');
+    if(testBtn){
+        testBtn.addEventListener('click',async()=>{
+            const form=testBtn.closest('form');
+            const data=new FormData(form);
+            data.delete('_method');
+            const token=form.querySelector('input[name="_token"]')?.value;
+            testResult.className='ai-test-result';
+            testResult.textContent='Testing…';
+            testBtn.disabled=true;
+            try{
+                const res=await fetch(@json(route('admin.platform-settings.ai-test')),{
+                    method:'POST',
+                    headers:{'X-CSRF-TOKEN':token||'','Accept':'application/json'},
+                    body:data
+                });
+                const json=await res.json();
+                testResult.textContent=json.message||'Unknown response.';
+                testResult.className='ai-test-result '+(json.ok?'is-ok':'is-fail');
+            }catch(err){
+                testResult.textContent='Could not reach the server.';
+                testResult.className='ai-test-result is-fail';
+            }finally{
+                testBtn.disabled=false;
+            }
+        });
+    }
 
     document.querySelectorAll('[data-image-input]').forEach((input)=>{
         input.addEventListener('change',()=>{

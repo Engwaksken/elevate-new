@@ -32,6 +32,36 @@ class CareerAiService {
         }
     }
 
+    public function testConnection(AiIntegration $config): array
+    {
+        $provider = AiProviderRegistry::resolve(strtolower($config->provider));
+        try {
+            match($provider['api']) {
+                'gemini' => $this->gemini($config, $provider, 'You are a concise assistant.', 'Reply with exactly: OK'),
+                'anthropic' => $this->anthropic($config, $provider, 'You are a concise assistant.', 'Reply with exactly: OK'),
+                default => $this->openAi($config, $provider, 'You are a concise assistant.', 'Reply with exactly: OK'),
+            };
+            return ['ok' => true, 'message' => 'Connected to '.$provider['label'].' — '.$config->model.' responded successfully.'];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'message' => 'Connection failed: '.$this->errorMessage($e)];
+        }
+    }
+
+    private function errorMessage(\Throwable $e): string
+    {
+        if ($e instanceof \Illuminate\Http\Client\ConnectionException) {
+            return 'Could not reach the endpoint. Check the URL, model ID and your network.';
+        }
+        if ($e instanceof \Illuminate\Http\Client\RequestException) {
+            $json = $e->response?->json();
+            if (is_array($json)) {
+                $message = data_get($json, 'error.message') ?: data_get($json, 'error') ?: data_get($json, 'message');
+                if (is_string($message) && $message !== '') return $message;
+            }
+        }
+        return $e->getMessage() ?: class_basename($e);
+    }
+
     private function openAi(AiIntegration $c,array $provider,string $system,string $user):array {
         $endpoint=$c->endpoint ?: ($provider['endpoint'] ?? 'https://api.openai.com/v1/chat/completions');
         $payload=[

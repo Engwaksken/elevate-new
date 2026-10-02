@@ -751,7 +751,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 
         Route::post('/employees/{employee}/contracts',[ContractController::class,'store'])->middleware('permission:hr.manage')->name('contracts.store');
 
-        Route::get('/leave',[LeaveApprovalController::class,'index'])->middleware('permission:leave.view')->name('leave.index');
+        Route::get('/leave',[LeaveApprovalController::class,'index'])->name('leave.index');
         Route::post('/leave/{leave}/supervisor-approve',[LeaveApprovalController::class,'supervisorApprove'])->middleware('permission:leave.approve')->name('leave.supervisor-approve');
         Route::post('/leave/{leave}/hr-approve',[LeaveApprovalController::class,'hrApprove'])->middleware('permission:leave.approve')->name('leave.hr-approve');
         Route::post('/leave/{leave}/reject',[LeaveApprovalController::class,'reject'])->middleware('permission:leave.approve')->name('leave.reject');
@@ -786,7 +786,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         Route::post('/suppliers',[SupplierController::class,'store'])->middleware('permission:procurement.create')->name('suppliers.store');
         Route::post('/suppliers/{supplier}/approve',[SupplierController::class,'approve'])->middleware('permission:procurement.approve')->name('suppliers.approve');
 
-        Route::get('/requests',[PurchaseRequestController::class,'index'])->middleware('permission:procurement.view')->name('requests.index');
+        Route::get('/requests',[PurchaseRequestController::class,'index'])->name('requests.index');
         Route::post('/requests',[PurchaseRequestController::class,'store'])->middleware('permission:procurement.create')->name('requests.store');
         Route::post('/requests/{purchaseRequest}/submit',[PurchaseRequestController::class,'submit'])->middleware('permission:procurement.create')->name('requests.submit');
         Route::post('/requests/{purchaseRequest}/approve',[PurchaseRequestController::class,'approve'])->middleware('permission:procurement.approve')->name('requests.approve');
@@ -987,6 +987,7 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
         ->middleware('permission:settings.manage')
         ->name('platform-settings.index');
     Route::put('/platform-settings/ai', [PlatformSettingsController::class, 'updateAi'])->middleware('permission:settings.manage')->name('platform-settings.ai');
+    Route::post('/platform-settings/ai-test', [PlatformSettingsController::class, 'testAi'])->middleware('permission:settings.manage')->name('platform-settings.ai-test');
 
     Route::put('/platform-settings/branding',[PlatformSettingsController::class,'updateBranding'])
         ->middleware('permission:settings.branding')

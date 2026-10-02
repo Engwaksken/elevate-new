@@ -55,4 +55,38 @@ class SystemAiSettingsService
             return $config;
         });
     }
+
+    public function test(Request $request): array
+    {
+        $validator = Validator::make($request->all(), [
+            'provider' => ['required', Rule::in(AiProviderRegistry::keys())],
+            'model' => ['required', 'string', 'max:190'],
+            'endpoint' => ['nullable', 'url', 'max:255'],
+            'api_key' => ['nullable', 'string', 'max:1000'],
+        ]);
+        if ($validator->fails()) {
+            return ['ok' => false, 'message' => 'Fill in the provider, model and API key before testing.'];
+        }
+        $data = $validator->validated();
+        $apiKey = trim((string) ($data['api_key'] ?? ''));
+
+        $config = new AiIntegration([
+            'provider' => $data['provider'],
+            'model' => $data['model'],
+            'endpoint' => $data['endpoint'] ?? null,
+            'settings' => ['temperature' => null],
+        ]);
+
+        if ($apiKey !== '') {
+            $config->setApiKey($apiKey);
+        } else {
+            $saved = AiIntegration::where('feature', 'system_ai')->first();
+            if (! $saved || ! $saved->apiKey()) {
+                return ['ok' => false, 'message' => 'Enter an API key to test the connection.'];
+            }
+            $config->encrypted_api_key = $saved->encrypted_api_key;
+        }
+
+        return app(CareerAiService::class)->testConnection($config);
+    }
 }

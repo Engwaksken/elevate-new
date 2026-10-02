@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Procurement</span><h1>Purchase Requests</h1><p>Create and route procurement requests through approval stages.</p></div>
-<div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createRequestModal"><i class="fas fa-plus"></i> New Request</button></div>
+<div class="admin-page-actions">@if(auth()->user()->hasPermission('procurement.create'))<button type="button" class="btn btn-primary" data-modal-open="createRequestModal"><i class="fas fa-plus"></i> New Request</button>@endif</div>
 </div>
 
 <div class="admin-stats-grid compact">
@@ -30,9 +30,9 @@
 <td>{{ $pr->currency ?: 'UGX' }} {{ number_format((float)$pr->estimated_total,2) }}</td>
 <td><span class="status-chip {{ $pr->status }}">{{ ucfirst(str_replace('_',' ',$pr->status)) }}</span></td>
 <td class="table-actions"><div class="action-group">
-@if($pr->status==='draft')<button type="button" class="btn-icon" title="Submit" data-modal-open="submitPR{{ $pr->id }}"><i class="fas fa-paper-plane"></i></button>@endif
-@if(in_array($pr->status,['submitted','manager_approved','finance_approved','procurement_review'],true))<button type="button" class="btn-icon" title="Approval action" data-modal-open="approvePR{{ $pr->id }}"><i class="fas fa-check-double"></i></button>@endif
-<a class="btn-icon" title="Quotations" href="{{ route('admin.procurement.quotations.index',$pr) }}"><i class="fas fa-file-invoice-dollar"></i></a>
+@if($pr->status==='draft' && auth()->user()->hasPermission('procurement.create'))<button type="button" class="btn-icon" title="Submit" data-modal-open="submitPR{{ $pr->id }}"><i class="fas fa-paper-plane"></i></button>@endif
+@if(in_array($pr->status,['submitted','manager_approved','finance_approved','procurement_review'],true) && auth()->user()->hasPermission('procurement.approve'))<button type="button" class="btn-icon" title="Approval action" data-modal-open="approvePR{{ $pr->id }}"><i class="fas fa-check-double"></i></button>@endif
+@if(auth()->user()->hasPermission('procurement.view'))<a class="btn-icon" title="Quotations" href="{{ route('admin.procurement.quotations.index',$pr) }}"><i class="fas fa-file-invoice-dollar"></i></a>@endif
 </div></td>
 </tr>
 @if($pr->items->count())

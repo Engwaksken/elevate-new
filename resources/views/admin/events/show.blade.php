@@ -14,11 +14,21 @@
 <div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-bell"></i></span><div><small>Reminders</small><strong>{{ $reminders->count() }}</strong></div></div>
 </div>
 
-<div class="event-ops-grid">
+<div class="appraisal-admin-kra-tabs" data-event-tabs>
+<button type="button" class="appraisal-admin-kra-tab active" data-event-tab="checkin"><i class="fas fa-qrcode"></i> Check-in</button>
+<button type="button" class="appraisal-admin-kra-tab" data-event-tab="outputs"><i class="fas fa-chart-line"></i> Outputs</button>
+<button type="button" class="appraisal-admin-kra-tab" data-event-tab="settings"><i class="fas fa-gears"></i> Settings &amp; Reminders</button>
+</div>
+
+<div class="appraisal-admin-kra-panel active" data-event-panel="checkin">
 <section class="admin-panel"><div class="admin-panel-head"><div><h2>Quick Check-in QR</h2><p>Display at the event for signed-in participants.</p></div></div><div class="event-qr-wrap">@if($event->checkin_token)<div class="event-qr">{!! \SimpleSoftwareIO\QrCode\Facades\QrCode::size(190)->margin(1)->generate(route('events.checkin',[$event,$event->checkin_token])) !!}</div>@endif</div></section>
+</div>
+
+<div class="appraisal-admin-kra-panel" data-event-panel="outputs">
 <section class="admin-panel"><div class="admin-panel-head"><div><h2>Event Outputs</h2><p>Feedback, reminders, attendance and MEAL reporting.</p></div></div><div class="event-operation-actions"><a href="{{ route('admin.events.feedback',$event) }}" class="btn btn-outline"><i class="fas fa-comments"></i> Feedback</a><a href="{{ route('admin.events.reminder-logs',$event) }}" class="btn btn-outline"><i class="fas fa-envelope-open-text"></i> Reminder Logs</a><a href="{{ route('admin.events.attendance.csv',$event) }}" class="btn btn-outline"><i class="fas fa-file-csv"></i> Attendance CSV</a><a href="{{ route('admin.events.meal-report',['from'=>$event->starts_at->format('Y-m-d'),'to'=>$event->starts_at->format('Y-m-d')]) }}" class="btn btn-outline"><i class="fas fa-chart-line"></i> MEAL Report</a></div></section>
 </div>
 
+<div class="appraisal-admin-kra-panel" data-event-panel="settings">
 <div class="event-ops-grid">
 <section class="admin-panel">
 <div class="admin-panel-head"><div><h2>Evaluation & Certificate Settings</h2><p>Control participant feedback and certificate eligibility.</p></div></div>
@@ -39,4 +49,18 @@
 
 <section class="admin-panel"><div class="admin-panel-head"><div><h2>Calendar & Reminders</h2><p>Use the existing calendar and reminder tools for this event.</p></div></div><div class="event-operation-actions"><a href="{{ route('admin.events.calendar',['month'=>$event->starts_at->format('Y-m')]) }}" class="btn btn-outline"><i class="fas fa-calendar-days"></i> Month Calendar</a><a href="{{ route('events.calendar',$event) }}" class="btn btn-outline"><i class="fas fa-calendar-plus"></i> Download .ics</a></div></section>
 </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const root = document.querySelector('[data-event-tabs]');
+    if (!root) return;
+    const buttons = [...root.querySelectorAll('[data-event-tab]')];
+    const panels = [...document.querySelectorAll('[data-event-panel]')];
+    buttons.forEach((button) => button.addEventListener('click', () => {
+        buttons.forEach((b) => b.classList.toggle('active', b === button));
+        panels.forEach((p) => p.classList.toggle('active', p.dataset.eventPanel === button.dataset.eventTab));
+    }));
+});
+</script>
 @endsection

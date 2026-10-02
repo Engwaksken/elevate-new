@@ -10,9 +10,11 @@
 @forelse($requests as $leave)
 <tr><td><strong>{{ data_get($leave,'employee.user.name','—') }}</strong><small class="admin-cell-hint">{{ data_get($leave,'employee.user.email','') }}</small></td><td>{{ data_get($leave,'leaveType.name','—') }}</td><td>{{ optional($leave->start_date)->format('d M Y') ?: '—' }} — {{ optional($leave->end_date)->format('d M Y') ?: '—' }}</td><td>{{ $leave->days_requested ?? '—' }}</td><td><span class="status-chip {{ $leave->status }}">{{ ucfirst(str_replace('_',' ',$leave->status)) }}</span></td>
 <td class="table-actions"><div class="action-group">
+@if(auth()->user()->hasPermission('leave.approve'))
 @if($leave->status==='pending')<button type="button" class="btn-icon" data-modal-open="supervisor{{ $leave->id }}" title="Supervisor approve"><i class="fas fa-user-check"></i></button>@endif
 @if($leave->status==='supervisor_approved')<button type="button" class="btn-icon" data-modal-open="hrApprove{{ $leave->id }}" title="HR approve"><i class="fas fa-check"></i></button>@endif
 @if(!in_array($leave->status,['approved','rejected'],true))<button type="button" class="btn-icon danger" data-modal-open="reject{{ $leave->id }}" title="Reject"><i class="fas fa-xmark"></i></button>@endif
+@endif
 </div></td></tr>
 @empty<tr><td colspan="6"><div class="admin-empty">No leave requests found.</div></td></tr>@endforelse
 </tbody></table></div><div class="admin-pagination">{{ $requests->links() }}</div></div>

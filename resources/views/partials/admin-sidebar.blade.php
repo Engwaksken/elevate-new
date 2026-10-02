@@ -194,7 +194,7 @@
                     'route' => 'admin.hr.leave.index',
                     'label' => 'Leave',
                     'icon' => 'fa-calendar-minus',
-                    'permissions' => ['leave.view', 'leave.approve'],
+                    'permissions' => [],
                 ],
                 [
                     'route' => 'admin.users.index',
@@ -289,7 +289,7 @@
                     'route' => 'admin.procurement.requests.index',
                     'label' => 'Procurement',
                     'icon' => 'fa-cart-shopping',
-                    'permissions' => ['procurement.view', 'procurement.create', 'procurement.approve'],
+                    'permissions' => [],
                 ],
                 [
                     'route' => 'admin.assets.index',

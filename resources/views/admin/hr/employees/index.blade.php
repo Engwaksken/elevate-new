@@ -69,7 +69,7 @@ $employeeFormTabs = [
 @foreach($employees as $employee)
 <div class="eh-modal" id="contract{{ $employee->id }}" aria-hidden="true"><div class="eh-modal-dialog">
 <div class="eh-modal-header"><div><h2>Add Contract</h2><p>{{ data_get($employee,'user.name','Employee') }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
-<form method="POST" action="{{ route('admin.hr.contracts.store',$employee) }}">@csrf
+<form method="POST" action="{{ route('admin.hr.contracts.store',$employee) }}" enctype="multipart/form-data">@csrf
 <div class="eh-modal-body"><div class="modal-grid">
 <div class="form-group"><label>Contract Type</label><input name="contract_type"></div>
 <div class="form-group"><label>Status *</label><select name="status">@foreach(['draft','active','expired','terminated'] as $s)<option value="{{ $s }}">{{ ucfirst($s) }}</option>@endforeach</select></div>
@@ -77,6 +77,7 @@ $employeeFormTabs = [
 <div class="form-group"><label>End Date</label><input type="date" name="end_date"></div>
 <div class="form-group"><label>Gross Salary</label><input type="number" step=".01" min="0" name="gross_salary"></div>
 <div class="form-group"><label>Currency</label><input name="currency" value="UGX" maxlength="3"></div>
+<div class="form-group full"><label>Contract file (PDF, DOC, DOCX or image, up to 10 MB)</label><input type="file" name="document" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"><small class="form-hint">Attach the signed contract document for record-keeping.</small></div>
 </div></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Add Contract</button></div>
 </form></div></div>
 @endforeach

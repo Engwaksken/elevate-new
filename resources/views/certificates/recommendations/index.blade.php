@@ -82,7 +82,7 @@
     @if($canApprove)
     <td>
         @if($recommendation->isPending())
-            <input type="checkbox" name="ids[]" value="{{ $recommendation->id }}" form="cert-review-bulk" data-row-select aria-label="Select {{ $recommendation->user?->name }}">
+            <input type="checkbox" value="{{ $recommendation->id }}" data-row-select aria-label="Select {{ $recommendation->user?->name }}">
         @endif
     </td>
     @endif
@@ -134,8 +134,7 @@
 @endif
 
 @foreach($recommendations as $recommendation)
-@php $reviewable = $canApprove && $recommendation->isPending(); @endphp
-<div class="eh-modal" id="cert-rec-{{ $recommendation->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="cert-rec-{{ $recommendation->id }}-title">
+@php $reviewable = $canApprove && $recommendation->isPending(); @endphp<div class="eh-modal" id="cert-rec-{{ $recommendation->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="cert-rec-{{ $recommendation->id }}-title">
 <div class="eh-modal-dialog eh-modal-sm">
 <form method="POST" action="{{ route('certificates.recommendations.review') }}">
     @csrf
@@ -178,4 +177,39 @@
 </div>
 </div>
 @endforeach
+
+@if($canApprove)
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('cert-review-bulk');
+    if (!form) return;
+
+    form.addEventListener('submit', function () {
+        form.querySelectorAll('input[name="ids[]"]').forEach(function (input) { input.remove(); });
+        document.querySelectorAll('[data-row-select]:checked').forEach(function (box) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ids[]';
+            input.value = box.value;
+            form.appendChild(input);
+        });
+    });
+
+    const master = document.querySelector('[data-select-all]');
+    const boxes = [...document.querySelectorAll('[data-row-select]')];
+    const sync = function () {
+        const selected = boxes.filter(function (b) { return b.checked; });
+        if (master) master.checked = boxes.length > 0 && selected.length === boxes.length;
+        if (master) master.indeterminate = selected.length > 0 && selected.length < boxes.length;
+        const count = document.querySelector('[data-selected-count]');
+        if (count) count.textContent = String(selected.length);
+        const bar = document.getElementById('cert-bulk-bar');
+        if (bar) bar.classList.toggle('is-visible', selected.length > 0);
+    };
+    if (master) master.addEventListener('change', function () { boxes.forEach(function (b) { b.checked = master.checked; }); sync(); });
+    boxes.forEach(function (box) { box.addEventListener('change', sync); });
+    sync();
+});
+</script>
+@endif
 @endsection

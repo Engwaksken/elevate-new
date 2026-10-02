@@ -27,6 +27,11 @@ class PlatformSettingsController extends Controller
         return back()->with('success', 'System AI configuration saved. All AI features use this provider when active.')->with('platform_settings_tab', 'ai');
     }
 
+    public function testAi(Request $request, \App\Services\SystemAiSettingsService $ai)
+    {
+        return response()->json($ai->test($request));
+    }
+
     public function updateBranding(Request $request, SettingsService $settings)
     {
         $data = $request->validate([
