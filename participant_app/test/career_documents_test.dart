@@ -12,6 +12,8 @@ import 'package:flutter_test/flutter_test.dart';
 class _CareerAdapter implements HttpClientAdapter {
   final requests = <RequestOptions>[];
   final resumes = <Map<String, dynamic>>[];
+  final resumeUploads = <Map<String, dynamic>>[];
+  bool aiUnavailable = false;
   final letters = <Map<String, dynamic>>[
     {
       'id': 7,
@@ -25,6 +27,34 @@ class _CareerAdapter implements HttpClientAdapter {
   Future<ResponseBody> fetch(RequestOptions options,
       Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
     requests.add(options);
+    ResponseBody json(Map<String, dynamic> data, [int status = 200]) =>
+        ResponseBody.fromString(jsonEncode(data), status, headers: {
+          Headers.contentTypeHeader: ['application/json']
+        });
+    if (options.path.endsWith('/ai')) {
+      if (aiUnavailable) {
+        return json(
+            {'message': 'AI assistance is temporarily unavailable.'}, 503);
+      }
+      return json({
+        'draft': {
+          ...Map<String, dynamic>.from(options.data['data'] as Map),
+          'body': 'Improved cover letter'
+        }
+      });
+    }
+    if (options.path.contains('/uploads/resume/')) {
+      if (options.path.endsWith('/import')) {
+        final document = {
+          'id': 42,
+          ...Map<String, dynamic>.from(options.data['data'] as Map)
+        };
+        resumes.add(document);
+        resumeUploads[0]['document_id'] = 42;
+        return json({'document': document}, 201);
+      }
+      return json({'upload': resumeUploads.first});
+    }
     if (options.method == 'POST') {
       resumes.add({'id': 1, ...Map<String, dynamic>.from(options.data as Map)});
     }
@@ -36,6 +66,8 @@ class _CareerAdapter implements HttpClientAdapter {
           'resumes': resumes,
           'cover_letters': letters,
           'templates': ['classic', 'modern'],
+          'resume_uploads': resumeUploads,
+          'cover_letter_uploads': [],
         }),
         200,
         headers: {
@@ -125,5 +157,105 @@ void main() {
     expect(request.data['body'], 'Revised application');
     expect(find.text('Updated letter'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  Future<void> tapVisible(WidgetTester tester, String text) async {
+    await tester.ensureVisible(find.text(text));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(text));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('ready uploads can be reviewed and imported before AI editing',
+      (tester) async {
+    adapter.resumeUploads.add({
+      'id': 4,
+      'original_name': 'existing.pdf',
+      'status': 'ready',
+      'document_id': null,
+      'extracted_text': 'Existing career facts',
+      'download_path': '/career/uploads/resume/4/original',
+      'draft': {
+        'title': 'Imported CV',
+        'template': 'classic',
+        'professional_summary': 'Existing career facts',
+        'experiences': [],
+        'education': [],
+        'skills': []
+      },
+    });
+    await open(tester);
+    expect(find.text('Upload existing resume'), findsOneWidget);
+    await tapVisible(tester, 'Review upload');
+    expect(find.text('Existing career facts'), findsOneWidget);
+    await tapVisible(tester, 'Review & import editable draft');
+    await tester.drag(find.byType(ListView).last, const Offset(0, -600));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, 'Import document');
+    final imported = adapter.requests
+        .singleWhere((request) => request.path.endsWith('/import'));
+    expect(
+        imported.data['data']['professional_summary'], 'Existing career facts');
+    await tester.drag(find.byType(ListView).last, const Offset(0, 600));
+    await tester.pumpAndSettle();
+    expect(find.text('AI Assistant'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Imported CV'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'AI drafts are reviewed and applied locally before explicit saving',
+      (tester) async {
+    await open(tester);
+    await tester.tap(find.text('Cover letters'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    final body = find.widgetWithText(TextFormField, 'Cover letter');
+    await tester.ensureVisible(body);
+    await tester.enterText(body, 'Unsaved changes to review');
+    await tester.drag(find.byType(ListView).last, const Offset(0, 1000));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, 'AI Assistant');
+    await tapVisible(tester, 'Generate draft');
+    expect(find.text('Improved cover letter'), findsOneWidget);
+    expect(
+        adapter.requests.where((request) => request.method == 'PUT'), isEmpty);
+    final ai =
+        adapter.requests.singleWhere((request) => request.path.endsWith('/ai'));
+    expect(ai.data['data']['body'], 'Unsaved changes to review');
+    await tapVisible(tester, 'Apply draft');
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).last, const Offset(0, -600));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, 'Save document');
+    final save =
+        adapter.requests.singleWhere((request) => request.method == 'PUT');
+    expect(save.data['body'], 'Improved cover letter');
+    expect(save.data['employer_name'], 'Example');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('AI unavailability leaves the editable cover letter intact',
+      (tester) async {
+    adapter.aiUnavailable = true;
+    await open(tester);
+    await tester.tap(find.text('Cover letters'));
+    await tester.pumpAndSettle();
+    await tapVisible(tester, 'AI Assistant');
+    await tapVisible(tester, 'Generate draft');
+    expect(find.text('Apply draft'), findsNothing);
+    expect(
+        adapter.requests.where((request) => request.method == 'PUT'), isEmpty);
+    await tapVisible(tester, 'Close');
+    final body = find.widgetWithText(TextFormField, 'Cover letter');
+    await tester.ensureVisible(body);
+    expect(
+        tester.widget<TextFormField>(body).controller!.text, 'Original body');
   });
 }

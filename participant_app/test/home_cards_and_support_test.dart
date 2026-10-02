@@ -1,6 +1,8 @@
 import 'package:elevateher360_participant/core/app_config.dart';
 import 'package:elevateher360_participant/core/theme/app_theme.dart';
 import 'package:elevateher360_participant/screens/help_support_screen.dart';
+import 'package:elevateher360_participant/screens/dashboard_screen.dart';
+import 'package:elevateher360_participant/screens/progress_screen.dart';
 import 'package:elevateher360_participant/widgets/progress_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +13,25 @@ Widget _app(Widget child) => MaterialApp(
     );
 
 void main() {
+  testWidgets('career documents shortcut opens when tapped', (tester) async {
+    var opened = false;
+    await tester.pumpWidget(_app(CareerDocumentsShortcut(onTap: () => opened = true)));
+    expect(find.text('Resumes & cover letters'), findsOneWidget);
+    await tester.tap(find.text('Resumes & cover letters'));
+    expect(opened, isTrue);
+  });
+
+  testWidgets('progress reading-time card uses the home compact icon/value layout', (tester) async {
+    await tester.pumpWidget(_app(ProgressView(data: ProgressData({
+      'summary': {'courses_enrolled': 1, 'lessons_total': 2, 'time_spent_seconds': 12000},
+    }))));
+    final card = find.ancestor(of: find.text('Reading time'), matching: find.byType(StatCard));
+    final icon = tester.getCenter(find.descendant(of: card, matching: find.byIcon(Icons.schedule_rounded)));
+    final value = tester.getCenter(find.descendant(of: card, matching: find.text('3h 20m')));
+    expect((icon.dy - value.dy).abs(), lessThan(4));
+    expect(value.dx, greaterThan(icon.dx));
+    expect(tester.takeException(), isNull);
+  });
   group('StatCard compact', () {
     testWidgets('puts the value on the same row as the icon', (tester) async {
       await tester.pumpWidget(_app(const SizedBox(

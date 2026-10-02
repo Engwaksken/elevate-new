@@ -27,17 +27,20 @@ class ParseCoverLetterUpload implements ShouldQueue
             );
 
             $parsed = ['body'=>$text];
+            if (trim($text) === '') throw new \RuntimeException('No readable text found.');
 
             try {
                 $result = $ai->generate(
                     'cover_letter_parsing',
                     'Extract this cover letter into JSON only with keys title, employer_name, job_title, recipient_name, body. Never invent missing details.',
-                    $text,
+                    mb_substr($text, 0, 30000),
                     $upload->user_id
                 );
 
                 $clean = preg_replace('/```(?:json)?|```/','',$result['text']);
-                $parsed = json_decode(trim($clean),true,512,JSON_THROW_ON_ERROR);
+                $candidate = json_decode(trim($clean),true,512,JSON_THROW_ON_ERROR);
+                if (! is_array($candidate)) throw new \RuntimeException('Invalid parsed document.');
+                $parsed = $candidate;
             } catch (\Throwable) {
                 // Keep plain extracted text if AI is unavailable.
             }

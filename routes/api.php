@@ -35,6 +35,16 @@ Route::prefix('v1')->group(function () {
                 Route::get('/dashboard',[ParticipantController::class,'dashboard']);
                 Route::get('/support',[ParticipantSupportController::class,'show']);
                 Route::get('/career/documents', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'index']);
+                Route::prefix('career/uploads')->where(['type' => 'resume|cover-letter', 'id' => '[0-9]+'])->group(function () {
+                    Route::post('/{type}', [\App\Http\Controllers\Api\V1\Participant\CareerUploadController::class, 'store'])->middleware('throttle:10,1');
+                    Route::get('/{type}/{id}', [\App\Http\Controllers\Api\V1\Participant\CareerUploadController::class, 'show']);
+                    Route::post('/{type}/{id}/import', [\App\Http\Controllers\Api\V1\Participant\CareerUploadController::class, 'import']);
+                    Route::post('/{type}/{id}/retry', [\App\Http\Controllers\Api\V1\Participant\CareerUploadController::class, 'retry'])->middleware('throttle:5,1');
+                    Route::get('/{type}/{id}/original', [\App\Http\Controllers\Api\V1\Participant\CareerUploadController::class, 'original']);
+                    Route::delete('/{type}/{id}', [\App\Http\Controllers\Api\V1\Participant\CareerUploadController::class, 'destroy']);
+                });
+                Route::post('/career/documents/{type}/{id}/ai', [\App\Http\Controllers\Api\V1\Participant\CareerAiController::class, 'assist'])
+                    ->where('type', 'resume|cover-letter')->whereNumber('id')->middleware('throttle:10,1');
                 Route::post('/career/resumes', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'storeResume']);
                 Route::put('/career/resumes/{resume}', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'updateResume']);
                 Route::delete('/career/resumes/{resume}', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'destroyResume']);

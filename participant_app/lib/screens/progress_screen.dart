@@ -190,18 +190,21 @@ class ProgressView extends StatelessWidget {
         icon: Icons.auto_stories_outlined,
         value: '$lessonsDone/$lessonsTotal',
         label: 'Lessons completed',
+        compact: true,
         progress: share(lessonsDone, lessonsTotal),
       ),
       StatCard(
         icon: Icons.schedule_rounded,
         value: formatDuration(data.timeSpentSeconds),
         label: 'Reading time',
+        compact: true,
         tint: scheme.secondaryContainer,
       ),
       StatCard(
         icon: Icons.task_alt_rounded,
         value: '$submitted/$assignmentsTotal',
         label: 'Assignments submitted',
+        compact: true,
         progress: share(submitted, assignmentsTotal),
         tint: scheme.secondaryContainer,
       ),
@@ -209,6 +212,7 @@ class ProgressView extends StatelessWidget {
         icon: Icons.grade_outlined,
         value: '${data.n('assignments_graded')}',
         label: 'Graded',
+        compact: true,
         caption: data.n('assignments_pending') > 0
             ? '${data.n('assignments_pending')} waiting for a grade'
             : null,
@@ -218,6 +222,7 @@ class ProgressView extends StatelessWidget {
         icon: Icons.event_busy_outlined,
         value: '${data.n('assignments_overdue')}',
         label: 'Overdue',
+        compact: true,
         caption: data.n('extension_requests_pending') > 0
             ? '${data.n('extension_requests_pending')} extension request pending'
             : null,
@@ -227,6 +232,7 @@ class ProgressView extends StatelessWidget {
         icon: Icons.diversity_3_outlined,
         value: '$attended/$sessionsTotal',
         label: 'Sessions attended',
+        compact: true,
         progress: share(attended, sessionsTotal),
         tint: scheme.tertiaryContainer,
       ),
@@ -234,11 +240,13 @@ class ProgressView extends StatelessWidget {
         icon: Icons.event_note_outlined,
         value: '${data.n('mentorship_sessions_missed')}',
         label: 'Sessions missed',
+        compact: true,
       ),
       StatCard(
         icon: Icons.upcoming_outlined,
         value: '${data.n('mentorship_sessions_upcoming')}',
         label: 'Upcoming sessions',
+        compact: true,
         tint: scheme.secondaryContainer,
       ),
       if (data.summary.containsKey('events_attended'))
@@ -246,6 +254,7 @@ class ProgressView extends StatelessWidget {
           icon: Icons.celebration_outlined,
           value: '${data.n('events_attended')}',
           label: 'Events attended',
+          compact: true,
           tint: scheme.tertiaryContainer,
         ),
     ];
@@ -264,7 +273,7 @@ class ProgressView extends StatelessWidget {
           coursesEnrolled: data.n('courses_enrolled'),
         ),
         const SectionHeader(title: 'Highlights'),
-        ResponsiveGrid(minTileWidth: 150, children: stats),
+        ResponsiveGrid(minTileWidth: 140, children: stats),
         const SectionHeader(title: 'Your courses'),
         if (courses.isEmpty)
           const Card(

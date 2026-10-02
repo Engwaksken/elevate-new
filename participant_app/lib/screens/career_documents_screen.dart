@@ -1,12 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../services/api_service.dart';
 import '../widgets/feedback.dart';
+import '../widgets/career_ai_dialog.dart';
+import 'career_upload_review_screen.dart';
 
 class CareerDocumentsScreen extends StatefulWidget {
   const CareerDocumentsScreen({super.key});
@@ -40,14 +43,80 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
     }
   }
 
-  Future<void> _edit(bool resume, [Map<String, dynamic>? document]) async {
+  Future<void> _edit(bool resume,
+      [Map<String, dynamic>? document,
+      int? uploadId,
+      bool startWithAi = false]) async {
     final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(
       builder: (_) => _DocumentEditor(
           resume: resume,
           document: document,
+          uploadId: uploadId,
+          startWithAi: startWithAi,
           templates: List<String>.from(_data?['templates'] ?? ['classic'])),
     ));
     if (saved == true) await _load();
+  }
+
+  Future<void> _review(bool resume, Map<String, dynamic> upload) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => CareerUploadReviewScreen(
+            resume: resume,
+            upload: upload,
+            onImport: (draft, id) => _edit(resume, draft, id))));
+    if (mounted) await _load();
+  }
+
+  Future<void> _upload(bool resume) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['pdf', 'doc', 'docx'],
+          allowMultiple: false);
+      if (result == null || !mounted) return;
+      final selected = result.files.single;
+      if (selected.size > 10 * 1024 * 1024) {
+        showAppSnackBar(context, 'Choose a file no larger than 10 MB.',
+            error: true);
+        return;
+      }
+      final path = selected.path;
+      if (path == null) {
+        showAppSnackBar(
+            context, 'Unable to read this file. Please choose it again.',
+            error: true);
+        return;
+      }
+      final upload = await ApiService.instance
+          .uploadCareerDocument(resume: resume, localPath: path);
+      if (mounted) await _review(resume, upload);
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _deleteUpload(bool resume, Map<String, dynamic> upload) async {
+    final confirmed = await confirmDialog(context,
+        title: 'Delete uploaded file?',
+        message:
+            'The original file and extracted data will be removed. Imported documents are kept.',
+        confirmLabel: 'Delete',
+        destructive: true);
+    if (!confirmed || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await ApiService.instance.deleteCareerUpload(
+          resume: resume, id: (upload['id'] as num).toInt());
+      await _load();
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _action(
@@ -100,6 +169,11 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
     final items = (_data?[resume ? 'resumes' : 'cover_letters'] as List? ?? [])
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
+    final uploads =
+        (_data?[resume ? 'resume_uploads' : 'cover_letter_uploads'] as List? ??
+                [])
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
@@ -114,6 +188,15 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
                 onPressed: _busy ? null : () => _edit(resume),
                 icon: const Icon(Icons.add),
                 label: Text(resume ? 'Create resume' : 'Create cover letter')),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+                onPressed: _busy ? null : () => _upload(resume),
+                icon: const Icon(Icons.upload_file_outlined),
+                label: Text(resume
+                    ? 'Upload existing resume'
+                    : 'Upload existing cover letter')),
+            const Text(
+                'PDF, DOC or DOCX · Maximum 10 MB. Review extracted content before importing and using AI Assistant.'),
             if (items.isEmpty)
               const Padding(
                   padding: EdgeInsets.all(32),
@@ -141,6 +224,12 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
                               TextButton.icon(
                                   onPressed: _busy
                                       ? null
+                                      : () => _edit(resume, item, null, true),
+                                  icon: const Icon(Icons.auto_awesome_outlined),
+                                  label: const Text('AI Assistant')),
+                              TextButton.icon(
+                                  onPressed: _busy
+                                      ? null
                                       : () => _action(resume, item, 'download'),
                                   icon:
                                       const Icon(Icons.picture_as_pdf_outlined),
@@ -159,6 +248,39 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
                                   icon: const Icon(Icons.delete_outline)),
                             ]),
                           ]))),
+            if (uploads.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text('Uploaded files',
+                  style: Theme.of(context).textTheme.titleMedium),
+              for (final upload in uploads)
+                Card(
+                    child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(upload['original_name']?.toString() ??
+                                  'Uploaded document'),
+                              Text(
+                                  'Analysis: ${upload['status']}${upload['document_id'] != null ? ' · Imported' : ''}'),
+                              Wrap(children: [
+                                TextButton.icon(
+                                    onPressed: _busy
+                                        ? null
+                                        : () => _review(resume, upload),
+                                    icon: const Icon(Icons.fact_check_outlined),
+                                    label: const Text('Review upload')),
+                                if (!['uploaded', 'processing']
+                                    .contains(upload['status']))
+                                  IconButton(
+                                      tooltip: 'Delete uploaded file',
+                                      onPressed: _busy
+                                          ? null
+                                          : () => _deleteUpload(resume, upload),
+                                      icon: const Icon(Icons.delete_outline)),
+                              ]),
+                            ]))),
+            ],
           ]),
     );
   }
@@ -194,10 +316,16 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
 
 class _DocumentEditor extends StatefulWidget {
   const _DocumentEditor(
-      {required this.resume, required this.templates, this.document});
+      {required this.resume,
+      required this.templates,
+      this.document,
+      this.uploadId,
+      this.startWithAi = false});
   final bool resume;
   final List<String> templates;
   final Map<String, dynamic>? document;
+  final int? uploadId;
+  final bool startWithAi;
 
   @override
   State<_DocumentEditor> createState() => _DocumentEditorState();
@@ -215,11 +343,13 @@ class _DocumentEditorState extends State<_DocumentEditor> {
   late List<Map<String, dynamic>> _education;
   late List<Map<String, dynamic>> _skills;
   bool _saving = false;
+  int? _documentId;
 
   @override
   void initState() {
     super.initState();
     final data = widget.document ?? {};
+    _documentId = (data['id'] as num?)?.toInt();
     _title = TextEditingController(text: data['title']?.toString());
     _body = TextEditingController(
         text:
@@ -238,6 +368,11 @@ class _DocumentEditorState extends State<_DocumentEditor> {
     _experiences = rows('experiences');
     _education = rows('education');
     _skills = rows('skills');
+    if (widget.startWithAi) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _ai();
+      });
+    }
   }
 
   @override
@@ -248,29 +383,67 @@ class _DocumentEditorState extends State<_DocumentEditor> {
     super.dispose();
   }
 
+  Map<String, dynamic> _fields() => {
+        'title': _title.text.trim(),
+        if (widget.resume) ...{
+          'template': _template,
+          'professional_summary': _body.text.trim(),
+          'experiences': _experiences,
+          'education': _education,
+          'skills': _skills,
+        } else ...{
+          'body': _body.text.trim(),
+          'employer_name': _employer.text.trim(),
+          'job_title': _job.text.trim(),
+          'recipient_name': _recipient.text.trim(),
+        },
+      };
+
+  Future<void> _ai() async {
+    if (_documentId == null || _saving || !_form.currentState!.validate()) {
+      return;
+    }
+    final draft = await showDialog<Map<String, dynamic>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => CareerAiDialog(
+            resume: widget.resume, documentId: _documentId!, data: _fields()));
+    if (draft == null || !mounted) return;
+    setState(() {
+      _body.text =
+          draft[widget.resume ? 'professional_summary' : 'body']?.toString() ??
+              '';
+      if (widget.resume) {
+        List<Map<String, dynamic>> rows(String key) =>
+            (draft[key] as List? ?? [])
+                .map((row) => Map<String, dynamic>.from(row as Map))
+                .toList();
+        _experiences = rows('experiences');
+        _education = rows('education');
+        _skills = rows('skills');
+      }
+    });
+    showAppSnackBar(context,
+        'AI draft applied to the editor. Review and save your changes.');
+  }
+
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
-      await ApiService.instance.saveCareerDocument(
-          resume: widget.resume,
-          id: (widget.document?['id'] as num?)?.toInt(),
-          data: {
-            'title': _title.text.trim(),
-            if (widget.resume) ...{
-              'template': _template,
-              'professional_summary': _body.text.trim(),
-              'experiences': _experiences,
-              'education': _education,
-              'skills': _skills,
-            } else ...{
-              'body': _body.text.trim(),
-              'employer_name': _employer.text.trim(),
-              'job_title': _job.text.trim(),
-              'recipient_name': _recipient.text.trim(),
-            },
-          });
-      if (mounted) Navigator.of(context).pop(true);
+      if (_documentId == null && widget.uploadId != null) {
+        final document = await ApiService.instance.importCareerUpload(
+            resume: widget.resume, id: widget.uploadId!, data: _fields());
+        if (mounted) {
+          setState(() => _documentId = (document['id'] as num).toInt());
+          showAppSnackBar(context,
+              'Document imported. You can now edit it with AI Assistant.');
+        }
+      } else {
+        await ApiService.instance.saveCareerDocument(
+            resume: widget.resume, id: _documentId, data: _fields());
+        if (mounted) Navigator.of(context).pop(true);
+      }
     } catch (error) {
       if (mounted) showErrorSnackBar(context, error);
     } finally {
@@ -351,6 +524,17 @@ class _DocumentEditorState extends State<_DocumentEditor> {
             key: _form,
             child: ListView(padding: const EdgeInsets.all(16), children: [
               _field(_title, 'Title', required: true),
+              if (_documentId != null)
+                OutlinedButton.icon(
+                    onPressed: _saving ? null : _ai,
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    label: const Text('AI Assistant'))
+              else
+                Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Text(widget.uploadId != null
+                        ? 'Review the extracted fields, then import this draft to use AI Assistant.'
+                        : 'Save your document first to use AI Assistant.')),
               if (widget.resume) ...[
                 DropdownButtonFormField<String>(
                     initialValue: _template,
@@ -399,7 +583,11 @@ class _DocumentEditorState extends State<_DocumentEditor> {
               FilledButton.icon(
                   onPressed: _saving ? null : _save,
                   icon: const Icon(Icons.save_outlined),
-                  label: Text(_saving ? 'Saving…' : 'Save document')),
+                  label: Text(_saving
+                      ? 'Saving…'
+                      : (_documentId == null && widget.uploadId != null)
+                          ? 'Import document'
+                          : 'Save document')),
             ])),
       );
 }

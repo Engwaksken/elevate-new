@@ -211,6 +211,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         compact: true,
         onTap: () => widget.onOpen(AppDestination.announcements),
       ),
+      CareerDocumentsShortcut(onTap: () => widget.onOpen(AppDestination.careerDocuments)),
     ];
 
     return SoftBackground(
@@ -296,6 +297,21 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     );
   }
+}
+
+class CareerDocumentsShortcut extends StatelessWidget {
+  const CareerDocumentsShortcut({super.key, required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => StatCard(
+    icon: Icons.description_outlined,
+    value: 'CV',
+    label: 'Resumes & cover letters',
+    compact: true,
+    onTap: onTap,
+  );
 }
 
 const _encouragements = [

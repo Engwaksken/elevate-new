@@ -17,13 +17,16 @@ class ParseResumeUpload implements ShouldQueue {
         $u=ResumeUpload::findOrFail($this->uploadId); $u->update(['status'=>'processing']);
         try{
             $text=$extractor->extract(Storage::disk('local')->path($u->path),pathinfo($u->original_name,PATHINFO_EXTENSION));
-            $parsed=['professional_summary'=>null,'experiences'=>[],'education'=>[],'skills'=>[]];
+            if (trim($text) === '') throw new \RuntimeException('No readable text found.');
+            $parsed=['professional_summary'=>$text,'experiences'=>[],'education'=>[],'skills'=>[]];
             try{
                 $r=$ai->generate('resume_parsing',
                     'Extract resume data and return valid JSON only with keys title, professional_summary, experiences, education, skills, certifications, projects, languages. Never invent facts.',
-                    $text,$u->user_id);
+                    mb_substr($text, 0, 30000),$u->user_id);
                 $clean=preg_replace('/```(?:json)?|```/','',$r['text']);
-                $parsed=json_decode(trim($clean),true,512,JSON_THROW_ON_ERROR);
+                $candidate=json_decode(trim($clean),true,512,JSON_THROW_ON_ERROR);
+                if (! is_array($candidate)) throw new \RuntimeException('Invalid parsed document.');
+                $parsed=$candidate;
             }catch(\Throwable){}
             $u->update(['status'=>'ready','extracted_text'=>$text,'parsed_data'=>$parsed,'processed_at'=>now()]);
         }catch(\Throwable $e){

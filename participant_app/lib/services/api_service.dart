@@ -501,18 +501,54 @@ class ApiService {
 
   Future<Map<String, dynamic>> careerDocuments() => _getMap('/career/documents');
 
-  Future<void> saveCareerDocument({
+  Future<Map<String, dynamic>> saveCareerDocument({
     required bool resume,
     int? id,
     required Map<String, dynamic> data,
   }) => _guard(() async {
     final path = '/career/${resume ? 'resumes' : 'cover-letters'}';
-    if (id == null) {
-      await dio.post(path, data: data);
-    } else {
-      await dio.put('$path/$id', data: data);
-    }
+    final response = id == null ? await dio.post(path, data: data) : await dio.put('$path/$id', data: data);
+    return _mapResponse(response.data);
   });
+
+  Future<Map<String, dynamic>> uploadCareerDocument({required bool resume, required String localPath}) =>
+      _guard(() async {
+        final response = await dio.post('/career/uploads/${resume ? 'resume' : 'cover-letter'}',
+          data: FormData.fromMap({'file': await MultipartFile.fromFile(localPath)}),
+          options: Options(sendTimeout: const Duration(seconds: 90), receiveTimeout: const Duration(seconds: 90)));
+        return Map<String, dynamic>.from(_mapResponse(response.data)['upload'] as Map);
+      });
+
+  Future<Map<String, dynamic>> careerUpload({required bool resume, required int id}) =>
+      _guard(() async {
+        final data = await _getMap('/career/uploads/${resume ? 'resume' : 'cover-letter'}/$id');
+        return Map<String, dynamic>.from(data['upload'] as Map);
+      });
+
+  Future<Map<String, dynamic>> importCareerUpload({required bool resume, required int id, required Map<String, dynamic> data}) =>
+      _guard(() async {
+        final response = await dio.post('/career/uploads/${resume ? 'resume' : 'cover-letter'}/$id/import', data: {'data': data});
+        return Map<String, dynamic>.from(_mapResponse(response.data)['document'] as Map);
+      });
+
+  Future<Map<String, dynamic>> retryCareerUpload({required bool resume, required int id}) =>
+      _guard(() async {
+        final response = await dio.post('/career/uploads/${resume ? 'resume' : 'cover-letter'}/$id/retry');
+        return Map<String, dynamic>.from(_mapResponse(response.data)['upload'] as Map);
+      });
+
+  Future<void> deleteCareerUpload({required bool resume, required int id}) =>
+      _guard(() async { await dio.delete('/career/uploads/${resume ? 'resume' : 'cover-letter'}/$id'); });
+
+  Future<Map<String, dynamic>> assistCareerDocument({required bool resume, required int id,
+      required String action, required Map<String, dynamic> data, String? jobDescription, String? instructions}) =>
+      _guard(() async {
+        final response = await dio.post('/career/documents/${resume ? 'resume' : 'cover-letter'}/$id/ai',
+          data: {'action': action, 'data': data, if (jobDescription != null) 'job_description': jobDescription,
+            if (instructions != null) 'instructions': instructions},
+          options: Options(receiveTimeout: const Duration(seconds: 90)));
+        return _mapResponse(response.data);
+      });
 
   Future<void> deleteCareerDocument({required bool resume, required int id}) =>
       _guard(() async {

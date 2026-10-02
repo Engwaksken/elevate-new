@@ -91,17 +91,6 @@ class AboutScreen extends StatelessWidget {
                     trailing: const Icon(Icons.open_in_new),
                     onTap: () => _open(context, Uri.parse(AppConfig.termsUrl)),
                   ),
-                  const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-                  ListTile(
-                    leading: const Icon(Icons.description_outlined),
-                    title: const Text('Open-source licences'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => showLicensePage(
-                      context: context,
-                      applicationName: AppConfig.appName,
-                      applicationVersion: AppConfig.appVersion,
-                    ),
-                  ),
                 ],
               ),
             ),
