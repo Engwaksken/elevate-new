@@ -19,7 +19,7 @@
                     <summary>Edit / cancel session</summary>
                     @include('instructor.partials.timetable-form', ['slot' => $timeSlot])
                 </details>
-                <form method="POST" action="{{ route('instructor.courses.timetable.destroy', [$course, $timeSlot]) }}" onsubmit="return confirm('Delete this session? Cancel it instead to keep it visible to participants.')" style="margin-top:12px">
+                <form method="POST" action="{{ route(($staffTimetable ?? false) ? 'admin.elearning.timetable.destroy' : 'instructor.courses.timetable.destroy', [$course, $timeSlot]) }}" onsubmit="return confirm('Delete this session? Cancel it instead to keep it visible to participants.')" style="margin-top:12px">
                     @csrf @method('DELETE')<button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i> Delete</button>
                 </form>
             </article>

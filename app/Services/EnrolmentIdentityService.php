@@ -20,8 +20,9 @@ class EnrolmentIdentityService
         $cohort = Cohort::find($enrolment->cohort_id);
         $project = Project::find($cohort?->project_id ?? $course?->project_id);
         $programme = Programme::find($cohort?->programme_id ?? $course?->programme_id ?? $project?->programme_id);
-        $branchId = $cohort?->branch_id ?? $course?->branch_id
-            ?? Profile::where('user_id', $enrolment->user_id)->value('branch_id');
+        $profileBranch = Profile::where('user_id', $enrolment->user_id)->value('branch_id');
+        $participantBranch = $profileBranch && $course?->branches()->whereKey($profileBranch)->exists() ? $profileBranch : null;
+        $branchId = $cohort?->branch_id ?? $participantBranch ?? $course?->branch_id ?? $profileBranch;
         $branch = Branch::find($branchId);
         $year = ($enrolment->enrolled_at ?? $enrolment->created_at ?? now())->format('y');
         $prefix = implode('/', [

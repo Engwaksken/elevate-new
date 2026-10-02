@@ -8,6 +8,27 @@ use Illuminate\Http\Request;
 
 class MentorAdminController extends Controller
 {
+    public function create()
+    {
+        return view('admin.partners.form', ['type' => 'mentor', 'profile' => new MentorProfile(), 'users' => \App\Models\User::where('user_type', 'participant')->orderBy('name')->get()]);
+    }
+
+    public function edit(MentorProfile $mentor)
+    {
+        return view('admin.partners.form', ['type' => 'mentor', 'profile' => $mentor->load('user'), 'users' => collect()]);
+    }
+
+    public function store(Request $request, \App\Services\PartnerDetailsService $service)
+    {
+        $service->save($request, 'mentor');
+        return redirect()->route('admin.mentorship.mentors.index')->with('success', 'Mentor details added.');
+    }
+
+    public function update(Request $request, MentorProfile $mentor, \App\Services\PartnerDetailsService $service)
+    {
+        $service->save($request, 'mentor', $mentor);
+        return redirect()->route('admin.mentorship.mentors.index')->with('success', 'Mentor details updated.');
+    }
     public function index(Request $request)
     {
         $query = MentorProfile::with('user')->latest();
@@ -47,6 +68,7 @@ class MentorAdminController extends Controller
             'approved_at'=>now(),
             'approved_by'=>auth()->id(),
         ]);
+        if ($mentor->user?->status === 'pending') $mentor->user->update(['status' => 'active']);
 
         return back()->with('success','Mentor approved.');
     }

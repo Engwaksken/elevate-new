@@ -3,6 +3,7 @@
 @section('content')
 <div class="page-header">
 <div><span class="eh-kicker">Learning</span><h1>{{ $course->title }}</h1><p>{{ $course->summary ?: $course->description }}</p></div>
+<p>{{ $course->branches->pluck('name')->join(', ') }}</p>
 </div>
 
 @if(!$enrolment && $course->self_enrolment_enabled)

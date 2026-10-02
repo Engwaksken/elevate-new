@@ -12,7 +12,7 @@ class CourseCatalogueController extends Controller
 {
     public function index(Request $request)
     {
-        $query=Course::where('status','published')->withCount(['modules','enrolments']);
+        $query=Course::where('status','published')->with('branches')->withCount(['modules','enrolments']);
 
         if($search=trim((string)$request->get('search'))){
             $query->where(fn($q)=>$q
@@ -38,6 +38,7 @@ class CourseCatalogueController extends Controller
         abort_unless($course->status==='published',404);
 
         $course->load([
+            'branches',
             'modules'=>fn($q)=>$q->where('is_published',true)->orderBy('position'),
             'modules.lessons'=>fn($q)=>$q->where('is_published',true)->orderBy('position'),
             'assessments'=>fn($q)=>$q->where('is_published',true),

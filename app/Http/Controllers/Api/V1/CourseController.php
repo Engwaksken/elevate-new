@@ -10,6 +10,7 @@ class CourseController extends Controller
     {
         return response()->json([
             'data'=>Course::where('status','published')
+                ->with('branches')
                 ->select('id','title','code','summary','delivery_mode','start_date','end_date')
                 ->latest()
                 ->paginate(20)
@@ -22,6 +23,7 @@ class CourseController extends Controller
 
         return response()->json([
             'data'=>$course->load([
+                'branches',
                 'modules'=>fn($q)=>$q->where('is_published',true)->orderBy('position'),
                 'modules.lessons'=>fn($q)=>$q->where('is_published',true)->orderBy('position'),
             ])

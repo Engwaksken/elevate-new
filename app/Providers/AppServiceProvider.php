@@ -61,6 +61,8 @@ class AppServiceProvider extends ServiceProvider
             AssetMaintenance::class,
             Certificate::class,
             Course::class,
+            \App\Models\CmsPage::class,
+            \App\Models\CourseTimeSlot::class,
             Deliverable::class,
             Employee::class,
             Enrolment::class,

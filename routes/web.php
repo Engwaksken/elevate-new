@@ -138,12 +138,30 @@ Route::get('/brand-assets/{type}', [BrandAssetController::class, 'show'])
 */
 
 
-Route::view('/', 'home')->name('home');
+Route::get('/', [\App\Http\Controllers\Public\ContentPageController::class, 'home'])->name('home');
 
 // Public legal pages. The participant app and the app store listings link
 // to these URLs, so they must stay public and keep these paths.
-Route::view('/privacy-policy', 'legal.privacy')->name('legal.privacy');
-Route::view('/terms', 'legal.terms')->name('legal.terms');
+Route::get('/privacy-policy', [\App\Http\Controllers\Public\ContentPageController::class, 'privacy'])->name('legal.privacy');
+Route::get('/terms', [\App\Http\Controllers\Public\ContentPageController::class, 'terms'])->name('legal.terms');
+Route::get('/faqs', [\App\Http\Controllers\Public\ContentPageController::class, 'faqs'])->name('public.faqs');
+Route::get('/pages/{slug}', [\App\Http\Controllers\Public\ContentPageController::class, 'show'])->where('slug', '[a-z][a-z0-9-]*')->name('public.pages.show');
+
+Route::middleware('guest')->group(function () {
+    foreach (['mentor' => 'mentors', 'employer' => 'employers'] as $type => $path) {
+        Route::get('/'.$path.'/signup', [\App\Http\Controllers\Public\PartnerSignupController::class, 'show'])->defaults('type', $type)->name('public.partners.'.$type);
+        Route::post('/'.$path.'/signup', [\App\Http\Controllers\Public\PartnerSignupController::class, 'store'])->defaults('type', $type)->middleware('throttle:5,1')->name('public.partners.'.$type.'.store');
+    }
+});
+
+Route::prefix('admin/cms')->name('admin.cms.')->middleware(['auth', 'staff', 'permission:cms.manage'])->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\CmsPageController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\Admin\CmsPageController::class, 'store'])->name('store');
+    Route::get('/{page}/edit', [\App\Http\Controllers\Admin\CmsPageController::class, 'edit'])->name('edit');
+    Route::put('/{page}', [\App\Http\Controllers\Admin\CmsPageController::class, 'update'])->name('update');
+    Route::get('/{page}/preview', [\App\Http\Controllers\Admin\CmsPageController::class, 'preview'])->name('preview');
+    Route::delete('/{page}', [\App\Http\Controllers\Admin\CmsPageController::class, 'destroy'])->name('destroy');
+});
 
 Route::post('/support/chatbot',[ChatbotController::class, 'message'])
     ->middleware('throttle:30,1')
@@ -252,6 +270,11 @@ Route::prefix('admin')
             ->middleware('permission:settings.manage')->name('migrations.show');
 
         Route::prefix('elearning')->name('elearning.')->group(function () {
+            Route::get('/timetable', [\App\Http\Controllers\Admin\Elearning\TimetableController::class, 'index'])->name('timetable.index');
+            Route::get('/timetable/{course}', [\App\Http\Controllers\Admin\Elearning\TimetableController::class, 'manage'])->name('timetable.manage');
+            Route::post('/timetable/{course}', [\App\Http\Controllers\Instructor\CourseTimetableController::class, 'store'])->name('timetable.store');
+            Route::put('/timetable/{course}/{slot}', [\App\Http\Controllers\Instructor\CourseTimetableController::class, 'update'])->name('timetable.update');
+            Route::delete('/timetable/{course}/{slot}', [\App\Http\Controllers\Instructor\CourseTimetableController::class, 'destroy'])->name('timetable.destroy');
             Route::delete('/courses/bulk-delete',[CourseController::class,'bulkDestroy'])
             ->middleware('permission:courses.delete')->name('courses.bulk-destroy');
 
@@ -486,6 +509,10 @@ Route::prefix('admin/elearning')->name('admin.elearning.')->middleware(['auth', 
 });
 
 Route::prefix('admin/mentorship')->name('admin.mentorship.')->middleware(['auth', 'staff'])->group(function () {
+    Route::get('/mentors/create', [MentorAdminController::class, 'create'])->middleware('permission:mentors.manage')->name('mentors.create');
+    Route::post('/mentors', [MentorAdminController::class, 'store'])->middleware('permission:mentors.manage')->name('mentors.store');
+    Route::get('/mentors/{mentor}/edit', [MentorAdminController::class, 'edit'])->middleware('permission:mentors.manage')->name('mentors.edit');
+    Route::put('/mentors/{mentor}', [MentorAdminController::class, 'update'])->middleware('permission:mentors.manage')->name('mentors.update');
     Route::get('/mentors',[MentorAdminController::class,'index'])
         ->middleware('permission:mentors.manage')->name('mentors.index');
     Route::post('/mentors/{mentor}/approve',[MentorAdminController::class,'approve'])
@@ -532,6 +559,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 
     Route::get('/jobs/employers',[EmployerAdminController::class,'index'])
         ->middleware('permission:employers.approve')->name('jobs.employers.index');
+    Route::get('/jobs/employers/create', [EmployerAdminController::class, 'create'])->middleware('permission:employers.approve')->name('jobs.employers.create');
+    Route::post('/jobs/employers', [EmployerAdminController::class, 'store'])->middleware('permission:employers.approve')->name('jobs.employers.store');
+    Route::get('/jobs/employers/{employer}/edit', [EmployerAdminController::class, 'edit'])->middleware('permission:employers.approve')->name('jobs.employers.edit');
+    Route::put('/jobs/employers/{employer}', [EmployerAdminController::class, 'update'])->middleware('permission:employers.approve')->name('jobs.employers.update');
     Route::post('/jobs/employers/{employer}/approve',[EmployerAdminController::class,'approve'])
         ->middleware('permission:employers.approve')->name('jobs.employers.approve');
     Route::post('/jobs/employers/{employer}/reject',[EmployerAdminController::class,'reject'])

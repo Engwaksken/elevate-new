@@ -6,7 +6,7 @@
     $value = fn ($name, $default = '') => $restore ? old($name, $default) : $default;
     $zone = $value('timezone', $slot?->timezone ?? 'Africa/Kampala');
 @endphp
-<form method="POST" action="{{ $slot ? route('instructor.courses.timetable.update', [$course, $slot]) : route('instructor.courses.timetable.store', $course) }}" class="icm-form-grid">
+<form method="POST" action="{{ $slot ? route(($staffTimetable ?? false) ? 'admin.elearning.timetable.update' : 'instructor.courses.timetable.update', [$course, $slot]) : route(($staffTimetable ?? false) ? 'admin.elearning.timetable.store' : 'instructor.courses.timetable.store', $course) }}" class="icm-form-grid">
     @csrf
     @if($slot) @method('PUT') @endif
     <input type="hidden" name="timetable_form" value="{{ $formKey }}">

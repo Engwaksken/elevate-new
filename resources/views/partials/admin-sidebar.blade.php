@@ -220,6 +220,20 @@
                     'permissions' => ['programmes.manage'],
                 ],
                 [
+                    'route' => 'admin.elearning.timetable.index',
+                    'label' => 'Course Timetables',
+                    'icon' => 'fa-calendar-days',
+                    'permissions' => [],
+                    'active' => ['admin.elearning.timetable.*'],
+                ],
+                [
+                    'route' => 'admin.cms.index',
+                    'label' => 'Frontend CMS',
+                    'icon' => 'fa-file-pen',
+                    'permissions' => ['cms.manage'],
+                    'active' => ['admin.cms.*'],
+                ],
+                [
                     'route' => 'admin.projects.index',
                     'label' => 'Projects',
                     'icon' => 'fa-folder-tree',
@@ -351,6 +365,12 @@
                         'permissions' => [],
                     ],
                     [
+                        'route' => 'admin.elearning.timetable.index',
+                        'label' => 'Course Timetables',
+                        'icon' => 'fa-calendar-days',
+                        'permissions' => [],
+                    ],
+                    [
                         'route' => 'calendar.index',
                         'label' => 'Calendar',
                         'icon' => 'fa-calendar-days',
@@ -389,6 +409,7 @@
                 'colour' => 'delivery',
                 'items' => [
                     ['url' => $manageUrl.'?tab=modules', 'label' => 'Modules', 'icon' => 'fa-layer-group'],
+                    ['url' => $manageUrl.'?tab=timetable', 'label' => 'Timetable', 'icon' => 'fa-calendar-days'],
                     ['url' => $manageUrl.'?tab=lessons', 'label' => 'Lessons', 'icon' => 'fa-book-open'],
                     ['url' => $manageUrl.'?tab=materials', 'label' => 'Learning Materials', 'icon' => 'fa-folder-open'],
                     ['url' => $manageUrl.'?tab=assignments', 'label' => 'Assignments', 'icon' => 'fa-list-check'],

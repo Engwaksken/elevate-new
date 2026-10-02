@@ -98,7 +98,7 @@ class ParticipantController extends Controller
 
         $query = Course::query()
             ->whereHas('enrolments', fn ($q) => $q->where('user_id', $user->id))
-            ->with(['cohorts'])
+            ->with(['cohorts', 'branches'])
             ->withCount('modules');
 
         if ($request->filled('search')) {
@@ -119,6 +119,7 @@ class ParticipantController extends Controller
 
         $course->load([
             'cohorts',
+            'branches',
             'modules' => fn ($q) => $q->where('is_published', true)->orderBy('position'),
             'modules.lessons' => fn ($q) => $q->where('is_published', true)->orderBy('position'),
             'assessments' => fn ($q) => $q->where('is_published', true)->orderBy('due_at'),

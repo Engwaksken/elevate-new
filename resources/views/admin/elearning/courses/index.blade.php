@@ -43,6 +43,8 @@
         @endforeach
     </select>
 
+    <select name="branch_id"><option value="">All branches</option>@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected(request('branch_id') == $branch->id)>{{ $branch->name }}</option>@endforeach</select>
+
     <select name="delivery_mode">
         <option value="">All delivery modes</option>
         @foreach(['online'=>'Online','in_person'=>'In person','blended'=>'Blended'] as $value=>$label)
@@ -77,7 +79,7 @@
 <tbody>
 @forelse($courses as $course)
 <tr>
-    <td><strong>{{ $course->title }}</strong><small class="admin-cell-hint">{{ $course->code ?: 'No course code' }}</small></td>
+    <td><strong>{{ $course->title }}</strong><small class="admin-cell-hint">{{ $course->code ?: 'No course code' }}</small><small class="admin-cell-hint">{{ $course->branches->pluck('name')->join(', ') }}</small></td>
     <td>{{ ucfirst(str_replace('_',' ',$course->delivery_mode)) }}</td>
     <td>{{ optional($course->start_date)->format('d M Y') ?: '—' }} — {{ optional($course->end_date)->format('d M Y') ?: '—' }}</td>
     <td>{{ $course->modules_count }}</td>

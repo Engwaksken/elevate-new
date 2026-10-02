@@ -58,4 +58,9 @@ class Course extends Model
     {
         return $this->hasMany(CourseTimeSlot::class);
     }
+
+    public function branches()
+    {
+        return $this->belongsToMany(Branch::class);
+    }
 }

@@ -2,7 +2,7 @@
 $editing = isset($course) && $course;
 $formTabsConfig = [
     'overview' => ['label' => 'Overview', 'icon' => 'fa-book-open', 'fields' => ['title', 'code', 'summary', 'description']],
-    'organisation' => ['label' => 'Organisation', 'icon' => 'fa-sitemap', 'fields' => ['delivery_mode', 'programme_id', 'project_id', 'branch_id']],
+    'organisation' => ['label' => 'Organisation', 'icon' => 'fa-sitemap', 'fields' => ['delivery_mode', 'programme_id', 'project_id', 'branch_ids']],
     'schedule' => ['label' => 'Schedule & Publishing', 'icon' => 'fa-calendar-days', 'fields' => ['start_date', 'end_date', 'duration_hours', 'pass_mark', 'status', 'self_enrolment_enabled']],
 ];
 @endphp
@@ -20,7 +20,12 @@ $formTabsConfig = [
     <div class="form-group"><label>Delivery Mode *</label><select name="delivery_mode" required>@foreach(['online'=>'Online','in_person'=>'In person','blended'=>'Blended'] as $v=>$l)<option value="{{ $v }}" @selected(old('delivery_mode',$editing ? $course->delivery_mode : 'online')===$v)>{{ $l }}</option>@endforeach</select></div>
     <div class="form-group"><label>Programme</label><select name="programme_id"><option value="">None</option>@foreach($programmes as $x)<option value="{{ $x->id }}" @selected((string)old('programme_id',$editing ? $course->programme_id : '')===(string)$x->id)>{{ $x->name }}</option>@endforeach</select></div>
     <div class="form-group"><label>Project</label><select name="project_id"><option value="">None</option>@foreach($projects as $x)<option value="{{ $x->id }}" @selected((string)old('project_id',$editing ? $course->project_id : '')===(string)$x->id)>{{ $x->name }}</option>@endforeach</select></div>
-    <div class="form-group"><label>Branch</label><select name="branch_id"><option value="">None</option>@foreach($branches as $x)<option value="{{ $x->id }}" @selected((string)old('branch_id',$editing ? $course->branch_id : '')===(string)$x->id)>{{ $x->name }}</option>@endforeach</select></div>
+    <div class="form-group full"><label>Branches (select all that apply)</label>
+        <input type="hidden" name="sync_branches" value="1">
+        @foreach($branches as $x)
+            <label class="modal-check"><input type="checkbox" name="branch_ids[]" value="{{ $x->id }}" @checked(in_array($x->id, old('branch_ids', $editing ? $course->branches->pluck('id')->all() : [])))><span>{{ $x->name }}</span></label>
+        @endforeach
+    </div>
 </div>
 </x-form-tab>
 <x-form-tab name="schedule">

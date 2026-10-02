@@ -1,16 +1,18 @@
 @extends(auth()->check() && method_exists(auth()->user(), 'isStaff') && auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
-@section('title','Digital Library - ElevateHer360')
+@section('title', app(\App\Services\CmsContentService::class)->text('library', 'title', 'Digital Library').' | ElevateHer360')
+@section('meta_description', app(\App\Services\CmsContentService::class)->text('library', 'summary', 'Browse our digital resources.'))
 @section('content')
 
 <div class="page-header">
 <div>
     <span class="eh-kicker">Resources</span>
-    <h1>Digital Library</h1>
-    <p>Browse learning materials, guides and career resources.</p>
+    <h1>{{ app(\App\Services\CmsContentService::class)->text('library', 'title', 'Digital Library') }}</h1>
+    <p>{{ app(\App\Services\CmsContentService::class)->text('library', 'summary', 'Browse learning materials, guides and career resources.') }}</p>
 </div>
 </div>
 
 <div class="eh-tabs" data-eh-tabs>
+@include('partials.cms-intro', ['slug' => 'library'])
 <div class="eh-tab-nav">
 <button class="eh-tab-button active" data-eh-tab="resources"><i class="fas fa-book-open"></i> Resources</button>
 <button class="eh-tab-button" data-eh-tab="categories"><i class="fas fa-layer-group"></i> Categories</button>
@@ -94,4 +96,3 @@
 </div>
 </div>
 @endsection
-

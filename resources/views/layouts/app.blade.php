@@ -40,13 +40,20 @@ $inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.log
 </div></div>
 @else
 <header class="site-header">
+@php($cmsHeader = app(\App\Services\CmsContentService::class)->published('site-header'))
+@if($cmsHeader['body'] ?? null)<div class="container cms-content">{!! app(\App\Services\CmsContentService::class)->render($cmsHeader['body']) !!}</div>@endif
 <div class="nav">
-<a href="{{ route('home') }}" class="brand" aria-label="ElevateHer360 home"><span class="brand-mark">E360</span><span>ElevateHer360<small>Women in Technology Uganda</small></span></a>
+<a href="{{ route('home') }}" class="brand" aria-label="ElevateHer360 home">@if($cmsHeader['image_path'] ?? null)<img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($cmsHeader['image_path']) }}" alt="" style="max-width:64px;max-height:48px">@else<span class="brand-mark">E360</span>@endif<span>{{ $cmsHeader['title'] ?? 'ElevateHer360' }}<small>{{ $cmsHeader['summary'] ?? 'Women in Technology Uganda' }}</small></span></a>
 <nav class="nav-links" aria-label="Main navigation">
+@if($cmsHeader)
+@foreach(data_get($cmsHeader, 'settings.links', []) as $link)<a href="{{ $link['url'] }}">{{ $link['label'] }}</a>@endforeach
+@else
 <a href="{{ route('home') }}" class="{{ request()->routeIs('home')?'active':'' }}">Home</a>
 @if(Route::has('learning.index'))<a href="{{ route('learning.index') }}" class="{{ request()->routeIs('learning.*')?'active':'' }}">Learning</a>@endif
 @if(Route::has('jobs.index'))<a href="{{ route('jobs.index') }}" class="{{ request()->routeIs('jobs.*')?'active':'' }}">Jobs</a>@endif
 @if(Route::has('library.index'))<a href="{{ route('library.index') }}" class="{{ request()->routeIs('library.*')?'active':'' }}">Library</a>@endif
+<a href="{{ route('events.index') }}">Events</a><a href="{{ route('public.faqs') }}">FAQs</a>
+@endif
 </nav>
 <div class="nav-actions">
 @guest
@@ -72,8 +79,14 @@ $inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.log
 </main>
 
 <footer class="site-footer"><div class="container footer">
-<div><strong class="footer-brand">ElevateHer360</strong><div class="footer-copy"><i class="fas fa-copyright"></i> {{ date('Y') }} Women in Technology Uganda</div></div>
+@php($cmsFooter = app(\App\Services\CmsContentService::class)->published('site-footer'))
+<div><strong class="footer-brand">{{ $cmsFooter['title'] ?? 'ElevateHer360' }}</strong><div class="footer-copy"><i class="fas fa-copyright"></i> {{ date('Y') }} {{ $cmsFooter['summary'] ?? 'Women in Technology Uganda' }}</div>@if($cmsFooter['body'] ?? null)<div>{!! app(\App\Services\CmsContentService::class)->render($cmsFooter['body']) !!}</div>@endif</div>
+@if($cmsFooter)
+<nav class="footer-links" aria-label="Footer navigation">@foreach(data_get($cmsFooter, 'settings.links', []) as $link)<a href="{{ $link['url'] }}">{{ $link['label'] }}</a>@endforeach</nav>
+@else
 <nav class="footer-links" aria-label="Footer navigation"><a href="{{ route('home') }}">Home</a>@if(Route::has('learning.index'))<a href="{{ route('learning.index') }}">Learning</a>@endif @if(Route::has('jobs.index'))<a href="{{ route('jobs.index') }}">Jobs</a>@endif @if(Route::has('library.index'))<a href="{{ route('library.index') }}">Library</a>@endif @guest<a href="{{ route('login') }}">Sign In</a><a href="{{ route('register') }}">Register</a>@endguest @if(Route::has('legal.privacy'))<a href="{{ route('legal.privacy') }}">Privacy Policy</a>@endif @if(Route::has('legal.terms'))<a href="{{ route('legal.terms') }}">Terms of Use</a>@endif</nav>
+<nav class="footer-links"><a href="{{ route('public.partners.mentor') }}">Become a Mentor</a><a href="{{ route('public.partners.employer') }}">Register an Employer</a><a href="{{ route('public.faqs') }}">FAQs</a></nav>
+@endif
 </div></footer>
 @endif
 

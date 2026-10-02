@@ -35,11 +35,12 @@
 
                     <div>
                         <span class="eh-login-card__eyebrow">Participant Portal</span>
-                        <h2>Sign In</h2>
-                        <p>Use the email address linked to your ElevateHer360 account.</p>
+                        <h2>{{ app(\App\Services\CmsContentService::class)->text('login', 'title', 'Sign In') }}</h2>
+                        <p>{{ app(\App\Services\CmsContentService::class)->text('login', 'summary', 'Use the email address linked to your ElevateHer360 account.') }}</p>
                     </div>
                 </div>
 
+                @include('partials.cms-intro', ['slug' => 'login'])
                 @if(session('status'))
                     <div class="alert alert-success">{{ session('status') }}</div>
                 @endif

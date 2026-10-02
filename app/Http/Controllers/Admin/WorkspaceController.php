@@ -28,6 +28,7 @@ class WorkspaceController extends Controller
             ],
             'links' => [
                 ['admin.elearning.courses.index', 'Courses', 'fa-book-open', 'Create and manage courses, modules and lessons.'],
+                ['admin.elearning.timetable.index', 'Course Timetables', 'fa-calendar-days', 'See instructor and trainer sessions; manage course schedules.'],
                 ['admin.elearning.enrolments.index', 'Enrolments', 'fa-user-graduate', 'Enrol participants and track their progress.'],
                 ['admin.elearning.assignments.index', 'Assignments', 'fa-list-check', 'Assessments, submissions and grading.'],
                 ['admin.elearning.learning-files.index', 'Learning Files', 'fa-folder-open', 'Shared course files and resources.'],
@@ -73,6 +74,7 @@ class WorkspaceController extends Controller
             ],
             'links' => [
                 ['admin.mentorship.mentors.index', 'Mentors', 'fa-user-tie', 'Mentor profiles and availability.'],
+                ['admin.mentorship.mentors.create', 'Add Mentor', 'fa-user-plus', 'Add mentor details directly.'],
                 ['admin.mentorship.matches.index', 'Matches', 'fa-people-arrows', 'Mentor–mentee pairings.'],
                 ['admin.reports.mentorship-tracking', 'Tracking Report', 'fa-chart-column', 'Session attendance and engagement.'],
             ],
@@ -93,6 +95,7 @@ class WorkspaceController extends Controller
             ],
             'links' => [
                 ['admin.jobs.index', 'Jobs', 'fa-briefcase', 'Post, review and publish opportunities.'],
+                ['admin.jobs.employers.index', 'Employers', 'fa-building', 'Add and manage employer details.'],
                 ['admin.reports.jobs-tracking', 'Tracking Report', 'fa-chart-column', 'Applications, interviews and placements.'],
             ],
         ]);

@@ -3,6 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Programme Delivery</span><h1>Mentors</h1><p>Review mentor applications and manage approval status.</p></div>
+<a class="btn btn-primary" href="{{ route('admin.mentorship.mentors.create') }}">Add Mentor</a>
 </div>
 
 <div class="admin-stats-grid compact">
@@ -32,6 +33,7 @@
 <td><span class="status-chip {{ $mentor->status }}">{{ ucfirst($mentor->status) }}</span></td>
 <td>{{ optional($mentor->created_at)->format('d M Y') ?: '—' }}</td>
 <td class="table-actions"><div class="action-group">
+<a class="btn-icon" title="Edit mentor" href="{{ route('admin.mentorship.mentors.edit', $mentor) }}"><i class="fas fa-pen"></i></a>
 @if($mentor->status==='pending')
 <button type="button" class="btn-icon" title="Approve" data-modal-open="approveMentor{{ $mentor->id }}"><i class="fas fa-check"></i></button>
 <button type="button" class="btn-icon danger" title="Reject" data-modal-open="rejectMentor{{ $mentor->id }}"><i class="fas fa-xmark"></i></button>

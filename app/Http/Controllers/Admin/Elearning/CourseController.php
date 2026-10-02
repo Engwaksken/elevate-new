@@ -16,6 +16,7 @@ class CourseController extends Controller
     {
         $query=Course::query()
             ->with([
+                'branches',
                 'modules'=>fn($q)=>$q->with('lessons')->orderBy('position'),
             ])
             ->withCount(['modules','enrolments','assessments']);
@@ -36,6 +37,10 @@ class CourseController extends Controller
             $query->where('delivery_mode',$mode);
         }
 
+        if ($branchId = $request->integer('branch_id')) {
+            $query->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId));
+        }
+
         $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
             ? (int)$request->get('per_page')
             : 20;
@@ -44,7 +49,7 @@ class CourseController extends Controller
             'courses'=>$query->latest()->paginate($perPage)->withQueryString(),
             'programmes'=>Programme::orderBy('name')->get(),
             'projects'=>Project::orderBy('name')->get(),
-            'branches'=>Branch::where('is_active',true)->orderBy('name')->get(),
+            'branches'=>Branch::orderBy('name')->get(),
             'stats'=>[
                 'total'=>Course::count(),
                 'published'=>Course::where('status','published')->count(),
@@ -63,9 +68,14 @@ class CourseController extends Controller
 
     public function store(Request $request, AuditService $audit)
     {
-        $course=Course::create(
-            $this->validated($request)+['created_by'=>auth()->id()]
-        );
+        $data = $this->validated($request);
+        $course = \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
+            $ids = $data['branch_ids'] ?? [];
+            unset($data['branch_ids']);
+            $course = Course::create($data + ['branch_id' => $ids[0] ?? null, 'created_by' => auth()->id()]);
+            $course->branches()->sync($ids);
+            return $course;
+        });
 
         $audit->log('courses','created',$course,[],$course->toArray());
 
@@ -85,7 +95,17 @@ class CourseController extends Controller
     {
         $old=$course->toArray();
 
-        $course->update($this->validated($request,$course->id));
+        $data = $this->validated($request, $course->id);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($data, $course, $request) {
+            $sync = $request->has('branch_ids') || $request->boolean('sync_branches') || $request->has('branch_id');
+            $ids = $data['branch_ids'] ?? [];
+            unset($data['branch_ids']);
+            if ($sync) {
+                $data['branch_id'] = $ids[0] ?? null;
+                $course->branches()->sync($ids);
+            }
+            $course->update($data);
+        });
 
         $audit->log(
             'courses',
@@ -102,10 +122,14 @@ class CourseController extends Controller
 
     private function validated(Request $request, ?int $id=null): array
     {
+        if (! $request->has('branch_ids') && $request->filled('branch_id')) {
+            $request->merge(['branch_ids' => [$request->input('branch_id')]]);
+        }
         return $request->validate([
             'programme_id'=>['nullable','exists:programmes,id'],
             'project_id'=>['nullable','exists:projects,id'],
-            'branch_id'=>['nullable','exists:branches,id'],
+            'branch_ids'=>['nullable','array'],
+            'branch_ids.*'=>['integer','distinct','exists:branches,id'],
             'title'=>['required','string','max:190'],
             'code'=>['nullable','string','max:50','unique:courses,code,'.($id ?? 'NULL')],
             'summary'=>['nullable','string','max:1000'],

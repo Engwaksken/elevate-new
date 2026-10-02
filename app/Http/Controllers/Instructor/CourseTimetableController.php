@@ -15,7 +15,7 @@ class CourseTimetableController extends Controller
         $this->authorise($request, $course);
         $service->save($course, $this->validated($request), $request->user());
 
-        return $this->redirect($course, 'Time slot added.');
+        return $this->redirect($request, $course, 'Time slot added.');
     }
 
     public function update(Request $request, Course $course, CourseTimeSlot $slot, CourseTimetableService $service)
@@ -23,7 +23,7 @@ class CourseTimetableController extends Controller
         $this->authorise($request, $course, $slot);
         $service->save($course, $this->validated($request), $request->user(), $slot);
 
-        return $this->redirect($course, 'Time slot updated.');
+        return $this->redirect($request, $course, 'Time slot updated.');
     }
 
     public function destroy(Request $request, Course $course, CourseTimeSlot $slot)
@@ -31,15 +31,12 @@ class CourseTimetableController extends Controller
         $this->authorise($request, $course, $slot);
         $slot->delete();
 
-        return $this->redirect($course, 'Time slot deleted.');
+        return $this->redirect($request, $course, 'Time slot deleted.');
     }
 
     private function authorise(Request $request, Course $course, ?CourseTimeSlot $slot = null): void
     {
-        $user = $request->user();
-        abort_unless($user && $user->isStaff() && $user->isActive()
-            && ($user->isSuperAdmin() || ($user->hasAnyRole(['instructor', 'trainer'])
-                && $user->instructedCourses()->whereKey($course->id)->exists())), 403);
+        abort_unless(app(\App\Services\TimetableAccessService::class)->canManage($request->user(), $course), 403);
         if ($slot) {
             abort_unless($slot->course_id === $course->id, 404);
         }
@@ -60,8 +57,11 @@ class CourseTimetableController extends Controller
         ]);
     }
 
-    private function redirect(Course $course, string $message)
+    private function redirect(Request $request, Course $course, string $message)
     {
+        if ($request->routeIs('admin.elearning.timetable.*')) {
+            return redirect()->route('admin.elearning.timetable.manage', $course)->with('success', $message);
+        }
         return redirect()->route('instructor.courses.manage', ['course' => $course, 'tab' => 'timetable'])
             ->with('success', $message);
     }

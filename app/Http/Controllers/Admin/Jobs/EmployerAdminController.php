@@ -8,6 +8,27 @@ use Illuminate\Http\Request;
 
 class EmployerAdminController extends Controller
 {
+    public function create()
+    {
+        return view('admin.partners.form', ['type' => 'employer', 'profile' => new Employer(), 'users' => \App\Models\User::where('user_type', 'participant')->orderBy('name')->get()]);
+    }
+
+    public function edit(Employer $employer)
+    {
+        return view('admin.partners.form', ['type' => 'employer', 'profile' => $employer->load('owner'), 'users' => collect()]);
+    }
+
+    public function store(Request $request, \App\Services\PartnerDetailsService $service)
+    {
+        $service->save($request, 'employer');
+        return redirect()->route('admin.jobs.employers.index')->with('success', 'Employer details added.');
+    }
+
+    public function update(Request $request, Employer $employer, \App\Services\PartnerDetailsService $service)
+    {
+        $service->save($request, 'employer', $employer);
+        return redirect()->route('admin.jobs.employers.index')->with('success', 'Employer details updated.');
+    }
     public function index(Request $request)
     {
         $query = Employer::with('owner')->latest();
@@ -40,6 +61,7 @@ class EmployerAdminController extends Controller
             'employers' => $query->paginate($perPage)->withQueryString(),
             'stats' => $stats,
         ]);
+        if ($employer->owner?->status === 'pending') $employer->owner->update(['status' => 'active']);
     }
 
     public function approve(Employer $employer)

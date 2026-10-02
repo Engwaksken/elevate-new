@@ -106,12 +106,11 @@
                     </span>
 
                     <h2>
-                        Create Participant Account
+                        {{ app(\App\Services\CmsContentService::class)->text('register', 'title', 'Create Participant Account') }}
                     </h2>
 
                     <p>
-                        Complete the steps below to
-                        set up your account.
+                        {{ app(\App\Services\CmsContentService::class)->text('register', 'summary', 'Complete the steps below to set up your account.') }}
                     </p>
 
                 </div>
@@ -120,6 +119,7 @@
 
 
             @include('partials.form-feedback')
+            @include('partials.cms-intro', ['slug' => 'register'])
 
 
             {{-- PROGRESS --}}
