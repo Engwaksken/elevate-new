@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Course extends Model
 {
     use SoftDeletes;
+    protected $appends = ['thumbnail_url'];
 
     protected $fillable = [
         'programme_id','project_id','branch_id','title','code','summary','description',
@@ -62,5 +63,27 @@ class Course extends Model
     public function branches()
     {
         return $this->belongsToMany(Branch::class);
+    }
+
+    public function getThumbnailUrlAttribute(): string
+    {
+        $path = $this->thumbnail_path;
+        if (is_string($path) && preg_match('#^https?://#i', $path) && filter_var($path, FILTER_VALIDATE_URL)) return $path;
+        if ($path && \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) return \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+        return asset('images/course-placeholder.svg');
+    }
+
+    public function briefDescription(): string
+    {
+        $text = html_entity_decode(strip_tags((string) ($this->summary ?: $this->description)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', $text)), 240);
+    }
+
+    public function publicData(): array
+    {
+        return ['id'=>$this->id,'title'=>$this->title,'code'=>$this->code,'summary'=>$this->briefDescription(),
+            'thumbnail_url'=>$this->thumbnail_url,'delivery_mode'=>$this->delivery_mode,
+            'start_date'=>$this->start_date,'end_date'=>$this->end_date,
+            'branches'=>$this->branches->map(fn ($branch) => $branch->only(['id','name','code']))];
     }
 }

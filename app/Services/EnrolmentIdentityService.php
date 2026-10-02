@@ -28,7 +28,7 @@ class EnrolmentIdentityService
         $prefix = implode('/', [
             $this->segment($project?->code ?: $programme?->code, 'PRG'),
             $this->segment($branch?->code, 'BR'),
-            $this->cohortSegment($cohort?->code),
+            $this->courseSegment($course),
             $year,
         ]);
 
@@ -67,6 +67,11 @@ class EnrolmentIdentityService
             return 'C'.(ltrim($matches[1], '0') ?: '0');
         }
         return str_starts_with($segment, 'C') ? $segment : 'C'.$segment;
+    }
+
+    public function courseSegment(?Course $course): string
+    {
+        return 'C'.($course?->id ?? 0);
     }
 
     public function normalizeCode(string $code): string

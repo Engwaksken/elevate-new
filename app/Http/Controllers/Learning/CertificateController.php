@@ -28,15 +28,7 @@ class CertificateController extends Controller
     {
         abort_unless((int) $certificate->user_id === (int) auth()->id(), 403);
 
-        if (! $certificate->pdf_path || ! Storage::disk('local')->exists($certificate->pdf_path)) {
-            $service->render($certificate);
-            $certificate->refresh();
-        }
-
-        return Storage::disk('local')->download(
-            $certificate->pdf_path,
-            'certificate-'.$certificate->certificate_number.'.pdf'
-        );
+        return app(\App\Services\ParticipantCertificateService::class)->response($certificate);
     }
 
     public function verify(string $token)

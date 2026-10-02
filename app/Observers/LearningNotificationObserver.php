@@ -111,7 +111,7 @@ class LearningNotificationObserver implements ShouldHandleEventsAfterCommit
     {
         $course = $enrolment->course()->first();
         $title = $course?->title ?? 'a course';
-        $url = self::route('learning.course.show', $course) ?? self::route('learning.my-courses');
+        $url = self::route('learning.course.dashboard', $course) ?? self::route('learning.my-courses');
         $data = ['course_id' => $enrolment->course_id, 'enrolment_id' => $enrolment->id, 'status' => $enrolment->status, 'event' => $event];
 
         if ($event === 'created') {
@@ -295,7 +295,7 @@ class LearningNotificationObserver implements ShouldHandleEventsAfterCommit
             'course_announcement',
             'Announcement: '.$announcement->title,
             Str::limit(strip_tags((string) $announcement->body), 240)." ({$course->title})",
-            self::route('learning.course.show', $course),
+            self::route('learning.course.dashboard', $course),
             ['course_id' => $course->id, 'announcement_id' => $announcement->id]
         );
     }

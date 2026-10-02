@@ -11,7 +11,7 @@ class EventCertificate extends Model
 
     protected $casts=['issued_at'=>'datetime'];
 
-    public function event(){ return $this->belongsTo(Event::class); }
+    public function event(){ return $this->belongsTo(Event::class)->withTrashed(); }
     public function user(){ return $this->belongsTo(User::class); }
     public function attendance(){ return $this->belongsTo(EventAttendanceRecord::class,'event_attendance_record_id'); }
     public function issuer(){ return $this->belongsTo(User::class,'issued_by'); }

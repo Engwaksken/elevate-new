@@ -1,7 +1,7 @@
 @php
 $editing = isset($course) && $course;
 $formTabsConfig = [
-    'overview' => ['label' => 'Overview', 'icon' => 'fa-book-open', 'fields' => ['title', 'code', 'summary', 'description']],
+    'overview' => ['label' => 'Overview', 'icon' => 'fa-book-open', 'fields' => ['title', 'code', 'summary', 'description', 'thumbnail', 'remove_thumbnail']],
     'organisation' => ['label' => 'Organisation', 'icon' => 'fa-sitemap', 'fields' => ['delivery_mode', 'programme_id', 'project_id', 'branch_ids']],
     'schedule' => ['label' => 'Schedule & Publishing', 'icon' => 'fa-calendar-days', 'fields' => ['start_date', 'end_date', 'duration_hours', 'pass_mark', 'status', 'self_enrolment_enabled']],
 ];
@@ -13,6 +13,7 @@ $formTabsConfig = [
     <div class="form-group"><label>Course Code</label><input name="code" value="{{ old('code',$editing ? $course->code : '') }}"></div>
     <div class="form-group full"><label>Summary</label><textarea name="summary" rows="3">{{ old('summary',$editing ? $course->summary : '') }}</textarea></div>
     <div class="form-group full"><label>Description</label><textarea name="description" rows="6">{{ old('description',$editing ? $course->description : '') }}</textarea></div>
+    <div class="form-group full"><label>Course image (JPG, PNG or WEBP, up to 4 MB)</label><input type="file" name="thumbnail" accept=".jpg,.jpeg,.png,.webp">@if($editing && $course->thumbnail_path)<img src="{{ $course->thumbnail_url }}" alt="Current course image" style="max-width:200px;max-height:120px;object-fit:cover"><label class="modal-check"><input type="checkbox" name="remove_thumbnail" value="1"><span>Remove current image</span></label>@endif</div>
 </div>
 </x-form-tab>
 <x-form-tab name="organisation">

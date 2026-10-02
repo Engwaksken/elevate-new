@@ -127,6 +127,7 @@ Route::get('/brand-assets/{type}', [BrandAssetController::class, 'show'])
     ->name('branding.asset');
 
 Route::get('/shared/career/portfolio/{file}', [\App\Http\Controllers\Career\ResumePortfolioController::class, 'shared'])->middleware(['signed', 'throttle:30,1'])->name('career.portfolio.shared');
+Route::get('/shared/certificates/{type}/{id}', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'shared'])->where('type','course|event')->whereNumber('id')->middleware(['signed','throttle:30,1'])->name('certificates.shared');
 
 /*
 |--------------------------------------------------------------------------
@@ -338,6 +339,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         '/learning/my-courses',
         [EnrolmentController::class, 'myCourses']
     )->name('learning.my-courses');
+    Route::get('/learning/my-courses/{course}', [\App\Http\Controllers\Learning\CourseLearningController::class, 'show'])
+        ->middleware(\App\Http\Middleware\EnsureParticipantUser::class)->name('learning.course.dashboard');
 
     Route::get(
         '/learning/lessons/{lesson}',
@@ -1234,4 +1237,9 @@ Route::middleware(['auth', 'staff', 'role:'.implode(',', array_merge(
 Route::middleware(['auth'])->group(function () {
     Route::get('/my-certificates', [CertificateController::class, 'index'])->name('certificates.mine');
     Route::get('/my-certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
+    Route::prefix('my-certificates/files')->where(['type'=>'course|event','id'=>'[0-9]+'])->group(function () {
+        Route::get('/{type}/{id}/preview', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'preview'])->name('certificates.file.preview');
+        Route::get('/{type}/{id}/download', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'download'])->name('certificates.file.download');
+        Route::post('/{type}/{id}/share', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'share'])->name('certificates.file.share');
+    });
 });

@@ -10,6 +10,7 @@ enum AppDestination {
   learning('My learning', Icons.menu_book_outlined, Icons.menu_book_rounded),
   assignments('Assignments', Icons.assignment_outlined, Icons.assignment_rounded),
   progress('My progress', Icons.insights_outlined, Icons.insights_rounded),
+  certificates('My certificates', Icons.workspace_premium_outlined, Icons.workspace_premium_rounded),
   mentorship('Mentorship', Icons.diversity_3_outlined, Icons.diversity_3_rounded),
   jobs('Jobs & opportunities', Icons.work_outline_rounded, Icons.work_rounded),
   careerDocuments('Resumes & cover letters', Icons.description_outlined, Icons.description_rounded),

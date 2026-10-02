@@ -67,7 +67,7 @@ class CourseBranchesAndStaffTimetableTest extends TestCase
         $user = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
         Profile::create(['user_id' => $user->id, 'branch_id' => $b->id]);
         $enrolment = Enrolment::create(['user_id' => $user->id, 'course_id' => $course->id, 'enrolled_at' => '2026-10-02']);
-        $this->assertSame('DE/GUL/C0/26/001', $enrolment->enrolment_code);
+        $this->assertSame('DE/GUL/C1/26/001', $enrolment->enrolment_code);
     }
 
     public function test_requested_program_and_operations_roles_can_manage_timetables(): void

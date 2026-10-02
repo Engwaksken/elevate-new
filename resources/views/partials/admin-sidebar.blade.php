@@ -112,6 +112,7 @@
                     'icon' => 'fa-gauge-high',
                     'permissions' => [],
                 ],
+                ['route'=>'calendar.index','label'=>'Calendar','icon'=>'fa-calendar-days','permissions'=>[]],
             ],
         ],
         [

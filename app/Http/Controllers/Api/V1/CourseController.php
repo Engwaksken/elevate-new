@@ -11,9 +11,9 @@ class CourseController extends Controller
         return response()->json([
             'data'=>Course::where('status','published')
                 ->with('branches')
-                ->select('id','title','code','summary','delivery_mode','start_date','end_date')
+                ->select('id','title','code','summary','description','thumbnail_path','delivery_mode','start_date','end_date')
                 ->latest()
-                ->paginate(20)
+                ->paginate(20)->through(fn ($course) => $course->publicData())
         ]);
     }
 
@@ -22,11 +22,7 @@ class CourseController extends Controller
         abort_unless($course->status==='published',404);
 
         return response()->json([
-            'data'=>$course->load([
-                'branches',
-                'modules'=>fn($q)=>$q->where('is_published',true)->orderBy('position'),
-                'modules.lessons'=>fn($q)=>$q->where('is_published',true)->orderBy('position'),
-            ])
+            'data'=>$course->load('branches')->publicData()
         ]);
     }
 }

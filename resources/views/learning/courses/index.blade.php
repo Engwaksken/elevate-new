@@ -6,22 +6,17 @@
 <h1>{{ app(\App\Services\CmsContentService::class)->text('learning', 'title', 'Courses') }}</h1>
 <p>{{ app(\App\Services\CmsContentService::class)->text('learning', 'summary') }}</p>
 @include('partials.cms-intro', ['slug' => 'learning'])
-<form method="GET" class="grid">
-<div><label>Search</label><input name="search" value="{{ request('search') }}"></div>
-<div><label>Delivery mode</label><select name="delivery_mode"><option value="">All</option><option value="online">Online</option><option value="in_person">In person</option><option value="blended">Blended</option></select></div>
+<form method="GET" style="display:flex;gap:12px;flex-wrap:wrap">
+<div><label for="course-search">Search courses</label><input id="course-search" name="search" value="{{ request('search') }}"></div><button class="btn btn-primary">Search</button>
 </form>
 </div>
-<div class="grid">
-@foreach($courses as $course)
-<div class="card">
-<h3>{{ $course->title }}</h3>
-<p>{{ $course->summary }}</p>
-<p>{{ $course->branches->pluck('name')->join(', ') }}</p>
-<p>{{ ucfirst(str_replace('_',' ',$course->delivery_mode)) }} · {{ $course->modules_count }} modules</p>
-<a class="btn" href="{{ route('learning.course.show',$course) }}">View Course</a>
-@if($myCourseIds->contains($course->id)) <span>Enrolled</span> @endif
-</div>
-@endforeach
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:20px">
+@forelse($courses as $course)
+<article class="card">
+<a href="{{ route('learning.course.show',$course) }}" style="display:block;text-decoration:none;color:inherit"><img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }}" loading="lazy" style="width:100%;height:200px;object-fit:cover;border-radius:12px"><h2>{{ $course->title }}</h2></a>
+<p>{{ $course->briefDescription() }}</p>
+</article>
+@empty<p>No courses found.</p>@endforelse
 </div>
 {{ $courses->links() }}
 @endsection

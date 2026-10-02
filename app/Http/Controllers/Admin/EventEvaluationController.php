@@ -55,22 +55,22 @@ class EventEvaluationController extends Controller
 
     public function calendar(Request $request)
     {
+        $request->validate(['month'=>['nullable','date_format:Y-m']]);
         $month=$request->get('month',now()->format('Y-m'));
 
         try {
-            $start=now()->createFromFormat('Y-m',$month)->startOfMonth();
+            $start=\Carbon\Carbon::createFromFormat('!Y-m',$month,config('app.timezone'))->startOfMonth();
         } catch(\Throwable $e) {
             $start=now()->startOfMonth();
         }
 
         $end=$start->copy()->endOfMonth();
-        $gridStart=$start->copy()->startOfWeek();
-        $gridEnd=$end->copy()->endOfWeek();
+        $gridStart=$start->copy()->startOfWeek(\Carbon\CarbonInterface::MONDAY);
+        $gridEnd=$end->copy()->endOfWeek(\Carbon\CarbonInterface::SUNDAY);
 
-        $events=Event::whereBetween('starts_at',[$gridStart->copy()->startOfDay(),$gridEnd->copy()->endOfDay()])
-            ->orderBy('starts_at')
-            ->get()
-            ->groupBy(fn($event)=>$event->starts_at->format('Y-m-d'));
+        $events=app(\App\Services\CalendarFeedService::class)->entries($request->user(), $gridStart->copy()->startOfDay(), $gridEnd->copy()->addDay()->startOfDay())
+            ->filter(fn ($entry) => str_starts_with($entry['id'], 'event-') || $entry['event_type'] === 'course_timetable')
+            ->groupBy(fn($entry)=>$entry['starts_at']->format('Y-m-d'));
 
         return view('admin.events.calendar',compact('month','start','end','gridStart','gridEnd','events'));
     }

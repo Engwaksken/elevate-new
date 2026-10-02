@@ -57,7 +57,7 @@
 <div class="eh-tab-section"><div class="eh-data-list">
 @forelse($enrolments as $enrolment)
 @if($enrolment->course)
-<a class="eh-data-row" href="{{ route('learning.course.show',$enrolment->course) }}">
+<a class="eh-data-row" href="{{ route('learning.course.dashboard',$enrolment->course) }}">
 <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-book"></i></span><div class="eh-data-row-copy"><strong>{{ $enrolment->course->title }}</strong><span>{{ number_format((float)$enrolment->progress_percent,0) }}% complete</span></div></div><i class="fas fa-chevron-right"></i>
 </a>
 @endif

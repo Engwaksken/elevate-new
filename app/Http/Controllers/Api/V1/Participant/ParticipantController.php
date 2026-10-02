@@ -82,7 +82,7 @@ class ParticipantController extends Controller
             ],
             'courses' => $enrolments->map(fn ($enrolment) => [
                 'enrolment_code' => $enrolment->enrolment_code,
-                'participant_code' => $user->participant_code,
+                'participant_code' => $enrolment->enrolment_code,
                 'id' => $enrolment->course?->id,
                 'title' => $enrolment->course?->title,
                 'status' => $enrolment->status,
@@ -142,7 +142,7 @@ class ParticipantController extends Controller
 
         $payload['enrolment'] = $enrolment ? [
             'enrolment_code' => $enrolment->enrolment_code,
-            'participant_code' => $user->participant_code,
+            'participant_code' => $enrolment->enrolment_code,
             'status' => $enrolment->status,
             'progress_percent' => (float) $enrolment->progress_percent,
         ] : null;

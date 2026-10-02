@@ -5,7 +5,7 @@
 @section('content')
 <div class="card">
     <p>
-        <a href="{{ route('learning.course.show', $course) }}">
+        <a href="{{ route('learning.course.dashboard', $course) }}">
             <i class="fas fa-arrow-left"></i> Back to course
         </a>
     </p>

@@ -110,7 +110,7 @@ class CourseTimetableTest extends TestCase
     {
         $slot = $this->createSlot();
         $participant = $this->participant();
-        $this->actingAs($participant)->get(route('learning.course.show', $this->course))
+        $this->actingAs($participant)->get(route('learning.course.dashboard', $this->course))
             ->assertOk()->assertSee('Course Timetable')->assertSee('Practical workshop')->assertSee('Bring your laptop.')
             ->assertSee('Africa/Kampala')->assertSee('https://meet.example.test/session');
         Sanctum::actingAs($participant, ['participant']);

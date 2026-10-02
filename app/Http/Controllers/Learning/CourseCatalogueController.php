@@ -5,14 +5,13 @@ namespace App\Http\Controllers\Learning;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Enrolment;
-use App\Services\Learning\ModuleAccessService;
 use Illuminate\Http\Request;
 
 class CourseCatalogueController extends Controller
 {
     public function index(Request $request)
     {
-        $query=Course::where('status','published')->with('branches')->withCount(['modules','enrolments']);
+        $query=Course::where('status','published')->select(['id','title','summary','description','thumbnail_path']);
 
         if($search=trim((string)$request->get('search'))){
             $query->where(fn($q)=>$q
@@ -27,41 +26,14 @@ class CourseCatalogueController extends Controller
 
         return view('learning.courses.index',[
             'courses'=>$query->latest()->paginate(12)->withQueryString(),
-            'myCourseIds'=>auth()->check()
-                ? Enrolment::where('user_id',auth()->id())->pluck('course_id')
-                : collect(),
         ]);
     }
 
-    public function show(Course $course,ModuleAccessService $accessService)
+    public function show(Course $course)
     {
         abort_unless($course->status==='published',404);
-
-        $course->load([
-            'branches',
-            'modules'=>fn($q)=>$q->where('is_published',true)->orderBy('position'),
-            'modules.lessons'=>fn($q)=>$q->where('is_published',true)->orderBy('position'),
-            'assessments'=>fn($q)=>$q->where('is_published',true),
-        ]);
-
-        $enrolment=auth()->check()
-            ? Enrolment::where('course_id',$course->id)->where('user_id',auth()->id())->first()
-            : null;
-
-        $moduleAccess=collect();
-
-        if($enrolment && auth()->check()){
-            $moduleAccess=$course->modules->mapWithKeys(fn($module)=>[
-                $module->id=>[
-                    'accessible'=>$accessService->canAccess($module,auth()->user()),
-                    'complete'=>$accessService->moduleComplete($module,auth()->user()),
-                ],
-            ]);
-        }
-
-        $canViewTimetable = $enrolment && auth()->user()->isParticipant() && auth()->user()->isActive();
-        $timetable = $canViewTimetable ? app(\App\Services\CourseTimetableService::class)->forCourse($course) : [];
-
-        return view('learning.courses.show',compact('course','enrolment','moduleAccess','timetable','canViewTimetable'));
+        $enrolled = auth()->check() && auth()->user()->isParticipant() && auth()->user()->isActive()
+            && Enrolment::where('course_id', $course->id)->where('user_id', auth()->id())->exists();
+        return view('learning.courses.show', compact('course', 'enrolled'));
     }
 }

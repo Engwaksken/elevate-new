@@ -1,82 +1,31 @@
-@extends(auth()->check() && method_exists(auth()->user(), 'isStaff') && auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
-
+@extends(auth()->user()->isStaff() ? 'layouts.admin' : 'layouts.app')
 @section('title', 'Calendar | ElevateHer360')
-
 @section('content')
-<div class="admin-page-header">
-    <div>
-        <span class="admin-eyebrow">Schedule</span>
-        <h1>Calendar</h1>
-        <p>View programme, course, mentorship and event activities in one place.</p>
-    </div>
+<style>.schedule-grid{display:grid;grid-template-columns:repeat(7,minmax(120px,1fr));min-width:850px;border:1px solid #ddd}.schedule-day{padding:10px;min-height:140px;border:1px solid #eee;background:#fff}.schedule-day.outside{background:#f6f6f6}.schedule-item{display:block;padding:6px;margin:6px 0;border-left:3px solid #800000;background:#fff4e3;font-size:.85rem;overflow-wrap:anywhere}.schedule-item.cancelled{opacity:.65;border-left-color:#777}.schedule-scroll{overflow:auto}.schedule-weekday{padding:10px;text-align:center;font-weight:700}.schedule-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}</style>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Schedule</span><h1>Calendar</h1><p>{{ auth()->user()->isStaff() ? 'Course timetables and platform activities across all courses.' : 'Timetable sessions for your enrolled courses and other available activities.' }} Times shown in {{ $zone }}.</p></div></div>
+<div class="admin-panel"><form method="GET" class="schedule-toolbar">
+<a class="btn btn-outline btn-sm" href="{{ route('calendar.index', array_merge(request()->except(['month','page']), ['month'=>$start->subMonth()->format('Y-m')])) }}">Previous month</a>
+<label>Month <input type="month" name="month" value="{{ $start->format('Y-m') }}"></label>
+<select name="event_type"><option value="">All activities</option><option value="course_timetable" @selected(request('event_type')==='course_timetable')>Course timetable</option>@foreach(['event','workshop','training','mentorship','programme_activity'] as $type)<option value="{{ $type }}" @selected(request('event_type')===$type)>{{ ucfirst(str_replace('_',' ',$type)) }}</option>@endforeach</select>
+@if(request('programme_id'))<input type="hidden" name="programme_id" value="{{ request('programme_id') }}">@endif
+<button class="btn btn-primary btn-sm">Show calendar</button>
+<a class="btn btn-outline btn-sm" href="{{ route('calendar.index', array_merge(request()->except(['month','page']), ['month'=>$start->addMonth()->format('Y-m')])) }}">Next month</a>
+</form></div>
+<div class="schedule-scroll"><div class="schedule-grid">
+@foreach(['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as $day)<div class="schedule-weekday">{{ $day }}</div>@endforeach
+@for($date=$gridStart; $date->lte($gridEnd); $date=$date->addDay())
+<div class="schedule-day {{ $date->month !== $start->month ? 'outside' : '' }}"><strong>{{ $date->day }}</strong>
+@foreach($days->get($date->format('Y-m-d'), collect()) as $entry)
+<div class="schedule-item {{ $entry['status']==='cancelled' ? 'cancelled' : '' }}">
+<strong>{{ $entry['starts_at']->format('H:i') }}@if($entry['ends_at']) – {{ $entry['ends_at']->format('H:i') }}@endif</strong>
+@if($entry['url'])<a href="{{ $entry['url'] }}">{{ $entry['title'] }}</a>@else<span>{{ $entry['title'] }}</span>@endif
+@if($entry['course_title'])<div>{{ $entry['course_title'] }}</div>@endif
+@if($entry['status']==='cancelled')<span>Cancelled</span>@elseif($entry['status']==='draft')<span>Draft</span>@endif
 </div>
-
-<div class="admin-panel">
-    <div class="eh-tabs" data-eh-tabs>
-        <div class="eh-tab-nav">
-            <button class="eh-tab-button active" data-eh-tab="upcoming">
-                <i class="fas fa-calendar-days"></i> Upcoming
-            </button>
-            <button class="eh-tab-button" data-eh-tab="past">
-                <i class="fas fa-clock-rotate-left"></i> Past
-            </button>
-            <button class="eh-tab-button" data-eh-tab="all">
-                <i class="fas fa-list"></i> All Events
-            </button>
-        </div>
-
-        <div class="eh-tab-content">
-            @foreach(['upcoming' => 'Upcoming Events', 'past' => 'Past Events', 'all' => 'All Events'] as $key => $title)
-                @php
-                    $filtered = $events->filter(function ($event) use ($key) {
-                        if ($key === 'all') {
-                            return true;
-                        }
-
-                        return $key === 'upcoming'
-                            ? $event->starts_at->gte(now())
-                            : $event->starts_at->lt(now());
-                    });
-                @endphp
-
-                <section class="eh-tab-pane {{ $key === 'upcoming' ? 'active' : '' }}" data-eh-pane="{{ $key }}">
-                    <div class="eh-tab-section">
-                        <div class="eh-data-list">
-                            @forelse($filtered as $event)
-                                <div class="eh-data-row">
-                                    <div class="eh-data-row-main">
-                                        <span class="eh-data-row-icon">
-                                            <i class="fas fa-calendar-check"></i>
-                                        </span>
-                                        <div class="eh-data-row-copy">
-                                            <strong>{{ $event->title }}</strong>
-                                            <span>
-                                                {{ ucfirst(str_replace('_', ' ', $event->event_type)) }}
-                                                · {{ $event->starts_at->format('d M Y H:i') }}
-                                                @if($event->ends_at)
-                                                    – {{ $event->ends_at->format('d M Y H:i') }}
-                                                @endif
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <span class="eh-status">{{ $event->status ?? 'Scheduled' }}</span>
-                                </div>
-                            @empty
-                                <div class="eh-empty">
-                                    <i class="fas fa-calendar"></i>
-                                    <h3>No {{ strtolower($title) }}</h3>
-                                    <p>Events will appear here when available.</p>
-                                </div>
-                            @endforelse
-                        </div>
-
-                        @if($key === 'all')
-                            {{ $events->links() }}
-                        @endif
-                    </div>
-                </section>
-            @endforeach
-        </div>
-    </div>
-</div>
+@endforeach</div>@endfor
+</div></div>
+<div class="admin-panel" style="margin-top:20px"><h2>Calendar agenda</h2><div class="eh-data-list">
+@forelse($events as $entry)<article class="eh-data-row"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-calendar-days"></i></span><div class="eh-data-row-copy"><strong>{{ $entry['title'] }}</strong>@if($entry['course_title'])<span>{{ $entry['course_title'] }}</span>@endif<span>{{ $entry['starts_at']->format('d M Y H:i') }}@if($entry['ends_at']) – {{ $entry['ends_at']->format('d M Y H:i') }}@endif · {{ $zone }}</span>@if($entry['venue'])<span>{{ $entry['venue'] }}</span>@endif<span>{{ ucfirst($entry['status']) }}</span></div></div><div class="eh-data-row-actions">@if($entry['url'])<a class="btn btn-outline btn-sm" href="{{ $entry['url'] }}">View</a>@endif @if($entry['meeting_link'])<a class="btn btn-outline btn-sm" href="{{ $entry['meeting_link'] }}" target="_blank" rel="noopener noreferrer">Online meeting</a>@endif</div></article>
+@empty<p>No activities for this month.</p>@endforelse
+</div>{{ $events->links() }}</div>
 @endsection

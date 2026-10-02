@@ -168,7 +168,7 @@
     <button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button>
 </div>
 
-<form method="POST" action="{{ route('admin.elearning.courses.store') }}">
+<form method="POST" enctype="multipart/form-data" action="{{ route('admin.elearning.courses.store') }}">
 @csrf
 <input type="hidden" name="_modal" value="create">
 <div class="eh-modal-body">
@@ -190,7 +190,7 @@
     <button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button>
 </div>
 
-<form method="POST" action="{{ route('admin.elearning.courses.update',$course) }}">
+<form method="POST" enctype="multipart/form-data" action="{{ route('admin.elearning.courses.update',$course) }}">
 @csrf
 @method('PUT')
 <input type="hidden" name="_modal" value="edit-{{ $course->id }}">

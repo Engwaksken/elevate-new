@@ -16,7 +16,11 @@ class CertificatePdfService
 
         $template ??= CertificateTemplate::resolveFor($certificate->course_id, $certificate->event_id);
 
-        $html = view('certificates.pdf', compact('certificate', 'template'))->render();
+        $participantId = $certificate->course_id
+            ? \App\Models\Enrolment::where('user_id',$certificate->user_id)->where('course_id',$certificate->course_id)->value('enrolment_code')
+            : null;
+        $participantId ??= $certificate->user?->participant_code;
+        $html = view('certificates.pdf', compact('certificate', 'template', 'participantId'))->render();
 
         if (! class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
             throw new \RuntimeException('DOMPDF package is not installed.');

@@ -501,6 +501,15 @@ class ApiService {
 
   Future<Map<String, dynamic>> careerDocuments() => _getMap('/career/documents');
 
+  Future<Map<String, dynamic>> certificates({int page = 1, int? courseId}) =>
+      _getMap('/certificates', query: {'page':page, if (courseId != null) 'course_id':courseId});
+
+  Future<Map<String, dynamic>> shareCertificate({required String type, required int id}) =>
+      _guard(() async {
+        final response = await dio.post('/certificates/$type/$id/share');
+        return _mapResponse(response.data);
+      });
+
   Future<Map<String, dynamic>> uploadPortfolioFile(int resumeId, String path) => _guard(() async {
     final response = await dio.post('/career/resumes/$resumeId/portfolio-files',
       data: FormData.fromMap({'file': await MultipartFile.fromFile(path)}));

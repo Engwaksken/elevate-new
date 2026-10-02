@@ -26,6 +26,7 @@ import 'mentorship_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
 import 'progress_screen.dart';
+import 'certificates_screen.dart';
 import 'settings_screen.dart';
 
 /// Root shell: bottom navigation for the five most used places, and a
@@ -134,6 +135,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _push(const AssignmentsScreen());
       case AppDestination.progress:
         _push(const ProgressScreen());
+      case AppDestination.certificates:
+        _push(const CertificatesScreen());
       case AppDestination.events:
         _push(CachedListScreen.events());
       case AppDestination.announcements:
@@ -186,7 +189,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final value = destination.toLowerCase();
 
     AppDestination? target;
-    if (value.contains('course') ||
+    if (value.contains('certificate')) {
+      target = AppDestination.certificates;
+    } else if (value.contains('course') ||
         value.contains('lesson') ||
         value.contains('learning')) {
       target = AppDestination.learning;

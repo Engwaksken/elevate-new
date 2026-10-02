@@ -15,7 +15,7 @@
     <div>
         <span class="admin-eyebrow">Events</span>
         <h1>Events Calendar</h1>
-        <p>Monthly view of scheduled ElevateHer360 events.</p>
+        <p>Monthly view of events and course timetable sessions. Times shown in {{ config('app.timezone') }}.</p>
     </div>
 
     <div class="admin-page-actions">
@@ -75,9 +75,9 @@
                     }
                 @endphp
 
-                @if(Route::has('admin.events.view'))
+                @if(data_get($event, 'url'))
                     <a
-                        href="{{ route('admin.events.view', $event) }}"
+                        href="{{ data_get($event, 'url') }}"
                         class="event-calendar-entry"
                     >
                         @if($eventTime)
@@ -85,6 +85,8 @@
                         @endif
 
                         <span>{{ data_get($event, 'title', 'Event') }}</span>
+                        @if(data_get($event, 'course_title'))<small>{{ data_get($event, 'course_title') }}</small>@endif
+                        @if(data_get($event, 'status') === 'cancelled')<small>Cancelled</small>@endif
                     </a>
                 @else
                     <div class="event-calendar-entry">

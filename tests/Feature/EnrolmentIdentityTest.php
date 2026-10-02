@@ -60,7 +60,7 @@ class EnrolmentIdentityTest extends TestCase
         $project = Project::create(['name' => 'Project', 'code' => 'TECH', 'programme_id' => $course->programme_id]);
         $next = Course::create(['title' => 'Next', 'project_id' => $project->id, 'branch_id' => $course->branch_id]);
         $second = Enrolment::create(['course_id' => $next->id, 'user_id' => $user->id, 'enrolled_at' => '2027-01-01']);
-        $this->assertSame('TECH/KLA/C0/27/001', $second->enrolment_code);
+        $this->assertSame('TECH/KLA/C2/27/001', $second->enrolment_code);
         $this->assertSame($first->enrolment_code, $user->fresh()->participant_code);
     }
 

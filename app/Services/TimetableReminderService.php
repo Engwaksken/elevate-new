@@ -27,7 +27,7 @@ class TimetableReminderService
                     $claimed = DB::table('timetable_reminder_deliveries')->insertOrIgnore(['course_time_slot_id' => $slot->id, 'user_id' => $user->id, 'starts_at' => $slot->starts_at->format('Y-m-d H:i:s'), 'sent_at' => $now]);
                     if (! $claimed) continue;
                     $time = $slot->starts_at->setTimezone($slot->timezone)->format('H:i');
-                    $url = $user->isStaff() ? route('admin.elearning.timetable.index', ['course_id' => $course->id]) : route('learning.course.show', $course);
+                    $url = $user->isStaff() ? route('admin.elearning.timetable.index', ['course_id' => $course->id]) : route('learning.course.dashboard', $course);
                     app(UserNotificationService::class)->send($user, 'course_timetable_reminder', 'Upcoming course session',
                         $course->title.' — '.$slot->title.' starts at '.$time.' ('.$slot->timezone.') in about '.max(1, (int) ceil($now->diffInSeconds($slot->starts_at) / 60)).' minutes.'.($slot->venue ? ' Venue: '.$slot->venue : ''),
                         $url, ['course_id' => $course->id, 'slot_id' => $slot->id, 'starts_at' => $slot->starts_at->toIso8601String(), 'destination' => 'learning']);

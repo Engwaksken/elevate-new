@@ -14,7 +14,7 @@ class EnrolmentController extends Controller
     }
     public function myCourses()
     {
-        $base=Enrolment::query()->where('user_id',auth()->id());
+        $base=Enrolment::query()->where('user_id',auth()->id())->whereHas('course');
         $total=(clone $base)->count();
         $completed=(clone $base)->where(fn($q)=>$q->whereNotNull('completed_at')->orWhereIn('status',['completed','passed']))->count();
         $inProgress=(clone $base)->where(fn($q)=>$q->whereIn('status',['in_progress','started','active'])->orWhere(fn($n)=>$n->where('progress_percent','>',0)->where('progress_percent','<',100)))->count();

@@ -16,6 +16,7 @@ import '../widgets/course_timetable.dart';
 import '../widgets/progress_widgets.dart';
 import '../widgets/state_views.dart';
 import 'lesson_detail_screen.dart';
+import 'certificates_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   const CourseDetailScreen({
@@ -322,6 +323,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 .whereType<Map>().map(Map<String, dynamic>.from).toList(),
           ),
           const SizedBox(height: AppSpacing.md),
+          OutlinedButton.icon(onPressed:() => Navigator.of(context).push(MaterialPageRoute(
+            builder:(_) => CertificatesScreen(courseId:widget.courseId))), icon:const Icon(Icons.workspace_premium_outlined), label:const Text('My course certificates')),
           if (lessonCount > 0)
             _ProgressSummary(
               percent: _percent,

@@ -118,7 +118,7 @@ class AssessmentController extends Controller
             $certificateService->issueIfEligible($assessment->course, auth()->user());
         }
 
-        return redirect()->route('learning.course.show', $assessment->course)
+        return redirect()->route('learning.course.dashboard', $assessment->course)
             ->with('success', 'Assessment submitted successfully.');
     }
 }

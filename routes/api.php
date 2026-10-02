@@ -59,6 +59,12 @@ Route::prefix('v1')->group(function () {
                 Route::post('/career/documents/{type}/{id}/share', [\App\Http\Controllers\Career\DocumentShareController::class, 'share'])->where('type', 'resume|cover-letter')->whereNumber('id');
 
                 Route::get('/courses',[ParticipantController::class,'courses']);
+                Route::get('/certificates', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'index']);
+                Route::prefix('certificates')->where(['type'=>'course|event','id'=>'[0-9]+'])->group(function () {
+                    Route::get('/{type}/{id}/preview', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'preview']);
+                    Route::get('/{type}/{id}/download', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'download']);
+                    Route::post('/{type}/{id}/share', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'share']);
+                });
                 Route::get('/courses/{course}',[ParticipantController::class,'course']);
 
                 Route::get('/assignments',[ParticipantController::class,'assignments']);

@@ -9,6 +9,7 @@ use App\Models\Programme;
 use App\Models\Project;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class CourseController extends Controller
 {
@@ -68,14 +69,19 @@ class CourseController extends Controller
 
     public function store(Request $request, AuditService $audit)
     {
-        $data = $this->validated($request);
-        $course = \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
-            $ids = $data['branch_ids'] ?? [];
-            unset($data['branch_ids']);
-            $course = Course::create($data + ['branch_id' => $ids[0] ?? null, 'created_by' => auth()->id()]);
-            $course->branches()->sync($ids);
-            return $course;
-        });
+        $data = $this->withImage($request, $this->validated($request));
+        try {
+            $course = \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
+                $ids = $data['branch_ids'] ?? [];
+                unset($data['branch_ids']);
+                $course = Course::create($data + ['branch_id' => $ids[0] ?? null, 'created_by' => auth()->id()]);
+                $course->branches()->sync($ids);
+                return $course;
+            });
+        } catch (\Throwable $exception) {
+            if ($request->hasFile('thumbnail')) Storage::disk('public')->delete($data['thumbnail_path']);
+            throw $exception;
+        }
 
         $audit->log('courses','created',$course,[],$course->toArray());
 
@@ -95,17 +101,26 @@ class CourseController extends Controller
     {
         $old=$course->toArray();
 
-        $data = $this->validated($request, $course->id);
-        \Illuminate\Support\Facades\DB::transaction(function () use ($data, $course, $request) {
-            $sync = $request->has('branch_ids') || $request->boolean('sync_branches') || $request->has('branch_id');
-            $ids = $data['branch_ids'] ?? [];
-            unset($data['branch_ids']);
-            if ($sync) {
-                $data['branch_id'] = $ids[0] ?? null;
-                $course->branches()->sync($ids);
-            }
-            $course->update($data);
-        });
+        $oldImage = $course->thumbnail_path;
+        $data = $this->withImage($request, $this->validated($request, $course->id));
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($data, $course, $request) {
+                $sync = $request->has('branch_ids') || $request->boolean('sync_branches') || $request->has('branch_id');
+                $ids = $data['branch_ids'] ?? [];
+                unset($data['branch_ids']);
+                if ($sync) {
+                    $data['branch_id'] = $ids[0] ?? null;
+                    $course->branches()->sync($ids);
+                }
+                $course->update($data);
+            });
+        } catch (\Throwable $exception) {
+            if ($request->hasFile('thumbnail')) Storage::disk('public')->delete($data['thumbnail_path']);
+            throw $exception;
+        }
+        if ($oldImage && $oldImage !== $course->thumbnail_path && str_starts_with($oldImage, 'course-thumbnails/')) {
+            Storage::disk('public')->delete($oldImage);
+        }
 
         $audit->log(
             'courses',
@@ -134,6 +149,8 @@ class CourseController extends Controller
             'code'=>['nullable','string','max:50','unique:courses,code,'.($id ?? 'NULL')],
             'summary'=>['nullable','string','max:1000'],
             'description'=>['nullable','string'],
+            'thumbnail'=>['nullable','image','mimes:jpg,jpeg,png,webp','max:4096'],
+            'remove_thumbnail'=>['nullable','boolean'],
             'delivery_mode'=>['required','in:online,in_person,blended'],
             'start_date'=>['nullable','date'],
             'end_date'=>['nullable','date','after_or_equal:start_date'],
@@ -144,5 +161,13 @@ class CourseController extends Controller
         ])+[
             'self_enrolment_enabled'=>$request->boolean('self_enrolment_enabled'),
         ];
+    }
+
+    private function withImage(Request $request, array $data): array
+    {
+        unset($data['thumbnail'], $data['remove_thumbnail']);
+        if ($request->hasFile('thumbnail')) $data['thumbnail_path'] = $request->file('thumbnail')->store('course-thumbnails', 'public');
+        elseif ($request->boolean('remove_thumbnail')) $data['thumbnail_path'] = null;
+        return $data;
     }
 }
