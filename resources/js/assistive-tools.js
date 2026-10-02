@@ -247,7 +247,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 
             addChatMessage('bot',data.message || 'I could not find an answer for that.',data.links || []);
         }catch(error){
-            addChatMessage('bot','The assistant is temporarily unavailable. You can still use the Accessibility button and the main navigation.');
+            const serverMessage=error?.message && error.message!=='Failed to fetch' ? error.message : '';
+            addChatMessage('bot',serverMessage || 'The assistant is temporarily unavailable. Please try again in a moment. You can still use the Accessibility button and the main navigation.');
         }finally{
             setChatBusy(false);
             textarea?.focus();

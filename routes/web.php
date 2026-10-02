@@ -167,7 +167,7 @@ Route::prefix('admin/cms')->name('admin.cms.')->middleware(['auth', 'staff', 'pe
 });
 
 Route::post('/support/chatbot',[ChatbotController::class, 'message'])
-    ->middleware('throttle:30,1')
+    ->middleware('throttle:60,1')
     ->name('support.chatbot.message');
 // Participant authentication
 Route::middleware('guest')->group(function () {
