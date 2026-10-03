@@ -52,10 +52,12 @@ class ParticipantDataService {
     final existing = await cachedProfile();
     final merged = {
       'profile': Map<String, dynamic>.from(profile),
-      'editable_fields': data['editable_fields'] ?? existing?['editable_fields'] ?? const [],
+      'editable_fields':
+          data['editable_fields'] ?? existing?['editable_fields'] ?? const [],
       'cached_at': DateTime.now().toUtc().toIso8601String(),
     };
-    await _db.cacheItem(collection: _profileCollection, itemId: _key, payload: merged);
+    await _db.cacheItem(
+        collection: _profileCollection, itemId: _key, payload: merged);
 
     // Keep the signed-in user (drawer header, greeting) in step.
     final user = await _api.currentUser() ?? <String, dynamic>{};
@@ -70,7 +72,8 @@ class ParticipantDataService {
 
   /// PUT /profile; returns the updated profile. Throws [AppException]
   /// (422 with field errors, or offline).
-  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> fields) async {
+  Future<Map<String, dynamic>> updateProfile(
+      Map<String, dynamic> fields) async {
     final data = await _api.updateProfile(fields);
     if (data['profile'] is Map) {
       await _storeProfile(data);
@@ -110,7 +113,8 @@ class ParticipantDataService {
       final profile = cached?['profile'];
       if (cached != null && profile is Map) {
         profile['photo_url'] = null;
-        await _db.cacheItem(collection: _profileCollection, itemId: _key, payload: cached);
+        await _db.cacheItem(
+            collection: _profileCollection, itemId: _key, payload: cached);
       }
     }
     profileVersion.value++;
@@ -167,7 +171,8 @@ class ParticipantDataService {
         _evict(file);
         return;
       }
-      if (await _db.getMeta(_photoSourceMeta) == url && await file.exists()) return;
+      if (await _db.getMeta(_photoSourceMeta) == url && await file.exists())
+        return;
 
       final temp = File('${file.path}.download');
       await _api.downloadProfilePhoto(temp.path);
@@ -208,7 +213,8 @@ class ParticipantDataService {
 
   Future<Map<String, dynamic>> refreshSupport() async {
     final data = await _api.support();
-    await _db.cacheItem(collection: _supportCollection, itemId: _key, payload: data);
+    await _db.cacheItem(
+        collection: _supportCollection, itemId: _key, payload: data);
     final support = data['support'];
     return support is Map ? Map<String, dynamic>.from(support) : const {};
   }
@@ -220,7 +226,8 @@ class ParticipantDataService {
     return {
       if (courses is List)
         for (final c in courses.whereType<Map>())
-          if (asInt(c['id']) != null) asInt(c['id'])!: asInt(c['time_spent_seconds']) ?? 0,
+          if (asInt(c['id']) != null)
+            asInt(c['id'])!: asInt(c['time_spent_seconds']) ?? 0,
     };
   }
 

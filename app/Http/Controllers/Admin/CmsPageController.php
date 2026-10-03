@@ -125,10 +125,111 @@ class CmsPageController extends Controller
             } elseif ($type === 'stats') {
                 $section['title'] = $short('title');
                 $section['items'] = $this->parseItems($raw['items'] ?? [], ['value' => 80, 'label' => 190], 8);
+            } elseif ($type === 'section') {
+                $columns = $this->parseColumns($raw['columns'] ?? []);
+                if ($columns === []) continue;
+                $section['background'] = $this->parseBackground($raw['background'] ?? '');
+                $section['full_width'] = ! empty($raw['full_width']);
+                $section['columns'] = $columns;
             }
-            if (! $this->isEmptySection($section)) $sections[] = $section;
+            if (! $this->isEmptySection($section)) {
+                $sections[] = $section;
+                if (count($sections) >= 50) break;
+            }
         }
         return $sections;
+    }
+
+    private function parseBackground($value): string
+    {
+        $value = trim((string) $value);
+        if ($value === '' || $value === 'soft') return $value;
+        if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $value)) return strtolower($value);
+        return '';
+    }
+
+    private function parseColumns(array $input): array
+    {
+        $columns = [];
+        foreach (array_slice(array_values($input), 0, 6) as $raw) {
+            if (! is_array($raw)) continue;
+            $width = (string) ($raw['width'] ?? '1/1');
+            if (! in_array($width, CmsContentService::COLUMN_WIDTHS, true)) $width = '1/1';
+            $widgets = $this->parseWidgets($raw['widgets'] ?? []);
+            if ($widgets === []) continue;
+            $columns[] = ['width' => $width, 'widgets' => $widgets];
+        }
+        return $columns;
+    }
+
+    private function parseWidgets(array $input): array
+    {
+        $widgets = [];
+        foreach (array_values($input) as $raw) {
+            if (! is_array($raw)) continue;
+            $widget = $this->parseWidget($raw);
+            if ($widget !== null) {
+                $widgets[] = $widget;
+                if (count($widgets) >= 20) break;
+            }
+        }
+        return $widgets;
+    }
+
+    private function parseWidget(array $raw): ?array
+    {
+        $type = (string) ($raw['type'] ?? '');
+        if (! array_key_exists($type, CmsContentService::WIDGETS)) return null;
+
+        $cms = app(CmsContentService::class);
+        $text = fn ($key, $max = 10000) => mb_substr(strip_tags((string) ($raw[$key] ?? '')), 0, $max);
+        $short = fn ($key, $max = 190) => mb_substr(strip_tags((string) ($raw[$key] ?? '')), 0, $max);
+        $url = function (string $key) use ($raw, $cms) {
+            $value = trim((string) ($raw[$key] ?? ''));
+            return $cms->safeUrl($value) ? $value : '';
+        };
+
+        $fields = [];
+        switch ($type) {
+            case 'heading':
+                $level = (string) ($raw['level'] ?? 'h2');
+                $fields['level'] = in_array($level, ['h2', 'h3', 'h4'], true) ? $level : 'h2';
+                $fields['text'] = $short('text', 190);
+                break;
+            case 'text':
+                $fields['content'] = $text('content', 10000);
+                break;
+            case 'image':
+                $fields['image_url'] = $url('image_url');
+                $fields['alt'] = $short('alt', 190);
+                break;
+            case 'button':
+                $fields['label'] = $short('label', 100);
+                $fields['url'] = $url('url');
+                $style = (string) ($raw['style'] ?? 'primary');
+                $fields['style'] = in_array($style, ['primary', 'outline', 'gold'], true) ? $style : 'primary';
+                break;
+            case 'spacer':
+                $fields['height'] = max(0, min(200, (int) ($raw['height'] ?? 0)));
+                break;
+            case 'divider':
+                return ['type' => 'divider'];
+            case 'video':
+                $embed = trim((string) ($raw['embed_url'] ?? ''));
+                $fields['embed_url'] = $cms->isValidVideoEmbed($embed) ? $embed : '';
+                break;
+            case 'html':
+                $rawHtml = mb_substr((string) ($raw['content'] ?? ''), 0, 20000);
+                $fields['content'] = mb_substr($cms->sanitizeHtml($rawHtml), 0, 20000);
+                break;
+        }
+
+        $required = ['heading' => 'text', 'text' => 'content', 'image' => 'image_url', 'button' => 'label', 'video' => 'embed_url', 'html' => 'content'];
+        if (isset($required[$type]) && trim((string) ($fields[$required[$type]] ?? '')) === '') {
+            return null;
+        }
+
+        return ['type' => $type] + $fields;
     }
 
     private function parseItems(array $input, array $fields, int $max): array

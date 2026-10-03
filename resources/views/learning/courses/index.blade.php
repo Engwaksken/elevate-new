@@ -6,11 +6,13 @@
 <h1>{{ app(\App\Services\CmsContentService::class)->text('learning', 'title', 'Courses') }}</h1>
 <p>{{ app(\App\Services\CmsContentService::class)->text('learning', 'summary') }}</p>
 @include('partials.cms-intro', ['slug' => 'learning'])
-<form method="GET" style="display:flex;gap:12px;flex-wrap:wrap">
-<div><label for="course-search">Search courses</label><input id="course-search" name="search" value="{{ request('search') }}"></div><button class="btn btn-primary">Search</button>
-</form>
 </div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:20px">
+<style>
+#courses-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+@media (max-width: 1024px){#courses-grid{grid-template-columns:repeat(2,1fr)!important}}
+@media (max-width: 640px){#courses-grid{grid-template-columns:repeat(1,1fr)!important}}
+</style>
+<div id="courses-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
 @forelse($courses as $course)
 <article class="card">
 <a href="{{ route('learning.course.show',$course) }}" style="display:block;text-decoration:none;color:inherit"><img src="{{ $course->thumbnail_url }}" alt="{{ $course->title }}" loading="lazy" style="width:100%;height:200px;object-fit:cover;border-radius:12px"><h2>{{ $course->title }}</h2></a>

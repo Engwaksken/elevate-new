@@ -125,7 +125,8 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Text(
                 AppConfig.appName,
                 textAlign: TextAlign.center,
-                style: theme.textTheme.headlineMedium?.copyWith(color: brand.onHeader),
+                style: theme.textTheme.headlineMedium
+                    ?.copyWith(color: brand.onHeader),
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -141,7 +142,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         );
 
-    Widget gradientPanel({required Widget child, BorderRadius? radius}) => ClipRRect(
+    Widget gradientPanel({required Widget child, BorderRadius? radius}) =>
+        ClipRRect(
           borderRadius: radius ?? BorderRadius.zero,
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -170,7 +172,8 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
     final header = gradientPanel(
-      radius: const BorderRadius.vertical(bottom: Radius.circular(AppRadius.xl + 8)),
+      radius: const BorderRadius.vertical(
+          bottom: Radius.circular(AppRadius.xl + 8)),
       child: SizedBox(
         width: double.infinity,
         child: SafeArea(
@@ -196,12 +199,14 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             Semantics(
               header: true,
-              child: Text('Participant sign in', style: theme.textTheme.headlineSmall),
+              child: Text('Participant sign in',
+                  style: theme.textTheme.headlineSmall),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
               'Welcome back! We are so glad to see you.',
-              style: theme.textTheme.bodyLarge?.copyWith(color: scheme.secondary),
+              style:
+                  theme.textTheme.bodyLarge?.copyWith(color: scheme.secondary),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
@@ -227,7 +232,10 @@ class _LoginScreenState extends State<LoginScreen> {
               textInputAction: TextInputAction.next,
               autocorrect: false,
               enableSuggestions: false,
-              autofillHints: const [AutofillHints.email, AutofillHints.username],
+              autofillHints: const [
+                AutofillHints.email,
+                AutofillHints.username
+              ],
               decoration: const InputDecoration(
                 labelText: 'Email address',
                 prefixIcon: Icon(Icons.email_outlined),
@@ -366,7 +374,8 @@ class _LoginScreenState extends State<LoginScreen> {
             return SoftBackground(
               seed: 1,
               child: SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 child: Column(
                   children: [
                     header,
@@ -376,7 +385,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         // The form card overlaps the curved header a little.
                         offset: const Offset(0, -AppSpacing.xl),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg),
                           child: Center(
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 480),

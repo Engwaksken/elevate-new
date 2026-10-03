@@ -15,8 +15,8 @@ abstract final class AuthFlow {
     // user on the login screen until they answer it.
     unawaited(
       NotificationService.instance.registerCurrentDevice().catchError(
-        (Object error) => appLog('Device registration failed', error),
-      ),
+            (Object error) => appLog('Device registration failed', error),
+          ),
     );
     try {
       await SyncService.instance.syncNow();
@@ -31,8 +31,11 @@ abstract final class AuthFlow {
   static Future<void> signOut({bool remote = true}) async {
     await SyncService.instance.stopAutoSync();
     await NotificationService.instance.unregisterDeviceToken();
-    try { await NotificationService.instance.cancelTimetableReminders(); }
-    catch (error) { appLog('Unable to clear timetable reminders', error); }
+    try {
+      await NotificationService.instance.cancelTimetableReminders();
+    } catch (error) {
+      appLog('Unable to clear timetable reminders', error);
+    }
 
     if (remote) {
       await ApiService.instance.logout();

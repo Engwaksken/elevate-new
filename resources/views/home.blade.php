@@ -549,7 +549,7 @@
                 </div>
 
                 <div class="impact-card-value">
-                    360�
+                    360
                 </div>
 
                 <p>

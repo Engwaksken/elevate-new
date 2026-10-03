@@ -15,6 +15,42 @@ class CmsContentService
         'features' => 'Feature cards',
         'stats' => 'Statistics',
         'cta' => 'Call to action',
+        'section' => 'Section / Grid',
+    ];
+
+    public const WIDGETS = [
+        'heading' => 'Heading',
+        'text' => 'Text',
+        'image' => 'Image',
+        'button' => 'Button',
+        'spacer' => 'Spacer',
+        'divider' => 'Divider',
+        'video' => 'Video embed',
+        'html' => 'Custom HTML',
+    ];
+
+    public const COLUMN_WIDTHS = ['1/1', '1/2', '1/3', '2/3', '1/4', '3/4', '1/6', '5/6'];
+
+    /**
+     * Conservative tag => allowed-attributes whitelist for the `html` widget.
+     * Anything not listed is stripped (script/style/noscript/template/object/embed/applet
+     * are dropped together with their content; other unknown tags are unwrapped).
+     */
+    private const HTML_ALLOWLIST = [
+        'p' => [], 'br' => [], 'hr' => [],
+        'strong' => [], 'b' => [], 'em' => [], 'i' => [],
+        'u' => [], 's' => [], 'del' => [], 'ins' => [], 'mark' => [],
+        'small' => [], 'sub' => [], 'sup' => [],
+        'blockquote' => [], 'code' => [], 'pre' => [],
+        'h1' => [], 'h2' => [], 'h3' => [], 'h4' => [], 'h5' => [], 'h6' => [],
+        'ul' => [], 'ol' => [], 'li' => [],
+        'a' => ['href', 'title', 'target', 'rel'],
+        'span' => [], 'div' => [],
+        'img' => ['src', 'alt', 'title', 'width', 'height'],
+        'figure' => [], 'figcaption' => [],
+        'table' => [], 'thead' => [], 'tbody' => [], 'tfoot' => [], 'tr' => [],
+        'th' => ['colspan', 'rowspan'], 'td' => ['colspan', 'rowspan'],
+        'iframe' => ['src', 'title', 'width', 'height', 'allowfullscreen'],
     ];
 
     public const PAGES = [
@@ -74,5 +110,152 @@ class CmsContentService
             return in_array(strtolower(parse_url($url, PHP_URL_SCHEME) ?? ''), ['https', 'http'], true);
         }
         return false;
+    }
+
+    /**
+     * Validate a video `embed_url` as an HTTPS YouTube or Vimeo embed only.
+     * Accepts youtube.com/embed, youtube-nocookie.com/embed and player.vimeo.com/video.
+     */
+    public function isValidVideoEmbed(?string $url): bool
+    {
+        $url = trim((string) $url);
+        if ($url === '') return false;
+        $parts = parse_url($url);
+        if (! is_array($parts)) return false;
+        if (strtolower((string) ($parts['scheme'] ?? '')) !== 'https') return false;
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $path = (string) ($parts['path'] ?? '');
+        if (in_array($host, ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com'], true)) {
+            return (bool) preg_match('#^/embed/[A-Za-z0-9_-]+$#', $path);
+        }
+        if (in_array($host, ['player.vimeo.com', 'www.player.vimeo.com'], true)) {
+            return (bool) preg_match('#^/video/[0-9]+$#', $path);
+        }
+        return false;
+    }
+
+    /**
+     * Sanitize raw HTML for the `html` widget using a strict whitelist.
+     * Removes <script>/<style>/<noscript>/<template>/<object>/<embed>/<applet>,
+     * every on* event attribute, inline style attributes, javascript:/vbscript:/data:/file:
+     * URIs, and any non-HTTPS iframe. Unknown tags are unwrapped (children kept).
+     */
+    public function sanitizeHtml(string $html): string
+    {
+        $html = trim($html);
+        if ($html === '') return '';
+
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $previous = libxml_use_internal_errors(true);
+        $loaded = $dom->loadHTML('<?xml encoding="utf-8" ?>'.$html);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        if (! $loaded) return strip_tags($html);
+
+        $body = $dom->getElementsByTagName('body')->item(0);
+        if (! $body) return '';
+
+        $this->sanitizeNodes($body);
+
+        $out = '';
+        foreach ($body->childNodes as $child) {
+            $out .= $dom->saveHTML($child);
+        }
+        return trim($out);
+    }
+
+    private function sanitizeNodes(\DOMNode $node): void
+    {
+        $children = [];
+        foreach ($node->childNodes as $child) {
+            $children[] = $child;
+        }
+        foreach ($children as $child) {
+            if ($child->nodeType === XML_ELEMENT_NODE) {
+                $this->sanitizeElement($child);
+            } elseif ($child->nodeType !== XML_TEXT_NODE) {
+                $node->removeChild($child);
+            }
+        }
+    }
+
+    private function sanitizeElement(\DOMElement $element): void
+    {
+        $tag = strtolower($element->nodeName);
+
+        if (in_array($tag, ['script', 'style', 'noscript', 'template', 'object', 'embed', 'applet'], true)) {
+            if ($element->parentNode) $element->parentNode->removeChild($element);
+            return;
+        }
+
+        if (! isset(self::HTML_ALLOWLIST[$tag])) {
+            $this->unwrapElement($element);
+            return;
+        }
+
+        $this->sanitizeAttributes($element, self::HTML_ALLOWLIST[$tag]);
+
+        if ($tag === 'iframe' && ! $this->isHttpsUri($element->getAttribute('src'))) {
+            if ($element->parentNode) $element->parentNode->removeChild($element);
+            return;
+        }
+
+        $this->sanitizeNodes($element);
+    }
+
+    private function unwrapElement(\DOMElement $element): void
+    {
+        $parent = $element->parentNode;
+        if (! $parent) return;
+        $this->sanitizeNodes($element);
+        while ($element->childNodes->length > 0) {
+            $parent->insertBefore($element->childNodes->item(0), $element);
+        }
+        $parent->removeChild($element);
+    }
+
+    private function sanitizeAttributes(\DOMElement $element, array $allowed): void
+    {
+        $names = [];
+        foreach ($element->attributes as $attr) {
+            $names[] = $attr->name;
+        }
+        foreach ($names as $name) {
+            $lower = strtolower($name);
+            $value = trim($element->getAttribute($name));
+
+            if (str_starts_with($lower, 'on') || $lower === 'style') {
+                $element->removeAttribute($name);
+                continue;
+            }
+            if (! in_array($lower, $allowed, true)) {
+                $element->removeAttribute($name);
+                continue;
+            }
+            if ($lower === 'href' || $lower === 'src') {
+                if (! $this->isSafeUri($value)) $element->removeAttribute($name);
+            } elseif ($lower === 'target' && ! in_array(strtolower($value), ['_blank', '_self'], true)) {
+                $element->removeAttribute($name);
+            }
+        }
+    }
+
+    private function isSafeUri(string $value): bool
+    {
+        $value = trim($value);
+        if ($value === '' || $value[0] === '#') return true;
+        if (preg_match('#^(javascript|vbscript|data|file):#i', $value)) return false;
+        if (str_starts_with($value, '//')) return true;
+        $scheme = strtolower((string) parse_url($value, PHP_URL_SCHEME));
+        if ($scheme === '') return true;
+        return in_array($scheme, ['http', 'https', 'mailto'], true);
+    }
+
+    private function isHttpsUri(string $value): bool
+    {
+        $value = trim($value);
+        if ($value === '') return false;
+        return strtolower((string) parse_url($value, PHP_URL_SCHEME)) === 'https';
     }
 }

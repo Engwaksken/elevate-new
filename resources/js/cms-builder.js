@@ -5,6 +5,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const blocksEl = builder.querySelector('[data-cms-blocks]');
     const emptyEl = builder.querySelector('[data-cms-empty]');
 
+    const reindexNested = (block, i) => {
+        block.querySelectorAll('[data-column]').forEach((column, c) => {
+            const width = column.querySelector('[data-column-width]');
+            if (width) width.name = `sections[${i}][columns][${c}][width]`;
+            column.querySelectorAll('[data-widget]').forEach((widget, w) => {
+                const typeField = widget.querySelector('[data-widget-type-field]');
+                if (typeField) typeField.name = `sections[${i}][columns][${c}][widgets][${w}][type]`;
+                widget.querySelectorAll('[data-widget-field]').forEach((el) => {
+                    el.name = `sections[${i}][columns][${c}][widgets][${w}][${el.dataset.widgetField}]`;
+                });
+            });
+        });
+    };
+
     const reindex = () => {
         const blocks = [...blocksEl.querySelectorAll('[data-block]')];
         blocks.forEach((block, i) => {
@@ -18,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     el.name = `sections[${i}][items][${j}][${el.dataset.itemField}]`;
                 });
             });
+            reindexNested(block, i);
         });
         if (emptyEl) emptyEl.hidden = blocks.length > 0;
     };
@@ -34,6 +49,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const items = block.querySelector('[data-items]');
         if (!tpl || !items) return;
         items.appendChild(tpl.content.firstElementChild.cloneNode(true));
+        reindex();
+    };
+
+    const addColumn = (block) => {
+        const tpl = builder.querySelector('[data-column-template]');
+        const columns = block.querySelector('[data-columns]');
+        if (!tpl || !columns) return;
+        columns.appendChild(tpl.content.firstElementChild.cloneNode(true));
+        reindex();
+    };
+
+    const addWidget = (column, type) => {
+        const tpl = builder.querySelector(`[data-widget-template="${type}"]`);
+        const widgets = column.querySelector('[data-widgets]');
+        if (!tpl || !widgets) return;
+        widgets.appendChild(tpl.content.firstElementChild.cloneNode(true));
         reindex();
     };
 
@@ -72,6 +103,61 @@ document.addEventListener('DOMContentLoaded', () => {
         if (removeItem) {
             removeItem.closest('[data-item]').remove();
             reindex();
+            return;
+        }
+
+        const addColumnBtn = event.target.closest('[data-add-column]');
+        if (addColumnBtn) {
+            addColumn(addColumnBtn.closest('[data-block]'));
+            return;
+        }
+
+        const addWidgetBtn = event.target.closest('[data-add-widget]');
+        if (addWidgetBtn) {
+            addWidget(addWidgetBtn.closest('[data-column]'), addWidgetBtn.dataset.addWidget);
+            return;
+        }
+
+        const removeColumn = event.target.closest('[data-column-remove]');
+        if (removeColumn) {
+            removeColumn.closest('[data-column]').remove();
+            reindex();
+            return;
+        }
+
+        const moveColumn = event.target.closest('[data-column-move]');
+        if (moveColumn) {
+            const column = moveColumn.closest('[data-column]');
+            const columns = column.parentElement;
+            const dir = moveColumn.dataset.columnMove;
+            if (dir === 'up' && column.previousElementSibling) {
+                columns.insertBefore(column, column.previousElementSibling);
+            } else if (dir === 'down' && column.nextElementSibling) {
+                columns.insertBefore(column.nextElementSibling, column);
+            }
+            reindex();
+            return;
+        }
+
+        const removeWidget = event.target.closest('[data-widget-remove]');
+        if (removeWidget) {
+            removeWidget.closest('[data-widget]').remove();
+            reindex();
+            return;
+        }
+
+        const moveWidget = event.target.closest('[data-widget-move]');
+        if (moveWidget) {
+            const widget = moveWidget.closest('[data-widget]');
+            const widgets = widget.parentElement;
+            const dir = moveWidget.dataset.widgetMove;
+            if (dir === 'up' && widget.previousElementSibling) {
+                widgets.insertBefore(widget, widget.previousElementSibling);
+            } else if (dir === 'down' && widget.nextElementSibling) {
+                widgets.insertBefore(widget.nextElementSibling, widget);
+            }
+            reindex();
+            return;
         }
     });
 

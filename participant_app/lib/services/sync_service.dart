@@ -119,7 +119,8 @@ class SyncService {
 
   /// Marks a cached assignment as closed after the server rejected a
   /// submission with code "overdue", so the screen shows the extension card.
-  Future<void> markAssignmentOverdue(int assessmentId, {bool fromQueue = false}) async {
+  Future<void> markAssignmentOverdue(int assessmentId,
+      {bool fromQueue = false}) async {
     if (fromQueue) {
       // Kept apart from the assignment itself, which the next refresh
       // replaces with the server's copy.
@@ -188,7 +189,8 @@ class SyncService {
           } else {
             // 403/404/422 (e.g. "Maximum attempts reached", or the due
             // date passed) never succeed: drop them.
-            appLog('Dropping queued submission (${mapped.statusCode} ${mapped.code ?? ''})');
+            appLog(
+                'Dropping queued submission (${mapped.statusCode} ${mapped.code ?? ''})');
             if (mapped.isOverdue && assessmentId != null) {
               await markAssignmentOverdue(assessmentId, fromQueue: true);
             }
@@ -253,8 +255,9 @@ class SyncService {
               orElse: () => const {},
             );
             final payload = op['payload'];
-            final assessmentId =
-                payload is Map ? int.tryParse(payload['assessment_id']?.toString() ?? '') : null;
+            final assessmentId = payload is Map
+                ? int.tryParse(payload['assessment_id']?.toString() ?? '')
+                : null;
             if (assessmentId != null) {
               await markAssignmentOverdue(assessmentId, fromQueue: true);
             }
@@ -262,8 +265,9 @@ class SyncService {
           if (status == 'processed' || status == 'duplicate') {
             completed.add(id);
             final inner = raw['result'];
-            acknowledged[id] =
-                inner is Map ? Map<String, dynamic>.from(inner) : <String, dynamic>{};
+            acknowledged[id] = inner is Map
+                ? Map<String, dynamic>.from(inner)
+                : <String, dynamic>{};
           } else if (permanentFailure) {
             completed.add(id);
             rejected.add(id);
@@ -297,7 +301,8 @@ class SyncService {
     for (final course in await _db.readCollection('courses')) {
       final id = int.tryParse(course['id']?.toString() ?? '');
       if (id == null) continue;
-      if (await _db.readItem('course_details', 'course_$id') == null) ids.add(id);
+      if (await _db.readItem('course_details', 'course_$id') == null)
+        ids.add(id);
     }
 
     for (final id in ids.take(30)) {
@@ -366,7 +371,9 @@ class SyncService {
         await NotificationService.instance.scheduleFromSync(reminders);
       }
       final timetable = data['timetable_reminders'];
-      if (timetable is List) await NotificationService.instance.scheduleTimetableReminders(timetable);
+      if (timetable is List)
+        await NotificationService.instance
+            .scheduleTimetableReminders(timetable);
 
       await _prefetchCourseTrees(data['courses']);
 
