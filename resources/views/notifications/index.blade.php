@@ -2,6 +2,15 @@
 @section('title','Notifications | ElevateHer360')
 @section('content')
 
+<style>
+/* Show notifications four per row (two on tablets, one on phones). */
+.notification-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.notification-item{grid-template-columns:1fr;align-items:stretch;gap:10px}
+.notification-item .notification-actions{justify-content:flex-end}
+@media(max-width:1100px){.notification-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.notification-list{grid-template-columns:1fr}}
+</style>
+
 <div class="admin-page-header">
 <div>
     <span class="admin-eyebrow">Account</span>

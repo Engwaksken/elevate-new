@@ -38,25 +38,10 @@ class ProfileGoalsAndMentorTabTest extends TestCase
 
         $this->get(route('profile.edit'))
             ->assertOk()
-            ->assertSee('My Goals');
+            ->assertSee('Goals');
     }
 
-    public function test_ai_career_mentor_tab_only_shows_when_ai_is_active(): void
-    {
-        $this->actingAs($this->participant());
-
-        $this->get(route('profile.edit'))
-            ->assertOk()
-            ->assertDontSee('AI Career Mentor');
-
-        $this->enableAi();
-
-        $this->get(route('profile.edit'))
-            ->assertOk()
-            ->assertSee('AI Career Mentor');
-    }
-
-    public function test_mentorship_dashboard_hides_the_ai_section_when_ai_is_off(): void
+    public function test_mentorship_dashboard_shows_the_ai_section_only_when_ai_is_active(): void
     {
         $this->actingAs($this->participant());
 
@@ -69,5 +54,15 @@ class ProfileGoalsAndMentorTabTest extends TestCase
         $this->get(route('mentorship.dashboard'))
             ->assertOk()
             ->assertSee('AI Career Mentor');
+    }
+
+    public function test_participant_can_manage_goals_from_the_mentorship_page(): void
+    {
+        $this->actingAs($this->participant());
+
+        $this->get(route('mentorship.dashboard'))
+            ->assertOk()
+            ->assertSee('My Goals')
+            ->assertSee('Add a new goal');
     }
 }

@@ -178,18 +178,10 @@
         @endif
 
 
-        @if(Route::has('profile.edit'))
-            <a href="{{ route('profile.edit') }}#profile-goals" class="ps-link {{ request()->routeIs('profile.*') && request()->fullUrlIs('*#profile-goals') ? 'active' : '' }}">
+        @if(Route::has('mentorship.dashboard'))
+            <a href="{{ route('mentorship.dashboard') }}#goals" class="ps-link">
                 <i class="fas fa-flag"></i>
-                <span>My Goals</span>
-            </a>
-        @endif
-
-        @php($psAiEnabled = \App\Models\AiIntegration::query()->where('feature','system_ai')->where('enabled',true)->whereNotNull('encrypted_api_key')->exists())
-        @if($psAiEnabled && Route::has('profile.edit'))
-            <a href="{{ route('profile.edit') }}#profile-mentor" class="ps-link">
-                <i class="fas fa-wand-magic-sparkles"></i>
-                <span>AI Career Mentor</span>
+                <span>Goals</span>
             </a>
         @endif
 
