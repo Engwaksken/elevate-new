@@ -62,7 +62,7 @@ class ProfileGoalsAndMentorTabTest extends TestCase
 
         $this->get(route('mentorship.dashboard'))
             ->assertOk()
-            ->assertSee('My Goals')
-            ->assertSee('Add a new goal');
+            ->assertSee('Add a new goal')
+            ->assertSee('Total Goals');
     }
 }

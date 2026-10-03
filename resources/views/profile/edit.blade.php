@@ -133,7 +133,7 @@ $profileFormTabs = [
 <x-form-tab name="goals">
 <div class="eh-tab-section">
     <p class="eh-section-note">Set and track your goals, mentorship sessions and growth on the Mentorship page.</p>
-    <a href="https://site.elevateher360.org/mentorship" class="btn btn-primary" data-goals-link><i class="fas fa-flag"></i> Go to Goals</a>
+    <a href="https://site.elevateher360.org/mentorship#goals" class="btn btn-primary" data-goals-link><i class="fas fa-flag"></i> Go to Goals</a>
 </div>
 </x-form-tab>
 
@@ -152,7 +152,7 @@ $profileFormTabs = [
     var goalsTab = root.querySelector('[data-form-tab="goals"]');
     if (goalsTab) {
         goalsTab.addEventListener('click', function () {
-            window.location.href = 'https://site.elevateher360.org/mentorship';
+            window.location.href = 'https://site.elevateher360.org/mentorship#goals';
         });
     }
 })();
