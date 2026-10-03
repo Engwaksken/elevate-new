@@ -32,6 +32,8 @@ Route::prefix('v1')->group(function () {
             ->group(function () {
                 Route::post('/logout',[ParticipantAuthController::class,'logout']);
                 Route::get('/me',[ParticipantController::class,'me']);
+                Route::post('/email/verification-notification',[ParticipantAuthController::class,'resendVerification'])
+                    ->middleware('throttle:6,1')->name('api.participant.email.verification');
                 Route::get('/dashboard',[ParticipantController::class,'dashboard']);
                 Route::get('/support',[ParticipantSupportController::class,'show']);
                 Route::get('/career/documents', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'index']);

@@ -37,8 +37,12 @@ class ParticipantController extends Controller
 
     public function me(Request $request)
     {
+        $user = $request->user()->load('profile');
+
         return response()->json([
-            'user' => $request->user()->load('profile'),
+            'user' => array_merge($user->toArray(), [
+                'email_verified' => $user->hasVerifiedEmail(),
+            ]),
         ]);
     }
 

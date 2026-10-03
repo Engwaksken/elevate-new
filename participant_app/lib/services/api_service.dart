@@ -212,6 +212,20 @@ class ApiService {
 
   Future<Map<String, dynamic>> dashboard() => _getMap('/dashboard');
 
+  /// Whether the signed-in participant's email is verified, from the stored
+  /// user. Returns true when the flag is absent so existing sessions are not
+  /// locked out before their next refresh.
+  Future<bool> emailVerified() async {
+    final user = await currentUser();
+    return user?['email_verified'] != false;
+  }
+
+  /// POST /email/verification-notification — resend the verification email.
+  Future<Map<String, dynamic>> resendVerificationEmail() => _guard(() async {
+        final response = await dio.post('/email/verification-notification');
+        return _mapResponse(response.data);
+      });
+
   // =========================================================
   // PROFILE
   // =========================================================

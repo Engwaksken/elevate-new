@@ -48,8 +48,25 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'participant_code' => $user->participant_code,
                 'phone' => $user->phone,
+                'email_verified' => $user->hasVerifiedEmail(),
             ],
         ]);
+    }
+
+    /**
+     * Resend the participant's email verification link.
+     */
+    public function resendVerification(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Your email is already verified.']);
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return response()->json(['message' => 'Verification link sent. Please check your inbox.']);
     }
 
     public function logout(Request $request)

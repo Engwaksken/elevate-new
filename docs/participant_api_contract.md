@@ -49,8 +49,9 @@ Public. Body (JSON): `email` (required), `password` (required), `device_name` (o
 
 200:
 ```json
-{"token":"12|abc...","token_type":"Bearer","user":{"id":5,"name":"Jane","email":"jane@x.org","phone":"0700..."}}
+{"token":"12|abc...","token_type":"Bearer","user":{"id":5,"name":"Jane","email":"jane@x.org","phone":"0700...","email_verified":true}}
 ```
+`email_verified` is a boolean. When it is `false`, the app must show the "verify your email" screen before letting her use the app; she can resend the link with the endpoint below.
 422 (bad credentials or not a participant account):
 ```json
 {"message":"Invalid email or password.","errors":{"email":["Invalid email or password."]}}
@@ -60,7 +61,12 @@ Public. Body (JSON): `email` (required), `password` (required), `device_name` (o
 Revokes the current token. 200 `{"message":"Signed out successfully."}`
 
 ### GET /me
-200 `{"user":{"id":5,"name":"Jane","email":"...","user_type":"participant","status":"active","profile":{...}|null, ...}}`
+200 `{"user":{"id":5,"name":"Jane","email":"...","user_type":"participant","status":"active","email_verified":true,"profile":{...}|null, ...}}`
+
+### POST /email/verification-notification
+Resends the verification email to the signed-in participant (throttled 6/min). Unaffected when the email is already verified.
+200 `{"message":"Verification link sent. Please check your inbox."}`
+200 (already verified) `{"message":"Your email is already verified."}`
 
 ### GET /dashboard
 200:

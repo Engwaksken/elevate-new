@@ -10,6 +10,7 @@ import '../services/auth_flow.dart';
 import '../widgets/decorations.dart';
 import 'about_screen.dart';
 import 'home_screen.dart';
+import 'verify_email_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.notice});
@@ -57,17 +58,25 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await ApiService.instance.login(
+      final data = await ApiService.instance.login(
         email: _email.text,
         password: _password.text,
       );
 
-      await AuthFlow.afterSignIn();
+      final user = data['user'];
+      final verified = user is Map && user['email_verified'] != false;
+
+      if (verified) {
+        await AuthFlow.afterSignIn();
+      }
 
       if (!mounted) return;
 
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(
+          builder: (_) =>
+              verified ? const HomeScreen() : const VerifyEmailScreen(),
+        ),
       );
     } catch (error) {
       final mapped = AppException.from(error);
