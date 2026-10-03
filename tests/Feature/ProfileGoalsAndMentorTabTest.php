@@ -32,13 +32,13 @@ class ProfileGoalsAndMentorTabTest extends TestCase
         $config->save();
     }
 
-    public function test_profile_page_has_a_goals_tab(): void
+    public function test_profile_page_no_longer_has_a_goals_tab(): void
     {
         $this->actingAs($this->participant());
 
         $this->get(route('profile.edit'))
             ->assertOk()
-            ->assertSee('Goals');
+            ->assertDontSee('data-form-tab="goals"', false);
     }
 
     public function test_mentorship_dashboard_shows_the_ai_section_only_when_ai_is_active(): void

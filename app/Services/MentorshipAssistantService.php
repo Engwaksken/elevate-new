@@ -90,7 +90,7 @@ class MentorshipAssistantService
             $base .= "You're currently tracking {$goals} open goal".($goals === 1 ? '' : 's').". ";
         }
 
-        return $base.'The AI career mentor is not available right now. In the meantime: write down one concrete career question, '
-            .'bring it to your next mentorship session, and set a small next step you can finish this week. Configure the system AI provider in Admin to enable full AI guidance.';
+        return $base.'I cannot answer that in detail right now. In the meantime, write down one concrete career question, '
+            .'bring it to your next mentorship session, and set a small next step you can finish this week.';
     }
 }

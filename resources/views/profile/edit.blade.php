@@ -61,7 +61,6 @@ $profileFormTabs = [
     'career' => ['label' => 'Career', 'icon' => 'fa-briefcase', 'fields' => ['education_level', 'employment_status', 'career_interests']],
     'preferences' => ['label' => 'Preferences', 'icon' => 'fa-language', 'fields' => ['preferred_language']],
     'security' => ['label' => 'Security', 'icon' => 'fa-shield-halved', 'fields' => ['current_password', 'password', 'password_confirmation']],
-    'goals' => ['label' => 'Goals', 'icon' => 'fa-flag', 'fields' => []],
 ];
 @endphp
 <x-form-tabs id="profile" label="Profile sections" :tabs="$profileFormTabs">
@@ -130,31 +129,11 @@ $profileFormTabs = [
 </div>
 </x-form-tab>
 
-<x-form-tab name="goals">
-<div class="eh-tab-section">
-    <p class="eh-section-note">Set and track your goals, mentorship sessions and growth on the Mentorship page.</p>
-    <a href="https://site.elevateher360.org/mentorship#goals" class="btn btn-primary" data-goals-link><i class="fas fa-flag"></i> Go to Goals</a>
-</div>
-</x-form-tab>
-
 </x-form-tabs>
 
-<div class="eh-form-actions" data-profile-form-actions>
+<div class="eh-form-actions">
     <button class="btn btn-primary" type="submit"><i class="fas fa-floppy-disk"></i> Save Profile</button>
 </div>
 </form>
 </div>
-
-<script>
-(function () {
-    var root = document.getElementById('profile');
-    if (!root) return;
-    var goalsTab = root.querySelector('[data-form-tab="goals"]');
-    if (goalsTab) {
-        goalsTab.addEventListener('click', function () {
-            window.location.href = 'https://site.elevateher360.org/mentorship#goals';
-        });
-    }
-})();
-</script>
 @endsection

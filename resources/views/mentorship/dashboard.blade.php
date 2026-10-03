@@ -130,6 +130,26 @@
                     <div class="eh-goal-stat"><i class="fas fa-chart-line"></i><div><small>Average Progress</small><strong>{{ number_format((float)($myGoalStats['average'] ?? 0),1) }}%</strong></div></div>
                 </div>
 
+                <details class="eh-goal-add" style="margin-top:0;margin-bottom:18px" @if($errors->has('title')) open @endif>
+                    <summary><i class="fas fa-plus"></i> Add a new goal</summary>
+                    <form method="POST" action="{{ route('profile.goals.store') }}" style="margin-top:14px">
+                        @csrf
+                        <div class="eh-goal-form-grid">
+                            <div class="full"><label>Goal title *</label><input name="title" value="{{ old('title') }}" required maxlength="190" placeholder="e.g. Get a data analyst internship"></div>
+                            <div class="full"><label>Description</label><textarea name="description" rows="3" placeholder="What does success look like?">{{ old('description') }}</textarea></div>
+                            <div><label>Category</label><select name="category">@foreach(['career'=>'Career','learning'=>'Learning','personal'=>'Personal','mentorship'=>'Mentorship','other'=>'Other'] as $v=>$l)<option value="{{ $v }}" @selected(old('category','career')===$v)>{{ $l }}</option>@endforeach</select></div>
+                            <div><label>Priority</label><select name="priority">@foreach(['low'=>'Low','medium'=>'Medium','high'=>'High'] as $v=>$l)<option value="{{ $v }}" @selected(old('priority','medium')===$v)>{{ $l }}</option>@endforeach</select></div>
+                            <div><label>Baseline value</label><input type="number" step="any" name="baseline_value" value="{{ old('baseline_value') }}"></div>
+                            <div><label>Target value</label><input type="number" step="any" min="0" name="target_value" value="{{ old('target_value') }}"></div>
+                            <div><label>Current value</label><input type="number" step="any" min="0" name="current_value" value="{{ old('current_value') }}"></div>
+                            <div><label>Unit</label><input name="unit" value="{{ old('unit') }}" maxlength="40" placeholder="e.g. sessions, applications"></div>
+                            <div><label>Start date</label><input type="date" name="start_date" value="{{ old('start_date') }}"></div>
+                            <div><label>Target date</label><input type="date" name="target_date" value="{{ old('target_date') }}"></div>
+                        </div>
+                        <div style="margin-top:14px;text-align:right"><button class="btn btn-primary" type="submit"><i class="fas fa-plus"></i> Add goal</button></div>
+                    </form>
+                </details>
+
                 @if(($myGoals ?? collect())->isEmpty())
                     <div style="background:#faf7f2;border-radius:12px;padding:20px;text-align:center;color:#667085">
                         <p style="margin:0">You have not set any goals yet. Add your first goal below.</p>
@@ -180,26 +200,6 @@
                         @endforeach
                     </div>
                 @endif
-
-                <details class="eh-goal-add">
-                    <summary><i class="fas fa-plus"></i> Add a new goal</summary>
-                    <form method="POST" action="{{ route('profile.goals.store') }}" style="margin-top:14px">
-                        @csrf
-                        <div class="eh-goal-form-grid">
-                            <div class="full"><label>Goal title *</label><input name="title" value="{{ old('title') }}" required maxlength="190" placeholder="e.g. Get a data analyst internship"></div>
-                            <div class="full"><label>Description</label><textarea name="description" rows="3" placeholder="What does success look like?">{{ old('description') }}</textarea></div>
-                            <div><label>Category</label><select name="category">@foreach(['career'=>'Career','learning'=>'Learning','personal'=>'Personal','mentorship'=>'Mentorship','other'=>'Other'] as $v=>$l)<option value="{{ $v }}" @selected(old('category','career')===$v)>{{ $l }}</option>@endforeach</select></div>
-                            <div><label>Priority</label><select name="priority">@foreach(['low'=>'Low','medium'=>'Medium','high'=>'High'] as $v=>$l)<option value="{{ $v }}" @selected(old('priority','medium')===$v)>{{ $l }}</option>@endforeach</select></div>
-                            <div><label>Baseline value</label><input type="number" step="any" name="baseline_value" value="{{ old('baseline_value') }}"></div>
-                            <div><label>Target value</label><input type="number" step="any" min="0" name="target_value" value="{{ old('target_value') }}"></div>
-                            <div><label>Current value</label><input type="number" step="any" min="0" name="current_value" value="{{ old('current_value') }}"></div>
-                            <div><label>Unit</label><input name="unit" value="{{ old('unit') }}" maxlength="40" placeholder="e.g. sessions, applications"></div>
-                            <div><label>Start date</label><input type="date" name="start_date" value="{{ old('start_date') }}"></div>
-                            <div><label>Target date</label><input type="date" name="target_date" value="{{ old('target_date') }}"></div>
-                        </div>
-                        <div style="margin-top:14px;text-align:right"><button class="btn btn-primary" type="submit"><i class="fas fa-plus"></i> Add goal</button></div>
-                    </form>
-                </details>
             </div>
         </section>
 
