@@ -180,10 +180,17 @@
 
         <div class="features">
 
-            <a
-                href="{{ route('learning.index') }}"
-                class="feature-link"
-            >
+            @auth
+                <a
+                    href="{{ auth()->user()->isParticipant() ? route('learning.my-courses') : route('learning.index') }}"
+                    class="feature-link"
+                >
+            @else
+                <a
+                    href="{{ route('learning.index') }}"
+                    class="feature-link"
+                >
+            @endauth
                 <article class="feature">
 
                     <div class="feature-icon">
@@ -200,7 +207,7 @@
                     </p>
 
                     <div class="feature-arrow">
-                        Explore Learning
+                        {{ auth()->check() && auth()->user()->isParticipant() ? 'Go to My Learning' : 'Explore Learning' }}
                         <i class="fas fa-arrow-right"></i>
                     </div>
 

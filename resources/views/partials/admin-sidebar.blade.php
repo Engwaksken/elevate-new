@@ -203,6 +203,12 @@
                     'permissions' => ['users.edit'],
                 ],
                 [
+                    'route' => 'admin.participant-goals.index',
+                    'label' => 'Participant Goals',
+                    'icon' => 'fa-flag',
+                    'permissions' => ['users.view'],
+                ],
+                [
                     'route' => 'admin.roles.index',
                     'label' => 'Roles & Permissions',
                     'icon' => 'fa-user-shield',

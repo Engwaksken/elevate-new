@@ -144,18 +144,30 @@
         </span>
 
 
-        @if(Route::has('learning.index'))
+        @if(Route::has('learning.my-courses'))
 
             <a
-                href="{{ route('learning.index') }}"
+                href="{{ route('learning.my-courses') }}"
                 class="ps-link {{
-                    request()->routeIs('learning.*')
+                    request()->routeIs('learning.my-courses', 'learning.course.dashboard', 'learning.lesson.*', 'learning.assessment.*')
                         ? 'active'
                         : ''
                 }}"
             >
                 <i class="fas fa-graduation-cap"></i>
-                <span>Learning</span>
+                <span>My Learning</span>
+            </a>
+
+            <a
+                href="{{ route('learning.index') }}"
+                class="ps-link {{
+                    request()->routeIs('learning.index', 'learning.course.show')
+                        ? 'active'
+                        : ''
+                }}"
+            >
+                <i class="fas fa-magnifying-glass"></i>
+                <span>Browse Courses</span>
             </a>
 
         @endif

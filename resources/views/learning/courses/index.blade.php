@@ -5,6 +5,11 @@
 <div class="card">
 <h1>{{ app(\App\Services\CmsContentService::class)->text('learning', 'title', 'Courses') }}</h1>
 <p>{{ app(\App\Services\CmsContentService::class)->text('learning', 'summary') }}</p>
+@auth
+    @if(auth()->user()->isParticipant() && Route::has('learning.my-courses'))
+        <a href="{{ route('learning.my-courses') }}" class="btn btn-primary"><i class="fas fa-book-open"></i> Go to My Learning</a>
+    @endif
+@endauth
 @include('partials.cms-intro', ['slug' => 'learning'])
 </div>
 <style>

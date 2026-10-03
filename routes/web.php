@@ -94,6 +94,7 @@ use App\Http\Controllers\Participant\DashboardController as ParticipantDashboard
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Admin\PlatformSettingsController;
 use App\Http\Controllers\Participant\ProfileController;
+use App\Http\Controllers\Admin\ParticipantGoalController as AdminParticipantGoalController;
 use App\Http\Controllers\Admin\ProgrammeController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Public\PublicSurveyController;
@@ -715,6 +716,9 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function () {
+    Route::get('/participant-goals',[AdminParticipantGoalController::class,'index'])
+        ->middleware('permission:users.view')->name('participant-goals.index');
+
     Route::get('/workplans',[WorkplanController::class,'index'])->middleware('permission:workplans.view')->name('workplans.index');
     Route::post('/workplans',[WorkplanController::class,'store'])->middleware('permission:workplans.create')->name('workplans.store');
     Route::post('/workplans/{workplan}/submit',[WorkplanController::class,'submit'])->middleware('permission:workplans.edit')->name('workplans.submit');
