@@ -13,6 +13,7 @@ import '../widgets/cached_data.dart';
 import '../widgets/feedback.dart';
 import '../widgets/progress_widgets.dart';
 import '../widgets/state_views.dart';
+import 'mentorship_ai_screen.dart';
 
 class MentorshipScreen extends StatefulWidget {
   const MentorshipScreen({super.key});
@@ -158,16 +159,26 @@ class _MentorshipScreenState extends State<MentorshipScreen>
     return RefreshIndicator(
       onRefresh: refreshFromServer,
       child: sessions.isEmpty
-          ? const EmptyState(
-              icon: Icons.diversity_3_outlined,
-              title: 'No mentorship sessions yet',
-              message: 'When you are matched with a mentor, your sessions will appear '
-                  'here. Great things are coming!',
+          ? ListView(
+              padding: AppSpacing.listPadding,
+              children: const [
+                SizedBox(height: AppSpacing.sm),
+                _AiMentorEntry(),
+                SizedBox(height: AppSpacing.xl),
+                EmptyState(
+                  icon: Icons.diversity_3_outlined,
+                  title: 'No mentorship sessions yet',
+                  message: 'When you are matched with a mentor, your sessions will appear '
+                      'here. Great things are coming!',
+                ),
+              ],
             )
           : ListView(
               padding: AppSpacing.listPadding,
               children: [
                 const SizedBox(height: AppSpacing.sm),
+                const _AiMentorEntry(),
+                const SizedBox(height: AppSpacing.md),
                 _AttendanceSummaryCard(summary: summary),
                 SectionHeader(title: 'Upcoming (${upcoming.length})'),
                 if (upcoming.isEmpty)
@@ -499,6 +510,59 @@ class _DetailBlock extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(body, style: theme.textTheme.bodyMedium),
         ],
+      ),
+    );
+  }
+}
+
+/// Prominent entry point to the AI career mentor, shown at the top of the
+/// mentorship screen.
+class _AiMentorEntry extends StatelessWidget {
+  const _AiMentorEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MentorshipAiScreen()),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Icon(Icons.auto_awesome, color: scheme.onPrimaryContainer),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Ask the AI career mentor', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      'Get answers and guidance on your career path, anytime.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
       ),
     );
   }

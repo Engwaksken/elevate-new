@@ -14,12 +14,16 @@ class Certificate extends Model
         'certificate_template_id',
         'certificate_number',
         'issued_on',
+        'period_start',
+        'period_end',
         'pdf_path',
         'verification_token',
     ];
 
     protected $casts = [
         'issued_on' => 'date',
+        'period_start' => 'date',
+        'period_end' => 'date',
     ];
 
     public function course(): BelongsTo

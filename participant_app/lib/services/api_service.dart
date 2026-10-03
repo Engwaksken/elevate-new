@@ -493,6 +493,57 @@ class ApiService {
         return _mapResponse(response.data);
       });
 
+  /// POST /mentorship/assistant -> `{message, source}`. The AI call can take
+  /// up to a minute, so the receive timeout is raised for this request only.
+  Future<Map<String, dynamic>> mentorshipAssistant({
+    required String message,
+    List<Map<String, String>> history = const [],
+  }) =>
+      _guard(() async {
+        final response = await dio.post(
+          '/mentorship/assistant',
+          data: {'message': message, 'history': history},
+          options: Options(receiveTimeout: const Duration(seconds: 90)),
+        );
+        return _mapResponse(response.data);
+      });
+
+  // =========================================================
+  // PERSONAL GOALS AND PROGRESS TRACKING
+  // =========================================================
+
+  /// GET /goals -> `{goals: [...], summary: {...}}`.
+  Future<Map<String, dynamic>> goals() => _getMap('/goals');
+
+  /// POST /goals -> 201 `{message, goal}`.
+  Future<Map<String, dynamic>> createGoal(Map<String, dynamic> data) =>
+      _guard(() async {
+        final response = await dio.post('/goals', data: data);
+        return _mapResponse(response.data);
+      });
+
+  /// PUT /goals/{id} (partial) -> `{message, goal}`.
+  Future<Map<String, dynamic>> updateGoal(int id, Map<String, dynamic> data) =>
+      _guard(() async {
+        final response = await dio.put('/goals/$id', data: data);
+        return _mapResponse(response.data);
+      });
+
+  /// PUT /goals/{id}/progress `{current_value?, progress_percent?, status?}`.
+  Future<Map<String, dynamic>> updateGoalProgress(
+    int id,
+    Map<String, dynamic> data,
+  ) =>
+      _guard(() async {
+        final response = await dio.put('/goals/$id/progress', data: data);
+        return _mapResponse(response.data);
+      });
+
+  /// DELETE /goals/{id}.
+  Future<void> deleteGoal(int id) => _guard(() async {
+        await dio.delete('/goals/$id');
+      });
+
   Future<Map<String, dynamic>> jobs({int page = 1, String? search}) =>
       _getMap('/jobs', query: {
         'page': page,

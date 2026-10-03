@@ -76,6 +76,14 @@ Route::prefix('v1')->group(function () {
                 Route::post('/mentorship/sessions/{session}/attendance',[ParticipantController::class,'confirmMentorshipAttendance'])
                     ->whereNumber('session')
                     ->name('api.participant.mentorship.sessions.attendance');
+                Route::post('/mentorship/assistant',[App\Http\Controllers\Api\V1\Participant\MentorshipAssistantController::class,'message'])
+                    ->middleware('throttle:20,1')->name('api.participant.mentorship.assistant');
+
+                Route::get('/goals',[App\Http\Controllers\Api\V1\Participant\GoalController::class,'index'])->name('api.participant.goals.index');
+                Route::post('/goals',[App\Http\Controllers\Api\V1\Participant\GoalController::class,'store'])->name('api.participant.goals.store');
+                Route::put('/goals/{goal}',[App\Http\Controllers\Api\V1\Participant\GoalController::class,'update'])->whereNumber('goal')->name('api.participant.goals.update');
+                Route::put('/goals/{goal}/progress',[App\Http\Controllers\Api\V1\Participant\GoalController::class,'progress'])->whereNumber('goal')->name('api.participant.goals.progress');
+                Route::delete('/goals/{goal}',[App\Http\Controllers\Api\V1\Participant\GoalController::class,'destroy'])->whereNumber('goal')->name('api.participant.goals.destroy');
 
                 Route::get('/profile',[ParticipantProfileController::class,'show'])->name('api.participant.profile.show');
                 Route::put('/profile',[ParticipantProfileController::class,'update'])->name('api.participant.profile.update');

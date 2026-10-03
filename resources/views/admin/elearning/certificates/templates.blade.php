@@ -32,6 +32,7 @@
         <span class="cert-template-meta">{{ ucfirst($template->orientation) }} · {{ $template->is_active ? 'Active' : 'Inactive' }}</span>
     </div>
     <div class="cert-template-actions">
+        <a href="{{ route('admin.elearning.certificates.templates.design',$template) }}" class="btn btn-primary btn-sm"><i class="fas fa-pen-ruler"></i> Design fields</a>
         <form method="POST" action="{{ route('admin.elearning.certificates.templates.toggle',$template) }}">
             @csrf @method('PATCH')
             <button class="btn btn-outline btn-sm"><i class="fas {{ $template->is_active ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i> {{ $template->is_active ? 'Deactivate' : 'Activate' }}</button>

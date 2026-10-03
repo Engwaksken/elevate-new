@@ -115,4 +115,116 @@ $profileFormTabs = [
     <button class="btn btn-primary" type="submit"><i class="fas fa-floppy-disk"></i> Save Profile</button>
 </div>
 </form>
+
+<section class="eh-profile-goals" aria-labelledby="my-goals-heading">
+<style>
+.eh-profile-goals{margin-top:32px}
+.eh-goal-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 20px}
+.eh-goal-stat{background:#fff;border:1px solid #eadede;border-left:4px solid #800000;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px}
+.eh-goal-stat i{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:#fff7da;color:#800000}
+.eh-goal-stat small{display:block;color:#667085;font-weight:700}
+.eh-goal-stat strong{font-size:1.3rem;color:#101828}
+.eh-goal-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.eh-goal-card{background:#fff;border:1px solid #eadede;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.eh-goal-card h3{margin:0;font-size:1.05rem;color:#101828}
+.eh-goal-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:.8rem;color:#667085}
+.eh-goal-meta span{background:#f6f1ea;border-radius:20px;padding:3px 10px}
+.eh-goal-bar{height:9px;background:#eee;border-radius:9px;overflow:hidden}
+.eh-goal-bar > span{display:block;height:100%;background:linear-gradient(90deg,#800000,#b03a3a)}
+.eh-goal-actions{display:flex;gap:8px;flex-wrap:wrap}
+.eh-goal-actions form{margin:0}
+.eh-goal-add{margin-top:18px;background:#fff;border:1px dashed #d9c6c6;border-radius:14px;padding:18px}
+.eh-goal-add summary{cursor:pointer;font-weight:700;color:#800000}
+@media(max-width:900px){.eh-goal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.eh-goal-list{grid-template-columns:1fr}}
+@media(max-width:560px){.eh-goal-grid{grid-template-columns:1fr}}
+</style>
+
+<div class="page-header" style="margin-top:8px">
+    <div>
+        <span class="eh-kicker">Growth</span>
+        <h2 id="my-goals-heading">My Goals</h2>
+        <p>Set personal and career goals, then track your progress over time.</p>
+    </div>
+</div>
+
+<div class="eh-goal-grid">
+    <div class="eh-goal-stat"><i class="fas fa-bullseye"></i><div><small>Total Goals</small><strong>{{ number_format($goalStats['total'] ?? 0) }}</strong></div></div>
+    <div class="eh-goal-stat"><i class="fas fa-person-running"></i><div><small>In Progress</small><strong>{{ number_format($goalStats['in_progress'] ?? 0) }}</strong></div></div>
+    <div class="eh-goal-stat"><i class="fas fa-trophy"></i><div><small>Completed</small><strong>{{ number_format($goalStats['completed'] ?? 0) }}</strong></div></div>
+    <div class="eh-goal-stat"><i class="fas fa-chart-line"></i><div><small>Average Progress</small><strong>{{ number_format((float)($goalStats['average'] ?? 0),1) }}%</strong></div></div>
+</div>
+
+@if(($goals ?? collect())->isEmpty())
+    <div class="eh-empty" style="background:#fff;border:1px solid #eadede;border-radius:14px;padding:24px;text-align:center;color:#667085">
+        <p>You have not set any goals yet. Add your first goal below to start tracking progress.</p>
+    </div>
+@else
+    <div class="eh-goal-list">
+        @foreach($goals as $goal)
+        <article class="eh-goal-card">
+            <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+                <h3>{{ $goal->title }}</h3>
+                <span class="eh-status" style="white-space:nowrap">{{ ucfirst(str_replace('_',' ',$goal->status)) }}</span>
+            </div>
+            @if($goal->description)<p style="margin:0;color:#475467">{{ $goal->description }}</p>@endif
+            <div class="eh-goal-meta">
+                <span>{{ ucfirst($goal->category) }}</span>
+                @if($goal->target_value !== null)<span>{{ rtrim(rtrim(number_format((float)$goal->current_value,2),'0'),'.') }} / {{ rtrim(rtrim(number_format((float)$goal->target_value,2),'0'),'.') }} {{ $goal->unit }}</span>@endif
+                @if($goal->target_date)<span>Due {{ $goal->target_date->format('d M Y') }}</span>@endif
+                <span>{{ ucfirst($goal->priority) }} priority</span>
+            </div>
+            <div class="eh-goal-bar" role="progressbar" aria-valuenow="{{ (int)$goal->progress_percent }}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{ max(0,min(100,(float)$goal->progress_percent)) }}%"></span></div>
+            <div style="font-size:.85rem;color:#667085"><strong style="color:#101828">{{ number_format((float)$goal->progress_percent,0) }}%</strong> complete</div>
+
+            <details style="background:#faf7f2;border-radius:10px;padding:10px 12px">
+                <summary style="cursor:pointer;font-weight:600;color:#800000">Update progress</summary>
+                <form method="POST" action="{{ route('profile.goals.progress',$goal) }}" style="margin-top:10px;display:grid;gap:10px">
+                    @csrf @method('PUT')
+                    <label>Current value
+                        <input type="number" step="any" min="0" name="current_value" value="{{ $goal->current_value }}">
+                    </label>
+                    <label>Progress %
+                        <input type="number" min="0" max="100" name="progress_percent" value="{{ number_format((float)$goal->progress_percent,0) }}">
+                    </label>
+                    <label>Status
+                        <select name="status">
+                            @foreach(['not_started'=>'Not started','in_progress'=>'In progress','completed'=>'Completed','cancelled'=>'Cancelled'] as $v=>$l)
+                                <option value="{{ $v }}" @selected($goal->status===$v)>{{ $l }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-floppy-disk"></i> Save progress</button>
+                </form>
+                <form method="POST" action="{{ route('profile.goals.destroy',$goal) }}" style="margin-top:8px" onsubmit="return confirm('Remove this goal?');">
+                    @csrf @method('DELETE')
+                    <button class="btn btn-outline btn-sm" type="submit"><i class="fas fa-trash"></i> Remove goal</button>
+                </form>
+            </details>
+        </article>
+        @endforeach
+    </div>
+@endif
+
+<details class="eh-goal-add" @if($errors->has('title')) open @endif>
+    <summary><i class="fas fa-plus"></i> Add a new goal</summary>
+    <form method="POST" action="{{ route('profile.goals.store') }}" style="margin-top:14px">
+        @csrf
+        <div class="eh-form-grid">
+            <div class="full"><label>Goal title *</label><input name="title" value="{{ old('title') }}" required maxlength="190" placeholder="e.g. Get a data analyst internship"></div>
+            <div class="full"><label>Description</label><textarea name="description" rows="3" placeholder="What does success look like?">{{ old('description') }}</textarea></div>
+            <div><label>Category</label><select name="category">@foreach(['career'=>'Career','learning'=>'Learning','personal'=>'Personal','mentorship'=>'Mentorship','other'=>'Other'] as $v=>$l)<option value="{{ $v }}" @selected(old('category','career')===$v)>{{ $l }}</option>@endforeach</select></div>
+            <div><label>Priority</label><select name="priority">@foreach(['low'=>'Low','medium'=>'Medium','high'=>'High'] as $v=>$l)<option value="{{ $v }}" @selected(old('priority','medium')===$v)>{{ $l }}</option>@endforeach</select></div>
+            <div><label>Baseline value</label><input type="number" step="any" name="baseline_value" value="{{ old('baseline_value') }}" placeholder="Starting point"></div>
+            <div><label>Target value</label><input type="number" step="any" min="0" name="target_value" value="{{ old('target_value') }}" placeholder="Goal"></div>
+            <div><label>Current value</label><input type="number" step="any" min="0" name="current_value" value="{{ old('current_value') }}"></div>
+            <div><label>Unit</label><input name="unit" value="{{ old('unit') }}" maxlength="40" placeholder="e.g. sessions, applications"></div>
+            <div><label>Start date</label><input type="date" name="start_date" value="{{ old('start_date') }}"></div>
+            <div><label>Target date</label><input type="date" name="target_date" value="{{ old('target_date') }}"></div>
+        </div>
+        <div class="eh-form-actions" style="margin-top:14px">
+            <button class="btn btn-primary" type="submit"><i class="fas fa-plus"></i> Add goal</button>
+        </div>
+    </form>
+</details>
+</section>
 @endsection

@@ -508,3 +508,51 @@ The backend has no server push (FCM) sender yet, so the app should pick these up
 ```
 
 Blank settings are `null`. `email` falls back to `LEGAL_SUPPORT_EMAIL` and `introduction` to the default text above. `whatsapp_url` is built from the digits in `whatsapp`.
+
+## Personal goals and progress tracking
+
+Authenticated. A participant keeps her own goals and tracks progress against a target.
+
+### GET /goals
+200:
+```json
+{
+  "goals": [{
+    "id": 7, "title": "Get an internship", "description": "Apply widely",
+    "category": "career", "unit": "applications",
+    "baseline_value": 0, "target_value": 10, "current_value": 3,
+    "progress_percent": 30.0, "start_date": "2026-01-01", "target_date": "2026-06-30",
+    "priority": "high", "status": "in_progress", "source": "self",
+    "completed_at": null, "created_at": "...", "updated_at": "..."
+  }],
+  "summary": {"total": 1, "in_progress": 1, "completed": 0, "cancelled": 0, "average_progress": 30.0}
+}
+```
+`category`: `career|learning|personal|mentorship|other`. `priority`: `low|medium|high`. `status`: `not_started|in_progress|completed|cancelled`.
+
+### POST /goals  (JSON)
+Body: `title` (required, ≤190), `description`, `category`, `unit`, `baseline_value`, `target_value`, `current_value`, `start_date`, `target_date`, `priority`, `status`.
+201 `{"message":"Goal created.","goal":{...}}` · 422 validation.
+
+Progress is auto-derived: when `target_value` is set, `progress_percent = (current - baseline) / (target - baseline) × 100`. Reaching 100% sets `status` to `completed` and stamps `completed_at`.
+
+### PUT /goals/{goal}  (JSON, partial)
+Same fields. 200 `{"message":"Goal updated.","goal":{...}}` · 403 `{"message":"This goal does not belong to you."}` · 404 `{"message":"...not found."}`
+
+### PUT /goals/{goal}/progress  (JSON, partial)
+Body: any of `current_value` (numeric), `progress_percent` (0-100), `status`.
+200 `{"message":"Progress saved.","goal":{...}}`
+
+### DELETE /goals/{goal}
+200 `{"message":"Goal removed."}`
+
+## AI career mentor (mentorship)
+
+### POST /mentorship/assistant  (JSON)
+Throttled 20/min. Body: `message` (required, ≤1500), `history` (optional, up to 12 items of `{"role":"user|assistant","content":"..."}`, oldest first).
+The reply is grounded in the participant's own goals, mentorship sessions and profile.
+200:
+```json
+{"message": "Start by listing your strengths, then ...", "source": "ai"}
+```
+`source` is `ai` when the configured provider answered, or `guidance` when AI is unavailable and a short fallback is returned. This endpoint never fails because AI is down; it falls back instead.

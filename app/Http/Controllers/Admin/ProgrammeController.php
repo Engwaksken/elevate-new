@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Programme;
+use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ class ProgrammeController extends Controller
 {
     public function index(Request $request)
     {
-        $query=Programme::query();
+        $query=Programme::query()->with(['targets' => fn($q)=>$q->orderByDesc('id')]);
 
         if($search=trim((string)$request->get('search'))){
             $query->where(fn($q)=>$q->where('name','like',"%{$search}%")
@@ -30,6 +31,7 @@ class ProgrammeController extends Controller
 
         return view('admin.programmes.index',[
             'programmes'=>$query->latest()->paginate($perPage)->withQueryString(),
+            'users'=>User::where('user_type','staff')->orderBy('name')->get(),
             'stats'=>[
                 'total'=>Programme::count(),
                 'active'=>Programme::where('status','active')->count(),

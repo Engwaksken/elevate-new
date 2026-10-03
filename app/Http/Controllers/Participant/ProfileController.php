@@ -17,12 +17,24 @@ class ProfileController extends Controller
 {
     public function edit(Request $request): View
     {
+        $goals = $request->user()->goals()
+            ->orderByRaw("CASE status WHEN 'in_progress' THEN 1 WHEN 'not_started' THEN 2 WHEN 'completed' THEN 3 ELSE 4 END")
+            ->latest()
+            ->get();
+
         return view('profile.edit',[
             'user'=>$request->user()->load('profile'),
             'branches'=>Branch::query()
                 ->where('is_active',true)
                 ->orderBy('name')
                 ->get(),
+            'goals'=>$goals,
+            'goalStats'=>[
+                'total'=>$goals->count(),
+                'in_progress'=>$goals->where('status','in_progress')->count(),
+                'completed'=>$goals->where('status','completed')->count(),
+                'average'=>$goals->isEmpty() ? 0 : round((float) $goals->avg('progress_percent'),1),
+            ],
         ]);
     }
 

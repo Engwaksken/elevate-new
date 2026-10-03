@@ -76,8 +76,11 @@ use App\Http\Controllers\Admin\Mentorship\MentorMatchController;
 use App\Http\Controllers\Mentorship\MentorProfileController;
 use App\Http\Controllers\Admin\Mentorship\MentorRecommendationController;
 use App\Http\Controllers\Mentorship\MentorshipDashboardController;
+use App\Http\Controllers\Mentorship\MentorshipAssistantController;
 use App\Http\Controllers\Mentorship\MentorshipGoalController;
 use App\Http\Controllers\Mentorship\MentorshipSessionController;
+use App\Http\Controllers\Participant\GoalController as ParticipantGoalController;
+use App\Http\Controllers\Admin\ProgrammeTargetController;
 use App\Http\Controllers\Admin\MigrationController;
 use App\Http\Controllers\Admin\ProgrammeManagement\MilestoneController;
 use App\Http\Controllers\Instructor\ModuleAccessController;
@@ -230,6 +233,13 @@ Route::prefix('admin')
 
         Route::resource('programmes', ProgrammeController::class)->except('show')
             ->middleware('permission:programmes.manage');
+
+        Route::post('/programmes/{programme}/targets', [ProgrammeTargetController::class, 'store'])
+            ->middleware('permission:programmes.manage')->name('programmes.targets.store');
+        Route::put('/programme-targets/{target}', [ProgrammeTargetController::class, 'update'])
+            ->middleware('permission:programmes.manage')->name('programme-targets.update');
+        Route::delete('/programme-targets/{target}', [ProgrammeTargetController::class, 'destroy'])
+            ->middleware('permission:programmes.manage')->name('programme-targets.destroy');
 
         Route::delete('/projects/bulk-delete', [ProjectController::class, 'bulkDestroy'])->middleware('permission:programmes.manage')->name('projects.bulk-destroy');
 
@@ -481,10 +491,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('learning.files.download');
 
     Route::get('/mentorship',[MentorshipDashboardController::class,'index'])->name('mentorship.dashboard');
+    Route::post('/mentorship/assistant',[MentorshipAssistantController::class,'message'])
+        ->middleware('throttle:20,1')->name('mentorship.assistant.message');
     Route::get('/mentorship/mentor-profile',[MentorProfileController::class,'edit'])->name('mentorship.mentor-profile.edit');
     Route::put('/mentorship/mentor-profile',[MentorProfileController::class,'update'])->name('mentorship.mentor-profile.update');
     Route::post('/mentorship/matches/{match}/sessions',[MentorshipSessionController::class,'store'])->name('mentorship.sessions.store');
     Route::put('/mentorship/sessions/{session}/complete',[MentorshipSessionController::class,'complete'])->name('mentorship.sessions.complete');
+
+    Route::post('/profile/goals',[ParticipantGoalController::class,'store'])->name('profile.goals.store');
+    Route::put('/profile/goals/{goal}',[ParticipantGoalController::class,'update'])->name('profile.goals.update');
+    Route::put('/profile/goals/{goal}/progress',[ParticipantGoalController::class,'progress'])->name('profile.goals.progress');
+    Route::delete('/profile/goals/{goal}',[ParticipantGoalController::class,'destroy'])->name('profile.goals.destroy');
 });
 
 Route::prefix('admin/elearning')->name('admin.elearning.')->middleware(['auth', 'staff'])->group(function () {
@@ -693,6 +710,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
     Route::post('/workplans',[WorkplanController::class,'store'])->middleware('permission:workplans.create')->name('workplans.store');
     Route::post('/workplans/{workplan}/submit',[WorkplanController::class,'submit'])->middleware('permission:workplans.edit')->name('workplans.submit');
     Route::post('/workplans/{workplan}/approve',[WorkplanController::class,'approve'])->middleware('permission:workplans.approve')->name('workplans.approve');
+    Route::post('/workplans/{workplan}/return',[WorkplanController::class,'returnForRevision'])->middleware('permission:workplans.approve')->name('workplans.return');
+    Route::post('/workplans/{workplan}/reject',[WorkplanController::class,'reject'])->middleware('permission:workplans.approve')->name('workplans.reject');
+    Route::post('/workplans/{workplan}/start',[WorkplanController::class,'start'])->middleware('permission:workplans.edit')->name('workplans.start');
+    Route::post('/workplans/{workplan}/complete',[WorkplanController::class,'complete'])->middleware('permission:workplans.edit')->name('workplans.complete');
 
     Route::post('/workplans/{workplan}/milestones',[MilestoneController::class,'store'])->middleware('permission:milestones.manage')->name('milestones.store');
     Route::put('/milestones/{milestone}',[MilestoneController::class,'update'])->middleware('permission:milestones.manage')->name('milestones.update');
@@ -1087,6 +1108,12 @@ Route::prefix('admin/elearning/certificates/templates')
 
         Route::post('/', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'storeTemplate'])
             ->name('store');
+
+        Route::get('/{template}/design', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'designTemplate'])
+            ->name('design');
+
+        Route::put('/{template}/design', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'updateTemplateLayout'])
+            ->name('design.update');
 
         Route::get('/{template}/preview', [\App\Http\Controllers\Admin\Elearning\CertificateAdminController::class,'previewTemplate'])
             ->name('preview');

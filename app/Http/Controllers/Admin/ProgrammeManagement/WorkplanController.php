@@ -8,6 +8,7 @@ use App\Models\Programme;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\Workplan;
+use App\Services\WorkplanProgressService;
 use Illuminate\Http\Request;
 
 class WorkplanController extends Controller
@@ -17,6 +18,9 @@ class WorkplanController extends Controller
         $query = Workplan::with([
             'milestones' => fn ($q) => $q->orderBy('due_date'),
             'activities' => fn ($q) => $q->orderBy('start_date'),
+            'approvals.user',
+            'creator',
+            'approver',
         ])->withCount(['milestones','activities'])->latest();
 
         if ($search = trim((string) $request->get('search'))) {
@@ -44,7 +48,7 @@ class WorkplanController extends Controller
             'stats'=>[
                 'total'=>Workplan::count(),
                 'draft'=>Workplan::where('status','draft')->count(),
-                'submitted'=>Workplan::where('status','submitted')->count(),
+                'submitted'=>Workplan::whereIn('status',['submitted','under_review'])->count(),
                 'approved'=>Workplan::where('status','approved')->count(),
             ],
         ]);
@@ -81,14 +85,14 @@ class WorkplanController extends Controller
         }
 
         $workplan->update(['status'=>'submitted']);
-        $workplan->approvals()->create(['user_id'=>auth()->id(),'action'=>'submitted']);
+        $workplan->approvals()->create(['user_id'=>auth()->id(),'action'=>'submitted','acted_at'=>now()]);
 
-        return back()->with('success','Workplan submitted.');
+        return back()->with('success','Workplan submitted for approval.');
     }
 
     public function approve(Request $request, Workplan $workplan)
     {
-        if ($workplan->status !== 'submitted') {
+        if (! $workplan->canBeApproved()) {
             return back()->with('error','Only submitted workplans can be approved.');
         }
 
@@ -104,8 +108,71 @@ class WorkplanController extends Controller
             'user_id'=>auth()->id(),
             'action'=>'approved',
             'comments'=>$request->input('comments'),
+            'acted_at'=>now(),
         ]);
 
         return back()->with('success','Workplan approved.');
+    }
+
+    public function returnForRevision(Request $request, Workplan $workplan)
+    {
+        if (! $workplan->canBeApproved()) {
+            return back()->with('error','Only submitted workplans can be returned.');
+        }
+
+        $data = $request->validate(['comments'=>['required','string','max:2000']]);
+
+        $workplan->update(['status'=>'draft','approved_by'=>null,'approved_at'=>null]);
+        $workplan->approvals()->create([
+            'user_id'=>auth()->id(),
+            'action'=>'returned',
+            'comments'=>$data['comments'],
+            'acted_at'=>now(),
+        ]);
+
+        return back()->with('success','Workplan returned for revision.');
+    }
+
+    public function reject(Request $request, Workplan $workplan)
+    {
+        if (! $workplan->canBeApproved()) {
+            return back()->with('error','Only submitted workplans can be rejected.');
+        }
+
+        $data = $request->validate(['comments'=>['required','string','max:2000']]);
+
+        $workplan->update(['status'=>'cancelled']);
+        $workplan->approvals()->create([
+            'user_id'=>auth()->id(),
+            'action'=>'rejected',
+            'comments'=>$data['comments'],
+            'acted_at'=>now(),
+        ]);
+
+        return back()->with('success','Workplan rejected.');
+    }
+
+    public function start(Workplan $workplan, WorkplanProgressService $progress)
+    {
+        if ($workplan->status !== 'approved') {
+            return back()->with('error','Only approved workplans can be started.');
+        }
+
+        $workplan->update(['status'=>'in_progress']);
+        $progress->recalculate($workplan);
+
+        return back()->with('success','Workplan started.');
+    }
+
+    public function complete(Workplan $workplan, WorkplanProgressService $progress)
+    {
+        if (! in_array($workplan->status, ['in_progress','on_hold'], true)) {
+            return back()->with('error','Only active workplans can be completed.');
+        }
+
+        $progress->recalculate($workplan);
+        $workplan->update(['status'=>'completed','progress_percent'=>100]);
+
+        return back()->with('success','Workplan marked completed.');
     }
 }

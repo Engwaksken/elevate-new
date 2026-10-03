@@ -56,7 +56,18 @@ class ParticipantCertificateService
             $template = CertificateTemplate::resolveFor(null, $event->id);
             $participantId = $event->course_id ? Enrolment::where('course_id',$event->course_id)->where('user_id',$user->id)->value('enrolment_code') : null;
             $participantId ??= $user->participant_code;
-            $pdf = Pdf::loadView('events.certificates.pdf', compact('event','user','certificate','template','participantId'))->setPaper('a4', $template?->orientation ?: 'landscape');
+            $layout = $template?->fieldLayout() ?? CertificateTemplate::defaultLayout();
+            $fields = [
+                'heading' => $event->certificate_title ?: 'Certificate of Attendance',
+                'name' => $user->name,
+                'course' => $event->title,
+                'certificate_number' => $certificate->certificate_code,
+                'participant_id' => $participantId ?? '',
+                'start_period' => optional($event->starts_at)->format('d M Y') ?? '',
+                'end_period' => optional($event->ends_at ?? $event->starts_at)->format('d M Y') ?? '',
+                'issued' => optional($certificate->issued_at)->format('d M Y') ?? now()->format('d M Y'),
+            ];
+            $pdf = Pdf::loadView('events.certificates.pdf', compact('event','user','certificate','template','participantId','layout','fields'))->setPaper('a4', $template?->orientation ?: 'landscape');
             $path = 'certificates/events/'.$certificate->id.'.pdf';
             Storage::disk('local')->put($path, $pdf->output());
             $number = $certificate->certificate_code;

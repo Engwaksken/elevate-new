@@ -15,6 +15,7 @@ import '../widgets/state_views.dart';
 import '../widgets/user_avatar.dart';
 import 'change_password_screen.dart';
 import 'edit_profile_screen.dart';
+import 'goals_screen.dart';
 
 /// The participant's own profile: photo, key details, completion and the
 /// private (optional) section. Viewable offline from the cache; editing
@@ -432,6 +433,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: const Text('Edit profile'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _edit,
+                ),
+                const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
+                ListTile(
+                  leading: const Icon(Icons.flag_outlined),
+                  title: const Text('My goals'),
+                  subtitle: const Text('Set goals and track your progress'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const GoalsScreen()),
+                  ),
                 ),
                 const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
                 ListTile(

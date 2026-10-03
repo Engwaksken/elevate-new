@@ -105,6 +105,72 @@ class CertificateAdminController extends Controller
         return back()->with('success','Certificate template uploaded.');
     }
 
+    public function designTemplate(CertificateTemplate $template)
+    {
+        abort_unless($template->background_path && Storage::disk('public')->exists($template->background_path), 404);
+
+        return view('admin.elearning.certificates.template-design', [
+            'template' => $template,
+            'layout' => $template->fieldLayout(),
+            'definitions' => CertificateTemplate::fieldDefinitions(),
+            'fonts' => CertificateTemplate::fontOptions(),
+        ]);
+    }
+
+    public function updateTemplateLayout(Request $request, CertificateTemplate $template)
+    {
+        $validated = $request->validate([
+            'layout' => ['required', 'array'],
+            'layout.*.enabled' => ['nullable', 'boolean'],
+            'layout.*.x' => ['nullable', 'numeric', 'between:0,100'],
+            'layout.*.y' => ['nullable', 'numeric', 'between:0,100'],
+            'layout.*.width' => ['nullable', 'numeric', 'between:1,100'],
+            'layout.*.align' => ['nullable', 'in:left,center,right'],
+            'layout.*.font_family' => ['nullable', 'string', 'max:60'],
+            'layout.*.font_size' => ['nullable', 'numeric', 'between:6,120'],
+            'layout.*.color' => ['nullable', 'string', 'max:20'],
+            'layout.*.bold' => ['nullable', 'boolean'],
+            'layout.*.italic' => ['nullable', 'boolean'],
+            'layout.*.underline' => ['nullable', 'boolean'],
+            'layout.*.uppercase' => ['nullable', 'boolean'],
+            'layout.*.letter_spacing' => ['nullable', 'numeric', 'between:-5,20'],
+            'layout.*.prefix' => ['nullable', 'string', 'max:60'],
+            'layout.*.suffix' => ['nullable', 'string', 'max:60'],
+        ]);
+
+        $input = $validated['layout'];
+        $defaults = CertificateTemplate::defaultLayout();
+        $layout = [];
+
+        foreach (array_keys(CertificateTemplate::fieldDefinitions()) as $key) {
+            $row = $input[$key] ?? [];
+            $default = $defaults[$key];
+
+            $layout[$key] = [
+                'enabled' => (bool) ($row['enabled'] ?? false),
+                'x' => isset($row['x']) ? round((float) $row['x'], 2) : $default['x'],
+                'y' => isset($row['y']) ? round((float) $row['y'], 2) : $default['y'],
+                'width' => isset($row['width']) ? round((float) $row['width'], 2) : $default['width'],
+                'align' => $row['align'] ?? $default['align'],
+                'font_family' => $row['font_family'] ?? $default['font_family'],
+                'font_size' => isset($row['font_size']) ? round((float) $row['font_size'], 2) : $default['font_size'],
+                'color' => $row['color'] ?? $default['color'],
+                'bold' => filter_var($row['bold'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'italic' => filter_var($row['italic'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'underline' => filter_var($row['underline'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'uppercase' => filter_var($row['uppercase'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'letter_spacing' => isset($row['letter_spacing']) ? round((float) $row['letter_spacing'], 2) : 0,
+                'prefix' => $row['prefix'] ?? '',
+                'suffix' => $row['suffix'] ?? '',
+            ];
+        }
+
+        $template->update(['layout' => $layout]);
+
+        return redirect()->route('admin.elearning.certificates.templates.design', $template)
+            ->with('success', 'Certificate layout saved.');
+    }
+
     public function previewTemplate(CertificateTemplate $template)
     {
         abort_unless($template->background_path && Storage::disk('public')->exists($template->background_path), 404);

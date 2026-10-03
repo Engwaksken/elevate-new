@@ -231,3 +231,20 @@ int? asInt(dynamic value) {
   final text = value.toString().trim();
   return int.tryParse(text) ?? double.tryParse(text)?.round();
 }
+
+double? asDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  final text = value.toString().trim();
+  return double.tryParse(text);
+}
+
+/// Trims trailing ".0" from a whole number for display: 5.0 -> "5",
+/// 12.50 -> "12.5". Returns an empty string for null.
+String formatNumber(dynamic value) {
+  final parsed = asDouble(value);
+  if (parsed == null) return '';
+  if (parsed == parsed.roundToDouble()) return parsed.toInt().toString();
+  return parsed.toString();
+}

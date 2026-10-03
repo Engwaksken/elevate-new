@@ -32,7 +32,7 @@
 <div class="admin-panel">
 <form method="GET" class="admin-toolbar">
     <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search title, financial year or description..."></div>
-    <select name="status"><option value="">All statuses</option>@foreach(['draft','submitted','approved'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst($s) }}</option>@endforeach</select>
+    <select name="status"><option value="">All statuses</option>@foreach(['draft','submitted','under_review','approved','in_progress','on_hold','completed','cancelled'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select>
     <select name="period_type"><option value="">All periods</option>@foreach(['annual','quarterly','monthly','programme','project','department','staff'] as $p)<option value="{{ $p }}" @selected(request('period_type')===$p)>{{ ucfirst($p) }}</option>@endforeach</select>
     <input type="date" name="from" value="{{ request('from') }}">
     <input type="date" name="to" value="{{ request('to') }}">
@@ -54,11 +54,13 @@
 <td>{{ $workplan->milestones_count }}</td>
 <td>{{ $workplan->activities_count }}</td>
 <td><span class="status-chip {{ $workplan->status }}">{{ ucfirst($workplan->status) }}</span></td>
-<td class="table-actions"><div class="action-group">
+        <td class="table-actions"><div class="action-group">
 <button type="button" class="btn-icon" title="Add milestone" data-modal-open="addMilestone{{ $workplan->id }}"><i class="fas fa-flag"></i></button>
 <button type="button" class="btn-icon" title="Add activity" data-modal-open="addActivity{{ $workplan->id }}"><i class="fas fa-calendar-plus"></i></button>
-@if($workplan->status==='draft')<button type="button" class="btn-icon" data-modal-open="submitWorkplan{{ $workplan->id }}"><i class="fas fa-paper-plane"></i></button>@endif
-@if($workplan->status==='submitted')<button type="button" class="btn-icon" data-modal-open="approveWorkplan{{ $workplan->id }}"><i class="fas fa-check"></i></button>@endif
+@if($workplan->status==='draft')<button type="button" class="btn-icon" title="Submit for approval" data-modal-open="submitWorkplan{{ $workplan->id }}"><i class="fas fa-paper-plane"></i></button>@endif
+@if(in_array($workplan->status,['submitted','under_review'],true))<button type="button" class="btn-icon" title="Approve" data-modal-open="approveWorkplan{{ $workplan->id }}"><i class="fas fa-check"></i></button><button type="button" class="btn-icon" title="Return for revision" data-modal-open="returnWorkplan{{ $workplan->id }}"><i class="fas fa-rotate-left"></i></button><button type="button" class="btn-icon" title="Reject" data-modal-open="rejectWorkplan{{ $workplan->id }}"><i class="fas fa-ban"></i></button>@endif
+@if($workplan->status==='approved')<button type="button" class="btn-icon" title="Start workplan" data-modal-open="startWorkplan{{ $workplan->id }}"><i class="fas fa-play"></i></button>@endif
+@if(in_array($workplan->status,['in_progress','on_hold'],true))<button type="button" class="btn-icon" title="Mark completed" data-modal-open="completeWorkplan{{ $workplan->id }}"><i class="fas fa-flag-checkered"></i></button>@endif
 </div></td>
 </tr>
 
@@ -84,6 +86,24 @@
 @empty<tr><td colspan="6">No activities.</td></tr>@endforelse
 </tbody></table>
 </div>
+</details>
+</td></tr>
+@endif
+
+@if($workplan->approvals->count())
+<tr><td colspan="8">
+<details>
+<summary><strong>Approval history</strong></summary>
+<table class="admin-table" style="margin-top:10px"><thead><tr><th>Action</th><th>By</th><th>When</th><th>Comments</th></tr></thead><tbody>
+@foreach($workplan->approvals as $approval)
+<tr>
+<td><span class="status-chip {{ $approval->action==='approved' ? 'approved' : ($approval->action==='rejected' ? 'cancelled' : 'draft') }}">{{ ucfirst($approval->action) }}</span></td>
+<td>{{ $approval->user?->name ?? '—' }}</td>
+<td>{{ optional($approval->acted_at)->format('d M Y H:i') ?: '—' }}</td>
+<td>{{ $approval->comments ?: '—' }}</td>
+</tr>
+@endforeach
+</tbody></table>
 </details>
 </td></tr>
 @endif
@@ -151,13 +171,43 @@
 </div></div>
 @endif
 
-@if($workplan->status==='submitted')
+@if(in_array($workplan->status,['submitted','under_review'],true))
 <div class="eh-modal" id="approveWorkplan{{ $workplan->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-sm">
 <div class="eh-modal-header"><div><h2>Approve Workplan?</h2><p>{{ $workplan->title }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
 <form method="POST" action="{{ route('admin.workplans.approve',$workplan) }}">@csrf
 <div class="eh-modal-body"><div class="form-group"><label>Approval Comments</label><textarea name="comments"></textarea></div></div>
 <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Approve</button></div>
 </form></div></div>
+
+<div class="eh-modal" id="returnWorkplan{{ $workplan->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-sm">
+<div class="eh-modal-header"><div><h2>Return for Revision?</h2><p>{{ $workplan->title }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+<form method="POST" action="{{ route('admin.workplans.return',$workplan) }}">@csrf
+<div class="eh-modal-body"><div class="form-group"><label>What needs to change? *</label><textarea name="comments" required></textarea></div></div>
+<div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Return</button></div>
+</form></div></div>
+
+<div class="eh-modal" id="rejectWorkplan{{ $workplan->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-sm">
+<div class="eh-modal-header"><div><h2>Reject Workplan?</h2><p>{{ $workplan->title }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+<form method="POST" action="{{ route('admin.workplans.reject',$workplan) }}">@csrf
+<div class="eh-modal-body"><div class="form-group"><label>Reason *</label><textarea name="comments" required></textarea></div></div>
+<div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Reject</button></div>
+</form></div></div>
+@endif
+
+@if($workplan->status==='approved')
+<div class="eh-modal" id="startWorkplan{{ $workplan->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-sm">
+<div class="eh-modal-header"><div><h2>Start Workplan?</h2><p>{{ $workplan->title }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+<div class="eh-modal-body"><p>Mark this approved workplan as in progress?</p></div>
+<div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><form method="POST" action="{{ route('admin.workplans.start',$workplan) }}">@csrf<button class="btn btn-primary">Start</button></form></div>
+</div></div>
+@endif
+
+@if(in_array($workplan->status,['in_progress','on_hold'],true))
+<div class="eh-modal" id="completeWorkplan{{ $workplan->id }}" aria-hidden="true"><div class="eh-modal-dialog eh-modal-sm">
+<div class="eh-modal-header"><div><h2>Mark Completed?</h2><p>{{ $workplan->title }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+<div class="eh-modal-body"><p>Mark this workplan as completed?</p></div>
+<div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><form method="POST" action="{{ route('admin.workplans.complete',$workplan) }}">@csrf<button class="btn btn-primary">Complete</button></form></div>
+</div></div>
 @endif
 
 @foreach($workplan->milestones as $m)
