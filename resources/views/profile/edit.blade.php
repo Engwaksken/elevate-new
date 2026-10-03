@@ -28,6 +28,26 @@
 </div>
 @endif
 
+<style>
+.eh-profile-card{background:#fff;border:1px solid #eadede;border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(16,24,40,.04);margin-bottom:28px}
+.eh-profile-card .eh-tabs{margin-bottom:0}
+.eh-profile-card .eh-tab-content{padding-top:22px}
+.eh-profile-card .eh-tab-section{padding:20px 0}
+.eh-profile-card .eh-form-grid label{display:block;font-weight:600;color:#344054;margin-bottom:6px}
+.eh-profile-card .eh-form-grid input,
+.eh-profile-card .eh-form-grid select,
+.eh-profile-card .eh-form-grid textarea{width:100%;background:#fff;border:1px solid #d0d5dd;border-radius:9px;padding:10px 12px;min-height:44px;color:#101828;font:inherit}
+.eh-profile-card .eh-form-grid textarea{min-height:120px;resize:vertical}
+.eh-profile-card .eh-form-grid input:focus,
+.eh-profile-card .eh-form-grid select:focus,
+.eh-profile-card .eh-form-grid textarea:focus{border-color:#800000;box-shadow:0 0 0 3px rgba(128,0,0,.08);outline:none;background:#fff}
+.eh-profile-card .eh-form-actions{margin-top:20px;padding-top:18px;border-top:1px solid #f0e7e7;display:flex;justify-content:flex-end}
+.eh-profile-card .password-wrap{position:relative}
+.eh-profile-card .password-wrap input{padding-right:46px}
+@media(max-width:575px){.eh-profile-card{padding:18px}}
+</style>
+
+<div class="eh-profile-card">
 <form method="POST" action="{{ route('profile.update') }}">
 @csrf
 @method('PUT')
@@ -115,6 +135,7 @@ $profileFormTabs = [
     <button class="btn btn-primary" type="submit"><i class="fas fa-floppy-disk"></i> Save Profile</button>
 </div>
 </form>
+</div>
 
 <section class="eh-profile-goals" aria-labelledby="my-goals-heading">
 <style>
@@ -175,6 +196,13 @@ $profileFormTabs = [
             </div>
             <div class="eh-goal-bar" role="progressbar" aria-valuenow="{{ (int)$goal->progress_percent }}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{ max(0,min(100,(float)$goal->progress_percent)) }}%"></span></div>
             <div style="font-size:.85rem;color:#667085"><strong style="color:#101828">{{ number_format((float)$goal->progress_percent,0) }}%</strong> complete</div>
+
+            @if($goal->mentor_comment)
+            <div style="background:#eef7ee;border:1px solid #cfe8cf;border-radius:10px;padding:10px 12px;font-size:.87rem;color:#0b3d1f">
+                <strong><i class="fas fa-comment-dots"></i> Mentor feedback:</strong> {{ $goal->mentor_comment }}
+                @if($goal->mentor_reviewed_at)<div style="color:#4b7a4b;font-size:.78rem;margin-top:4px">{{ $goal->mentor_reviewed_at->format('d M Y') }}@if($goal->mentorReviewer) · {{ $goal->mentorReviewer->name }}@endif</div>@endif
+            </div>
+            @endif
 
             <details style="background:#faf7f2;border-radius:10px;padding:10px 12px">
                 <summary style="cursor:pointer;font-weight:600;color:#800000">Update progress</summary>

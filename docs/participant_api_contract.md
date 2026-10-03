@@ -530,6 +530,8 @@ Authenticated. A participant keeps her own goals and tracks progress against a t
 ```
 `category`: `career|learning|personal|mentorship|other`. `priority`: `low|medium|high`. `status`: `not_started|in_progress|completed|cancelled`.
 
+`mentor_comment` (string|null) and `mentor_reviewed_at` (ISO-8601|null) are set when her mentor reviews the goal on the mentorship dashboard. Her mentor can see her personal goals; the feedback is read-only for the participant.
+
 ### POST /goals  (JSON)
 Body: `title` (required, ≤190), `description`, `category`, `unit`, `baseline_value`, `target_value`, `current_value`, `start_date`, `target_date`, `priority`, `status`.
 201 `{"message":"Goal created.","goal":{...}}` · 422 validation.

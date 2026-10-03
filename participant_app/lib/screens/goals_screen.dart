@@ -331,6 +331,37 @@ class _GoalCard extends StatelessWidget {
                 style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
               ),
             ],
+            if (goal.mentorComment != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.comment_outlined, size: 18, color: scheme.onPrimaryContainer),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          'Mentor feedback',
+                          style: theme.textTheme.labelLarge?.copyWith(color: scheme.onPrimaryContainer),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      goal.mentorComment!,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: AppSpacing.xs,

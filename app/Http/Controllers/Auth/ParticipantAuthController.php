@@ -111,12 +111,51 @@ class ParticipantAuthController extends Controller
             $user
         );
 
+        $this->notifyRegistration($user);
+
         return redirect()
             ->route('verification.notice')
             ->with(
                 'success',
                 'Account created. Please verify your email address.'
             );
+    }
+
+    /**
+     * Welcome the new participant and tell the registration team.
+     */
+    private function notifyRegistration(User $user): void
+    {
+        try {
+            $dispatcher = app(\App\Services\NotificationDispatcher::class);
+
+            $dispatcher->notify(
+                $user,
+                'account',
+                'Welcome to ElevateHer360',
+                'Your participant account is ready. Complete your profile, explore courses and connect with a mentor.',
+                '/dashboard',
+                ['user_id' => $user->id]
+            );
+
+            $staff = User::query()
+                ->where('user_type', 'staff')
+                ->where('status', 'active')
+                ->whereHas('roles.permissions', fn ($query) => $query->where('slug', 'users.view'))
+                ->get()
+                ->reject(fn (User $member) => (int) $member->id === (int) $user->id);
+
+            $dispatcher->notifyMany(
+                $staff,
+                'registration',
+                'New participant registration',
+                "{$user->name} ({$user->email}) just registered on ElevateHer360.",
+                '/admin/users',
+                ['user_id' => $user->id]
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**

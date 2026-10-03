@@ -35,6 +35,14 @@ class GoalInfo {
     return text.isEmpty ? null : text;
   }
 
+  /// Feedback left by her mentor, when present.
+  String? get mentorComment {
+    final text = raw['mentor_comment']?.toString().trim() ?? '';
+    return text.isEmpty ? null : text;
+  }
+
+  DateTime? get mentorReviewedAt => _parseDate(raw['mentor_reviewed_at']);
+
   double? get targetValue => asDouble(raw['target_value']);
   double? get currentValue => asDouble(raw['current_value']);
   double? get baselineValue => asDouble(raw['baseline_value']);

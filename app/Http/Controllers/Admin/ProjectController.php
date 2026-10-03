@@ -43,9 +43,15 @@ class ProjectController extends Controller
 
     public function store(Request $request, AuditService $audit)
     {
-        $project=Project::create($this->validated($request));
+        $data=$this->validated($request);
+
+        if(blank($data['code'] ?? null)){
+            $data['code']=app(\App\Services\CodeGenerator::class)->next('PRJ',Project::class);
+        }
+
+        $project=Project::create($data);
         $audit->log('projects','created',$project,[],$project->toArray());
-        return redirect()->route('admin.projects.index')->with('success','Project created.');
+        return redirect()->route('admin.projects.index')->with('success','Project created. Code: '.$project->code);
     }
 
     public function edit(Project $project){ return redirect()->route('admin.projects.index')->with('open_modal','project-'.$project->id); }
@@ -53,9 +59,15 @@ class ProjectController extends Controller
     public function update(Request $request, Project $project, AuditService $audit)
     {
         $old=$project->toArray();
-        $project->update($this->validated($request,$project->id));
+        $data=$this->validated($request,$project->id);
+
+        if(blank($data['code'] ?? null)){
+            $data['code']=$project->code ?: app(\App\Services\CodeGenerator::class)->next('PRJ',Project::class);
+        }
+
+        $project->update($data);
         $audit->log('projects','updated',$project,$old,$project->fresh()->toArray());
-        return redirect()->route('admin.projects.index')->with('success','Project updated.');
+        return redirect()->route('admin.projects.index')->with('success','Project updated. Code: '.$project->code);
     }
 
     public function destroy(Project $project, AuditService $audit)

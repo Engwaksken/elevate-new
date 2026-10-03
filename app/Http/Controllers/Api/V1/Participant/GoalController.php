@@ -113,6 +113,8 @@ class GoalController extends Controller
             'priority' => $goal->priority,
             'status' => $goal->status,
             'source' => $goal->source,
+            'mentor_comment' => $goal->mentor_comment,
+            'mentor_reviewed_at' => $goal->mentor_reviewed_at?->toIso8601String(),
             'completed_at' => $goal->completed_at?->toIso8601String(),
             'created_at' => $goal->created_at?->toIso8601String(),
             'updated_at' => $goal->updated_at?->toIso8601String(),

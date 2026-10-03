@@ -74,8 +74,8 @@
                         <input type="checkbox" name="remember" value="1" @checked(old('remember'))>
                         <span>Remember me</span>
                     </label>
-                    @if(Route::has('password.request'))
-                        <a href="{{ route('password.request') }}" class="eh-forgot-link">Forgot password?</a>
+                    @if(Route::has('admin.password.request'))
+                        <a href="{{ route('admin.password.request') }}" class="eh-forgot-link">Forgot password?</a>
                     @endif
                 </div>
 

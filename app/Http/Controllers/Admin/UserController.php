@@ -94,6 +94,15 @@ class UserController extends Controller
         $user->roles()->sync($roleIds);
         $this->syncAssignments($user, $data, $request->boolean('sync_assignments'));
 
+        app(\App\Services\NotificationDispatcher::class)->notify(
+            $user,
+            'account',
+            'Welcome to '.config('app.name', 'ElevateHer360'),
+            'Your account has been created. Sign in with your email address and the password provided to you.',
+            $user->isStaff() ? '/admin/login' : '/login',
+            ['user_id' => $user->id]
+        );
+
         $audit->log(
             'users',
             'created',
@@ -144,8 +153,22 @@ class UserController extends Controller
             ]);
         }
 
+        $oldRoleIds = collect($old['roles'] ?? [])->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+        $newRoleIds = collect($roleIds)->map(fn ($id) => (int) $id)->sort()->values()->all();
+
         $user->roles()->sync($roleIds);
         $this->syncAssignments($user, $data, $request->boolean('sync_assignments'));
+
+        if ($oldRoleIds !== $newRoleIds) {
+            app(\App\Services\NotificationDispatcher::class)->notify(
+                $user,
+                'account_roles',
+                'Your account roles were updated',
+                'An administrator changed the roles assigned to your account. Review the areas you can now access.',
+                '/notifications',
+                ['user_id' => $user->id]
+            );
+        }
 
         $audit->log(
             'users',

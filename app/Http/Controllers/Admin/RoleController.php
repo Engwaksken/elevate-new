@@ -82,6 +82,17 @@ class RoleController extends Controller
 
         $role->permissions()->sync($data['permissions'] ?? []);
 
+        // Let everyone holding this role know their access may have changed.
+        $holders = $role->users()->get()->reject(fn ($user) => (int) $user->id === (int) auth()->id());
+        app(\App\Services\NotificationDispatcher::class)->notifyMany(
+            $holders,
+            'role_permissions',
+            'Your role permissions were updated',
+            "An administrator updated the permissions for the '{$role->name}' role. Review what you can access.",
+            '/notifications',
+            ['role_id' => $role->id]
+        );
+
         $audit->log(
             'roles',
             'permissions_updated',

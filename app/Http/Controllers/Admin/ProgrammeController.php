@@ -45,9 +45,15 @@ class ProgrammeController extends Controller
 
     public function store(Request $request, AuditService $audit)
     {
-        $programme=Programme::create($this->validated($request));
+        $data=$this->validated($request);
+
+        if(blank($data['code'] ?? null)){
+            $data['code']=app(\App\Services\CodeGenerator::class)->next('PRG',Programme::class);
+        }
+
+        $programme=Programme::create($data);
         $audit->log('programmes','created',$programme,[],$programme->toArray());
-        return redirect()->route('admin.programmes.index')->with('success','Programme created.');
+        return redirect()->route('admin.programmes.index')->with('success','Programme created. Code: '.$programme->code);
     }
 
     public function edit(Programme $programme){ return redirect()->route('admin.programmes.index')->with('open_modal','programme-'.$programme->id); }
@@ -55,9 +61,15 @@ class ProgrammeController extends Controller
     public function update(Request $request, Programme $programme, AuditService $audit)
     {
         $old=$programme->toArray();
-        $programme->update($this->validated($request,$programme->id));
+        $data=$this->validated($request,$programme->id);
+
+        if(blank($data['code'] ?? null)){
+            $data['code']=$programme->code ?: app(\App\Services\CodeGenerator::class)->next('PRG',Programme::class);
+        }
+
+        $programme->update($data);
         $audit->log('programmes','updated',$programme,$old,$programme->fresh()->toArray());
-        return redirect()->route('admin.programmes.index')->with('success','Programme updated.');
+        return redirect()->route('admin.programmes.index')->with('success','Programme updated. Code: '.$programme->code);
     }
 
     public function destroy(Programme $programme, AuditService $audit)

@@ -77,6 +77,7 @@ use App\Http\Controllers\Mentorship\MentorProfileController;
 use App\Http\Controllers\Admin\Mentorship\MentorRecommendationController;
 use App\Http\Controllers\Mentorship\MentorshipDashboardController;
 use App\Http\Controllers\Mentorship\MentorshipAssistantController;
+use App\Http\Controllers\Mentorship\ParticipantGoalController as MentorshipParticipantGoalController;
 use App\Http\Controllers\Mentorship\MentorshipGoalController;
 use App\Http\Controllers\Mentorship\MentorshipSessionController;
 use App\Http\Controllers\Participant\GoalController as ParticipantGoalController;
@@ -187,6 +188,12 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/forgot-password', [PasswordResetController::class, 'email'])
     ->name('password.email');
+
+Route::get('/admin/forgot-password', [PasswordResetController::class, 'staffRequestForm'])
+    ->name('admin.password.request');
+
+Route::post('/admin/forgot-password', [PasswordResetController::class, 'staffEmail'])
+    ->name('admin.password.email');
 
 Route::get('/reset-password/{token}', [PasswordResetController::class, 'resetForm'])
     ->name('password.reset');
@@ -497,6 +504,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/mentorship/mentor-profile',[MentorProfileController::class,'update'])->name('mentorship.mentor-profile.update');
     Route::post('/mentorship/matches/{match}/sessions',[MentorshipSessionController::class,'store'])->name('mentorship.sessions.store');
     Route::put('/mentorship/sessions/{session}/complete',[MentorshipSessionController::class,'complete'])->name('mentorship.sessions.complete');
+    Route::post('/mentorship/goals/{goal}/review',[MentorshipParticipantGoalController::class,'review'])
+        ->whereNumber('goal')->name('mentorship.participant-goals.review');
 
     Route::post('/profile/goals',[ParticipantGoalController::class,'store'])->name('profile.goals.store');
     Route::put('/profile/goals/{goal}',[ParticipantGoalController::class,'update'])->name('profile.goals.update');

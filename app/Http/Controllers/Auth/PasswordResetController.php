@@ -18,60 +18,79 @@ class PasswordResetController extends Controller
         return view('auth.passwords.email');
     }
 
+    public function staffRequestForm()
+    {
+        return view('auth.passwords.staff-email');
+    }
+
     public function email(Request $request)
     {
-        $request->validate([
-            'email'=>['required','email'],
-        ]);
+        $status = $this->sendResetLink($request);
 
-        $status=Password::sendResetLink(
-            ['email'=>strtolower($request->string('email')->toString())]
-        );
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with('success', __($status))
+            : back()->withErrors(['email' => __($status)])->onlyInput('email');
+    }
 
-        return $status===Password::RESET_LINK_SENT
-            ? back()->with('success',__($status))
-            : back()->withErrors(['email'=>__($status)])->onlyInput('email');
+    public function staffEmail(Request $request)
+    {
+        $status = $this->sendResetLink($request);
+
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with('success', __($status))
+            : back()->withErrors(['email' => __($status)])->onlyInput('email');
     }
 
     public function resetForm(Request $request, string $token)
     {
-        return view('auth.passwords.reset',[
-            'token'=>$token,
-            'email'=>$request->query('email'),
+        return view('auth.passwords.reset', [
+            'token' => $token,
+            'email' => $request->query('email'),
         ]);
     }
 
     public function reset(Request $request)
     {
         $request->validate([
-            'token'=>['required'],
-            'email'=>['required','email'],
-            'password'=>[
+            'token' => ['required'],
+            'email' => ['required', 'email'],
+            'password' => [
                 'required',
                 'confirmed',
                 PasswordRule::min(8)->mixedCase()->numbers(),
             ],
         ]);
 
-        $status=Password::reset(
+        $status = Password::reset(
             [
-                'email'=>strtolower($request->string('email')->toString()),
-                'password'=>$request->input('password'),
-                'password_confirmation'=>$request->input('password_confirmation'),
-                'token'=>$request->input('token'),
+                'email' => strtolower($request->string('email')->toString()),
+                'password' => $request->input('password'),
+                'password_confirmation' => $request->input('password_confirmation'),
+                'token' => $request->input('token'),
             ],
-            function(User $user,string $password){
+            function (User $user, string $password) {
                 $user->forceFill([
-                    'password'=>Hash::make($password),
-                    'remember_token'=>Str::random(60),
+                    'password' => Hash::make($password),
+                    'remember_token' => Str::random(60),
                 ])->save();
 
                 event(new PasswordReset($user));
             }
         );
 
-        return $status===Password::PASSWORD_RESET
-            ? redirect()->route('login')->with('success',__($status))
-            : back()->withErrors(['email'=>__($status)])->withInput($request->only('email'));
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('login')->with('success', __($status))
+            : back()->withErrors(['email' => __($status)])->withInput($request->only('email'));
+    }
+
+    private function sendResetLink(Request $request): string
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        return Password::sendResetLink(
+            ['email' => strtolower($request->string('email')->toString())]
+        );
     }
 }

@@ -76,6 +76,8 @@ Route::middleware(['auth', 'staff'])
     ->group(function () {
         Route::get('/', [\App\Http\Controllers\Staff\StaffTaskController::class, 'index'])->name('index');
         Route::post('/', [\App\Http\Controllers\Staff\StaffTaskController::class, 'store'])->name('store');
+        Route::post('/move-pending', [\App\Http\Controllers\Staff\StaffTaskController::class, 'moveAllPending'])->name('move-pending');
+        Route::post('/{task}/move', [\App\Http\Controllers\Staff\StaffTaskController::class, 'moveToNextDay'])->name('move');
         Route::put('/{task}', [\App\Http\Controllers\Staff\StaffTaskController::class, 'update'])->name('update');
         Route::patch('/{task}/complete', [\App\Http\Controllers\Staff\StaffTaskController::class, 'complete'])->name('complete');
         Route::delete('/{task}', [\App\Http\Controllers\Staff\StaffTaskController::class, 'destroy'])->name('destroy');

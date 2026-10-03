@@ -96,6 +96,33 @@ class StaffTaskController extends Controller
         return back()->with('success', 'Task marked as done.');
     }
 
+    public function moveToNextDay(Request $request, Task $task): RedirectResponse
+    {
+        abort_unless($this->tasks->canManage($request->user(), $task), 403);
+
+        $this->tasks->moveToNextDay($task);
+
+        return back()->with('success', 'Task moved to the next working day ('.$this->tasks->nextWorkingDay()->format('D d M').').');
+    }
+
+    public function moveAllPending(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        // Scope: my tasks, or my whole team when the user manages people.
+        $scope = $request->boolean('team') && $this->tasks->teamMemberIds($user)->isNotEmpty()
+            ? $this->tasks->teamMemberIds($user)
+            : collect([$user->id]);
+
+        $moved = $this->tasks->movePendingToNextDay($scope);
+
+        return back()->with(
+            'success',
+            $moved === 0
+                ? 'Nothing pending to move.'
+                : $moved.' pending task'.($moved === 1 ? '' : 's').' moved to '.$this->tasks->nextWorkingDay()->format('D d M').'.'
+        );
+    }
+
     public function destroy(Request $request, Task $task): RedirectResponse
     {
         // Workplan tasks are managed from Planning & Delivery; only personal tasks are deleted here.

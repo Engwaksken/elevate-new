@@ -60,8 +60,17 @@
 
 @if($today)
 <section class="admin-panel">
-    <div class="st-section-head"><h2>{{ $view === 'team' ? 'Today across the team' : 'Today · '.today()->format('l d F') }}</h2></div>
     @php $todayCount = $today->sum(fn ($group) => $group->count()); @endphp
+    <div class="st-section-head">
+        <h2>{{ $view === 'team' ? 'Today across the team' : 'Today · '.today()->format('l d F') }}</h2>
+        @if($todayCount > 0)
+            <form method="POST" action="{{ route('staff.tasks.move-pending') }}" style="display:inline">
+                @csrf
+                @if($view === 'team')<input type="hidden" name="team" value="1">@endif
+                <button class="btn btn-outline btn-sm"><i class="fas fa-arrow-right-arrow-left"></i> Move pending to next day</button>
+            </form>
+        @endif
+    </div>
     @if($todayCount === 0)
         <div class="admin-empty"><i class="fas fa-mug-hot"></i><strong>Nothing due today</strong><span>Add a task to plan your day.</span></div>
     @endif

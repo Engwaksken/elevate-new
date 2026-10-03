@@ -221,6 +221,46 @@ class StaffTaskService
         });
     }
 
+    /**
+     * The next working day after today (or after the given date), skipping weekends.
+     */
+    public function nextWorkingDay(?Carbon $from = null): Carbon
+    {
+        $date = ($from ?? today())->copy()->startOfDay()->addDay();
+
+        while ($date->isWeekend()) {
+            $date->addDay();
+        }
+
+        return $date;
+    }
+
+    /**
+     * Move one task to the next working day.
+     */
+    public function moveToNextDay(Task $task): Task
+    {
+        $task->update(['due_date' => $this->nextWorkingDay()]);
+
+        return $task->fresh();
+    }
+
+    /**
+     * Roll every open task that is due today or overdue to the next working day.
+     * Only tasks assigned to the given people are touched. Returns the number moved.
+     */
+    public function movePendingToNextDay(Collection $userIds): int
+    {
+        $target = $this->nextWorkingDay();
+
+        return Task::query()
+            ->whereIn('assigned_to', $userIds)
+            ->open()
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '<=', today())
+            ->update(['due_date' => $target->toDateString()]);
+    }
+
     public function stats(Collection $userIds, Carbon $weekStart): array
     {
         $weekEnd = $weekStart->copy()->endOfWeek();

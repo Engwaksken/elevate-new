@@ -161,5 +161,59 @@
 })();
 </script>
 </section>
+@isset($menteeGoals)
+@if($menteeGoals->isNotEmpty())
+<section class="eh-mentee-goals" aria-labelledby="mentee-goals-heading" style="margin-top:26px">
+<style>
+.eh-mentee-goals{background:#fff;border:1px solid #eadede;border-radius:16px;padding:22px}
+.eh-mentee-goals h2{margin:0 0 4px;display:flex;align-items:center;gap:10px}
+.eh-mentee-goals h2 i{color:#800000}
+.eh-mentee-goals .eh-mg-sub{color:#667085;margin:0 0 14px}
+.eh-mg-group{margin-top:14px}
+.eh-mg-group>h3{margin:0 0 8px;font-size:1rem;color:#101828}
+.eh-mg-card{border:1px solid #eadede;border-radius:12px;padding:14px;margin-bottom:12px}
+.eh-mg-bar{height:8px;background:#eee;border-radius:8px;overflow:hidden;margin:8px 0}
+.eh-mg-bar>span{display:block;height:100%;background:linear-gradient(90deg,#800000,#b03a3a)}
+.eh-mg-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:.8rem;color:#667085}
+.eh-mg-meta span{background:#f6f1ea;border-radius:20px;padding:3px 10px}
+.eh-mg-review{margin-top:10px;background:#faf7f2;border-radius:10px;padding:10px 12px}
+.eh-mg-review textarea{width:100%;min-height:70px;border:1px solid #d0d5dd;border-radius:8px;padding:8px 10px;font:inherit}
+.eh-mg-note{margin-top:8px;color:#475467;font-size:.85rem}
+</style>
+<h2 id="mentee-goals-heading"><i class="fas fa-flag"></i> Mentee goals</h2>
+<p class="eh-mg-sub">Review your mentees' personal goals and leave encouraging, actionable feedback.</p>
+@foreach($menteeGoals->groupBy('user_id') as $userId => $goals)
+<div class="eh-mg-group">
+    <h3>{{ $goals->first()->user?->name ?? 'Mentee' }} <span style="color:#98a2b3;font-weight:400">({{ $goals->count() }} goal{{ $goals->count() === 1 ? '' : 's' }})</span></h3>
+    @foreach($goals as $goal)
+    <div class="eh-mg-card">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+            <strong>{{ $goal->title }}</strong>
+            <span class="eh-status">{{ ucfirst(str_replace('_',' ',$goal->status)) }}</span>
+        </div>
+        @if($goal->description)<p style="margin:6px 0 0;color:#475467">{{ $goal->description }}</p>@endif
+        <div class="eh-mg-bar"><span style="width:{{ max(0,min(100,(float)$goal->progress_percent)) }}%"></span></div>
+        <div class="eh-mg-meta">
+            <span>{{ ucfirst($goal->category) }}</span>
+            @if($goal->target_value !== null)<span>{{ rtrim(rtrim(number_format((float)$goal->current_value,2),'0'),'.') }} / {{ rtrim(rtrim(number_format((float)$goal->target_value,2),'0'),'.') }} {{ $goal->unit }}</span>@endif
+            @if($goal->target_date)<span>Due {{ $goal->target_date->format('d M Y') }}</span>@endif
+            <span>{{ number_format((float)$goal->progress_percent,0) }}% complete</span>
+        </div>
+        @if($goal->mentor_comment)
+            <div class="eh-mg-note"><strong>Your last feedback:</strong> {{ $goal->mentor_comment }}<br><small>{{ optional($goal->mentor_reviewed_at)->format('d M Y') }} · {{ $goal->mentorReviewer?->name }}</small></div>
+        @endif
+        <form method="POST" action="{{ route('mentorship.participant-goals.review',$goal) }}" class="eh-mg-review">
+            @csrf
+            <label for="mentor_comment_{{ $goal->id }}" style="font-weight:600;color:#344054;display:block;margin-bottom:6px">Feedback for {{ $goal->user?->name }}</label>
+            <textarea id="mentor_comment_{{ $goal->id }}" name="mentor_comment" maxlength="2000" placeholder="Add guidance, next steps or encouragement...">{{ $goal->mentor_comment }}</textarea>
+            <div style="margin-top:8px"><button class="btn btn-primary btn-sm"><i class="fas fa-comment-dots"></i> Save feedback</button></div>
+        </form>
+    </div>
+    @endforeach
+</div>
+@endforeach
+</section>
+@endif
+@endisset
 </div>
 @endsection

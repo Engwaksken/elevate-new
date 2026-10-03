@@ -87,8 +87,10 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $notificationModels=[
+            Activity::class,
             Certificate::class,
             Deliverable::class,
+            Milestone::class,
             PurchaseRequest::class,
             Task::class,
             Workplan::class,

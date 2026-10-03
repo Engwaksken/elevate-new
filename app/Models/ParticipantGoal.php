@@ -11,6 +11,7 @@ class ParticipantGoal extends Model
         'user_id', 'mentor_match_id', 'title', 'description', 'category', 'unit',
         'baseline_value', 'target_value', 'current_value', 'progress_percent',
         'start_date', 'target_date', 'priority', 'status', 'source', 'created_by', 'completed_at',
+        'mentor_comment', 'mentor_reviewed_at', 'mentor_reviewed_by',
     ];
 
     protected $casts = [
@@ -21,6 +22,7 @@ class ParticipantGoal extends Model
         'start_date' => 'date',
         'target_date' => 'date',
         'completed_at' => 'datetime',
+        'mentor_reviewed_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -43,6 +45,16 @@ class ParticipantGoal extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function mentorReviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'mentor_reviewed_by');
+    }
+
+    public function mentorReviewed(): bool
+    {
+        return $this->mentor_comment !== null || $this->mentor_reviewed_at !== null;
     }
 
     /**

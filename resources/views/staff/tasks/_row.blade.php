@@ -30,5 +30,11 @@
         </div>
         @if($done && $task->outcome)<p class="st-outcome">{{ $task->outcome }}</p>@endif
     </div>
+    @if($task->isOpen() && $task->due_date && $task->due_date->lte(today()))
+        <form method="POST" action="{{ route('staff.tasks.move', $task) }}" style="display:inline" title="Move to the next working day">
+            @csrf
+            <button class="btn btn-outline btn-sm"><i class="fas fa-arrow-right"></i><span class="sr-only"> Move to next day</span></button>
+        </form>
+    @endif
     <button type="button" class="btn btn-outline btn-sm" data-modal-open="task-edit-{{ $task->id }}"><i class="fas fa-pen"></i><span class="sr-only"> Edit</span></button>
 </article>
