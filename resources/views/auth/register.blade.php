@@ -658,6 +658,52 @@
 
                         </div>
 
+
+                        <div class="eh-register-field eh-register-field-full">
+
+                            <label>
+                                I am interested in
+                            </label>
+
+                            <p class="eh-register-hint">
+                                Choose everything that applies, or select All.
+                            </p>
+
+                            <div class="eh-register-check-grid" data-interest-group>
+
+                                @foreach([
+                                    'learning' => 'Learning',
+                                    'mentorship' => 'Mentorship',
+                                    'jobs' => 'Jobs',
+                                ] as $value => $label)
+
+                                    <label class="eh-register-check-option">
+                                        <input
+                                            type="checkbox"
+                                            name="interests[]"
+                                            value="{{ $value }}"
+                                            data-interest-option
+                                            @checked(in_array($value, old('interests', []), true))
+                                        >
+                                        <span>{{ $label }}</span>
+                                    </label>
+
+                                @endforeach
+
+                                <label class="eh-register-check-option">
+                                    <input
+                                        type="checkbox"
+                                        value="all"
+                                        data-interest-all
+                                        @checked(count(old('interests', [])) === 3)
+                                    >
+                                    <span>All</span>
+                                </label>
+
+                            </div>
+
+                        </div>
+
                     </div>
 
                 </section>
@@ -1109,6 +1155,58 @@ document.addEventListener('DOMContentLoaded', function () {
 
     syncPwd();
     showStep(1);
+
+
+    /* Interests: the "All" box toggles the three options. */
+
+    const interestGroup =
+        document.querySelector(
+            '[data-interest-group]'
+        );
+
+    if (interestGroup) {
+
+        const optionBoxes =
+            Array.from(
+                interestGroup.querySelectorAll(
+                    '[data-interest-option]'
+                )
+            );
+
+        const allBox =
+            interestGroup.querySelector(
+                '[data-interest-all]'
+            );
+
+        function syncAllBox() {
+            if (!allBox) return;
+            allBox.checked =
+                optionBoxes.length > 0 &&
+                optionBoxes.every(
+                    (box) => box.checked
+                );
+        }
+
+        allBox?.addEventListener(
+            'change',
+            function () {
+                optionBoxes.forEach(
+                    (box) => {
+                        box.checked = allBox.checked;
+                    }
+                );
+            }
+        );
+
+        optionBoxes.forEach(
+            (box) => box.addEventListener(
+                'change',
+                syncAllBox
+            )
+        );
+
+        syncAllBox();
+    }
 
 });
 </script>

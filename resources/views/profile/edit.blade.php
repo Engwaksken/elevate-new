@@ -61,7 +61,11 @@ $profileFormTabs = [
     'career' => ['label' => 'Career', 'icon' => 'fa-briefcase', 'fields' => ['education_level', 'employment_status', 'career_interests']],
     'preferences' => ['label' => 'Preferences', 'icon' => 'fa-language', 'fields' => ['preferred_language']],
     'security' => ['label' => 'Security', 'icon' => 'fa-shield-halved', 'fields' => ['current_password', 'password', 'password_confirmation']],
+    'goals' => ['label' => 'My Goals', 'icon' => 'fa-flag', 'fields' => ['title', 'description', 'category', 'baseline_value', 'target_value', 'current_value', 'unit', 'start_date', 'target_date', 'priority', 'progress_percent', 'status']],
 ];
+if ($aiEnabled ?? false) {
+    $profileFormTabs['mentor'] = ['label' => 'AI Career Mentor', 'icon' => 'fa-wand-magic-sparkles', 'fields' => []];
+}
 @endphp
 <x-form-tabs id="profile" label="Profile sections" :tabs="$profileFormTabs">
 
@@ -129,13 +133,29 @@ $profileFormTabs = [
 </div>
 </x-form-tab>
 
+<x-form-tab name="goals">
+<div class="eh-tab-section">
+    <p class="eh-section-note">Set and track your personal goals below.</p>
+</div>
+</x-form-tab>
+
+@if($aiEnabled ?? false)
+<x-form-tab name="mentor">
+<div class="eh-tab-section">
+    <p class="eh-section-note">Ask the AI career mentor below.</p>
+</div>
+</x-form-tab>
+@endif
+
 </x-form-tabs>
 
-<div class="eh-form-actions">
+<div class="eh-form-actions" data-profile-form-actions>
     <button class="btn btn-primary" type="submit"><i class="fas fa-floppy-disk"></i> Save Profile</button>
 </div>
 </form>
 </div>
+
+<div id="profileGoalsPanel" hidden>
 
 <section class="eh-profile-goals" aria-labelledby="my-goals-heading">
 <style>
@@ -255,4 +275,151 @@ $profileFormTabs = [
     </form>
 </details>
 </section>
+</div>
+
+@if($aiEnabled ?? false)
+<div id="profileAiPanel" hidden>
+<section class="eh-profile-ai" aria-labelledby="profile-ai-heading">
+<style>
+.eh-profile-ai{background:#fff;border:1px solid #eadede;border-radius:16px;padding:22px}
+.eh-profile-ai h2{margin:0 0 4px;display:flex;align-items:center;gap:10px}
+.eh-profile-ai h2 i{color:#800000}
+.eh-profile-ai .eh-ai-sub{color:#667085;margin:0 0 14px}
+.eh-ai-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.eh-ai-chips button{border:1px solid #e0cfcf;background:#fffaf3;color:#800000;border-radius:20px;padding:6px 12px;cursor:pointer;font-size:.82rem}
+.eh-ai-log{display:flex;flex-direction:column;gap:12px;max-height:420px;overflow:auto;padding:6px;margin-bottom:14px}
+.eh-ai-msg{padding:12px 14px;border-radius:14px;max-width:85%;line-height:1.5;white-space:pre-wrap}
+.eh-ai-msg.user{align-self:flex-end;background:#800000;color:#fff}
+.eh-ai-msg.assistant{align-self:flex-start;background:#f6f1ea;color:#101828}
+.eh-ai-msg.thinking{align-self:flex-start;background:#f6f1ea;color:#667085;font-style:italic}
+.eh-ai-form{display:flex;gap:10px;align-items:flex-end}
+.eh-ai-form textarea{flex:1;min-height:52px;resize:vertical}
+.eh-ai-error{color:#b42318;font-size:.85rem;margin-top:8px;min-height:18px}
+</style>
+<h2 id="profile-ai-heading"><i class="fas fa-wand-magic-sparkles"></i> AI Career Mentor</h2>
+<p class="eh-ai-sub">Ask about your career path, interviews, CVs, skills or how to use your mentorship. Your goals and sessions personalise the guidance.</p>
+<div class="eh-ai-chips" data-ai-chips>
+    <button type="button">How do I choose a career path?</button>
+    <button type="button">How should I prepare for an interview?</button>
+    <button type="button">What skills should I build next?</button>
+</div>
+<div class="eh-ai-log" data-ai-log aria-live="polite"></div>
+<form class="eh-ai-form" data-ai-form data-endpoint="{{ route('mentorship.assistant.message') }}">
+    @csrf
+    <textarea name="message" data-ai-input maxlength="1500" placeholder="Type your career question..." aria-label="Your question"></textarea>
+    <button class="btn btn-primary" type="submit" data-ai-send><i class="fas fa-paper-plane"></i> Ask</button>
+</form>
+<div class="eh-ai-error" data-ai-error role="alert"></div>
+</section>
+</div>
+@endif
+
+<script>
+(function () {
+    var tabsRoot = document.getElementById('profile');
+    if (!tabsRoot) return;
+    var content = tabsRoot.querySelector('.eh-tab-content');
+    var actions = document.querySelector('[data-profile-form-actions]');
+    var goalsPanel = document.getElementById('profileGoalsPanel');
+    var aiPanel = document.getElementById('profileAiPanel');
+
+    function sync(name) {
+        var external = name === 'goals' ? goalsPanel : (name === 'mentor' ? aiPanel : null);
+        if (content) content.hidden = !!external;
+        if (goalsPanel) goalsPanel.hidden = external !== goalsPanel;
+        if (aiPanel) aiPanel.hidden = external !== aiPanel;
+        if (actions) actions.style.display = external ? 'none' : '';
+    }
+
+    tabsRoot.querySelectorAll('[data-form-tab]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            // Run after the component has toggled its panes.
+            setTimeout(function () { sync(btn.dataset.formTab); }, 0);
+        });
+    });
+
+    // Open the right panel for goal errors, deep links, or a restored tab.
+    function initialSync() {
+        var active = tabsRoot.querySelector('[data-form-tab].active');
+        var name = (active && active.dataset.formTab) || tabsRoot.dataset.errorTab || '';
+        if (!name) {
+            var hash = window.location.hash || '';
+            if (hash.indexOf('goals') !== -1) name = 'goals';
+            else if (hash.indexOf('mentor') !== -1) name = 'mentor';
+        }
+        sync(name);
+    }
+    setTimeout(initialSync, 0);
+    window.addEventListener('hashchange', initialSync);
+})();
+</script>
+
+<script>
+(function () {
+    var form = document.querySelector('#profileAiPanel [data-ai-form]');
+    if (!form) return;
+    var log = form.closest('.eh-profile-ai').querySelector('[data-ai-log]');
+    var input = form.querySelector('[data-ai-input]');
+    var send = form.querySelector('[data-ai-send]');
+    var error = form.closest('.eh-profile-ai').querySelector('[data-ai-error]');
+    var token = form.querySelector('input[name="_token"]');
+    var history = [];
+
+    function add(role, text) {
+        var el = document.createElement('div');
+        el.className = 'eh-ai-msg ' + role;
+        el.textContent = text;
+        log.appendChild(el);
+        log.scrollTop = log.scrollHeight;
+        return el;
+    }
+
+    function ask(message) {
+        if (!message) return;
+        error.textContent = '';
+        add('user', message);
+        var thinking = add('thinking', 'Thinking...');
+        send.disabled = true;
+        fetch(form.dataset.endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': token ? token.value : '',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ message: message, history: history.slice(-8) })
+        }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+        .then(function (result) {
+            thinking.remove();
+            var reply = result.data && result.data.message ? result.data.message : 'Sorry, I could not answer that right now.';
+            add('assistant', reply);
+            history.push({ role: 'user', content: message });
+            history.push({ role: 'assistant', content: reply });
+        }).catch(function () {
+            thinking.remove();
+            error.textContent = 'The assistant is unavailable right now. Please try again shortly.';
+        }).finally(function () {
+            send.disabled = false;
+            input.focus();
+        });
+    }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var message = input.value.trim();
+        if (!message) return;
+        input.value = '';
+        ask(message);
+    });
+
+    form.querySelector('[data-ai-input]').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+
+    form.closest('.eh-profile-ai').querySelectorAll('[data-ai-chips] button').forEach(function (chip) {
+        chip.addEventListener('click', function () { ask(chip.textContent.trim()); });
+    });
+})();
+</script>
 @endsection

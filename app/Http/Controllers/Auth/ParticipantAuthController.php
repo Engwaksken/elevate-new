@@ -69,6 +69,7 @@ class ParticipantAuthController extends Controller
                 'employment_status' => $data['employment_status'] ?? null,
                 'career_interests' => $data['career_interests'] ?? null,
                 'preferred_language' => $data['preferred_language'] ?? 'English',
+                'metadata' => ['interests' => array_values($data['interests'] ?? [])],
             ]);
 
             /*

@@ -35,6 +35,11 @@ class ProfileController extends Controller
                 'completed'=>$goals->where('status','completed')->count(),
                 'average'=>$goals->isEmpty() ? 0 : round((float) $goals->avg('progress_percent'),1),
             ],
+            'aiEnabled'=>\App\Models\AiIntegration::query()
+                ->where('feature','system_ai')
+                ->where('enabled',true)
+                ->whereNotNull('encrypted_api_key')
+                ->exists(),
         ]);
     }
 
