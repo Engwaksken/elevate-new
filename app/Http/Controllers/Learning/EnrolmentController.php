@@ -9,6 +9,13 @@ class EnrolmentController extends Controller
     {
         abort_unless($course->status === 'published', 404);
         abort_unless($course->self_enrolment_enabled, 403);
+
+        // A participant is not enrolled until she has finished the course's entry assessment.
+        if ($course->entryAssessmentPendingFor(auth()->id())) {
+            return redirect()->route('learning.course.show', $course)
+                ->with('error', 'Finish the entry assessment before you can enrol in this course.');
+        }
+
         Enrolment::firstOrCreate(['course_id'=>$course->id,'user_id'=>auth()->id()],['status'=>'enrolled','enrolled_at'=>now()]);
         return redirect()->route('learning.my-courses')->with('success','You have been enrolled successfully.');
     }

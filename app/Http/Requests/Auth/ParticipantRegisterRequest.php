@@ -31,7 +31,7 @@ class ParticipantRegisterRequest extends FormRequest
             'given_name' => ['required', 'string', 'max:100'],
             'other_name' => ['nullable', 'string', 'max:100'],
             'email' => ['required', 'email:rfc,dns', 'max:190', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['required', 'string', 'min:7', 'max:30'],
             'gender' => ['nullable', 'in:female,male,other,prefer_not_to_say'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'country' => ['nullable', 'string', 'max:100'],

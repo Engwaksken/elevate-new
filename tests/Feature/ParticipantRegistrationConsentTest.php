@@ -16,6 +16,7 @@ class ParticipantRegistrationConsentTest extends TestCase
             'surname' => 'Nansubuga',
             'given_name' => 'Sarah',
             'email' => 'sarah.consent@gmail.com',
+            'phone' => '+256700000000',
             'password' => 'StrongPass1',
             'password_confirmation' => 'StrongPass1',
             'terms' => '1',
@@ -52,5 +53,13 @@ class ParticipantRegistrationConsentTest extends TestCase
         $response = $this->post(route('register.store'), $this->payload(['interests' => ['hacking']]));
 
         $response->assertSessionHasErrors('interests.0');
+    }
+
+    public function test_a_phone_number_is_required(): void
+    {
+        $response = $this->post(route('register.store'), $this->payload(['phone' => '']));
+
+        $response->assertSessionHasErrors('phone');
+        $this->assertDatabaseMissing('users', ['email' => 'sarah.consent@gmail.com']);
     }
 }

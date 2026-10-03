@@ -3,7 +3,7 @@ $editing = isset($course) && $course;
 $formTabsConfig = [
     'overview' => ['label' => 'Overview', 'icon' => 'fa-book-open', 'fields' => ['title', 'code', 'summary', 'description', 'thumbnail', 'remove_thumbnail']],
     'organisation' => ['label' => 'Organisation', 'icon' => 'fa-sitemap', 'fields' => ['delivery_mode', 'programme_id', 'project_id', 'branch_ids']],
-    'schedule' => ['label' => 'Schedule & Publishing', 'icon' => 'fa-calendar-days', 'fields' => ['start_date', 'end_date', 'duration_hours', 'pass_mark', 'status', 'self_enrolment_enabled']],
+    'schedule' => ['label' => 'Schedule & Publishing', 'icon' => 'fa-calendar-days', 'fields' => ['start_date', 'end_date', 'duration_hours', 'pass_mark', 'status', 'self_enrolment_enabled', 'entry_assessment_id']],
 ];
 @endphp
 <x-form-tabs :id="$editing ? 'course-edit-'.$course->id : 'course-create'" label="Course details" :tabs="$formTabsConfig">
@@ -37,6 +37,16 @@ $formTabsConfig = [
     <div class="form-group"><label>Pass Mark % *</label><input type="number" min="0" max="100" step=".01" name="pass_mark" value="{{ old('pass_mark',$editing ? $course->pass_mark : 50) }}" required></div>
     <div class="form-group"><label>Status *</label><select name="status" required>@foreach(['draft','published','archived'] as $status)<option value="{{ $status }}" @selected(old('status',$editing ? $course->status : 'draft')===$status)>{{ ucfirst($status) }}</option>@endforeach</select></div>
     <div class="form-group"><label class="modal-check"><input type="checkbox" name="self_enrolment_enabled" value="1" @checked((bool)old('self_enrolment_enabled',$editing ? $course->self_enrolment_enabled : false))><span>Allow self-enrolment</span></label></div>
+    <div class="form-group full">
+        <label>Entry assessment (required before self-enrolment)</label>
+        <select name="entry_assessment_id">
+            <option value="">None — enrol immediately</option>
+            @foreach(($assessments ?? collect()) as $assessment)
+                <option value="{{ $assessment->id }}" @selected((string)old('entry_assessment_id',$editing ? $course->entry_assessment_id : '')===(string)$assessment->id)>{{ $assessment->title }}</option>
+            @endforeach
+        </select>
+        <small class="form-hint">When set, participants must finish this assessment before they are enrolled.</small>
+    </div>
 </div>
 </x-form-tab>
 </x-form-tabs>

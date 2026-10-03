@@ -18,12 +18,15 @@ class AssessmentController extends Controller
         $assessment->load(['questions','course']);
         abort_unless($assessment->is_published, 404);
 
-        abort_unless(
-            Enrolment::where('course_id', $assessment->course_id)
-                ->where('user_id', auth()->id())
-                ->exists(),
-            403
-        );
+        $enrolled = Enrolment::where('course_id', $assessment->course_id)
+            ->where('user_id', auth()->id())
+            ->exists();
+
+        // A course's entry assessment can be taken before enrolment.
+        $isEntryAssessment = $assessment->course
+            && (int) $assessment->course->entry_assessment_id === (int) $assessment->id;
+
+        abort_unless($enrolled || $isEntryAssessment, 403);
 
         $attempts = AssessmentAttempt::where('assessment_id', $assessment->id)
             ->where('user_id', auth()->id())
@@ -116,6 +119,15 @@ class AssessmentController extends Controller
                 ->update(['final_score' => $final]);
 
             $certificateService->issueIfEligible($assessment->course, auth()->user());
+        }
+
+        $enrolled = Enrolment::where('course_id', $assessment->course_id)
+            ->where('user_id', auth()->id())
+            ->exists();
+
+        if (! $enrolled) {
+            return redirect()->route('learning.course.show', $assessment->course)
+                ->with('success', 'Entry assessment submitted. You can now enrol in the course.');
         }
 
         return redirect()->route('learning.course.dashboard', $assessment->course)

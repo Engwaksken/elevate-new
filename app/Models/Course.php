@@ -12,7 +12,7 @@ class Course extends Model
     protected $fillable = [
         'programme_id','project_id','branch_id','title','code','summary','description',
         'thumbnail_path','delivery_mode','start_date','end_date','duration_hours',
-        'pass_mark','self_enrolment_enabled','status','created_by'
+        'pass_mark','self_enrolment_enabled','entry_assessment_id','status','created_by'
     ];
 
     protected $casts = [
@@ -25,6 +25,28 @@ class Course extends Model
     public function modules()
     {
         return $this->hasMany(CourseModule::class)->orderBy('position');
+    }
+
+    public function entryAssessment()
+    {
+        return $this->belongsTo(Assessment::class, 'entry_assessment_id');
+    }
+
+    /**
+     * True when the course requires an entry assessment and the given user has
+     * not yet finished it (submitted or graded).
+     */
+    public function entryAssessmentPendingFor(?int $userId): bool
+    {
+        if (! $this->entry_assessment_id || ! $userId) {
+            return false;
+        }
+
+        return ! AssessmentAttempt::query()
+            ->where('assessment_id', $this->entry_assessment_id)
+            ->where('user_id', $userId)
+            ->whereIn('status', ['submitted', 'graded'])
+            ->exists();
     }
 
     public function instructors()

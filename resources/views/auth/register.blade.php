@@ -288,15 +288,21 @@
 
                             <label for="phone">
                                 Phone number
+                                <span>*</span>
                             </label>
 
                             <input
                                 id="phone"
-                                type="text"
+                                type="tel"
                                 name="phone"
                                 value="{{ old('phone') }}"
                                 placeholder="e.g. +256 700 000000"
+                                required
                             >
+
+                            <small>
+                                Required. We use it to reach you about your programme.
+                            </small>
 
                         </div>
 

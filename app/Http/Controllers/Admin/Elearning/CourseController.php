@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Elearning;
 
 use App\Http\Controllers\Controller;
+use App\Models\Assessment;
 use App\Models\Branch;
 use App\Models\Course;
 use App\Models\Programme;
@@ -51,6 +52,7 @@ class CourseController extends Controller
             'programmes'=>Programme::orderBy('name')->get(),
             'projects'=>Project::orderBy('name')->get(),
             'branches'=>Branch::orderBy('name')->get(),
+            'assessments'=>Assessment::orderBy('title')->get(['id','title','course_id']),
             'stats'=>[
                 'total'=>Course::count(),
                 'published'=>Course::where('status','published')->count(),
@@ -157,6 +159,7 @@ class CourseController extends Controller
             'duration_hours'=>['nullable','integer','min:1'],
             'pass_mark'=>['required','numeric','min:0','max:100'],
             'self_enrolment_enabled'=>['nullable','boolean'],
+            'entry_assessment_id'=>['nullable','exists:assessments,id'],
             'status'=>['required','in:draft,published,archived'],
         ])+[
             'self_enrolment_enabled'=>$request->boolean('self_enrolment_enabled'),

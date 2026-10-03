@@ -32,8 +32,14 @@ class CourseCatalogueController extends Controller
     public function show(Course $course)
     {
         abort_unless($course->status==='published',404);
-        $enrolled = auth()->check() && auth()->user()->isParticipant() && auth()->user()->isActive()
+        $participant = auth()->check() && auth()->user()->isParticipant() && auth()->user()->isActive();
+        $enrolled = $participant
             && Enrolment::where('course_id', $course->id)->where('user_id', auth()->id())->exists();
-        return view('learning.courses.show', compact('course', 'enrolled'));
+
+        $course->loadMissing('entryAssessment');
+        $entryAssessment = $course->entryAssessment;
+        $entryAssessmentPending = ! $enrolled && $participant && $course->entryAssessmentPendingFor(auth()->id());
+
+        return view('learning.courses.show', compact('course', 'enrolled', 'entryAssessment', 'entryAssessmentPending'));
     }
 }
