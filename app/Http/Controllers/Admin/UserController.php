@@ -37,7 +37,10 @@ class UserController extends Controller
             });
         }
 
-        if ($type = $request->get('user_type')) {
+        // The dedicated Participants page always filters to participant accounts.
+        $forcedType = $request->routeIs('admin.participants.index') ? 'participant' : null;
+
+        if ($type = ($forcedType ?? $request->get('user_type'))) {
             $query->where('user_type', $type);
         }
 
@@ -56,6 +59,7 @@ class UserController extends Controller
             : 20;
 
         return view('admin.users.index', [
+            'forcedType' => $forcedType,
             'users' => $query->paginate($perPage)->withQueryString(),
             'roles' => Role::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(['id','name','code','is_active']),

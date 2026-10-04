@@ -197,6 +197,12 @@
                     'permissions' => [],
                 ],
                 [
+                    'route' => 'admin.participants.index',
+                    'label' => 'Participants',
+                    'icon' => 'fa-user-graduate',
+                    'permissions' => ['users.view'],
+                ],
+                [
                     'route' => 'admin.users.index',
                     'label' => 'Users',
                     'icon' => 'fa-users',

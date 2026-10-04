@@ -278,6 +278,9 @@ Route::prefix('admin')
     ->group(function () {
         Route::get('/dashboard',[AdminDashboardController::class,'index'])->name('dashboard');
 
+        Route::get('/participants',[UserController::class,'index'])
+            ->middleware('permission:users.view')->name('participants.index');
+
         Route::resource('users',UserController::class)->except(['show','destroy'])
             ->middleware('permission:users.edit');
 

@@ -1,17 +1,28 @@
 @extends('layouts.admin')
 @section('title','Users | ElevateHer360 Administration')
 @section('content')
+@php
+    $forcedType = $forcedType ?? null;
+    $isParticipantsView = $forcedType === 'participant';
+    $canEditUsers = auth()->user()?->hasPermission('users.edit') ?? false;
+    $activeType = $forcedType ?? request('user_type');
+@endphp
 
 <div class="admin-page-header">
 <div>
     <span class="admin-eyebrow">People & Access</span>
-    <h1>Users</h1>
-    <p>Manage participant and staff accounts, access status and assigned roles.</p>
+    <h1>{{ $isParticipantsView ? 'Participants' : 'Users' }}</h1>
+    <p>{{ $isParticipantsView ? 'All participant accounts and their status.' : 'Manage participant and staff accounts, access status and assigned roles.' }}</p>
 </div>
 <div class="admin-page-actions">
-    <button type="button" class="btn btn-primary" data-modal-open="createUserModal">
-        <i class="fas fa-user-plus"></i> Add User
-    </button>
+    @unless($isParticipantsView)
+        <a href="{{ route('admin.participants.index') }}" class="btn btn-outline"><i class="fas fa-user-graduate"></i> Participants</a>
+    @endunless
+    @if($canEditUsers)
+        <button type="button" class="btn btn-primary" data-modal-open="createUserModal">
+            <i class="fas fa-user-plus"></i> Add User
+        </button>
+    @endif
 </div>
 </div>
 
@@ -36,11 +47,13 @@
         <input name="search" value="{{ request('search') }}" placeholder="Search name, email, phone or participant ID...">
     </div>
 
+    @unless($isParticipantsView)
     <select name="user_type">
         <option value="">All user types</option>
-        <option value="participant" @selected(request('user_type')==='participant')>Participant</option>
-        <option value="staff" @selected(request('user_type')==='staff')>Staff</option>
+        <option value="participant" @selected($activeType==='participant')>Participant</option>
+        <option value="staff" @selected($activeType==='staff')>Staff</option>
     </select>
+    @endunless
 
     <select name="status">
         <option value="">All statuses</option>
@@ -63,7 +76,7 @@
     </select>
 
     <button class="btn btn-primary btn-sm">Apply</button>
-    <a href="{{ route('admin.users.index') }}" class="btn btn-outline btn-sm">Reset</a>
+    <a href="{{ $isParticipantsView ? route('admin.participants.index') : route('admin.users.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
 <div class="admin-table-wrap">
@@ -110,9 +123,13 @@
     </td>
     <td>{{ optional($user->last_login_at)->format('d M Y H:i') ?: '—' }}</td>
     <td class="table-actions">
-        <button type="button" class="btn btn-outline btn-sm" data-modal-open="editUser{{ $user->id }}">
-            <i class="fas fa-pen"></i> Edit
-        </button>
+        @if($canEditUsers)
+            <button type="button" class="btn btn-outline btn-sm" data-modal-open="editUser{{ $user->id }}">
+                <i class="fas fa-pen"></i> Edit
+            </button>
+        @else
+            <span class="admin-cell-hint">—</span>
+        @endif
     </td>
 </tr>
 @empty
@@ -125,6 +142,7 @@
 <div class="admin-pagination">{{ $users->links() }}</div>
 </div>
 
+@if($canEditUsers)
 @php
     $userFormTabs = [
         'account' => ['label' => 'Account', 'icon' => 'fa-id-card', 'fields' => ['name', 'email', 'phone']],
@@ -277,6 +295,7 @@
 </div>
 </div>
 @endforeach
+@endif
 
 @if($errors->any())
 <script>
