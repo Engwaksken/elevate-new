@@ -18,6 +18,6 @@
 @else<a class="btn btn-primary" href="{{ route('login') }}">Sign in to learn</a>@endif
 </div>
 @if(auth()->check() && auth()->user()->isParticipant() && ($course->self_enrolment_enabled) && ($entryAssessmentPending ?? false) && ($entryAssessment ?? null))
-<p class="form-hint" style="max-width:900px;margin:8px auto;color:#667085"><i class="fas fa-circle-info"></i> You will be enrolled in this course once you finish the entry assessment: <strong>{{ $entryAssessment->title }}</strong>.</p>
+<p class="form-hint" style="max-width:900px;margin:8px auto;color:#667085"><i class="fas fa-circle-info"></i> You will be enrolled in this course once you pass the entry assessment ({{ rtrim(rtrim(number_format((float) $course->pass_mark, 2), '0'), '.') }}% pass mark): <strong>{{ $entryAssessment->title }}</strong>.</p>
 @endif
 @endsection

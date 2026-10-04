@@ -27,6 +27,7 @@ class WorkspaceController extends Controller
                 ['Certificates', 'fa-award', 'certificates'],
             ],
             'links' => [
+                ['admin.course-calls.index', 'Course Calls', 'fa-bullhorn', 'Publish opportunity calls and review applications.'],
                 ['admin.elearning.courses.index', 'Courses', 'fa-book-open', 'Create and manage courses, modules and lessons.'],
                 ['admin.elearning.timetable.index', 'Course Timetables', 'fa-calendar-days', 'See instructor and trainer sessions; manage course schedules.'],
                 ['admin.elearning.enrolments.index', 'Enrolments', 'fa-user-graduate', 'Enrol participants and track their progress.'],

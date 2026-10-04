@@ -63,7 +63,8 @@ class PartnerDetailsService
                 $user = User::create([
                     'name' => $data['name'], 'email' => strtolower($data['email']), 'phone' => $data['phone'] ?? null,
                     'password' => $public ? $data['password'] : Str::random(64),
-                    'user_type' => 'participant', 'status' => $public ? 'pending' : 'active',
+                    'user_type' => $type, 'status' => $public ? 'pending' : 'active',
+                    'email_verified_at' => now(),
                 ]);
             }
             $role = Role::firstOrCreate(['slug' => $type], ['name' => ucfirst($type), 'is_system' => true]);

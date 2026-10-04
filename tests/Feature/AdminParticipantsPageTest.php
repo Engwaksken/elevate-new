@@ -80,4 +80,40 @@ class AdminParticipantsPageTest extends TestCase
         $this->assertStringNotContainsString('createUserModal', $html);
         $this->assertStringNotContainsString('data-modal-open="editUser', $html);
     }
+
+    public function test_admin_can_bulk_delete_selected_participants_only(): void
+    {
+        $first = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
+        $second = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
+        $kept = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
+        $staff = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
+
+        $this->actingAs($this->admin())
+            ->delete(route('admin.participants.bulk-destroy'), ['ids' => [$first->id, $second->id, $staff->id]])
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('users', ['id' => $first->id]);
+        $this->assertDatabaseMissing('users', ['id' => $second->id]);
+        $this->assertDatabaseHas('users', ['id' => $kept->id]);
+        $this->assertDatabaseHas('users', ['id' => $staff->id]);
+    }
+
+    public function test_bulk_delete_requires_the_users_delete_permission(): void
+    {
+        $participant = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
+
+        $this->actingAs($this->viewer())
+            ->delete(route('admin.participants.bulk-destroy'), ['ids' => [$participant->id]])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('users', ['id' => $participant->id]);
+    }
+
+    public function test_the_learning_workspace_links_to_course_calls(): void
+    {
+        $this->actingAs($this->admin())
+            ->get(route('admin.workspace.learning'))
+            ->assertOk()
+            ->assertSee('Course Calls');
+    }
 }

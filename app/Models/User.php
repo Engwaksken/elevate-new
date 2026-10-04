@@ -120,5 +120,8 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isStaff(): bool { return $this->user_type === 'staff'; }
     public function isParticipant(): bool { return $this->user_type === 'participant'; }
+    public function isEmployer(): bool { return $this->user_type === 'employer'; }
+    public function isMentor(): bool { return $this->user_type === 'mentor'; }
+    public function isPartner(): bool { return in_array($this->user_type, ['employer', 'mentor'], true); }
     public function isActive(): bool { return $this->status === 'active'; }
 }

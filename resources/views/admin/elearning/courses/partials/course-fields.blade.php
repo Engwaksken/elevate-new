@@ -3,7 +3,7 @@ $editing = isset($course) && $course;
 $formTabsConfig = [
     'overview' => ['label' => 'Overview', 'icon' => 'fa-book-open', 'fields' => ['title', 'code', 'summary', 'description', 'thumbnail', 'remove_thumbnail']],
     'organisation' => ['label' => 'Organisation', 'icon' => 'fa-sitemap', 'fields' => ['delivery_mode', 'programme_id', 'project_id', 'branch_ids']],
-    'schedule' => ['label' => 'Schedule & Publishing', 'icon' => 'fa-calendar-days', 'fields' => ['start_date', 'end_date', 'duration_hours', 'pass_mark', 'status', 'self_enrolment_enabled', 'entry_assessment_id']],
+    'schedule' => ['label' => 'Schedule & Publishing', 'icon' => 'fa-calendar-days', 'fields' => ['start_date', 'end_date', 'duration_hours', 'pass_mark', 'status', 'self_enrolment_enabled', 'entry_assessment_id', 'compulsory_course_ids', 'compulsory_course_ids.*']],
 ];
 @endphp
 <x-form-tabs :id="$editing ? 'course-edit-'.$course->id : 'course-create'" label="Course details" :tabs="$formTabsConfig">
@@ -45,7 +45,23 @@ $formTabsConfig = [
                 <option value="{{ $assessment->id }}" @selected((string)old('entry_assessment_id',$editing ? $course->entry_assessment_id : '')===(string)$assessment->id)>{{ $assessment->title }}</option>
             @endforeach
         </select>
-        <small class="form-hint">When set, participants must finish this assessment before they are enrolled.</small>
+        <small class="form-hint">When set, participants must pass this assessment before they are enrolled.</small>
+    </div>
+    <div class="form-group full">
+        <label>Compulsory courses</label>
+        <input type="hidden" name="sync_compulsory" value="1">
+        <div class="permission-check-grid">
+            @foreach(($courseOptions ?? collect()) as $option)
+                @if($editing && (int) $option->id === (int) $course->id)
+                    @continue
+                @endif
+                <label class="permission-check">
+                    <input type="checkbox" name="compulsory_course_ids[]" value="{{ $option->id }}" @checked(in_array($option->id, old('compulsory_course_ids', $editing ? $course->compulsoryCourses->pluck('id')->all() : [])))>
+                    <span>{{ $option->title }}</span>
+                </label>
+            @endforeach
+        </div>
+        <small class="form-hint">Participants enrolled in this course are automatically enrolled in these courses too.</small>
     </div>
 </div>
 </x-form-tab>

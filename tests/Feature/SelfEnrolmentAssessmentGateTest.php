@@ -60,7 +60,57 @@ class SelfEnrolmentAssessmentGateTest extends TestCase
         ]);
     }
 
-    public function test_self_enrolment_succeeds_after_finishing_the_entry_assessment(): void
+    public function test_self_enrolment_succeeds_after_passing_the_entry_assessment(): void
+    {
+        [$course, $assessment] = $this->courseWithEntryAssessment();
+        $user = $this->participant();
+
+        AssessmentAttempt::create([
+            'assessment_id' => $assessment->id,
+            'user_id' => $user->id,
+            'attempt_number' => 1,
+            'status' => 'graded',
+            'percentage' => 80,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('learning.enrol', $course))
+            ->assertRedirect(route('learning.my-courses'));
+
+        $this->assertDatabaseHas('enrolments', [
+            'course_id' => $course->id,
+            'user_id' => $user->id,
+        ]);
+    }
+
+    public function test_a_failed_entry_assessment_attempt_does_not_unlock_enrolment(): void
+    {
+        [$course, $assessment] = $this->courseWithEntryAssessment();
+        $user = $this->participant();
+
+        AssessmentAttempt::create([
+            'assessment_id' => $assessment->id,
+            'user_id' => $user->id,
+            'attempt_number' => 1,
+            'status' => 'graded',
+            'percentage' => 40,
+            'started_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('learning.enrol', $course))
+            ->assertRedirect(route('learning.course.show', $course));
+
+        $this->assertDatabaseMissing('enrolments', [
+            'course_id' => $course->id,
+            'user_id' => $user->id,
+        ]);
+    }
+
+    public function test_a_submitted_but_ungraded_entry_assessment_does_not_unlock_enrolment(): void
     {
         [$course, $assessment] = $this->courseWithEntryAssessment();
         $user = $this->participant();
@@ -76,9 +126,9 @@ class SelfEnrolmentAssessmentGateTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('learning.enrol', $course))
-            ->assertRedirect(route('learning.my-courses'));
+            ->assertRedirect(route('learning.course.show', $course));
 
-        $this->assertDatabaseHas('enrolments', [
+        $this->assertDatabaseMissing('enrolments', [
             'course_id' => $course->id,
             'user_id' => $user->id,
         ]);

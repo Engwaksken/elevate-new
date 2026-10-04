@@ -5,6 +5,7 @@
     $forcedType = $forcedType ?? null;
     $isParticipantsView = $forcedType === 'participant';
     $canEditUsers = auth()->user()?->hasPermission('users.edit') ?? false;
+    $canDeleteParticipants = $isParticipantsView && (auth()->user()?->hasPermission('users.delete') ?? false);
     $activeType = $forcedType ?? request('user_type');
 @endphp
 
@@ -79,10 +80,23 @@
     <a href="{{ $isParticipantsView ? route('admin.participants.index') : route('admin.users.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
+@if($canDeleteParticipants)
+<div class="admin-bulk-bar" id="participantsBulkBar">
+    <strong><span data-selected-count>0</span> selected</strong>
+    <form method="POST" action="{{ route('admin.participants.bulk-destroy') }}" data-bulk-form data-table="usersTable">
+        @csrf @method('DELETE')
+        <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete Selected</button>
+    </form>
+</div>
+@endif
+
 <div class="admin-table-wrap">
-<table class="admin-table">
+<table class="admin-table" id="usersTable">
 <thead>
 <tr>
+    @if($canDeleteParticipants)
+        <th class="select-col"><input type="checkbox" data-select-all data-bulk-target="#participantsBulkBar" aria-label="Select all participants"></th>
+    @endif
     <th>User</th>
     <th>Phone</th>
     <th>Type</th>
@@ -96,6 +110,9 @@
 <tbody>
 @forelse($users as $user)
 <tr>
+    @if($canDeleteParticipants)
+        <td><input type="checkbox" data-row-select value="{{ $user->id }}" aria-label="Select {{ $user->name }}"></td>
+    @endif
     <td>
         <strong>{{ $user->name }}</strong>
         @if($user->participant_code)<span class="participant-code">{{ $user->participant_code }}</span>@endif
@@ -133,7 +150,7 @@
     </td>
 </tr>
 @empty
-<tr><td colspan="8"><div class="admin-empty">No users found.</div></td></tr>
+<tr><td colspan="{{ $canDeleteParticipants ? 9 : 8 }}"><div class="admin-empty">No users found.</div></td></tr>
 @endforelse
 </tbody>
 </table>

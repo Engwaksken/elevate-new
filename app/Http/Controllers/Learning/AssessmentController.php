@@ -126,8 +126,20 @@ class AssessmentController extends Controller
             ->exists();
 
         if (! $enrolled) {
+            if ($attempt->status !== 'graded') {
+                return redirect()->route('learning.course.show', $assessment->course)
+                    ->with('success', 'Entry assessment submitted. It will be marked before enrolment.');
+            }
+
+            $passed = $assessment->course && $assessment->course->entryAssessmentPassedFor(auth()->id());
+
             return redirect()->route('learning.course.show', $assessment->course)
-                ->with('success', 'Entry assessment submitted. You can now enrol in the course.');
+                ->with(
+                    $passed ? 'success' : 'error',
+                    $passed
+                        ? 'Entry assessment passed. You can now enrol in the course.'
+                        : 'Entry assessment not passed. Please review the course requirements.'
+                );
         }
 
         return redirect()->route('learning.course.dashboard', $assessment->course)

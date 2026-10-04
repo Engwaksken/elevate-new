@@ -305,6 +305,15 @@ class CourseCallController extends Controller
                         'status' => 'The linked entry assessment must be graded before approval/enrolment.',
                     ]);
                 }
+
+                $approvedCourse = $call->courses->firstWhere('id', $approvedCourseId);
+                $passMark = (float) ($approvedCourse->pass_mark ?? 0);
+
+                if ((float) $attempt->percentage < $passMark) {
+                    throw ValidationException::withMessages([
+                        'status' => 'The participant scored '.number_format((float) $attempt->percentage, 2).'%, below the '.rtrim(rtrim(number_format($passMark, 2), '0'), '.').'% pass mark for this course.',
+                    ]);
+                }
             }
         }
 
@@ -329,17 +338,12 @@ class CourseCallController extends Controller
                 ]);
             }
 
-            $enrolment = Enrolment::firstOrCreate(
-                [
-                    'course_id' => $approvedCourseId,
-                    'user_id' => $application->user_id,
-                ],
-                [
-                    'cohort_id' => $call->cohort_id,
-                    'status' => 'enrolled',
-                    'enrolled_at' => now(),
-                    'progress_percent' => 0,
-                ]
+            $approvedCourse = $call->courses->firstWhere('id', $approvedCourseId);
+
+            $enrolment = app(\App\Services\EnrolmentService::class)->enrol(
+                $application->user,
+                $approvedCourse,
+                ['cohort_id' => $call->cohort_id, 'progress_percent' => 0]
             );
 
             if (Schema::hasColumn('enrolments', 'source_type')) {

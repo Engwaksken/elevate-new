@@ -159,6 +159,9 @@ Route::middleware('guest')->group(function () {
     foreach (['mentor' => 'mentors', 'employer' => 'employers'] as $type => $path) {
         Route::get('/'.$path.'/signup', [\App\Http\Controllers\Public\PartnerSignupController::class, 'show'])->defaults('type', $type)->name('public.partners.'.$type);
         Route::post('/'.$path.'/signup', [\App\Http\Controllers\Public\PartnerSignupController::class, 'store'])->defaults('type', $type)->middleware('throttle:5,1')->name('public.partners.'.$type.'.store');
+
+        Route::get('/'.$path.'/login', [\App\Http\Controllers\Auth\PartnerAuthController::class, 'showLogin'])->defaults('type', $type)->name('partners.'.$type.'.login');
+        Route::post('/'.$path.'/login', [\App\Http\Controllers\Auth\PartnerAuthController::class, 'login'])->defaults('type', $type)->middleware('throttle:5,1')->name('partners.'.$type.'.login.attempt');
     }
 });
 
@@ -280,6 +283,9 @@ Route::prefix('admin')
 
         Route::get('/participants',[UserController::class,'index'])
             ->middleware('permission:users.view')->name('participants.index');
+
+        Route::delete('/participants/bulk-delete',[UserController::class,'bulkDestroy'])
+            ->middleware('permission:users.delete')->name('participants.bulk-destroy');
 
         Route::resource('users',UserController::class)->except(['show','destroy'])
             ->middleware('permission:users.edit');

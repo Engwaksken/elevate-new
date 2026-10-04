@@ -53,6 +53,7 @@ class CourseController extends Controller
             'projects'=>Project::orderBy('name')->get(),
             'branches'=>Branch::orderBy('name')->get(),
             'assessments'=>Assessment::orderBy('title')->get(['id','title','course_id']),
+            'courseOptions'=>Course::orderBy('title')->get(['id','title']),
             'stats'=>[
                 'total'=>Course::count(),
                 'published'=>Course::where('status','published')->count(),
@@ -75,9 +76,11 @@ class CourseController extends Controller
         try {
             $course = \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
                 $ids = $data['branch_ids'] ?? [];
-                unset($data['branch_ids']);
+                $compulsoryIds = $data['compulsory_course_ids'] ?? [];
+                unset($data['branch_ids'], $data['compulsory_course_ids']);
                 $course = Course::create($data + ['branch_id' => $ids[0] ?? null, 'created_by' => auth()->id()]);
                 $course->branches()->sync($ids);
+                $course->compulsoryCourses()->sync($this->withoutSelf($compulsoryIds, $course->id));
                 return $course;
             });
         } catch (\Throwable $exception) {
@@ -109,10 +112,15 @@ class CourseController extends Controller
             \Illuminate\Support\Facades\DB::transaction(function () use ($data, $course, $request) {
                 $sync = $request->has('branch_ids') || $request->boolean('sync_branches') || $request->has('branch_id');
                 $ids = $data['branch_ids'] ?? [];
-                unset($data['branch_ids']);
+                $compulsoryIds = $data['compulsory_course_ids'] ?? [];
+                $syncCompulsory = $request->has('compulsory_course_ids') || $request->boolean('sync_compulsory');
+                unset($data['branch_ids'], $data['compulsory_course_ids']);
                 if ($sync) {
                     $data['branch_id'] = $ids[0] ?? null;
                     $course->branches()->sync($ids);
+                }
+                if ($syncCompulsory) {
+                    $course->compulsoryCourses()->sync($this->withoutSelf($compulsoryIds, $course->id));
                 }
                 $course->update($data);
             });
@@ -160,10 +168,20 @@ class CourseController extends Controller
             'pass_mark'=>['required','numeric','min:0','max:100'],
             'self_enrolment_enabled'=>['nullable','boolean'],
             'entry_assessment_id'=>['nullable','exists:assessments,id'],
+            'compulsory_course_ids'=>['nullable','array'],
+            'compulsory_course_ids.*'=>['integer','distinct','exists:courses,id'],
             'status'=>['required','in:draft,published,archived'],
         ])+[
             'self_enrolment_enabled'=>$request->boolean('self_enrolment_enabled'),
         ];
+    }
+
+    private function withoutSelf(array $ids, int $courseId): array
+    {
+        return array_values(array_filter(
+            array_map('intval', $ids),
+            fn (int $id) => $id !== $courseId
+        ));
     }
 
     private function withImage(Request $request, array $data): array

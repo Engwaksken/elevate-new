@@ -34,18 +34,36 @@ class Course extends Model
 
     /**
      * True when the course requires an entry assessment and the given user has
-     * not yet finished it (submitted or graded).
+     * not yet passed it. The course pass mark is the entry threshold.
      */
     public function entryAssessmentPendingFor(?int $userId): bool
     {
-        if (! $this->entry_assessment_id || ! $userId) {
+        return $this->requiresEntryAssessment() && ! $this->entryAssessmentPassedFor($userId);
+    }
+
+    public function requiresEntryAssessment(): bool
+    {
+        return (bool) $this->entry_assessment_id;
+    }
+
+    /**
+     * True when the user has a graded entry-assessment attempt at or above the
+     * course pass mark.
+     */
+    public function entryAssessmentPassedFor(?int $userId): bool
+    {
+        if (! $userId) {
             return false;
         }
 
-        return ! AssessmentAttempt::query()
+        $passMark = (float) ($this->pass_mark ?? 0);
+
+        return AssessmentAttempt::query()
             ->where('assessment_id', $this->entry_assessment_id)
             ->where('user_id', $userId)
-            ->whereIn('status', ['submitted', 'graded'])
+            ->where('status', 'graded')
+            ->whereNotNull('percentage')
+            ->where('percentage', '>=', $passMark)
             ->exists();
     }
 
@@ -53,6 +71,21 @@ class Course extends Model
     {
         return $this->belongsToMany(User::class,'course_instructors','course_id','user_id')
             ->withPivot('is_lead')
+            ->withTimestamps();
+    }
+
+    /**
+     * Courses a participant is automatically enrolled in when enrolled here.
+     */
+    public function compulsoryCourses()
+    {
+        return $this->belongsToMany(self::class, 'course_compulsory', 'course_id', 'compulsory_course_id')
+            ->withTimestamps();
+    }
+
+    public function compulsoryFor()
+    {
+        return $this->belongsToMany(self::class, 'course_compulsory', 'compulsory_course_id', 'course_id')
             ->withTimestamps();
     }
 

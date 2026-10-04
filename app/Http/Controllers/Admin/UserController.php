@@ -73,6 +73,35 @@ class UserController extends Controller
         ]);
     }
 
+    public function bulkDestroy(Request $request, AuditService $audit)
+    {
+        $data = $request->validate([
+            'ids' => ['required','array','min:1'],
+            'ids.*' => ['integer','exists:users,id'],
+        ]);
+
+        $participants = User::query()
+            ->where('user_type', 'participant')
+            ->whereKey($data['ids'])
+            ->where('id', '!=', auth()->id())
+            ->get();
+
+        foreach ($participants as $participant) {
+            $old = $participant->load('roles')->toArray();
+            $participant->delete();
+            $audit->log('users', 'deleted', null, $old, []);
+        }
+
+        $count = $participants->count();
+
+        return back()->with(
+            $count > 0 ? 'success' : 'error',
+            $count > 0
+                ? $count.' participant(s) deleted.'
+                : 'No participants were deleted.'
+        );
+    }
+
     public function create()
     {
         return redirect()

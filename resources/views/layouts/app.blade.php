@@ -13,8 +13,10 @@
 <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
 </head>
 @php
-$participantShell=auth()->check() && method_exists(auth()->user(),'isStaff') && !auth()->user()->isStaff();
-$inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.login') || request()->routeIs('register');
+$participantShell=auth()->check() && method_exists(auth()->user(),'isParticipant') && auth()->user()->isParticipant();
+$partnerType=auth()->check() && method_exists(auth()->user(),'isPartner') && auth()->user()->isPartner() ? auth()->user()->user_type : null;
+$partnerHome=$partnerType === 'mentor' ? 'mentorship.dashboard' : 'employer.jobs.index';
+$inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.login') || request()->routeIs('register') || request()->routeIs('partners.*') || request()->routeIs('public.partners.*');
 $brandLogoPath = app(\App\Services\SettingsService::class)->get('branding.logo_path');
 $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('branding.asset')
     ? route('branding.asset', ['type' => 'logo', 'v' => md5((string) $brandLogoPath)])
@@ -66,6 +68,8 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 @else
 @if(method_exists(auth()->user(),'isStaff') && auth()->user()->isStaff() && Route::has('admin.dashboard'))
 <a href="{{ route('admin.dashboard') }}" class="btn btn-primary btn-sm"><i class="fas fa-gauge-high"></i><span>Dashboard</span></a>
+@elseif($partnerType && Route::has($partnerHome))
+<a href="{{ route($partnerHome) }}" class="btn btn-primary btn-sm"><i class="fas fa-gauge-high"></i><span>Dashboard</span></a>
 @endif
 @endguest
 </div></div>

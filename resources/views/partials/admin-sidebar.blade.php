@@ -123,7 +123,7 @@
                     'route' => 'admin.workspace.learning',
                     'label' => 'Learning',
                     'icon' => 'fa-graduation-cap',
-                    'permissions' => ['courses.view', 'courses.edit', 'students.view', 'students.edit'],
+                    'permissions' => ['courses.view', 'courses.edit', 'students.view', 'students.edit', 'course_calls.view'],
                 ],
                 [
                     'route' => 'admin.workspace.planning-meal',

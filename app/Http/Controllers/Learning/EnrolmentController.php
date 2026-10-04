@@ -3,20 +3,22 @@ namespace App\Http\Controllers\Learning;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Enrolment;
+use App\Services\EnrolmentService;
 class EnrolmentController extends Controller
 {
-    public function store(Course $course)
+    public function store(Course $course, EnrolmentService $enrolments)
     {
         abort_unless($course->status === 'published', 404);
         abort_unless($course->self_enrolment_enabled, 403);
 
-        // A participant is not enrolled until she has finished the course's entry assessment.
+        // A participant is not enrolled until she has passed the course's entry assessment.
         if ($course->entryAssessmentPendingFor(auth()->id())) {
             return redirect()->route('learning.course.show', $course)
-                ->with('error', 'Finish the entry assessment before you can enrol in this course.');
+                ->with('error', 'Pass the entry assessment before you can enrol in this course.');
         }
 
-        Enrolment::firstOrCreate(['course_id'=>$course->id,'user_id'=>auth()->id()],['status'=>'enrolled','enrolled_at'=>now()]);
+        $enrolments->enrol(auth()->user(), $course);
+
         return redirect()->route('learning.my-courses')->with('success','You have been enrolled successfully.');
     }
     public function myCourses()

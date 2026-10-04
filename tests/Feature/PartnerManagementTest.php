@@ -58,11 +58,11 @@ class PartnerManagementTest extends TestCase
         $this->post(route('public.partners.mentor.store'), [
             'name' => 'New Mentor', 'email' => 'NewMentor@example.test', 'password' => 'SecurePassword123', 'password_confirmation' => 'SecurePassword123',
             'consent' => 1, 'organisation' => 'Org', 'status' => 'approved', 'user_type' => 'staff',
-        ])->assertSessionHasNoErrors()->assertRedirect(route('login'));
+        ])->assertSessionHasNoErrors()->assertRedirect(route('partners.mentor.login'));
         $mentor = MentorProfile::sole();
         $this->assertSame('pending', $mentor->status);
         $this->assertSame('pending', $mentor->user->status);
-        $this->assertSame('participant', $mentor->user->user_type);
+        $this->assertSame('mentor', $mentor->user->user_type);
         $this->assertTrue(Hash::check('SecurePassword123', $mentor->user->password));
         $this->assertDatabaseCount('consents', 2);
         $this->admin();
