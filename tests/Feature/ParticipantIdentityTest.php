@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\CourseApplication;
 use App\Models\CourseCall;
 use App\Models\Enrolment;
+use App\Models\Programme;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -135,6 +136,28 @@ class ParticipantIdentityTest extends TestCase
         ])->assertSessionHas('success');
 
         $this->assertTrue(Enrolment::where('course_id', $course->id)->where('user_id', $applicant->id)->exists());
+    }
+
+    public function test_participant_id_uses_the_course_call_programme_code(): void
+    {
+        $programme = Programme::create(['name' => 'Digital Economy', 'code' => 'DE']);
+        $course = Course::create(['title' => 'Data Skills', 'status' => 'published']);
+        $applicant = $this->participant();
+
+        $call = CourseCall::create(['title' => 'Intake', 'status' => 'published', 'programme_id' => $programme->id]);
+        $call->courses()->attach($course->id);
+        $application = CourseApplication::create(['course_call_id' => $call->id, 'user_id' => $applicant->id, 'status' => 'submitted']);
+
+        $this->actingAs($this->admin)->put(route('admin.course-applications.review', $application), [
+            'application_id' => $application->id,
+            'status' => 'approved',
+            'approved_course_id' => $course->id,
+        ])->assertSessionHas('success');
+
+        $enrolment = Enrolment::where('course_id', $course->id)->where('user_id', $applicant->id)->firstOrFail();
+
+        $this->assertStringStartsWith('DE/', $enrolment->enrolment_code);
+        $this->assertStringStartsWith('DE/', $applicant->fresh()->participant_code);
     }
 
     public function test_instructor_can_be_assigned_to_several_branches_and_courses(): void

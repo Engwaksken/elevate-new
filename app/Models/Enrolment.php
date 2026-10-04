@@ -21,7 +21,8 @@ class Enrolment extends Model
 
     protected $fillable = [
         'course_id','user_id','cohort_id','status','enrolled_at',
-        'started_at','completed_at','progress_percent','final_score'
+        'started_at','completed_at','progress_percent','final_score',
+        'source_type','source_id'
     ];
     protected $casts = [
         'enrolled_at'=>'datetime','started_at'=>'datetime','completed_at'=>'datetime',

@@ -398,18 +398,16 @@ class CourseCallController extends Controller
 
             $approvedCourse = $call->courses->firstWhere('id', $approvedCourseId);
 
-            $enrolment = app(\App\Services\EnrolmentService::class)->enrol(
-                $application->user,
-                $approvedCourse,
-                ['cohort_id' => $call->cohort_id, 'progress_percent' => 0]
-            );
+            $attributes = ['cohort_id' => $call->cohort_id, 'progress_percent' => 0];
 
+            // Set the source at creation time so the participant ID can use the
+            // call's programme/project code.
             if (Schema::hasColumn('enrolments', 'source_type')) {
-                $enrolment->update([
-                    'source_type' => 'application',
-                    'source_id' => $application->id,
-                ]);
+                $attributes['source_type'] = 'application';
+                $attributes['source_id'] = $application->id;
             }
+
+            app(\App\Services\EnrolmentService::class)->enrol($application->user, $approvedCourse, $attributes);
 
             $application->update(['enrolled_at' => now()]);
         }

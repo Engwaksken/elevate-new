@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Branch;
 use App\Models\Cohort;
 use App\Models\Course;
+use App\Models\CourseApplication;
 use App\Models\Enrolment;
 use App\Models\Profile;
 use App\Models\Programme;
@@ -17,9 +18,18 @@ class EnrolmentIdentityService
     public function allocate(Enrolment $enrolment): string
     {
         $course = Course::withTrashed()->find($enrolment->course_id);
-        $cohort = Cohort::find($enrolment->cohort_id);
-        $project = Project::find($cohort?->project_id ?? $course?->project_id);
-        $programme = Programme::find($cohort?->programme_id ?? $course?->programme_id ?? $project?->programme_id);
+
+        // When the enrolment came from a course/opportunity call, the call's
+        // programme or project determines the participant ID prefix.
+        $call = null;
+
+        if (($enrolment->source_type ?? null) === 'application' && $enrolment->source_id) {
+            $call = CourseApplication::with('courseCall')->find($enrolment->source_id)?->courseCall;
+        }
+
+        $cohort = Cohort::find($enrolment->cohort_id) ?: ($call?->cohort_id ? Cohort::find($call->cohort_id) : null);
+        $project = Project::find($cohort?->project_id ?? $call?->project_id ?? $course?->project_id);
+        $programme = Programme::find($cohort?->programme_id ?? $call?->programme_id ?? $course?->programme_id ?? $project?->programme_id);
         $profileBranch = Profile::where('user_id', $enrolment->user_id)->value('branch_id');
         $participantBranch = $profileBranch && $course?->branches()->whereKey($profileBranch)->exists() ? $profileBranch : null;
         $branchId = $cohort?->branch_id ?? $participantBranch ?? $course?->branch_id ?? $profileBranch;
