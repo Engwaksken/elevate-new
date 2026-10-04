@@ -160,6 +160,57 @@ class ParticipantIdentityTest extends TestCase
         $this->assertStringStartsWith('DE/', $applicant->fresh()->participant_code);
     }
 
+    public function test_updating_the_course_call_resyncs_issued_participant_ids(): void
+    {
+        $course = Course::create(['title' => 'Data Skills', 'status' => 'published']);
+        $applicant = $this->participant();
+        $call = CourseCall::create(['title' => 'Intake', 'status' => 'published']);
+        $call->courses()->attach($course->id);
+        $application = CourseApplication::create(['course_call_id' => $call->id, 'user_id' => $applicant->id, 'status' => 'submitted']);
+
+        $this->actingAs($this->admin)->put(route('admin.course-applications.review', $application), [
+            'application_id' => $application->id,
+            'status' => 'approved',
+            'approved_course_id' => $course->id,
+        ]);
+
+        $this->assertStringStartsWith('PRG/', $applicant->fresh()->participant_code);
+
+        $programme = Programme::create(['name' => 'Digital Economy', 'code' => 'DE']);
+
+        $this->actingAs($this->admin)->put(route('admin.course-calls.update', $call), [
+            'title' => 'Intake',
+            'course_ids' => [$course->id],
+            'status' => 'published',
+            'programme_id' => $programme->id,
+        ])->assertSessionHas('success');
+
+        $this->assertStringStartsWith('DE/', $applicant->fresh()->participant_code);
+        $this->assertStringStartsWith('DE/', Enrolment::where('user_id', $applicant->id)->first()->enrolment_code);
+    }
+
+    public function test_updating_a_programme_code_resyncs_participant_ids(): void
+    {
+        $programme = Programme::create(['name' => 'Digital Economy', 'code' => 'DE']);
+        $course = Course::create(['title' => 'Data Skills', 'status' => 'published']);
+        $applicant = $this->participant();
+        $call = CourseCall::create(['title' => 'Intake', 'status' => 'published', 'programme_id' => $programme->id]);
+        $call->courses()->attach($course->id);
+        $application = CourseApplication::create(['course_call_id' => $call->id, 'user_id' => $applicant->id, 'status' => 'submitted']);
+
+        $this->actingAs($this->admin)->put(route('admin.course-applications.review', $application), [
+            'application_id' => $application->id,
+            'status' => 'approved',
+            'approved_course_id' => $course->id,
+        ]);
+
+        $this->assertStringStartsWith('DE/', $applicant->fresh()->participant_code);
+
+        $programme->update(['code' => 'DIG']);
+
+        $this->assertStringStartsWith('DIG/', $applicant->fresh()->participant_code);
+    }
+
     public function test_instructor_can_be_assigned_to_several_branches_and_courses(): void
     {
         $instructor = $this->instructor();

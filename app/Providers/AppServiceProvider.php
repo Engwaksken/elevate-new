@@ -121,5 +121,12 @@ class AppServiceProvider extends ServiceProvider
         foreach($learningNotificationModels as $model){
             $model::observe(LearningNotificationObserver::class);
         }
+
+        // Programme/project code changes re-sync participant ID prefixes.
+        foreach ([\App\Models\Programme::class, \App\Models\Project::class] as $model) {
+            if (class_exists($model)) {
+                $model::observe(\App\Observers\IdentityResyncObserver::class);
+            }
+        }
     }
 }

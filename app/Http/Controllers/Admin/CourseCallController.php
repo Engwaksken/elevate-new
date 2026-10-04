@@ -148,9 +148,12 @@ class CourseCallController extends Controller
             $courseCall->courses()->sync($courseIds);
         });
 
+        // Keep already-issued participant IDs in step with the call's programme/project.
+        $synced = app(\App\Services\EnrolmentIdentityService::class)->resyncForCall($courseCall->fresh());
+
         return redirect()
             ->route('admin.course-calls.show', $courseCall)
-            ->with('success', 'Course call updated.');
+            ->with('success', 'Course call updated.'.($synced > 0 ? ' '.$synced.' participant ID(s) synced.' : ''));
     }
 
     public function addQuestion(Request $request, CourseCall $courseCall)
