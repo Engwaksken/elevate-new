@@ -44,7 +44,8 @@
 }
 </style>
 <style>.eh-track-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 22px}.eh-track-card{background:#fff;border:1px solid #eadede;border-left:4px solid #800000;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px}.eh-track-card i{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:#fff7da;color:#800000}.eh-track-card small{display:block;color:#667085;font-weight:700}.eh-track-card strong{font-size:1.3rem;color:#101828}@media(max-width:900px){.eh-track-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.eh-track-grid{grid-template-columns:1fr}}</style>
-<div class="page-header"><div><span class="eh-kicker">Mentorship</span><h1>My Mentorship</h1><p>Track mentors, sessions and your growth goals.</p></div>@if(auth()->user()?->hasAnyRole(['mentor','Mentor']) && Route::has('mentorship.mentor-profile.edit'))
+<div class="page-header"><div><span class="eh-kicker">Mentorship</span><h1>My Mentorship</h1><p>Track mentors, sessions and your growth goals.</p></div>@if(auth()->user()?->isParticipant() && Route::has('mentorship.mentors.index'))<a href="{{ route('mentorship.mentors.index') }}" class="btn btn-primary" style="margin-right:8px"><i class="fas fa-user-plus"></i> Find a Mentor</a>@endif
+@if(auth()->user()?->hasAnyRole(['mentor','Mentor']) && Route::has('mentorship.mentor-profile.edit'))
 <a href="{{ route('mentorship.mentor-profile.edit') }}" class="btn btn-outline"><i class="fas fa-user-pen"></i> Mentor Profile</a>
 @elseif(Route::has('profile.edit'))
 <a href="{{ route('profile.edit') }}" class="btn btn-outline"><i class="fas fa-user-pen"></i> My Profile</a>
@@ -91,6 +92,20 @@
                                 <div class="eh-data-row-copy"><strong>{{ $session->title?:'Mentorship Session' }}</strong><span>{{ $session->scheduled_at?->format('d M Y H:i')??'Date not set' }}</span></div>
                             </div>
                             <span class="eh-status">{{ $session->status }}</span>
+                            <details style="flex-basis:100%;margin-top:8px">
+                                <summary style="cursor:pointer;color:#800000;font-weight:600;font-size:.85rem">Submit session report</summary>
+                                <form method="POST" action="{{ route('mentorship.sessions.reports.store',$session) }}" style="margin-top:10px">
+                                    @csrf
+                                    <div><label>Summary *</label><textarea name="summary" required maxlength="5000">{{ old('summary') }}</textarea></div>
+                                    <div class="form-grid">
+                                        <div><label>Challenges</label><textarea name="challenges" maxlength="5000">{{ old('challenges') }}</textarea></div>
+                                        <div><label>Achievements</label><textarea name="achievements" maxlength="5000">{{ old('achievements') }}</textarea></div>
+                                    </div>
+                                    <label class="modal-check"><input type="checkbox" name="mentor_attended" value="1"><span>Mentor attended</span></label>
+                                    <label class="modal-check"><input type="checkbox" name="mentee_attended" value="1"><span>Mentee attended</span></label>
+                                    <button class="btn btn-primary btn-sm">Submit report</button>
+                                </form>
+                            </details>
                         </div>
                     @empty
                         <div class="eh-empty"><p>No mentorship sessions yet.</p></div>

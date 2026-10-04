@@ -59,7 +59,7 @@ $profileFormTabs = [
     'personal' => ['label' => 'Personal', 'icon' => 'fa-user', 'fields' => ['surname', 'given_name', 'other_name', 'gender', 'date_of_birth', 'branch_id']],
     'location' => ['label' => 'Location', 'icon' => 'fa-location-dot', 'fields' => ['country', 'district', 'location', 'is_pwd']],
     'career' => ['label' => 'Career', 'icon' => 'fa-briefcase', 'fields' => ['education_level', 'employment_status', 'career_interests']],
-    'preferences' => ['label' => 'Preferences', 'icon' => 'fa-language', 'fields' => ['preferred_language']],
+    'preferences' => ['label' => 'Preferences', 'icon' => 'fa-language', 'fields' => ['preferred_language', 'notifications', 'notifications.*']],
     'security' => ['label' => 'Security', 'icon' => 'fa-shield-halved', 'fields' => ['current_password', 'password', 'password_confirmation']],
 ];
 @endphp
@@ -114,6 +114,23 @@ $profileFormTabs = [
 <div class="eh-tab-section">
 <div class="eh-form-grid">
     <div><label>Preferred Language</label><select name="preferred_language"><option value="en" @selected(old('preferred_language',$profile?->preferred_language ?? 'en')==='en')>English</option><option value="lg" @selected(old('preferred_language',$profile?->preferred_language)==='lg')>Luganda</option><option value="sw" @selected(old('preferred_language',$profile?->preferred_language)==='sw')>Kiswahili</option></select></div>
+</div>
+@php
+    $notifCategories = array_keys(\App\Support\NotificationPreferences::CATEGORIES);
+    $notifDisabled = (array) ($user->notification_preferences['disabled'] ?? []);
+    $notifEnabled = old('notifications', array_values(array_diff($notifCategories, $notifDisabled)));
+@endphp
+<div class="eh-form-grid" style="margin-top:12px">
+    <div class="full">
+        <label>Notifications</label>
+        <p class="eh-section-note">Choose which updates you want to receive in-app and by email.</p>
+        @foreach(\App\Support\NotificationPreferences::labels() as $key => $label)
+            <label class="modal-check">
+                <input type="checkbox" name="notifications[]" value="{{ $key }}" @checked(in_array($key, (array) $notifEnabled))>
+                <span>{{ $label }}</span>
+            </label>
+        @endforeach
+    </div>
 </div>
 </div>
 </x-form-tab>

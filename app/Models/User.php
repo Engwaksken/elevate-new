@@ -19,6 +19,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     protected $fillable = [
         'name','email','phone','password','user_type','status','last_login_at','email_verified_at',
+        'notification_preferences',
     ];
 
     protected $hidden = ['password','remember_token'];
@@ -29,6 +30,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
             'password' => 'hashed',
+            'notification_preferences' => 'array',
         ];
     }
 

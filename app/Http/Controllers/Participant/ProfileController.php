@@ -53,6 +53,8 @@ class ProfileController extends Controller
             'employment_status'=>['nullable','string','max:255'],
             'career_interests'=>['nullable','string','max:5000'],
             'preferred_language'=>['nullable',Rule::in(['en','lg','sw'])],
+            'notifications'=>['nullable','array'],
+            'notifications.*'=>['string',Rule::in(array_keys(\App\Support\NotificationPreferences::CATEGORIES))],
             'current_password'=>['nullable','string'],
             'password'=>[
                 'nullable',
@@ -73,10 +75,14 @@ class ProfileController extends Controller
         }
 
         DB::transaction(function() use($user,$data){
+            $categories = array_keys(\App\Support\NotificationPreferences::CATEGORIES);
+            $enabled = array_values(array_intersect($categories, $data['notifications'] ?? []));
+
             $user->fill([
                 'name'=>$data['name'],
                 'email'=>strtolower($data['email']),
                 'phone'=>$data['phone'] ?? null,
+                'notification_preferences'=>['disabled'=>array_values(array_diff($categories, $enabled))],
             ]);
 
             if(!empty($data['password'])){

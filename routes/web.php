@@ -80,6 +80,8 @@ use App\Http\Controllers\Mentorship\MentorshipAssistantController;
 use App\Http\Controllers\Mentorship\ParticipantGoalController as MentorshipParticipantGoalController;
 use App\Http\Controllers\Mentorship\MentorshipGoalController;
 use App\Http\Controllers\Mentorship\MentorshipSessionController;
+use App\Http\Controllers\Mentorship\ParticipantMentorController;
+use App\Http\Controllers\Mentorship\MentorshipSessionReportController;
 use App\Http\Controllers\Participant\GoalController as ParticipantGoalController;
 use App\Http\Controllers\Admin\ProgrammeTargetController;
 use App\Http\Controllers\Admin\MigrationController;
@@ -512,12 +514,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('learning.files.download');
 
     Route::get('/mentorship',[MentorshipDashboardController::class,'index'])->name('mentorship.dashboard');
+    Route::get('/mentorship/mentors',[ParticipantMentorController::class,'index'])->name('mentorship.mentors.index');
+    Route::post('/mentorship/mentors',[ParticipantMentorController::class,'store'])->name('mentorship.mentors.store');
+    Route::delete('/mentorship/matches/{match}',[ParticipantMentorController::class,'destroy'])->name('mentorship.matches.destroy');
     Route::post('/mentorship/assistant',[MentorshipAssistantController::class,'message'])
         ->middleware('throttle:20,1')->name('mentorship.assistant.message');
     Route::get('/mentorship/mentor-profile',[MentorProfileController::class,'edit'])->name('mentorship.mentor-profile.edit');
     Route::put('/mentorship/mentor-profile',[MentorProfileController::class,'update'])->name('mentorship.mentor-profile.update');
     Route::post('/mentorship/matches/{match}/sessions',[MentorshipSessionController::class,'store'])->name('mentorship.sessions.store');
     Route::put('/mentorship/sessions/{session}/complete',[MentorshipSessionController::class,'complete'])->name('mentorship.sessions.complete');
+    Route::post('/mentorship/sessions/{session}/reports',[MentorshipSessionReportController::class,'store'])->name('mentorship.sessions.reports.store');
     Route::post('/mentorship/goals/{goal}/review',[MentorshipParticipantGoalController::class,'review'])
         ->whereNumber('goal')->name('mentorship.participant-goals.review');
 

@@ -15,4 +15,5 @@ class MentorshipSession extends Model
         'mentor_attended'=>'boolean','mentee_attended'=>'boolean'
     ];
     public function match(){ return $this->belongsTo(MentorMatch::class,'mentor_match_id'); }
+    public function reports(){ return $this->hasMany(MentorshipSessionReport::class,'mentorship_session_id'); }
 }

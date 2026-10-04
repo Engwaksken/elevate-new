@@ -3,13 +3,18 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Support\NotificationPreferences;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class UserNotificationService
 {
-    public function send(User $user, string $type, string $title, ?string $message = null, ?string $actionUrl = null, array $data = []): UserNotification
+    public function send(User $user, string $type, string $title, ?string $message = null, ?string $actionUrl = null, array $data = []): ?UserNotification
     {
+        if (! NotificationPreferences::allows($user, $type)) {
+            return null;
+        }
+
         return UserNotification::create([
             'user_id'=>$user->id,
             'type'=>$type,
@@ -35,6 +40,19 @@ class UserNotificationService
             ->filter(fn (int $id) => $id > 0 && $id !== $actorId)
             ->unique()
             ->values();
+
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+
+        // Honour each user's notification preferences before writing.
+        $blocked = User::query()
+            ->whereIn('id', $ids->all())
+            ->get(['id', 'notification_preferences'])
+            ->reject(fn (User $user) => NotificationPreferences::allows($user, $type))
+            ->pluck('id');
+
+        $ids = $ids->reject(fn (int $id) => $blocked->contains($id))->values();
 
         if ($ids->isEmpty()) {
             return 0;
