@@ -3,7 +3,7 @@ $editing = isset($course) && $course;
 $formTabsConfig = [
     'overview' => ['label' => 'Overview', 'icon' => 'fa-book-open', 'fields' => ['title', 'code', 'summary', 'description', 'thumbnail', 'remove_thumbnail']],
     'organisation' => ['label' => 'Organisation', 'icon' => 'fa-sitemap', 'fields' => ['delivery_mode', 'programme_id', 'project_id', 'branch_ids']],
-    'schedule' => ['label' => 'Schedule & Publishing', 'icon' => 'fa-calendar-days', 'fields' => ['start_date', 'end_date', 'duration_hours', 'pass_mark', 'status', 'self_enrolment_enabled', 'entry_assessment_id', 'compulsory_course_ids', 'compulsory_course_ids.*']],
+    'schedule' => ['label' => 'Schedule & Publishing', 'icon' => 'fa-calendar-days', 'fields' => ['start_date', 'end_date', 'duration_hours', 'pass_mark', 'status', 'self_enrolment_enabled', 'entry_assessment_id', 'entry_survey_id', 'compulsory_course_ids', 'compulsory_course_ids.*']],
 ];
 @endphp
 <x-form-tabs :id="$editing ? 'course-edit-'.$course->id : 'course-create'" label="Course details" :tabs="$formTabsConfig">
@@ -46,6 +46,16 @@ $formTabsConfig = [
             @endforeach
         </select>
         <small class="form-hint">When set, participants must pass this assessment before they are enrolled.</small>
+    </div>
+    <div class="form-group full">
+        <label>Entry survey (scored survey required before self-enrolment)</label>
+        <select name="entry_survey_id">
+            <option value="">None — use the assessment above or enrol immediately</option>
+            @foreach(($surveys ?? collect()) as $survey)
+                <option value="{{ $survey->id }}" @selected((string)old('entry_survey_id',$editing ? $course->entry_survey_id : '')===(string)$survey->id)>{{ $survey->title }}</option>
+            @endforeach
+        </select>
+        <small class="form-hint">Takes precedence over the entry assessment. Requires the survey to be scored with a pass mark.</small>
     </div>
     <div class="form-group full">
         <label>Compulsory courses</label>

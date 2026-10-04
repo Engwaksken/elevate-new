@@ -126,6 +126,32 @@ class EntryAssessmentPipelineTest extends TestCase
         $this->assertTrue(Enrolment::where('course_id', $course->id)->where('user_id', $applicant->id)->exists());
     }
 
+    public function test_reviewer_can_assign_an_assessor_who_is_notified(): void
+    {
+        $course = Course::create(['title' => 'Data Skills', 'status' => 'published', 'pass_mark' => 50]);
+        $applicant = $this->participant();
+        $call = CourseCall::create(['title' => 'Intake', 'status' => 'published']);
+        $call->courses()->attach($course->id);
+        $application = CourseApplication::create([
+            'course_call_id' => $call->id,
+            'user_id' => $applicant->id,
+            'status' => 'submitted',
+        ]);
+
+        $assessor = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
+        $assessor->roles()->attach(Role::firstOrCreate(['slug' => 'instructor'], ['name' => 'Instructor']));
+
+        $this->actingAs($this->admin())
+            ->put(route('admin.course-applications.review', $application), [
+                'application_id' => $application->id,
+                'status' => 'shortlisted',
+                'assessor_user_id' => $assessor->id,
+            ])->assertSessionHas('success');
+
+        $this->assertSame($assessor->id, $application->fresh()->assessor_user_id);
+        $this->assertDatabaseHas('user_notifications', ['user_id' => $assessor->id, 'type' => 'assessment_assigned']);
+    }
+
     public function test_course_call_approval_enrols_compulsory_courses(): void
     {
         $course = Course::create(['title' => 'Data Skills', 'status' => 'published', 'pass_mark' => 50]);

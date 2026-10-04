@@ -53,6 +53,7 @@ class CourseController extends Controller
             'projects'=>Project::orderBy('name')->get(),
             'branches'=>Branch::orderBy('name')->get(),
             'assessments'=>Assessment::orderBy('title')->get(['id','title','course_id']),
+            'surveys'=>\App\Models\Survey::orderBy('title')->get(['id','title']),
             'courseOptions'=>Course::orderBy('title')->get(['id','title']),
             'stats'=>[
                 'total'=>Course::count(),
@@ -168,6 +169,7 @@ class CourseController extends Controller
             'pass_mark'=>['required','numeric','min:0','max:100'],
             'self_enrolment_enabled'=>['nullable','boolean'],
             'entry_assessment_id'=>['nullable','exists:assessments,id'],
+            'entry_survey_id'=>['nullable','exists:surveys,id'],
             'compulsory_course_ids'=>['nullable','array'],
             'compulsory_course_ids.*'=>['integer','distinct','exists:courses,id'],
             'status'=>['required','in:draft,published,archived'],

@@ -12,6 +12,7 @@ use App\Models\CourseCall;
 use App\Models\Enrolment;
 use App\Models\Programme;
 use App\Models\Project;
+use App\Models\SurveyResponse;
 use App\Services\ParticipantHistoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +56,7 @@ class CourseCallController extends Controller
             'programmes' => Programme::orderBy('name')->get(),
             'projects' => Project::orderBy('name')->get(),
             'assessments' => Assessment::orderBy('title')->get(),
+            'surveys' => \App\Models\Survey::orderBy('title')->get(),
         ]);
     }
 
@@ -87,6 +89,7 @@ class CourseCallController extends Controller
             'programmes' => Programme::orderBy('name')->get(),
             'projects' => Project::orderBy('name')->get(),
             'assessments' => Assessment::orderBy('title')->get(),
+            'surveys' => \App\Models\Survey::orderBy('title')->get(),
         ]);
     }
 
@@ -207,11 +210,17 @@ class CourseCallController extends Controller
         );
 
         $applications = $courseCall->applications()
-            ->with(['user.profile.branch', 'assessmentAttempt'])
+            ->with(['user.profile.branch', 'assessmentAttempt', 'assessor'])
             ->latest()
             ->paginate(30);
 
         $users = $applications->getCollection()->pluck('user')->filter();
+
+        $assessors = \App\Models\User::query()
+            ->where('status', 'active')
+            ->whereHas('roles', fn ($q) => $q->whereIn('slug', ['instructor', 'trainer']))
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         return view('admin.course-applications.index', [
             'courseCall' => $courseCall->load([
@@ -219,6 +228,7 @@ class CourseCallController extends Controller
                 'entryAssessment',
             ]),
             'applications' => $applications,
+            'assessors' => $assessors,
             'history' => $history->summaries($users),
             'duplicates' => $history->possibleDuplicates($users),
         ]);
@@ -245,6 +255,7 @@ class CourseCallController extends Controller
              * selecting the exact course the participant is being enrolled in.
              */
             'approved_course_id' => 'nullable|integer|exists:courses,id',
+            'assessor_user_id' => 'nullable|integer|exists:users,id',
         ]);
 
         $approvedCourseId = isset($d['approved_course_id'])
@@ -317,12 +328,59 @@ class CourseCallController extends Controller
             }
         }
 
+        if ($call->entry_survey_id) {
+            $surveyResponse = SurveyResponse::query()
+                ->where('survey_id', $call->entry_survey_id)
+                ->where('user_id', $application->user_id)
+                ->where('status', 'submitted')
+                ->latest('id')
+                ->first();
+
+            if ($surveyResponse) {
+                $application->entry_assessment_score = $surveyResponse->percentage;
+            }
+
+            if ($d['status'] === 'approved') {
+                if (! $surveyResponse) {
+                    throw ValidationException::withMessages([
+                        'status' => 'The participant must complete the linked entry survey before approval/enrolment.',
+                    ]);
+                }
+
+                $approvedCourse = $call->courses->firstWhere('id', $approvedCourseId);
+                $passMark = (float) ($approvedCourse->pass_mark ?? 0);
+
+                if ((float) $surveyResponse->percentage < $passMark) {
+                    throw ValidationException::withMessages([
+                        'status' => 'The participant scored '.number_format((float) $surveyResponse->percentage, 2).'%, below the '.rtrim(rtrim(number_format($passMark, 2), '0'), '.').'% pass mark for this course.',
+                    ]);
+                }
+            }
+        }
+
         unset($d['approved_course_id']);
+
+        $previousAssessor = (int) ($application->assessor_user_id ?? 0);
 
         $application->fill($d);
         $application->reviewed_by = auth()->id();
         $application->reviewed_at = now();
         $application->save();
+
+        if (
+            ! empty($d['assessor_user_id'])
+            && (int) $application->assessor_user_id !== $previousAssessor
+            && $assessor = \App\Models\User::find($d['assessor_user_id'])
+        ) {
+            app(\App\Services\NotificationDispatcher::class)->notify(
+                $assessor,
+                'assessment_assigned',
+                'Entry assessment assigned',
+                'You have been asked to assess '.($application->user?->name ?? 'a participant').' for "'.$call->title.'".',
+                route('admin.course-calls.applications', $call),
+                ['course_application_id' => $application->id, 'course_call_id' => $call->id]
+            );
+        }
 
         if ($d['status'] === 'approved') {
             if (
@@ -375,6 +433,7 @@ class CourseCallController extends Controller
              * optional for backwards compatibility.
              */
             'entry_assessment_id' => ['nullable', 'exists:assessments,id'],
+            'entry_survey_id' => ['nullable', 'exists:surveys,id'],
 
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],

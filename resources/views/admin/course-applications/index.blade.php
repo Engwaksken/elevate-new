@@ -85,6 +85,17 @@
                 <label>Entry assessment</label>
                 <div class="admin-readonly">{{ $application->assessmentAttempt?->percentage ?? $application->entry_assessment_score ?? 'Not taken' }}</div>
             </div>
+            <div class="form-group">
+                <label for="app-{{ $application->id }}-assessor">Assigned assessor</label>
+                @php $assessorId = $reopen ? (int) old('assessor_user_id') : (int) $application->assessor_user_id; @endphp
+                <select id="app-{{ $application->id }}-assessor" name="assessor_user_id">
+                    <option value="">Unassigned</option>
+                    @foreach(($assessors ?? collect()) as $assessor)
+                        <option value="{{ $assessor->id }}" @selected($assessorId === (int) $assessor->id)>{{ $assessor->name }}</option>
+                    @endforeach
+                </select>
+                <small class="form-hint">The assigned instructor or staff member conducts and marks the entry assessment.</small>
+            </div>
             <div class="form-group full">
                 <label for="app-{{ $application->id }}-comments">Reviewer comments</label>
                 <textarea id="app-{{ $application->id }}-comments" name="reviewer_comments" rows="3" maxlength="5000">{{ $reopen ? old('reviewer_comments') : $application->reviewer_comments }}</textarea>

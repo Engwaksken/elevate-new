@@ -12,7 +12,7 @@ class Course extends Model
     protected $fillable = [
         'programme_id','project_id','branch_id','title','code','summary','description',
         'thumbnail_path','delivery_mode','start_date','end_date','duration_hours',
-        'pass_mark','self_enrolment_enabled','entry_assessment_id','status','created_by'
+        'pass_mark','self_enrolment_enabled','entry_assessment_id','entry_survey_id','status','created_by'
     ];
 
     protected $casts = [
@@ -30,6 +30,41 @@ class Course extends Model
     public function entryAssessment()
     {
         return $this->belongsTo(Assessment::class, 'entry_assessment_id');
+    }
+
+    public function entrySurvey()
+    {
+        return $this->belongsTo(Survey::class, 'entry_survey_id');
+    }
+
+    /**
+     * True when the course requires an entry assessment or survey that the user
+     * has not yet passed.
+     */
+    public function entryRequirementPendingFor(?int $userId): bool
+    {
+        if ($this->entry_survey_id) {
+            return ! $this->entrySurveyPassedFor($userId);
+        }
+
+        return $this->entryAssessmentPendingFor($userId);
+    }
+
+    public function entrySurveyPassedFor(?int $userId): bool
+    {
+        if (! $this->entry_survey_id || ! $userId) {
+            return false;
+        }
+
+        $passMark = (float) ($this->pass_mark ?? 0);
+
+        return SurveyResponse::query()
+            ->where('survey_id', $this->entry_survey_id)
+            ->where('user_id', $userId)
+            ->where('status', 'submitted')
+            ->whereNotNull('percentage')
+            ->where('percentage', '>=', $passMark)
+            ->exists();
     }
 
     /**

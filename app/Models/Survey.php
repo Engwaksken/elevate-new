@@ -2,8 +2,8 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 class Survey extends Model {
-    protected $fillable=['title','description','slug','access_type','course_id','cohort_id','programme_id','project_id','event_id','allow_draft','anonymous_allowed','response_limit','opens_at','closes_at','status','created_by'];
-    protected $casts=['allow_draft'=>'boolean','anonymous_allowed'=>'boolean','opens_at'=>'datetime','closes_at'=>'datetime'];
+    protected $fillable=['title','description','slug','access_type','course_id','cohort_id','programme_id','project_id','event_id','allow_draft','anonymous_allowed','is_scored','pass_mark','response_limit','opens_at','closes_at','status','created_by'];
+    protected $casts=['allow_draft'=>'boolean','anonymous_allowed'=>'boolean','is_scored'=>'boolean','pass_mark'=>'decimal:2','opens_at'=>'datetime','closes_at'=>'datetime'];
     public function sections(){ return $this->hasMany(SurveySection::class)->orderBy('position'); }
     public function questions(){ return $this->hasMany(SurveyQuestion::class)->orderBy('position'); }
     public function responses(){ return $this->hasMany(SurveyResponse::class); }

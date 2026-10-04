@@ -1038,6 +1038,7 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/surveys/{survey}/sections',[SurveyController::class,'addSection'])->name('surveys.sections.store');
         Route::post('/surveys/{survey}/questions',[SurveyController::class,'addQuestion'])->name('surveys.questions.store');
         Route::delete('/surveys/{survey}/questions/{question}',[SurveyController::class,'destroyQuestion'])->name('surveys.questions.destroy');
+        Route::put('/surveys/{survey}/scoring',[SurveyController::class,'updateScoring'])->name('surveys.scoring');
     });
 
     /*

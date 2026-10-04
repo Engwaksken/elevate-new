@@ -17,6 +17,18 @@
 @if($errors->any())<div class="alert alert-error">@foreach($errors->all() as $error)<div>{{$error}}</div>@endforeach</div>@endif
 
 <div class="admin-panel">
+    <h2>Scoring</h2>
+    <p>Score this survey and set a pass mark to use it as an entry assessment.</p>
+    <form method="POST" action="{{route('admin.surveys.scoring',$survey)}}" class="admin-toolbar">
+        @csrf
+        @method('PUT')
+        <label><input type="checkbox" name="is_scored" value="1" @checked($survey->is_scored)> Scored survey</label>
+        <input type="number" name="pass_mark" min="0" max="100" step="0.5" value="{{ old('pass_mark', $survey->pass_mark) }}" placeholder="Pass mark %">
+        <button class="btn btn-primary">Save scoring</button>
+    </form>
+</div>
+
+<div class="admin-panel">
     <h2>Add Section</h2>
     <form method="POST" action="{{route('admin.surveys.sections.store',$survey)}}" class="admin-toolbar">
         @csrf
@@ -55,6 +67,14 @@
             <div class="full">
                 <label>Choices</label>
                 <textarea name="options_text" placeholder="One choice per line"></textarea>
+            </div>
+            <div>
+                <label>Marks</label>
+                <input type="number" name="marks" min="0" max="1000" step="0.5" value="1">
+            </div>
+            <div>
+                <label>Correct answer (for scored choice questions; comma-separate multiple)</label>
+                <input name="correct_answer" placeholder="e.g. Yes">
             </div>
             <div>
                 <label>Show only when</label>

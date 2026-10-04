@@ -36,10 +36,11 @@ class CourseCatalogueController extends Controller
         $enrolled = $participant
             && Enrolment::where('course_id', $course->id)->where('user_id', auth()->id())->exists();
 
-        $course->loadMissing('entryAssessment');
+        $course->loadMissing(['entryAssessment', 'entrySurvey']);
         $entryAssessment = $course->entryAssessment;
-        $entryAssessmentPending = ! $enrolled && $participant && $course->entryAssessmentPendingFor(auth()->id());
+        $entrySurvey = $course->entrySurvey;
+        $entryAssessmentPending = ! $enrolled && $participant && $course->entryRequirementPendingFor(auth()->id());
 
-        return view('learning.courses.show', compact('course', 'enrolled', 'entryAssessment', 'entryAssessmentPending'));
+        return view('learning.courses.show', compact('course', 'enrolled', 'entryAssessment', 'entrySurvey', 'entryAssessmentPending'));
     }
 }

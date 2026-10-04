@@ -93,6 +93,25 @@ class JobApplicationNotificationTest extends TestCase
         ]);
     }
 
+    public function test_applying_for_a_job_auto_assigns_an_available_mentor(): void
+    {
+        $owner = $this->employerOwner();
+        $job = $this->jobFor($owner);
+        $applicant = $this->participant();
+
+        $mentor = User::factory()->create(['user_type' => 'mentor', 'status' => 'active', 'email_verified_at' => now()]);
+        $mentor->roles()->attach(Role::firstOrCreate(['slug' => 'mentor'], ['name' => 'Mentor']));
+        \App\Models\MentorProfile::create(['user_id' => $mentor->id, 'status' => 'approved', 'mentoring_areas' => ['career']]);
+
+        $this->actingAs($applicant)->post(route('jobs.apply', $job))->assertRedirect(route('jobs.applications'));
+
+        $this->assertDatabaseHas('mentor_matches', [
+            'mentee_user_id' => $applicant->id,
+            'mentor_user_id' => $mentor->id,
+            'status' => 'active',
+        ]);
+    }
+
     public function test_changing_application_status_records_history(): void
     {
         $owner = $this->employerOwner();

@@ -11,8 +11,8 @@ class EnrolmentController extends Controller
         abort_unless($course->status === 'published', 404);
         abort_unless($course->self_enrolment_enabled, 403);
 
-        // A participant is not enrolled until she has passed the course's entry assessment.
-        if ($course->entryAssessmentPendingFor(auth()->id())) {
+        // A participant is not enrolled until she has passed the course's entry requirement.
+        if ($course->entryRequirementPendingFor(auth()->id())) {
             return redirect()->route('learning.course.show', $course)
                 ->with('error', 'Pass the entry assessment before you can enrol in this course.');
         }

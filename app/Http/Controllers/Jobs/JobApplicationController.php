@@ -33,6 +33,8 @@ class JobApplicationController extends Controller
             ]);
 
             $this->notifyStakeholders($job,$application);
+
+            app(\App\Services\MentorAssignmentService::class)->ensureMentorForJobSeeker(auth()->user());
         }
 
         return redirect()->route('jobs.applications')->with('success','Application submitted.');

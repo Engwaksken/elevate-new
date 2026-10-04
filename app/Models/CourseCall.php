@@ -12,6 +12,7 @@ class CourseCall extends Model
         'project_id',
         'cohort_id',
         'entry_assessment_id',
+        'entry_survey_id',
         'title',
         'description',
         'eligibility_criteria',
@@ -66,6 +67,11 @@ class CourseCall extends Model
     public function entryAssessment()
     {
         return $this->belongsTo(Assessment::class, 'entry_assessment_id');
+    }
+
+    public function entrySurvey()
+    {
+        return $this->belongsTo(Survey::class, 'entry_survey_id');
     }
 
     public function questions()

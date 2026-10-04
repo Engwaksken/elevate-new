@@ -49,6 +49,8 @@ class SurveyController extends Controller
             'project_id'=>'nullable|exists:projects,id',
             'allow_draft'=>'nullable|boolean',
             'anonymous_allowed'=>'nullable|boolean',
+            'is_scored'=>'nullable|boolean',
+            'pass_mark'=>'nullable|numeric|min:0|max:100',
             'response_limit'=>'nullable|integer|min:1',
             'opens_at'=>'nullable|date',
             'closes_at'=>'nullable|date|after_or_equal:opens_at',
@@ -59,6 +61,7 @@ class SurveyController extends Controller
         $d['created_by']=auth()->id();
         $d['allow_draft']=$request->boolean('allow_draft');
         $d['anonymous_allowed']=$request->boolean('anonymous_allowed');
+        $d['is_scored']=$request->boolean('is_scored');
 
         $survey=Survey::create($d);
 
@@ -103,6 +106,8 @@ class SurveyController extends Controller
             'question_text'=>'required|string',
             'hint'=>'nullable|string',
             'options_text'=>'nullable|string',
+            'marks'=>'nullable|numeric|min:0|max:1000',
+            'correct_answer'=>'nullable|string|max:1000',
             'is_required'=>'nullable|boolean',
             'condition_question_id'=>'nullable|integer|exists:survey_questions,id',
             'condition_operator'=>'nullable|in:equals,not_equals,contains,not_empty',
@@ -144,11 +149,15 @@ class SurveyController extends Controller
             ];
         }
 
+        $correct = $this->correctAnswer($d['question_type'], $d['correct_answer'] ?? null);
+
         $survey->questions()->create([
             'survey_section_id'=>$d['survey_section_id']?:null,
             'question_type'=>$d['question_type'],
             'question_text'=>$d['question_text'],
             'hint'=>$d['hint']??null,
+            'marks'=>(float)($d['marks'] ?? 1),
+            'correct_answer'=>$correct,
             'options'=>$options,
             'conditional_logic'=>$logic,
             'is_required'=>$request->boolean('is_required'),
@@ -156,6 +165,42 @@ class SurveyController extends Controller
         ]);
 
         return back()->with('success','Survey question added.');
+    }
+
+    public function updateScoring(Request $request, Survey $survey)
+    {
+        $d=$request->validate([
+            'is_scored'=>'nullable|boolean',
+            'pass_mark'=>'nullable|numeric|min:0|max:100',
+        ]);
+
+        $survey->update([
+            'is_scored'=>$request->boolean('is_scored'),
+            'pass_mark'=>$d['pass_mark'] ?? null,
+        ]);
+
+        return back()->with('success','Survey scoring updated.');
+    }
+
+    private function correctAnswer(string $type, ?string $raw): ?array
+    {
+        $raw = trim((string) $raw);
+
+        if ($raw === '') {
+            return null;
+        }
+
+        if ($type === 'multiple_choice') {
+            $values = collect(preg_split('/,|\r\n|\r|\n/', $raw))
+                ->map(fn ($v) => trim($v))
+                ->filter()
+                ->values()
+                ->all();
+
+            return $values ? ['values' => $values] : null;
+        }
+
+        return ['value' => $raw];
     }
 
     public function destroyQuestion(Survey $survey,SurveyQuestion $question)

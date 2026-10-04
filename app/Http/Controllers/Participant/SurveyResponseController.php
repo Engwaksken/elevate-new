@@ -126,12 +126,71 @@ class SurveyResponseController extends Controller
                     'status'=>'submitted',
                     'submitted_at'=>now(),
                 ]);
+
+                if ($survey->is_scored) {
+                    $this->grade($survey, $response);
+                }
             }
         });
 
         return $request->boolean('submit')
             ? redirect()->route('participant.surveys.index')->with('success','Survey submitted.')
             : back()->with('success','Survey draft saved.');
+    }
+
+    private function grade(Survey $survey, SurveyResponse $response): void
+    {
+        $questions = $survey->questions()
+            ->whereNotIn('question_type', ['heading', 'description'])
+            ->get();
+
+        $response->load('answers');
+        $answers = $response->answers->keyBy('survey_question_id');
+
+        $possible = 0.0;
+        $awarded = 0.0;
+
+        foreach ($questions as $question) {
+            $possible += (float) $question->marks;
+
+            $correct = $question->correct_answer;
+
+            if (! is_array($correct)) {
+                continue;
+            }
+
+            $answer = $answers->get($question->id);
+            $given = $answer?->answer_json ?? $answer?->answer_text;
+
+            if (isset($correct['values']) && is_array($correct['values'])) {
+                $givenList = is_array($given)
+                    ? $given
+                    : collect(preg_split('/,/', (string) $given))->map(fn ($v) => trim($v))->filter()->all();
+
+                $expected = collect($correct['values'])->map(fn ($v) => (string) $v)->sort()->values()->all();
+                $actual = collect($givenList)->map(fn ($v) => (string) $v)->sort()->values()->all();
+
+                if ($expected !== [] && $expected === $actual) {
+                    $awarded += (float) $question->marks;
+                }
+
+                continue;
+            }
+
+            if (isset($correct['value']) && (string) $given === (string) $correct['value']) {
+                $awarded += (float) $question->marks;
+            }
+        }
+
+        $percentage = $possible > 0 ? round(($awarded / $possible) * 100, 2) : 0.0;
+        $passMark = (float) ($survey->pass_mark ?? 0);
+
+        $response->update([
+            'score' => $awarded,
+            'percentage' => $percentage,
+            'passed' => $percentage >= $passMark,
+            'graded_at' => now(),
+        ]);
     }
 
     private function questionIsVisible(?array $logic,Request $request,array $answers): bool
