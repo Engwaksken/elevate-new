@@ -1062,6 +1062,10 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/platform-settings/backup-now',[PlatformSettingsController::class,'backupNow'])
         ->middleware('permission:settings.backups')
         ->name('platform-settings.backup-now');
+
+    Route::put('/platform-settings/admissions',[PlatformSettingsController::class,'updateAdmissions'])
+        ->middleware('permission:settings.manage')
+        ->name('platform-settings.admissions');
 });
 
 Route::middleware(['auth', \App\Http\Middleware\EnsureParticipantUser::class])->prefix('participant')->name('participant.')->group(function () {

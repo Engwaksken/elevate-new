@@ -39,6 +39,14 @@ class ParticipantMentorController extends Controller
             'mentor_user_id' => ['required', 'integer', 'exists:users,id'],
         ]);
 
+        $admission = app(\App\Services\AdmissionService::class);
+
+        if ($admission->requiredForMentorship() && $admission->pending(auth()->user())) {
+            throw ValidationException::withMessages([
+                'mentor_user_id' => 'Pass the entry assessment before selecting a mentor.',
+            ]);
+        }
+
         $mentee = $this->menteeProfile();
 
         if ($this->activeMatches()->count() >= self::MAX_ACTIVE_MENTORS) {

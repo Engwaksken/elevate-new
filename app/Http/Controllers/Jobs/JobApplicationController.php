@@ -12,6 +12,12 @@ class JobApplicationController extends Controller
     {
         abort_unless($job->status==='published',404);
 
+        $admission=app(\App\Services\AdmissionService::class);
+
+        if ($admission->requiredForJobs() && $admission->pending(auth()->user())) {
+            return back()->with('error','You must pass the entry assessment before applying for jobs.');
+        }
+
         $data=$request->validate(['resume_id'=>['nullable','exists:resumes,id'],'cover_letter'=>['nullable','string','max:10000']]);
 
         $application=JobApplication::firstOrCreate(

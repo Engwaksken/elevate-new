@@ -18,7 +18,26 @@ class PlatformSettingsController extends Controller
             'backups' => PlatformBackup::latest()->limit(20)->get(),
             'settings' => $settings,
             'aiConfig' => \App\Models\AiIntegration::firstOrNew(['feature' => 'system_ai']),
+            'assessments' => \App\Models\Assessment::orderBy('title')->get(['id', 'title']),
+            'entryAssessmentId' => (int) $settings->get('admissions.entry_assessment_id'),
         ]);
+    }
+
+    public function updateAdmissions(Request $request, SettingsService $settings)
+    {
+        $data = $request->validate([
+            'entry_assessment_id' => ['nullable', 'integer', 'exists:assessments,id'],
+            'mentorship_requires_assessment' => ['nullable', 'boolean'],
+            'jobs_require_assessment' => ['nullable', 'boolean'],
+        ]);
+
+        $settings->set('admissions.entry_assessment_id', $data['entry_assessment_id'] ?? null, 'integer', 'admissions', true);
+        $settings->set('admissions.mentorship_requires_assessment', $request->boolean('mentorship_requires_assessment'), 'boolean', 'admissions', false);
+        $settings->set('admissions.jobs_require_assessment', $request->boolean('jobs_require_assessment'), 'boolean', 'admissions', false);
+
+        return back()
+            ->with('success', 'Admissions entry assessment saved.')
+            ->with('platform_settings_tab', 'admissions');
     }
 
     public function updateAi(Request $request, \App\Services\SystemAiSettingsService $ai)

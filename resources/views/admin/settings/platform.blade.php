@@ -40,6 +40,7 @@
     <button class="appraisal-admin-kra-tab" type="button" data-config-tab="backup">Backup & Storage</button>
     <button class="appraisal-admin-kra-tab" type="button" data-config-tab="maintenance">Maintenance</button>
     <button class="appraisal-admin-kra-tab" type="button" data-config-tab="ai">AI Provider</button>
+    <button class="appraisal-admin-kra-tab" type="button" data-config-tab="admissions">Admissions</button>
 </div>
 
 <section data-config-panel="branding">
@@ -177,6 +178,30 @@
 </div><label><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $aiConfig->enabled))> Activate AI across the system</label>
 <div class="ai-actions"><button class="btn btn-primary">Save AI configuration</button><button type="button" class="btn btn-outline" data-ai-test><i class="fas fa-plug"></i> Test connection</button><span class="ai-test-result" data-ai-test-result role="status"></span></div></form>
 </div></section>
+<section data-config-panel="admissions" hidden>
+<div class="admin-panel">
+<h2>Entry assessment</h2>
+<p>Choose the platform entry assessment. When enabled, participants must pass it before they can select a mentor or apply for jobs.</p>
+<form method="POST" action="{{ route('admin.platform-settings.admissions') }}">
+@csrf
+@method('PUT')
+<div class="eh-form-grid">
+    <div class="full">
+        <label>Entry assessment</label>
+        <select name="entry_assessment_id">
+            <option value="">None — mentorship and jobs are open</option>
+            @foreach($assessments as $assessment)
+                <option value="{{ $assessment->id }}" @selected((int) old('entry_assessment_id', $entryAssessmentId) === (int) $assessment->id)>{{ $assessment->title }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div><label><input type="checkbox" name="mentorship_requires_assessment" value="1" @checked(old('mentorship_requires_assessment', $settings->get('admissions.mentorship_requires_assessment', false)))> Require for mentorship</label></div>
+    <div><label><input type="checkbox" name="jobs_require_assessment" value="1" @checked(old('jobs_require_assessment', $settings->get('admissions.jobs_require_assessment', false)))> Require for job applications</label></div>
+</div>
+<button class="btn btn-primary">Save admissions</button>
+</form>
+</div>
+</section>
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
     const tabs=[...document.querySelectorAll('[data-config-tab]')];
