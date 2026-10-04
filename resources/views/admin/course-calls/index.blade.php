@@ -287,6 +287,26 @@
                     </div>
 
                     <div>
+                        <label>Entry assessment</label>
+                        <select name="entry_assessment_id">
+                            <option value="">None</option>
+                            @foreach(($assessments ?? collect()) as $assessment)
+                                <option value="{{ $assessment->id }}" @selected((string)old('entry_assessment_id') === (string)$assessment->id)>{{ $assessment->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>Entry survey (scored)</label>
+                        <select name="entry_survey_id">
+                            <option value="">None</option>
+                            @foreach(($surveys ?? collect()) as $survey)
+                                <option value="{{ $survey->id }}" @selected((string)old('entry_survey_id') === (string)$survey->id)>{{ $survey->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
                         <label>Status *</label>
                         <select name="status" required>
                             <option value="draft">Draft</option>

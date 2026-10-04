@@ -71,6 +71,29 @@ class EntryAssessmentPipelineTest extends TestCase
         );
     }
 
+    public function test_course_call_can_store_an_entry_survey(): void
+    {
+        $survey = \App\Models\Survey::create([
+            'title' => 'Entry survey',
+            'slug' => 'entry-survey-call',
+            'access_type' => 'authenticated',
+            'status' => 'published',
+            'is_scored' => true,
+            'pass_mark' => 50,
+        ]);
+        $course = Course::create(['title' => 'Data Skills', 'status' => 'published', 'pass_mark' => 50]);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.course-calls.store'), [
+                'title' => 'Intake',
+                'course_ids' => [$course->id],
+                'status' => 'published',
+                'entry_survey_id' => $survey->id,
+            ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('course_calls', ['entry_survey_id' => $survey->id]);
+    }
+
     public function test_course_call_approval_requires_the_course_pass_mark(): void
     {
         $course = Course::create(['title' => 'Data Skills', 'status' => 'published', 'pass_mark' => 60]);
