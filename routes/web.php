@@ -155,6 +155,10 @@ Route::get('/terms', [\App\Http\Controllers\Public\ContentPageController::class,
 Route::get('/faqs', [\App\Http\Controllers\Public\ContentPageController::class, 'faqs'])->name('public.faqs');
 Route::get('/pages/{slug}', [\App\Http\Controllers\Public\ContentPageController::class, 'show'])->where('slug', '[a-z][a-z0-9-]*')->name('public.pages.show');
 
+// Email open-tracking pixel (marks a notification as opened).
+Route::get('/email/track/{token}', [\App\Http\Controllers\EmailTrackingController::class, 'track'])
+    ->where('token', '[A-Za-z0-9]+')->name('email.track');
+
 Route::middleware('guest')->group(function () {
     foreach (['mentor' => 'mentors', 'employer' => 'employers'] as $type => $path) {
         Route::get('/'.$path.'/signup', [\App\Http\Controllers\Public\PartnerSignupController::class, 'show'])->defaults('type', $type)->name('public.partners.'.$type);
@@ -628,6 +632,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         ->middleware('permission:jobs.manage')->name('jobs.store');
     Route::post('/jobs/import',[JobAdminController::class,'import'])
         ->middleware('permission:jobs.manage')->name('jobs.import');
+
+    Route::get('/jobs/applications',[\App\Http\Controllers\Admin\Jobs\JobApplicationAdminController::class,'index'])
+        ->middleware('permission:jobs.manage')->name('jobs.applications.index');
+
     Route::put('/jobs/{job}',[JobAdminController::class,'update'])
         ->middleware('permission:jobs.manage')->name('jobs.update');
     Route::delete('/jobs/{job}',[JobAdminController::class,'destroy'])

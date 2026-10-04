@@ -26,6 +26,7 @@ class SystemMail extends Mailable
         public ?string $actionUrl = null,
         public string $actionLabel = 'Open',
         public string $greeting = 'Hello',
+        public ?string $trackingUrl = null,
     ) {
     }
 

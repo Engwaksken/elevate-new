@@ -14,4 +14,5 @@ class JobApplication extends Model
     public function user(){ return $this->belongsTo(User::class); }
     public function interviews(){ return $this->hasMany(JobInterview::class); }
     public function offers(){ return $this->hasMany(JobOffer::class); }
+    public function statusHistory(){ return $this->hasMany(JobApplicationStatusHistory::class)->orderBy('changed_at'); }
 }

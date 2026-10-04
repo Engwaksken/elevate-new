@@ -13,14 +13,24 @@ class UserNotification extends Model
         'title',
         'message',
         'action_url',
+        'tracking_token',
         'data',
         'read_at',
+        'opened_at',
     ];
 
     protected $casts=[
         'data'=>'array',
         'read_at'=>'datetime',
+        'opened_at'=>'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (UserNotification $notification) {
+            $notification->tracking_token ??= bin2hex(random_bytes(24));
+        });
+    }
 
     public function user(): BelongsTo
     {
@@ -31,6 +41,13 @@ class UserNotification extends Model
     {
         if ($this->read_at === null) {
             $this->forceFill(['read_at'=>now()])->save();
+        }
+    }
+
+    public function markOpened(): void
+    {
+        if ($this->opened_at === null) {
+            $this->forceFill(['opened_at'=>now()])->save();
         }
     }
 }

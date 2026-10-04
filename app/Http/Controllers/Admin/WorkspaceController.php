@@ -96,6 +96,7 @@ class WorkspaceController extends Controller
             ],
             'links' => [
                 ['admin.jobs.index', 'Jobs', 'fa-briefcase', 'Post, review and publish opportunities.'],
+                ['admin.jobs.applications.index', 'Applications', 'fa-file-signature', 'Track applications and follow up with employers.'],
                 ['admin.jobs.employers.index', 'Employers', 'fa-building', 'Add and manage employer details.'],
                 ['admin.reports.jobs-tracking', 'Tracking Report', 'fa-chart-column', 'Applications, interviews and placements.'],
             ],

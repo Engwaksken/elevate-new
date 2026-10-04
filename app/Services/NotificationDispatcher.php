@@ -26,14 +26,16 @@ class NotificationDispatcher
         array $data = [],
         bool $email = true,
     ): void {
+        $notification = null;
+
         try {
-            $this->inApp->send($user, $type, $title, $message, $actionUrl, $data);
+            $notification = $this->inApp->send($user, $type, $title, $message, $actionUrl, $data);
         } catch (\Throwable $e) {
             report($e);
         }
 
         if ($email) {
-            $this->email($user, $title, $message, $actionUrl);
+            $this->email($user, $title, $message, $actionUrl, $notification?->tracking_token);
         }
     }
 
@@ -63,7 +65,7 @@ class NotificationDispatcher
         return $count;
     }
 
-    public function email(User $user, string $subject, ?string $message, ?string $actionUrl = null): void
+    public function email(User $user, string $subject, ?string $message, ?string $actionUrl = null, ?string $trackingToken = null): void
     {
         if (blank($user->email)) {
             return;
@@ -77,6 +79,7 @@ class NotificationDispatcher
                 actionUrl: $this->absolute($actionUrl),
                 actionLabel: 'Open ElevateHer360',
                 greeting: 'Hello '.strtok((string) $user->name, ' '),
+                trackingUrl: $trackingToken ? route('email.track', $trackingToken) : null,
             ));
         } catch (\Throwable $e) {
             report($e);
