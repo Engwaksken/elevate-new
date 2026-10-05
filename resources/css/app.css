@@ -251,6 +251,43 @@ p {
     padding: 40px 0 70px;
 }
 
+/* Professional gradient hero band for inner content pages. */
+.eh-page-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    padding: 36px 34px;
+    margin-bottom: 24px;
+    background: linear-gradient(120deg, #5f0000, #800000 55%, #a52a2a);
+    color: #fff;
+    box-shadow: 0 10px 26px rgba(128, 0, 0, .14);
+}
+
+.eh-page-hero::after {
+    content: "";
+    position: absolute;
+    right: -60px;
+    top: -60px;
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, .18);
+}
+
+.eh-page-hero .eh-kicker {
+    color: #f7e7a9;
+}
+
+.eh-page-hero h1 {
+    margin: 8px 0;
+    color: #fff;
+}
+
+.eh-page-hero p {
+    margin: 0;
+    color: rgba(255, 255, 255, .9);
+}
+
 .site-main-home {
     width: 100%;
     max-width: none;
@@ -1853,6 +1890,17 @@ tbody tr:hover {
 
 .search-box input {
     padding-left: 40px;
+}
+
+/* Magnifier icon overlaid inside the field (events, search, etc.). */
+.search-box > i {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+    z-index: 1;
 }
 
 .search-icon {

@@ -1,7 +1,7 @@
 @extends(auth()->user()?->isStaff() ? 'layouts.admin' : 'layouts.app')
 @section('title','My Certificates - ElevateHer360')
 @section('content')
-<div class="page-header">
+<div class="eh-page-hero">
     <div>
         <span class="eh-kicker">Achievements</span>
         <h1>My Certificates</h1>
