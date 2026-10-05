@@ -93,7 +93,8 @@
 <nav class="icm-tabs" aria-label="Course workspace">
     @foreach($tabs as $key => [$label, $icon])
         <a href="{{ route('instructor.courses.manage', ['course' => $course, 'tab' => $key]) }}"
-           class="{{ $activeTab === $key ? 'active' : '' }}">
+           class="{{ $activeTab === $key ? 'active' : '' }}"
+           @if($activeTab === $key) aria-current="page" @endif>
             <i class="fas {{ $icon }}"></i> {{ $label }}
             @if(in_array($key, ['submissions', 'extensions'], true) && $pendingExtensionCount > 0)
                 <span class="icm-badge" title="Pending extension requests">{{ $pendingExtensionCount }}</span>
