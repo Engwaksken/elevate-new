@@ -88,12 +88,43 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 
 <footer class="site-footer"><div class="container footer">
 @php($cmsFooter = app(\App\Services\CmsContentService::class)->published('site-footer'))
-<div><strong class="footer-brand">{{ $cmsFooter['title'] ?? 'ElevateHer360' }}</strong><div class="footer-copy"><i class="fas fa-copyright"></i> {{ date('Y') }} {{ $cmsFooter['summary'] ?? 'Women in Technology Uganda' }}</div>@if($cmsFooter['body'] ?? null)<div>{!! app(\App\Services\CmsContentService::class)->render($cmsFooter['body']) !!}</div>@endif</div>
+<div class="footer-column footer-branding"><strong class="footer-brand">{{ $cmsFooter['title'] ?? 'ElevateHer360' }}</strong><div class="footer-copy"><i class="fas fa-copyright"></i> {{ date('Y') }} {{ $cmsFooter['summary'] ?? 'Women in Technology Uganda' }}</div>@if($cmsFooter['body'] ?? null)<div>{!! app(\App\Services\CmsContentService::class)->render($cmsFooter['body']) !!}</div>@endif</div>
 @if($cmsFooter)
-<nav class="footer-links" aria-label="Footer navigation">@foreach(data_get($cmsFooter, 'settings.links', []) as $link)<a href="{{ $link['url'] }}">{{ $link['label'] }}</a>@endforeach</nav>
+@php($cmsFooterLinks = is_array(data_get($cmsFooter, 'settings.links')) ? data_get($cmsFooter, 'settings.links') : [])
+@php($cmsFooterLinks = array_values(array_filter($cmsFooterLinks, static function ($link) {
+    if (!is_array($link) || !isset($link['url'], $link['label']) || !is_string($link['url']) || !is_string($link['label'])) {
+        return false;
+    }
+
+    $url = trim($link['url']);
+    if ($url === '' || trim($link['label']) === '' || preg_match('/[\x00-\x20\\\\]/', $url)) {
+        return false;
+    }
+
+    if (str_starts_with($url, '//')) {
+        return false;
+    }
+
+    $parts = parse_url($url);
+    if ($parts === false) {
+        return false;
+    }
+
+    if (preg_match('/^[a-z][a-z0-9+.-]*:/i', $url)) {
+        return isset($parts['scheme'], $parts['host']) && in_array(strtolower($parts['scheme']), ['http', 'https'], true);
+    }
+
+    return true;
+})) )
+@php($cmsFooterLinkChunks = array_chunk($cmsFooterLinks, max(1, (int) ceil(count($cmsFooterLinks) / 3))))
+@php($cmsFooterLinkColumns = array_pad($cmsFooterLinkChunks, 3, []))
+@foreach($cmsFooterLinkColumns as $index => $links)
+<nav class="footer-column footer-links" aria-label="Footer navigation {{ $index + 1 }}">@foreach($links as $link)<a href="{{ $link['url'] }}">{{ $link['label'] }}</a>@endforeach</nav>
+@endforeach
 @else
-<nav class="footer-links" aria-label="Footer navigation"><a href="{{ route('home') }}">Home</a>@if(Route::has('learning.index'))<a href="{{ route('learning.index') }}">Learning</a>@endif @if(Route::has('jobs.index'))<a href="{{ route('jobs.index') }}">Jobs</a>@endif @if(Route::has('library.index'))<a href="{{ route('library.index') }}">Library</a>@endif @guest<a href="{{ route('login') }}">Sign In</a><a href="{{ route('register') }}">Register</a>@endguest @if(Route::has('legal.privacy'))<a href="{{ route('legal.privacy') }}">Privacy Policy</a>@endif @if(Route::has('legal.terms'))<a href="{{ route('legal.terms') }}">Terms of Use</a>@endif</nav>
-<nav class="footer-links"><a href="{{ route('public.partners.mentor') }}">Become a Mentor</a><a href="{{ route('public.partners.employer') }}">Register an Employer</a><a href="{{ route('public.faqs') }}">FAQs</a></nav>
+<nav class="footer-column footer-links" aria-label="Footer navigation"><a href="{{ route('home') }}">Home</a>@if(Route::has('learning.index'))<a href="{{ route('learning.index') }}">Learning</a>@endif @if(Route::has('jobs.index'))<a href="{{ route('jobs.index') }}">Jobs</a>@endif @if(Route::has('library.index'))<a href="{{ route('library.index') }}">Library</a>@endif</nav>
+<nav class="footer-column footer-links" aria-label="Account and legal navigation">@guest<a href="{{ route('login') }}">Sign In</a><a href="{{ route('register') }}">Register</a>@endguest @if(Route::has('legal.privacy'))<a href="{{ route('legal.privacy') }}">Privacy Policy</a>@endif @if(Route::has('legal.terms'))<a href="{{ route('legal.terms') }}">Terms of Use</a>@endif</nav>
+<nav class="footer-column footer-links" aria-label="Partner navigation"><a href="{{ route('public.partners.mentor') }}">Become a Mentor</a><a href="{{ route('public.partners.employer') }}">Register an Employer</a><a href="{{ route('public.faqs') }}">FAQs</a></nav>
 @endif
 </div></footer>
 @endif
