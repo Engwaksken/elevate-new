@@ -8,6 +8,7 @@ import '../services/sync_service.dart';
 import '../widgets/decorations.dart';
 import '../widgets/feedback.dart';
 import '../widgets/state_views.dart';
+import 'it_support_screen.dart';
 
 /// Typed view over GET /support (Admin > Support Settings on the website).
 class SupportInfo {
@@ -202,6 +203,22 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
             ),
           ),
         ],
+        const SectionHeader(title: 'IT support'),
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.build_outlined),
+                title: const Text('Submit an IT support request'),
+                subtitle: const Text('Report a problem and track your requests'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ItSupportScreen()),
+                ),
+              ),
+            ],
+          ),
+        ),
         if (info.technical != null) ...[
           const SectionHeader(title: 'Technical help'),
           Card(

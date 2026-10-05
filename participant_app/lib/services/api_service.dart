@@ -26,6 +26,19 @@ class ApiService {
 
   late final Uri _apiUri = Uri.parse(AppConfig.apiBaseUrl);
 
+  /// Sibling API prefix for IT support, which lives under `/api/v1` (not the
+  /// participant prefix). e.g. https://site.../api/v1/it-support.
+  Uri get _itSupportUri {
+    final segments = _apiUri.pathSegments.toList();
+    if (segments.isNotEmpty) segments.removeLast(); // drop "participant"
+    segments.add('it-support');
+    return _apiUri.replace(pathSegments: segments);
+  }
+
+  /// Full URL for a path under the IT support prefix (used so dio's base
+  /// participant URL is ignored for these sibling routes).
+  String _itSupport(String path) => '$_itSupportUri/$path';
+
   late final Dio dio = Dio(
     BaseOptions(
       baseUrl: AppConfig.apiBaseUrl,
@@ -297,6 +310,40 @@ class ApiService {
 
   /// Help & Support contacts managed in Admin > Support Settings.
   Future<Map<String, dynamic>> support() => _getMap('/support');
+
+  // =========================================================
+  // IT SUPPORT
+  // =========================================================
+
+  /// GET /api/v1/it-support/tickets -> paginated `{data, links, meta}`.
+  Future<Map<String, dynamic>> itSupportTickets({int page = 1}) =>
+      _getMap(_itSupport('tickets'), query: {'page': page});
+
+  /// GET /api/v1/it-support/tickets/{id} -> `{data: {...ticket...}}`.
+  Future<Map<String, dynamic>> itSupportTicket(int id) =>
+      _getMap(_itSupport('tickets/$id'));
+
+  /// POST /api/v1/it-support/tickets -> 201 `{data: {...ticket...}}`.
+  Future<Map<String, dynamic>> createItSupportTicket({
+    required String subject,
+    required String description,
+    String? category,
+    String? priority,
+  }) =>
+      _guard(() async {
+        final response = await dio.post(
+          _itSupport('tickets'),
+          data: {
+            'subject': subject.trim(),
+            'description': description.trim(),
+            if (category != null && category.trim().isNotEmpty)
+              'category': category.trim(),
+            if (priority != null && priority.trim().isNotEmpty)
+              'priority': priority.trim(),
+          },
+        );
+        return _mapResponse(response.data);
+      });
 
   // =========================================================
   // SYNCHRONISATION
