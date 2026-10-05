@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\Elearning\CertificateAdminController;
 use App\Http\Controllers\Learning\CertificateController;
 use App\Http\Controllers\Admin\Elearning\CertificateIndexController;
 use App\Http\Controllers\Support\ChatbotController;
+use App\Http\Controllers\Support\SupportTicketQueueController;
 use App\Http\Controllers\Admin\CohortController;
 use App\Http\Controllers\Admin\HR\ContractController;
 use App\Http\Controllers\Admin\Elearning\CourseAssignmentController;
@@ -70,6 +71,7 @@ use App\Http\Controllers\Admin\HR\LeaveApprovalController;
 use App\Http\Controllers\HR\LeaveRequestController;
 use App\Http\Controllers\Library\LibraryController;
 use App\Http\Controllers\Admin\Library\LibraryResourceController;
+use App\Http\Controllers\Admin\LearningReportController;
 use App\Http\Controllers\Admin\ME\MEDashboardController;
 use App\Http\Controllers\Admin\Mentorship\MentorAdminController;
 use App\Http\Controllers\Admin\Mentorship\MentorMatchController;
@@ -89,6 +91,7 @@ use App\Http\Controllers\Admin\ProgrammeManagement\MilestoneController;
 use App\Http\Controllers\Instructor\ModuleAccessController;
 use App\Http\Controllers\Admin\NotificationAdminController;
 use App\Http\Controllers\Participant\NotificationController;
+use App\Http\Controllers\Participant\SupportTicketController;
 use App\Http\Controllers\Employer\OfferController;
 use App\Http\Controllers\Admin\Jobs\OutcomeAdminController;
 use App\Http\Controllers\Auth\ParticipantAuthController;
@@ -214,6 +217,13 @@ Route::post('/reset-password', [PasswordResetController::class, 'reset'])
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [ParticipantAuthController::class, 'logout'])->name('logout');
+
+    // Browser support ticket contract: subject, description, category (optional),
+    // priority (optional). StoreBrowserSupportTicketRequest applies the create
+    // policy; the controller assigns requester_id from the session user.
+    Route::post('/support/tickets', [SupportTicketController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('participant.support-tickets.store');
 
     Route::get('/email/verify', fn () => view('auth.verify-email'))
         ->name('verification.notice');
@@ -884,6 +894,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         return redirect()->route('admin.dashboard');
     })->name('executive-dashboard');
 
+    Route::get('/learning-reports', [LearningReportController::class, 'index'])
+        ->middleware('permission:reports.view')->name('learning-reports.index');
+    Route::get('/learning-reports.csv', [LearningReportController::class, 'csv'])
+        ->middleware(['permission:reports.view', 'throttle:10,1'])->name('learning-reports.csv');
+    Route::get('/learning-reports.pdf', [LearningReportController::class, 'pdf'])
+        ->middleware(['permission:reports.view', 'throttle:10,1'])->name('learning-reports.pdf');
+
     Route::get('/search',GlobalSearchController::class)
         ->middleware('permission:reports.view')->name('search');
 
@@ -1009,6 +1026,20 @@ Route::middleware(['auth'])
             ->middleware('permission:students.edit')
             ->name('bulk-enrolment.template');
     });
+
+Route::middleware(['auth', 'staff'])->prefix('it-support/tickets')->name('it-support.tickets.')->group(function () {
+    Route::get('/', [SupportTicketQueueController::class, 'index'])->name('index');
+    Route::get('/{ticket}', [SupportTicketQueueController::class, 'show'])->name('show');
+    Route::patch('/{ticket}/status', [SupportTicketQueueController::class, 'status'])->name('status');
+    Route::patch('/{ticket}/assignee', [SupportTicketQueueController::class, 'assignee'])->name('assignee');
+});
+
+Route::middleware(['auth', \App\Http\Middleware\EnsureParticipantUser::class])->group(function () {
+    Route::get('/support/tickets', [SupportTicketController::class, 'index'])
+        ->name('participant.support-tickets.index');
+    Route::get('/support/tickets/{ticket}', [SupportTicketController::class, 'show'])
+        ->name('participant.support-tickets.show');
+});
 
 Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(function () {
     Route::middleware('permission:course_calls.view')->group(function () {

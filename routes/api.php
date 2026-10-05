@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\CourseController;
 use App\Http\Controllers\Api\V1\JobController;
 use App\Http\Controllers\Api\V1\LibraryController;
 use App\Http\Controllers\Api\V1\MeController;
+use App\Http\Controllers\Api\V1\ItSupportTicketController;
 use App\Http\Controllers\Api\V1\Participant\AuthController as ParticipantAuthController;
 use App\Http\Controllers\Api\V1\Participant\LessonController as ParticipantLessonController;
 use App\Http\Controllers\Api\V1\Participant\ParticipantController;
@@ -20,6 +21,16 @@ Route::prefix('v1')->group(function () {
     Route::get('/courses/{course}',[CourseController::class,'show']);
     Route::get('/jobs',[JobController::class,'index']);
     Route::get('/library',[LibraryController::class,'index']);
+
+    Route::prefix('it-support')->name('api.v1.it-support.')->middleware('auth:sanctum')->group(function () {
+        Route::get('/reports/volume', [ItSupportTicketController::class, 'volumeReport'])->name('reports.volume');
+        Route::get('/tickets', [ItSupportTicketController::class, 'index'])->name('tickets.index');
+        Route::post('/tickets', [ItSupportTicketController::class, 'store'])
+            ->middleware('throttle:10,1')->name('tickets.store');
+        Route::get('/tickets/{ticket}', [ItSupportTicketController::class, 'show'])->name('tickets.show');
+        Route::patch('/tickets/{ticket}/status', [ItSupportTicketController::class, 'status'])->name('tickets.status');
+        Route::patch('/tickets/{ticket}/assignee', [ItSupportTicketController::class, 'assignee'])->name('tickets.assignee');
+    });
 
     Route::post('/participant/login',[ParticipantAuthController::class,'login'])
         ->middleware('throttle:10,1');
