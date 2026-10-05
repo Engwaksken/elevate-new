@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\{Cohort,Course,Programme,Project,Survey,SurveyAssignment,SurveyQuestion,User};
 use Illuminate\Http\Request;
@@ -10,6 +11,13 @@ use Illuminate\Validation\ValidationException;
 
 class SurveyController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Survey::class;
+    }
+
     private const TYPES=[
         'short_text','long_text','single_choice','multiple_choice','dropdown',
         'yes_no','rating','likert','number','date','time','email','phone',

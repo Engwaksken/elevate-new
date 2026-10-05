@@ -6,9 +6,11 @@
 
 <div class="admin-panel">
 <form method="GET" class="admin-toolbar"><div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search employee name or email..."></div><select name="status"><option value="">All statuses</option>@foreach(['pending','supervisor_approved','approved','rejected'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select><select name="per_page">@foreach([10,25,50,100] as $n)<option value="{{ $n }}" @selected((int)request('per_page',25)===$n)>{{ $n }}/page</option>@endforeach</select><button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.hr.leave.index') }}" class="btn btn-outline btn-sm">Reset</a></form>
-<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Employee</th><th>Leave Type</th><th>Dates</th><th>Days</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@php($bulkRoute = route('admin.hr.leave.bulk-destroy')) @php($bulkTableId = 'leaveRequestsTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Employee</th><th>Leave Type</th><th>Dates</th><th>Days</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($requests as $leave)
-<tr><td><strong>{{ data_get($leave,'employee.user.name','—') }}</strong><small class="admin-cell-hint">{{ data_get($leave,'employee.user.email','') }}</small></td><td>{{ data_get($leave,'leaveType.name','—') }}</td><td>{{ optional($leave->start_date)->format('d M Y') ?: '—' }} — {{ optional($leave->end_date)->format('d M Y') ?: '—' }}</td><td>{{ $leave->days_requested ?? '—' }}</td><td><span class="status-chip {{ $leave->status }}">{{ ucfirst(str_replace('_',' ',$leave->status)) }}</span></td>
+<tr><td><input type="checkbox" data-row-select value="{{ $leave->id }}" aria-label="Select {{ data_get($leave,'employee.user.name','leave request') }}"></td><td><strong>{{ data_get($leave,'employee.user.name','—') }}</strong><small class="admin-cell-hint">{{ data_get($leave,'employee.user.email','') }}</small></td><td>{{ data_get($leave,'leaveType.name','—') }}</td><td>{{ optional($leave->start_date)->format('d M Y') ?: '—' }} — {{ optional($leave->end_date)->format('d M Y') ?: '—' }}</td><td>{{ $leave->days_requested ?? '—' }}</td><td><span class="status-chip {{ $leave->status }}">{{ ucfirst(str_replace('_',' ',$leave->status)) }}</span></td>
 <td class="table-actions"><div class="action-group">
 @if(auth()->user()->hasPermission('leave.approve'))
 @if($leave->status==='pending')<button type="button" class="btn-icon" data-modal-open="supervisor{{ $leave->id }}" title="Supervisor approve"><i class="fas fa-user-check"></i></button>@endif
@@ -16,7 +18,7 @@
 @if(!in_array($leave->status,['approved','rejected'],true))<button type="button" class="btn-icon danger" data-modal-open="reject{{ $leave->id }}" title="Reject"><i class="fas fa-xmark"></i></button>@endif
 @endif
 </div></td></tr>
-@empty<tr><td colspan="6"><div class="admin-empty">No leave requests found.</div></td></tr>@endforelse
+@empty<tr><td colspan="7"><div class="admin-empty">No leave requests found.</div></td></tr>@endforelse
 </tbody></table></div><div class="admin-pagination">{{ $requests->links() }}</div></div>
 
 @foreach($requests as $leave)

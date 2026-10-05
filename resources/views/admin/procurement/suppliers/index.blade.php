@@ -20,10 +20,12 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.procurement.suppliers.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Supplier</th><th>Category</th><th>TIN</th><th>Contact</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@php($bulkRoute = route('admin.procurement.suppliers.bulk-destroy')) @php($bulkTableId = 'suppliersTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Supplier</th><th>Category</th><th>TIN</th><th>Contact</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($suppliers as $supplier)
-<tr><td><strong>{{ $supplier->name }}</strong><small class="admin-cell-hint">{{ $supplier->registration_number ?: 'No registration number' }}</small></td><td>{{ $supplier->category ?: '—' }}</td><td>{{ $supplier->tin ?: '—' }}</td><td>{{ $supplier->contact_person ?: '—' }}<small class="admin-cell-hint">{{ $supplier->phone ?: $supplier->email }}</small></td><td><span class="status-chip {{ $supplier->status }}">{{ ucfirst($supplier->status) }}</span></td><td class="table-actions">@if($supplier->status==='pending')<button type="button" class="btn btn-outline btn-sm" data-modal-open="approveSupplier{{ $supplier->id }}"><i class="fas fa-check"></i> Approve</button>@endif</td></tr>
-@empty<tr><td colspan="6"><div class="admin-empty">No suppliers found.</div></td></tr>@endforelse
+<tr><td><input type="checkbox" data-row-select value="{{ $supplier->id }}" aria-label="Select {{ $supplier->name }}"></td><td><strong>{{ $supplier->name }}</strong><small class="admin-cell-hint">{{ $supplier->registration_number ?: 'No registration number' }}</small></td><td>{{ $supplier->category ?: '—' }}</td><td>{{ $supplier->tin ?: '—' }}</td><td>{{ $supplier->contact_person ?: '—' }}<small class="admin-cell-hint">{{ $supplier->phone ?: $supplier->email }}</small></td><td><span class="status-chip {{ $supplier->status }}">{{ ucfirst($supplier->status) }}</span></td><td class="table-actions">@if($supplier->status==='pending')<button type="button" class="btn btn-outline btn-sm" data-modal-open="approveSupplier{{ $supplier->id }}"><i class="fas fa-check"></i> Approve</button>@endif</td></tr>
+@empty<tr><td colspan="7"><div class="admin-empty">No suppliers found.</div></td></tr>@endforelse
 </tbody></table></div>
 <div class="admin-pagination">{{ $suppliers->links() }}</div>
 </div>

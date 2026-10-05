@@ -29,11 +29,15 @@
 <a href="{{ route('admin.settings.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-<div class="admin-table-wrap"><table class="admin-table">
-<thead><tr><th>Group</th><th>Key</th><th>Type</th><th>Value</th><th>Public</th><th>Encrypted</th><th class="table-actions">Actions</th></tr></thead>
+@php($bulkRoute = route('admin.settings.bulk-destroy')) @php($bulkTableId = 'settingsTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}">
+<thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Group</th><th>Key</th><th>Type</th><th>Value</th><th>Public</th><th>Encrypted</th><th class="table-actions">Actions</th></tr></thead>
 <tbody>
 @forelse($settings as $setting)
 <tr>
+<td><input type="checkbox" data-row-select value="{{ $setting->id }}" aria-label="Select {{ $setting->key }}"></td>
 <td>{{ $setting->group }}</td>
 <td><strong>{{ $setting->key }}</strong></td>
 <td>{{ ucfirst($setting->type) }}</td>
@@ -45,7 +49,7 @@
 <button type="button" class="btn-icon danger" data-modal-open="deleteSetting{{ $setting->id }}"><i class="fas fa-trash"></i></button>
 </div></td>
 </tr>
-@empty<tr><td colspan="7"><div class="admin-empty">No system settings found.</div></td></tr>@endforelse
+@empty<tr><td colspan="8"><div class="admin-empty">No system settings found.</div></td></tr>@endforelse
 </tbody></table></div>
 <div class="admin-pagination">{{ $settings->links() }}</div>
 </div>

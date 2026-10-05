@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\ProgrammeManagement;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Task;
@@ -10,6 +11,13 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Task::class;
+    }
+
     public function index(Request $request)
     {
         $query=Task::with(['activity','assignee'])->latest();

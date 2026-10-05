@@ -24,12 +24,14 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.results-framework.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-<div class="admin-table-wrap"><table class="admin-table">
-<thead><tr><th>Framework</th><th>Results</th><th>Impact</th><th>Outcome</th><th>Output</th><th class="table-actions">Actions</th></tr></thead>
+@php($bulkRoute = route('admin.results-framework.bulk-destroy')) @php($bulkTableId = 'frameworksTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}">
+<thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Framework</th><th>Results</th><th>Impact</th><th>Outcome</th><th>Output</th><th class="table-actions">Actions</th></tr></thead>
 <tbody>
 @forelse($frameworks as $framework)
 <tr>
-<td><strong>{{ $framework->title }}</strong><small class="admin-cell-hint">{{ Str::limit($framework->description,90) }}</small></td>
+<td><input type="checkbox" data-row-select value="{{ $framework->id }}" aria-label="Select {{ $framework->title }}"></td><td><strong>{{ $framework->title }}</strong><small class="admin-cell-hint">{{ Str::limit($framework->description,90) }}</small></td>
 <td>{{ $framework->results->count() }}</td>
 <td>{{ $framework->results->where('result_level','impact')->count() }}</td>
 <td>{{ $framework->results->where('result_level','outcome')->count() }}</td>
@@ -37,7 +39,7 @@
 <td class="table-actions"><button type="button" class="btn-icon" data-modal-open="addResult{{ $framework->id }}"><i class="fas fa-plus"></i></button></td>
 </tr>
 @if($framework->results->count())
-<tr><td colspan="6"><details><summary><strong>View results hierarchy</strong></summary>
+<tr><td colspan="7"><details><summary><strong>View results hierarchy</strong></summary>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Level</th><th>Result</th><th>Description</th></tr></thead><tbody>
 @foreach($framework->results->sortBy('result_level') as $result)
 <tr><td>{{ ucfirst($result->result_level) }}</td><td>{{ $result->title }}</td><td>{{ Str::limit($result->description,120) }}</td></tr>
@@ -45,7 +47,7 @@
 </tbody></table></div>
 </details></td></tr>
 @endif
-@empty<tr><td colspan="6"><div class="admin-empty">No results frameworks found.</div></td></tr>@endforelse
+@empty<tr><td colspan="7"><div class="admin-empty">No results frameworks found.</div></td></tr>@endforelse
 </tbody></table></div>
 <div class="admin-pagination">{{ $frameworks->links() }}</div>
 </div>

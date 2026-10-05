@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use App\Services\SettingsService;
@@ -9,6 +10,13 @@ use Illuminate\Http\Request;
 
 class SettingsController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return SystemSetting::class;
+    }
+
     public function index(Request $request)
     {
         $query=SystemSetting::query()->orderBy('group')->orderBy('key');

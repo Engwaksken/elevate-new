@@ -16,7 +16,31 @@ class TrackingReportsController extends Controller
             $stats[$key] = Schema::hasTable($table) ? DB::table($table)->count() : 0;
         }
 
-        return view('admin.reports.mentorship', compact('stats'));
+        $breakdowns = [
+            'mentors' => $this->columnBreakdown('mentor_profiles', 'status'),
+            'matches' => $this->columnBreakdown('mentor_matches', 'status'),
+            'sessions' => $this->columnBreakdown('mentorship_sessions', 'status'),
+            'goals' => $this->columnBreakdown('mentorship_goals', 'status'),
+        ];
+
+        return view('admin.reports.mentorship', compact('stats', 'breakdowns'));
+    }
+
+    /**
+     * Count of each distinct value in a column (for pie/bar breakdowns),
+     * returning an empty collection when the table/column is unavailable.
+     */
+    private function columnBreakdown(string $table, string $column): \Illuminate\Support\Collection
+    {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column)) {
+            return collect();
+        }
+
+        return DB::table($table)
+            ->select($column, DB::raw('COUNT(*) as total'))
+            ->groupBy($column)
+            ->orderByDesc('total')
+            ->pluck('total', $column);
     }
 
     public function jobs()

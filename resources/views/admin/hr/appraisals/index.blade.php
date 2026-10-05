@@ -54,10 +54,13 @@ $stats=[
 </div>
 
 <div class="admin-panel">
+@php($bulkRoute = route('admin.hr.appraisals.bulk-destroy')) @php($bulkTableId = 'appraisalsTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 <div class="admin-table-wrap">
-<table class="admin-table">
+<table class="admin-table" id="{{ $bulkTableId }}">
 <thead>
 <tr>
+<th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th>
 <th>Employee</th>
 <th>Cycle / Template</th>
 <th>Status</th>
@@ -69,6 +72,7 @@ $stats=[
 <tbody>
 @forelse($appraisals as $appraisal)
 <tr>
+<td><input type="checkbox" data-row-select value="{{ $appraisal->id }}" aria-label="Select {{ $appraisal->employee?->user?->name ?: 'appraisal' }}"></td>
 <td>
 <strong>{{ $appraisal->employee?->user?->name ?: '—' }}</strong>
 <small class="admin-cell-hint">{{ $appraisal->employee?->employee_number ?: '' }}</small>
@@ -127,7 +131,7 @@ $stats=[
 </td>
 </tr>
 @empty
-<tr><td colspan="6"><div class="admin-empty">No appraisals found.</div></td></tr>
+<tr><td colspan="7"><div class="admin-empty">No appraisals found.</div></td></tr>
 @endforelse
 </tbody>
 </table>

@@ -795,12 +795,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
     Route::put('/activities/{activity}/progress',[ActivityController::class,'updateProgress'])->middleware('permission:activities.manage')->name('activities.progress');
 
     Route::get('/indicators',[IndicatorController::class,'index'])->middleware('permission:indicators.view')->name('indicators.index');
+    Route::delete('/indicators/bulk-delete',[IndicatorController::class,'bulkDestroy'])->middleware('permission:indicators.manage')->name('indicators.bulk-destroy');
     Route::post('/indicators',[IndicatorController::class,'store'])->middleware('permission:indicators.manage')->name('indicators.store');
     Route::post('/indicators/{indicator}/targets',[IndicatorController::class,'addTarget'])->middleware('permission:indicators.manage')->name('indicators.targets.store');
     Route::post('/indicators/{indicator}/calculate',[IndicatorController::class,'calculate'])->middleware('permission:indicators.manage')->name('indicators.calculate');
     Route::post('/indicator-results/{result}/verify',[IndicatorController::class,'verify'])->middleware('permission:indicators.verify')->name('indicator-results.verify');
 
     Route::get('/results-framework',[ResultsFrameworkController::class,'index'])->middleware('permission:meal.view')->name('results-framework.index');
+    Route::delete('/results-framework/bulk-delete',[ResultsFrameworkController::class,'bulkDestroy'])->middleware('permission:meal.manage')->name('results-framework.bulk-destroy');
     Route::post('/results-framework',[ResultsFrameworkController::class,'store'])->middleware('permission:meal.manage')->name('results-framework.store');
     Route::post('/results-framework/{framework}/results',[ResultsFrameworkController::class,'addResult'])->middleware('permission:meal.manage')->name('results-framework.results.store');
 
@@ -829,10 +831,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function () {
     Route::get('/tasks',[TaskController::class,'index'])->middleware('permission:tasks.manage')->name('tasks.index');
+    Route::delete('/tasks/bulk-delete',[TaskController::class,'bulkDestroy'])->middleware('permission:tasks.manage')->name('tasks.bulk-destroy');
     Route::post('/activities/{activity}/tasks',[TaskController::class,'store'])->middleware('permission:tasks.manage')->name('tasks.store');
     Route::put('/tasks/{task}',[TaskController::class,'update'])->middleware('permission:tasks.manage')->name('tasks.update');
 
     Route::get('/deliverables',[DeliverableController::class,'index'])->middleware('permission:tasks.manage')->name('deliverables.index');
+    Route::delete('/deliverables/bulk-delete',[DeliverableController::class,'bulkDestroy'])->middleware('permission:tasks.manage')->name('deliverables.bulk-destroy');
     Route::post('/activities/{activity}/deliverables',[DeliverableController::class,'store'])->middleware('permission:tasks.manage')->name('deliverables.store');
     Route::put('/deliverables/{deliverable}',[DeliverableController::class,'update'])->middleware('permission:tasks.manage')->name('deliverables.update');
 
@@ -851,6 +855,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         Route::post('/employees/{employee}/contracts',[ContractController::class,'store'])->middleware('permission:hr.manage')->name('contracts.store');
 
         Route::get('/leave',[LeaveApprovalController::class,'index'])->name('leave.index');
+        Route::delete('/leave/bulk-delete',[LeaveApprovalController::class,'bulkDestroy'])->middleware('permission:leave.approve')->name('leave.bulk-destroy');
         Route::post('/leave/{leave}/supervisor-approve',[LeaveApprovalController::class,'supervisorApprove'])->middleware('permission:leave.approve')->name('leave.supervisor-approve');
         Route::post('/leave/{leave}/hr-approve',[LeaveApprovalController::class,'hrApprove'])->middleware('permission:leave.approve')->name('leave.hr-approve');
         Route::post('/leave/{leave}/reject',[LeaveApprovalController::class,'reject'])->middleware('permission:leave.approve')->name('leave.reject');
@@ -861,6 +866,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         Route::delete('/kpi-templates/{template}',[KpiTemplateController::class,'destroy'])->middleware(['permission:appraisals.manage','role:hr,administrator,super-administrator,super-admin'])->name('kpi-templates.destroy');
 
         Route::get('/appraisals',[AppraisalController::class,'index'])->middleware('permission:appraisals.view')->name('appraisals.index');
+        Route::delete('/appraisals/bulk-delete',[AppraisalController::class,'bulkDestroy'])->middleware('permission:appraisals.manage')->name('appraisals.bulk-destroy');
         Route::get('/appraisals/{appraisal}/kpis',[AppraisalKpiController::class,'show'])->middleware('permission:appraisals.view')->name('appraisals.kpis');
         Route::post('/appraisals/{appraisal}/kpi-template',[AppraisalKpiController::class,'assignTemplate'])->middleware('permission:appraisals.manage')->name('appraisals.kpi-template');
         Route::post('/appraisals/{appraisal}/kpi-score',[AppraisalKpiController::class,'score'])->middleware('permission:appraisals.manage')->name('appraisals.kpi-score');
@@ -882,6 +888,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function () {
     Route::prefix('procurement')->name('procurement.')->group(function () {
         Route::get('/suppliers',[SupplierController::class,'index'])->middleware('permission:procurement.view')->name('suppliers.index');
+        Route::delete('/suppliers/bulk-delete',[SupplierController::class,'bulkDestroy'])->middleware('permission:procurement.create')->name('suppliers.bulk-destroy');
         Route::post('/suppliers',[SupplierController::class,'store'])->middleware('permission:procurement.create')->name('suppliers.store');
         Route::post('/suppliers/{supplier}/approve',[SupplierController::class,'approve'])->middleware('permission:procurement.approve')->name('suppliers.approve');
 
@@ -902,6 +909,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 
     Route::prefix('assets')->name('assets.')->group(function () {
         Route::get('/',[AssetController::class,'index'])->middleware('permission:assets.view')->name('index');
+        Route::delete('/bulk-delete',[AssetController::class,'bulkDestroy'])->middleware('permission:assets.manage')->name('bulk-destroy');
         Route::post('/',[AssetController::class,'store'])->middleware('permission:assets.manage')->name('store');
 
         Route::post('/{asset}/assign',[AssetAssignmentController::class,'assign'])->middleware('permission:assets.manage')->name('assign');
@@ -937,6 +945,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         ->middleware('permission:settings.manage')->name('settings.store');
     Route::put('/settings/{setting}',[SettingsController::class,'update'])
         ->middleware('permission:settings.manage')->name('settings.update');
+    Route::delete('/settings/bulk-delete',[SettingsController::class,'bulkDestroy'])
+        ->middleware('permission:settings.manage')->name('settings.bulk-destroy');
     Route::delete('/settings/{setting}',[SettingsController::class,'destroy'])
         ->middleware('permission:settings.manage')->name('settings.destroy');
     Route::get('/audit-logs',[AuditLogController::class,'index'])
@@ -1097,6 +1107,7 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
 
     Route::middleware('permission:surveys.manage')->group(function () {
         Route::post('/surveys',[SurveyController::class,'store'])->name('surveys.store');
+        Route::delete('/surveys/bulk-delete',[SurveyController::class,'bulkDestroy'])->name('surveys.bulk-destroy');
         Route::get('/surveys/{survey}/builder',[SurveyController::class,'builder'])->name('surveys.builder');
         Route::post('/surveys/{survey}/sections',[SurveyController::class,'addSection'])->name('surveys.sections.store');
         Route::post('/surveys/{survey}/questions',[SurveyController::class,'addQuestion'])->name('surveys.questions.store');

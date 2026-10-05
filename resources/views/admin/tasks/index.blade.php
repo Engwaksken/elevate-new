@@ -23,12 +23,14 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.tasks.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-<div class="admin-table-wrap"><table class="admin-table">
-<thead><tr><th>Task</th><th>Activity</th><th>Assignee</th><th>Priority</th><th>Due</th><th>Progress</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
+@php($bulkRoute = route('admin.tasks.bulk-destroy')) @php($bulkTableId = 'tasksTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}">
+<thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Task</th><th>Activity</th><th>Assignee</th><th>Priority</th><th>Due</th><th>Progress</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
 <tbody>
 @forelse($tasks as $task)
 <tr>
-<td><strong>{{ $task->title }}</strong><small class="admin-cell-hint">{{ Str::limit($task->description,90) }}</small></td>
+<td><input type="checkbox" data-row-select value="{{ $task->id }}" aria-label="Select {{ $task->title }}"></td><td><strong>{{ $task->title }}</strong><small class="admin-cell-hint">{{ Str::limit($task->description,90) }}</small></td>
 <td>{{ data_get($task,'activity.title','—') }}</td>
 <td>{{ data_get($task,'assignee.name','—') }}</td>
 <td>{{ $task->priority ?: '—' }}</td>
@@ -37,7 +39,7 @@
 <td><span class="status-chip {{ $task->status }}">{{ ucfirst(str_replace('_',' ',$task->status)) }}</span></td>
 <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-modal-open="updateTask{{ $task->id }}"><i class="fas fa-pen"></i> Update</button></td>
 </tr>
-@empty<tr><td colspan="8"><div class="admin-empty">No tasks found.</div></td></tr>@endforelse
+@empty<tr><td colspan="9"><div class="admin-empty">No tasks found.</div></td></tr>@endforelse
 </tbody></table></div>
 <div class="admin-pagination">{{ $tasks->links() }}</div>
 </div>

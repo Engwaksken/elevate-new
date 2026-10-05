@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Assets;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetCategory;
@@ -14,6 +15,13 @@ use Illuminate\Http\Request;
 
 class AssetController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Asset::class;
+    }
+
     public function index(Request $request)
     {
         $query=Asset::with([

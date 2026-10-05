@@ -53,10 +53,14 @@
     <a href="{{ route('admin.assets.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
+@php($bulkRoute = route('admin.assets.bulk-destroy')) @php($bulkTableId = 'assetsTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+
 <div class="admin-table-wrap">
-<table class="admin-table">
+<table class="admin-table" id="{{ $bulkTableId }}">
 <thead>
 <tr>
+    <th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th>
     <th>Asset</th>
     <th>Tag / Serial</th>
     <th>Location</th>
@@ -69,6 +73,7 @@
 <tbody>
 @forelse($assets as $asset)
 <tr>
+    <td><input type="checkbox" data-row-select value="{{ $asset->id }}" aria-label="Select {{ $asset->asset_code }}"></td>
     <td>
         <strong>{{ $asset->asset_code }}</strong>
         <small class="admin-cell-hint">{{ $asset->description }}</small>
@@ -121,7 +126,7 @@
 
 @if($asset->assignments->count() || $asset->maintenance->count() || $asset->disposal)
 <tr>
-<td colspan="7">
+<td colspan="8">
 <details>
 <summary><strong>View asset history</strong></summary>
 
@@ -198,7 +203,7 @@
 @endif
 
 @empty
-<tr><td colspan="7"><div class="admin-empty">No assets found.</div></td></tr>
+<tr><td colspan="8"><div class="admin-empty">No assets found.</div></td></tr>
 @endforelse
 </tbody>
 </table>

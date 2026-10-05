@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\ProgrammeManagement;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Deliverable;
@@ -10,6 +11,13 @@ use Illuminate\Http\Request;
 
 class DeliverableController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Deliverable::class;
+    }
+
     public function index(Request $request)
     {
         $query=Deliverable::with(['activity','owner'])->latest();

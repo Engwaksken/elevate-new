@@ -22,12 +22,14 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.deliverables.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-<div class="admin-table-wrap"><table class="admin-table">
-<thead><tr><th>Deliverable</th><th>Activity</th><th>Owner</th><th>Due</th><th>Progress</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
+@php($bulkRoute = route('admin.deliverables.bulk-destroy')) @php($bulkTableId = 'deliverablesTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}">
+<thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Deliverable</th><th>Activity</th><th>Owner</th><th>Due</th><th>Progress</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
 <tbody>
 @forelse($deliverables as $deliverable)
 <tr>
-<td><strong>{{ $deliverable->title }}</strong><small class="admin-cell-hint">{{ Str::limit($deliverable->description,90) }}</small></td>
+<td><input type="checkbox" data-row-select value="{{ $deliverable->id }}" aria-label="Select {{ $deliverable->title }}"></td><td><strong>{{ $deliverable->title }}</strong><small class="admin-cell-hint">{{ Str::limit($deliverable->description,90) }}</small></td>
 <td>{{ data_get($deliverable,'activity.title','—') }}</td>
 <td>{{ data_get($deliverable,'owner.name','—') }}</td>
 <td>{{ optional($deliverable->due_date)->format('d M Y') ?: '—' }}</td>
@@ -35,7 +37,7 @@
 <td><span class="status-chip {{ $deliverable->status }}">{{ ucfirst(str_replace('_',' ',$deliverable->status)) }}</span></td>
 <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-modal-open="updateDeliverable{{ $deliverable->id }}"><i class="fas fa-pen"></i> Update</button></td>
 </tr>
-@empty<tr><td colspan="7"><div class="admin-empty">No deliverables found.</div></td></tr>@endforelse
+@empty<tr><td colspan="8"><div class="admin-empty">No deliverables found.</div></td></tr>@endforelse
 </tbody></table></div>
 <div class="admin-pagination">{{ $deliverables->links() }}</div>
 </div>

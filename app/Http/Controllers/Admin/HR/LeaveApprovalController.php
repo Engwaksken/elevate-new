@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\HR;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\LeaveRequest;
 use App\Services\LeaveService;
@@ -9,6 +10,13 @@ use Illuminate\Http\Request;
 
 class LeaveApprovalController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return LeaveRequest::class;
+    }
+
     public function index(Request $request)
     {
         $query=LeaveRequest::with(['employee.user','leaveType'])->latest();

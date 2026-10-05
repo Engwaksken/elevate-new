@@ -28,12 +28,14 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.indicators.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-<div class="admin-table-wrap"><table class="admin-table">
-<thead><tr><th>Indicator</th><th>Level</th><th>Type</th><th>Targets</th><th>Results</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
+@php($bulkRoute = route('admin.indicators.bulk-destroy')) @php($bulkTableId = 'indicatorsTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}">
+<thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Indicator</th><th>Level</th><th>Type</th><th>Targets</th><th>Results</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
 <tbody>
 @forelse($indicators as $indicator)
 <tr>
-<td><strong>{{ $indicator->name }}</strong><small class="admin-cell-hint">{{ $indicator->code ?: 'No code' }}</small></td>
+<td><input type="checkbox" data-row-select value="{{ $indicator->id }}" aria-label="Select {{ $indicator->name }}"></td><td><strong>{{ $indicator->name }}</strong><small class="admin-cell-hint">{{ $indicator->code ?: 'No code' }}</small></td>
 <td>{{ ucfirst($indicator->result_level) }}</td>
 <td>{{ ucfirst($indicator->indicator_type) }}</td>
 <td>{{ $indicator->targets_count }}</td>
@@ -45,7 +47,7 @@
 </div></td>
 </tr>
 @if($indicator->results->where('verification_status','submitted')->count())
-<tr><td colspan="7">
+<tr><td colspan="8">
 <details><summary><strong>Pending result verification</strong></summary>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Period</th><th>Actual</th><th>Source</th><th>Status</th><th>Action</th></tr></thead><tbody>
 @foreach($indicator->results->where('verification_status','submitted') as $result)
@@ -55,7 +57,7 @@
 </details>
 </td></tr>
 @endif
-@empty<tr><td colspan="7"><div class="admin-empty">No indicators found.</div></td></tr>@endforelse
+@empty<tr><td colspan="8"><div class="admin-empty">No indicators found.</div></td></tr>@endforelse
 </tbody>
 </table></div>
 <div class="admin-pagination">{{ $indicators->links() }}</div>

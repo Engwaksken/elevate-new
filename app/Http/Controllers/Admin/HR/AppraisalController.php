@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\HR;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Appraisal;
 use App\Models\AppraisalCycle;
@@ -15,6 +16,13 @@ use Illuminate\Http\Request;
 
 class AppraisalController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Appraisal::class;
+    }
+
     public function index(AppraisalProgressService $progressService)
     {
         $appraisals=Appraisal::with([

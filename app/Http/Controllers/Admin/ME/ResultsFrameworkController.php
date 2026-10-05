@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\ME;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Programme;
 use App\Models\Project;
@@ -11,6 +12,13 @@ use Illuminate\Http\Request;
 
 class ResultsFrameworkController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return ResultsFramework::class;
+    }
+
     public function index(Request $request)
     {
         $query = ResultsFramework::with('results')->latest();

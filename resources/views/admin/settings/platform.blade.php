@@ -5,8 +5,12 @@
 @php
     $logoPath = $settings->get('branding.logo_path');
     $faviconPath = $settings->get('branding.favicon_path');
-    $logoUrl = $logoPath ? \Illuminate\Support\Facades\Storage::disk('public')->url($logoPath) : null;
-    $faviconUrl = $faviconPath ? \Illuminate\Support\Facades\Storage::disk('public')->url($faviconPath) : null;
+    $logoUrl = $logoPath && \Illuminate\Support\Facades\Route::has('branding.asset')
+        ? route('branding.asset', ['type' => 'logo', 'v' => md5((string) $logoPath)])
+        : null;
+    $faviconUrl = $faviconPath && \Illuminate\Support\Facades\Route::has('branding.asset')
+        ? route('branding.asset', ['type' => 'favicon', 'v' => md5((string) $faviconPath)])
+        : null;
     $activeConfigTab = session('platform_settings_tab', old('provider') ? 'ai' : 'branding');
 @endphp
 
@@ -65,7 +69,7 @@
         <p>The saved logo is used across the platform navigation.</p>
         <div class="eh-brand-preview" data-image-preview="logo">
             @if($logoUrl)
-                <img src="{{ $logoUrl }}?v={{ md5((string)$logoPath) }}" alt="Current platform logo" data-preview-image>
+                <img src="{{ $logoUrl }}" alt="Current platform logo" data-preview-image>
             @else
                 <span class="eh-brand-preview-empty" data-preview-empty>No logo uploaded yet.</span>
                 <img src="" alt="Selected platform logo preview" data-preview-image hidden>
@@ -79,7 +83,7 @@
         <p>The favicon appears in browser tabs and bookmarks.</p>
         <div class="eh-brand-preview eh-brand-preview--favicon" data-image-preview="favicon">
             @if($faviconUrl)
-                <img src="{{ $faviconUrl }}?v={{ md5((string)$faviconPath) }}" alt="Current favicon" data-preview-image>
+                <img src="{{ $faviconUrl }}" alt="Current favicon" data-preview-image>
             @else
                 <span class="eh-brand-preview-empty" data-preview-empty>No favicon uploaded yet.</span>
                 <img src="" alt="Selected favicon preview" data-preview-image hidden>

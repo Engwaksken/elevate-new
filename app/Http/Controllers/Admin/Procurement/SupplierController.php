@@ -2,12 +2,20 @@
 
 namespace App\Http\Controllers\Admin\Procurement;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Supplier::class;
+    }
+
     public function index(Request $request)
     {
         $query=Supplier::orderBy('name');
