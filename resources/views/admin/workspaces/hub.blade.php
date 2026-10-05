@@ -24,9 +24,6 @@
 
 <div class="eh-hub-grid">
     @forelse($workspace['links'] as $link)
-        @if(($workspace['key'] ?? null) === 'mentorship' && $link['url'] === route('admin.mentorship.mentors.create'))
-            @continue
-        @endif
         <a class="eh-hub-card" href="{{ $link['url'] }}">
             <span class="eh-hub-icon"><i class="fas {{ $link['icon'] }}"></i></span>
             <span class="eh-hub-text">

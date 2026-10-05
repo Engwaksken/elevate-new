@@ -11,7 +11,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class DataImportCentreController extends Controller
 {
-    private const MODULES = ['appraisal_kras', 'appraisal_kpis', 'employees', 'mentorship', 'jobs_tracking'];
+    private const MODULES = ['appraisal_kras', 'appraisal_kpis', 'employees', 'mentorship', 'jobs_tracking', 'enrolments'];
 
     public function index()
     {

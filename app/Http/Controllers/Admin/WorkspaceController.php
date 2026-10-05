@@ -75,8 +75,7 @@ class WorkspaceController extends Controller
             ],
             'links' => [
                 ['admin.mentorship.mentors.index', 'Mentors', 'fa-user-tie', 'Mentor profiles and availability.'],
-                ['admin.mentorship.mentors.create', 'Add Mentor', 'fa-user-plus', 'Add mentor details directly.'],
-                ['admin.mentorship.matches.index', 'Matches', 'fa-people-arrows', 'Mentor–mentee pairings.'],
+                ['admin.mentorship.matches.index', 'Matches', 'fa-people-arrows', 'Mentor-mentee pairings.'],
                 ['admin.reports.mentorship-tracking', 'Tracking Report', 'fa-chart-column', 'Session attendance and engagement.'],
             ],
         ]);
