@@ -8,4 +8,5 @@ class PurchaseRequest extends Model
     public function items(){ return $this->hasMany(PurchaseRequestItem::class); }
     public function approvals(){ return $this->hasMany(PurchaseRequestApproval::class); }
     public function quotations(){ return $this->hasMany(Quotation::class); }
+    public function requester(): \Illuminate\Database\Eloquent\Relations\BelongsTo { return $this->belongsTo(\App\Models\User::class, 'requester_user_id'); }
 }

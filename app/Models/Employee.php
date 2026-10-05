@@ -10,4 +10,5 @@ class Employee extends Model
     public function leaveRequests(){ return $this->hasMany(LeaveRequest::class); }
     public function appraisals(){ return $this->hasMany(Appraisal::class); }
     public function kpis(){ return $this->hasMany(StaffKpi::class)->orderBy('position'); }
+    public function leaveBalances(): \Illuminate\Database\Eloquent\Relations\HasMany { return $this->hasMany(\App\Models\LeaveBalance::class); }
 }
