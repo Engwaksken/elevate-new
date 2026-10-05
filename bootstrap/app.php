@@ -33,6 +33,16 @@ return Application::configure(basePath: dirname(__DIR__))
             ]
         );
 
+        // Allow same-origin web (PWA) requests to authenticate against the
+        // `auth:sanctum` API routes using the session, so the participant
+        // dashboard's sync button works alongside the mobile app's bearer
+        // token flow.
+        $middleware->api(
+            prepend: [
+                \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            ]
+        );
+
         $middleware->append(
             \App\Http\Middleware\SecurityHeaders::class
         );

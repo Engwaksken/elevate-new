@@ -130,7 +130,9 @@ class StaffTaskService
         $tasks = $this->base($userIds)
             ->where(fn (Builder $query) => $query
                 ->where(fn (Builder $open) => $open->open()->where(fn (Builder $due) => $due
-                    ->whereNull('due_date')->orWhereDate('due_date', '<=', today())))
+                    ->whereNull('due_date')
+                    ->orWhereDate('due_date', '<=', today())
+                    ->orWhereDate('start_date', today())))
                 ->orWhereDate('completed_at', today()))
             ->orderByRaw('due_date is null')
             ->orderBy('due_date')
@@ -139,7 +141,11 @@ class StaffTaskService
         return collect([
             'overdue' => $tasks->filter->isOverdue(),
             'due_today' => $tasks->filter(fn (Task $task) => $task->isOpen() && $task->due_date?->isToday()),
-            'undated' => $tasks->filter(fn (Task $task) => $task->isOpen() && ! $task->due_date),
+            'assigned_today' => $tasks->filter(fn (Task $task) => $task->isOpen()
+                && $task->start_date?->isToday()
+                && ! $task->due_date?->isToday()
+                && ! $task->isOverdue()),
+            'undated' => $tasks->filter(fn (Task $task) => $task->isOpen() && ! $task->due_date && ! $task->start_date?->isToday()),
             'done_today' => $tasks->reject->isOpen(),
         ]);
     }
@@ -156,12 +162,16 @@ class StaffTaskService
         $tasks = $this->base($userIds)
             ->where(fn (Builder $query) => $query
                 ->whereBetween('due_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+                ->orWhereBetween('start_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
                 ->orWhereBetween('completed_at', [$weekStart, $weekEnd]))
             ->orderBy('due_date')
             ->get();
 
-        // Place each task on its due day when that falls in this week, otherwise on the day it was finished.
-        $anchor = fn (Task $task) => $task->due_date?->between($weekStart, $weekEnd) ? $task->due_date : $task->completed_at;
+        // Place each task on its assigned (start) day when that falls in this
+        // week, otherwise on its due day, otherwise on the day it was finished.
+        $anchor = fn (Task $task) => $task->start_date?->between($weekStart, $weekEnd)
+            ? $task->start_date
+            : ($task->due_date?->between($weekStart, $weekEnd) ? $task->due_date : $task->completed_at);
 
         return collect(range(0, 6))->mapWithKeys(function (int $offset) use ($weekStart, $tasks, $anchor) {
             $day = $weekStart->copy()->addDays($offset);

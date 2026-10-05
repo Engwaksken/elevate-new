@@ -15,14 +15,14 @@ class ContentPageController extends Controller
 
     public function privacy(CmsContentService $cms)
     {
-        $content = $cms->published('privacy-policy');
-        return $content ? view('cms.page', compact('content')) : view('legal.privacy');
+        $content = $cms->published('privacy-policy') ?? ['title' => 'Privacy Policy'];
+        return view('cms.page', compact('content'));
     }
 
     public function terms(CmsContentService $cms)
     {
-        $content = $cms->published('terms');
-        return $content ? view('cms.page', compact('content')) : view('legal.terms');
+        $content = $cms->published('terms') ?? ['title' => 'Terms of Use'];
+        return view('cms.page', compact('content'));
     }
 
     public function faqs(CmsContentService $cms)

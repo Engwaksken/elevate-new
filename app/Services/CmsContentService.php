@@ -85,7 +85,12 @@ class CmsContentService
 
     public function render(?string $body): string
     {
-        return Str::markdown($body ?? '', ['html_input' => 'strip', 'allow_unsafe_links' => false]);
+        // Render markdown and allow raw HTML so admins can paste rich content
+        // (headings, links, lists, images), then sanitise the result with the
+        // strict whitelist so scripts, event handlers and unsafe navigation
+        // are stripped.
+        $html = Str::markdown($body ?? '', ['html_input' => 'allow', 'allow_unsafe_links' => false]);
+        return $this->sanitizeHtml($html);
     }
 
     public function publicUrl(CmsPage $page): ?string

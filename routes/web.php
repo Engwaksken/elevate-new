@@ -136,6 +136,9 @@ Route::get('/brand-assets/{type}', [BrandAssetController::class, 'show'])
     ->whereIn('type', ['logo', 'favicon'])
     ->name('branding.asset');
 
+Route::get('/manifest.webmanifest', [BrandAssetController::class, 'manifest'])
+    ->name('manifest');
+
 Route::get('/shared/career/portfolio/{file}', [\App\Http\Controllers\Career\ResumePortfolioController::class, 'shared'])->middleware(['signed', 'throttle:30,1'])->name('career.portfolio.shared');
 Route::get('/shared/certificates/{type}/{id}', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'shared'])->where('type','course|event')->whereNumber('id')->middleware(['signed','throttle:30,1'])->name('certificates.shared');
 

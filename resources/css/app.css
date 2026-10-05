@@ -2238,9 +2238,9 @@ tbody tr:hover {
 .site-footer {
     margin-top: 0;
     padding: 42px 0 30px;
-    background: #ffffff;
-    border-top: 1px solid var(--border);
-    color: var(--muted);
+    background: var(--primary);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.9);
     font-size: 14px;
 }
 
@@ -2257,25 +2257,25 @@ tbody tr:hover {
 
 .footer > :not(:first-child) {
     padding-left: 24px;
-    border-left: 1px solid var(--border);
+    border-left: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .footer-brand {
     display: block;
     margin-bottom: 4px;
-    color: var(--primary);
+    color: #ffffff;
     font-size: 15px;
     font-weight: 800;
 }
 
 .footer-copy {
-    color: var(--muted);
+    color: rgba(255, 255, 255, 0.82);
     font-size: 13px;
 }
 
 .footer-copy i {
     margin-right: 4px;
-    color: var(--primary);
+    color: var(--secondary);
 }
 
 .footer-links {
@@ -2289,7 +2289,7 @@ tbody tr:hover {
 .footer h3,
 .footer h4 {
     margin: 0 0 14px;
-    color: var(--text-dark);
+    color: #ffffff;
     font-size: 0.9rem;
     font-weight: 800;
 }
@@ -2298,17 +2298,18 @@ tbody tr:hover {
     max-width: 30ch;
     margin: 0;
     line-height: 1.7;
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .footer-links a {
-    color: var(--muted);
+    color: rgba(255, 255, 255, 0.85);
     font-size: 13px;
     font-weight: 600;
 }
 
 .footer-links a:hover,
 .footer-links a:focus {
-    color: var(--primary);
+    color: var(--secondary);
 }
 
 /* ==========================================================================

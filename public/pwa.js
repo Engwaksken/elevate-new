@@ -206,6 +206,7 @@
 
     async function syncLatest() {
         try {
+            setStatus('Synchronising…', 'syncing');
             const previous = await storeGet(META, 'last_synced_at');
             const params = new URLSearchParams();
 
@@ -220,7 +221,7 @@
             });
 
             if (!response.ok) {
-                return;
+                throw new Error(`Sync request failed with ${response.status}`);
             }
 
             const payload = await response.json();
@@ -232,12 +233,19 @@
             });
 
             await loadLastSync();
+            setStatus('Online', 'online');
 
             window.dispatchEvent(new CustomEvent('eh360:pwa-synced', {
                 detail: payload
             }));
-        } catch (_) {
-            // Non-participant pages may legitimately have no API session.
+
+            return true;
+        } catch (error) {
+            // Non-participant pages may legitimately have no API session: no
+            // status element is rendered there, so this is a no-op for them.
+            console.warn('ElevateHer360 sync failed', error);
+            setStatus('Sync failed — Retry', 'error');
+            return false;
         }
     }
 

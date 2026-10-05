@@ -9,6 +9,7 @@
     $groupLabels = [
         'overdue' => ['Overdue', 'fa-triangle-exclamation', 'Still open past their due date.'],
         'due_today' => ['Due today', 'fa-sun', null],
+        'assigned_today' => ['Assigned today', 'fa-calendar-plus', null],
         'undated' => ['No due date', 'fa-inbox', null],
         'done_today' => ['Done today', 'fa-circle-check', null],
     ];
