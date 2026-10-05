@@ -24,7 +24,10 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.elearning.enrolments.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-@php($bulkRoute = route('admin.elearning.enrolments.bulk-destroy')) @php($bulkTableId = 'enrolmentsTable')
+@php
+$bulkRoute = route('admin.elearning.enrolments.bulk-destroy');
+$bulkTableId = 'enrolmentsTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 
 <div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Learner</th><th>Course</th><th>Cohort</th><th>Status</th><th>Enrolled</th><th class="table-actions">Actions</th></tr></thead><tbody>

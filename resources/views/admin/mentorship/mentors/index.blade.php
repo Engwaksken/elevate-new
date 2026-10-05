@@ -21,7 +21,10 @@
 <a href="{{ route('admin.mentorship.mentors.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-@php($bulkRoute = route('admin.mentorship.mentors.bulk-destroy')) @php($bulkTableId = 'mentorsTable')
+@php
+$bulkRoute = route('admin.mentorship.mentors.bulk-destroy');
+$bulkTableId = 'mentorsTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 
 <div class="admin-table-wrap">

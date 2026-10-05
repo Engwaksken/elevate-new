@@ -6,7 +6,10 @@
 
 <div class="admin-panel">
 <form method="GET" class="admin-toolbar"><div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search employee name or email..."></div><select name="status"><option value="">All statuses</option>@foreach(['pending','supervisor_approved','approved','rejected'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select><select name="per_page">@foreach([10,25,50,100] as $n)<option value="{{ $n }}" @selected((int)request('per_page',25)===$n)>{{ $n }}/page</option>@endforeach</select><button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.hr.leave.index') }}" class="btn btn-outline btn-sm">Reset</a></form>
-@php($bulkRoute = route('admin.hr.leave.bulk-destroy')) @php($bulkTableId = 'leaveRequestsTable')
+@php
+$bulkRoute = route('admin.hr.leave.bulk-destroy');
+$bulkTableId = 'leaveRequestsTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 <div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Employee</th><th>Leave Type</th><th>Dates</th><th>Days</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($requests as $leave)

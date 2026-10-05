@@ -22,7 +22,10 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.deliverables.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-@php($bulkRoute = route('admin.deliverables.bulk-destroy')) @php($bulkTableId = 'deliverablesTable')
+@php
+$bulkRoute = route('admin.deliverables.bulk-destroy');
+$bulkTableId = 'deliverablesTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 <div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}">
 <thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Deliverable</th><th>Activity</th><th>Owner</th><th>Due</th><th>Progress</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>

@@ -10,10 +10,15 @@
 </div>
 <div class="admin-panel">
 <form method="GET" class="admin-toolbar"><div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search course title or code..."></div><button class="btn btn-primary btn-sm">Search</button><a href="{{ route('admin.elearning.assignments.index') }}" class="btn btn-outline btn-sm">Reset</a></form>
-<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Course</th><th>Instructors</th><th>Cohorts</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@php
+$bulkRoute = route('admin.elearning.assignments.bulk-destroy');
+$bulkTableId = 'courseAssignmentsTable';
+@endphp
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Course</th><th>Instructors</th><th>Cohorts</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($courses as $course)
-<tr><td><strong>{{ $course->title }}</strong><small class="admin-cell-hint">{{ $course->code }}</small></td><td>{{ $course->instructors_count }}</td><td>{{ $course->cohorts_count }}</td><td class="table-actions"><a class="btn-icon" href="{{ route('admin.elearning.assignments.edit',$course) }}"><i class="fas fa-pen"></i></a></td></tr>
-@empty<tr><td colspan="4"><div class="admin-empty">No courses found.</div></td></tr>@endforelse
+<tr><td><input type="checkbox" data-row-select value="{{ $course->id }}" aria-label="Select {{ $course->title }}"></td><td><strong>{{ $course->title }}</strong><small class="admin-cell-hint">{{ $course->code }}</small></td><td>{{ $course->instructors_count }}</td><td>{{ $course->cohorts_count }}</td><td class="table-actions"><a class="btn-icon" href="{{ route('admin.elearning.assignments.edit',$course) }}"><i class="fas fa-pen"></i></a></td></tr>
+@empty<tr><td colspan="5"><div class="admin-empty">No courses found.</div></td></tr>@endforelse
 </tbody></table></div><div class="admin-pagination">{{ $courses->links() }}</div>
 </div>
 @endsection

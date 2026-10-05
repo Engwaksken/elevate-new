@@ -77,7 +77,10 @@
 <a href="{{ route('admin.library.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-@php($bulkRoute = route('admin.library.bulk-destroy')) @php($bulkTableId = 'libraryTable')
+@php
+$bulkRoute = route('admin.library.bulk-destroy');
+$bulkTableId = 'libraryTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 
 <div class="admin-table-wrap">

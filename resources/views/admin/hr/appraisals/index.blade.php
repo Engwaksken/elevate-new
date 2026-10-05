@@ -54,7 +54,10 @@ $stats=[
 </div>
 
 <div class="admin-panel">
-@php($bulkRoute = route('admin.hr.appraisals.bulk-destroy')) @php($bulkTableId = 'appraisalsTable')
+@php
+$bulkRoute = route('admin.hr.appraisals.bulk-destroy');
+$bulkTableId = 'appraisalsTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 <div class="admin-table-wrap">
 <table class="admin-table" id="{{ $bulkTableId }}">

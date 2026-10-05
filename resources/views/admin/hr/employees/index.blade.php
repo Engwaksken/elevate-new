@@ -17,9 +17,15 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.hr.employees.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Employee</th><th>No.</th><th>Type</th><th>Location</th><th>Start Date</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@php
+$bulkRoute = route('admin.hr.employees.bulk-destroy');
+$bulkTableId = 'employeesTable';
+@endphp
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Employee</th><th>No.</th><th>Type</th><th>Location</th><th>Start Date</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($employees as $employee)
 <tr>
+<td><input type="checkbox" data-row-select value="{{ $employee->id }}" aria-label="Select {{ data_get($employee,'user.name','Employee') }}"></td>
 <td><strong>{{ data_get($employee,'user.name','—') }}</strong><small class="admin-cell-hint">{{ data_get($employee,'user.email','') }}</small></td>
 <td>{{ $employee->employee_number }}</td>
 <td>{{ $employee->employment_type ?: '—' }}</td>
@@ -28,7 +34,7 @@
 <td><span class="status-chip {{ $employee->status }}">{{ ucfirst(str_replace('_',' ',$employee->status)) }}</span></td>
 <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-modal-open="contract{{ $employee->id }}"><i class="fas fa-file-signature"></i> Add Contract</button></td>
 </tr>
-@empty<tr><td colspan="7"><div class="admin-empty">No employees found.</div></td></tr>@endforelse
+@empty<tr><td colspan="8"><div class="admin-empty">No employees found.</div></td></tr>@endforelse
 </tbody></table></div>
 <div class="admin-pagination">{{ $employees->links() }}</div>
 </div>

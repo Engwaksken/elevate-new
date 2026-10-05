@@ -70,6 +70,20 @@
         @endforeach
     </select>
 
+    <select name="course_id">
+        <option value="">All courses</option>
+        @foreach($courses as $course)
+        <option value="{{ $course->id }}" @selected((int) request('course_id')===$course->id)>{{ $course->title }}</option>
+        @endforeach
+    </select>
+
+    <select name="cohort_id">
+        <option value="">All cohorts</option>
+        @foreach($cohorts as $cohort)
+        <option value="{{ $cohort->id }}" @selected((int) request('cohort_id')===$cohort->id)>{{ $cohort->name }}</option>
+        @endforeach
+    </select>
+
     <select name="per_page">
         @foreach([10,20,25,50,100] as $n)
         <option value="{{ $n }}" @selected((int)request('per_page',20)===$n)>{{ $n }}/page</option>

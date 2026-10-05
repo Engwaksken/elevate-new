@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\HR;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Employee;
@@ -11,6 +12,13 @@ use Illuminate\Http\Request;
 
 class EmployeeController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Employee::class;
+    }
+
     public function index(Request $request)
     {
         $query=Employee::with(['user'])->latest();

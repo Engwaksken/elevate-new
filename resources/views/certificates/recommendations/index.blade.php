@@ -62,13 +62,15 @@
         </div>
     </div>
 </form>
+@include('partials.admin-bulk-bar', ['bulkRoute' => route('certificates.recommendations.bulk-destroy'), 'bulkTableId' => 'certRecTable'])
 @endif
 
 <div class="admin-table-wrap">
-<table class="admin-table">
+<table class="admin-table" id="certRecTable">
 <thead>
 <tr>
-    @if($canApprove)<th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#cert-bulk-bar" aria-label="Select all pending"></th>@endif
+    @if($canApprove)<th style="width:34px"><input type="checkbox" data-review-select-all data-bulk-target="#cert-bulk-bar" aria-label="Select all pending"></th>@endif
+    @if($canApprove)<th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#certRecTable-bar" aria-label="Select all for delete"></th>@endif
     <th>Participant</th>
     <th>Course / Event</th>
     <th>Recommended by</th>
@@ -82,8 +84,11 @@
     @if($canApprove)
     <td>
         @if($recommendation->isPending())
-            <input type="checkbox" value="{{ $recommendation->id }}" data-row-select aria-label="Select {{ $recommendation->user?->name }}">
+            <input type="checkbox" value="{{ $recommendation->id }}" data-review-select aria-label="Select {{ $recommendation->user?->name }}">
         @endif
+    </td>
+    <td>
+        <input type="checkbox" value="{{ $recommendation->id }}" data-row-select aria-label="Select {{ $recommendation->user?->name }} for delete">
     </td>
     @endif
     <td><strong>{{ $recommendation->user?->name }}</strong><small class="admin-cell-hint">{{ $recommendation->user?->participant_code ?? '—' }} · {{ $recommendation->user?->email }}</small></td>
@@ -103,7 +108,7 @@
     </td>
 </tr>
 @empty
-<tr><td colspan="{{ $canApprove ? 6 : 5 }}"><div class="admin-empty"><i class="fas fa-award"></i><strong>No recommendations yet</strong><span>Recommend participants who have earned a certificate.</span></div></td></tr>
+<tr><td colspan="{{ $canApprove ? 7 : 5 }}"><div class="admin-empty"><i class="fas fa-award"></i><strong>No recommendations yet</strong><span>Recommend participants who have earned a certificate.</span></div></td></tr>
 @endforelse
 </tbody>
 </table>
@@ -186,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     form.addEventListener('submit', function () {
         form.querySelectorAll('input[name="ids[]"]').forEach(function (input) { input.remove(); });
-        document.querySelectorAll('[data-row-select]:checked').forEach(function (box) {
+        document.querySelectorAll('[data-review-select]:checked').forEach(function (box) {
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'ids[]';
@@ -195,8 +200,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    const master = document.querySelector('[data-select-all]');
-    const boxes = [...document.querySelectorAll('[data-row-select]')];
+    const master = document.querySelector('[data-review-select-all]');
+    const boxes = [...document.querySelectorAll('[data-review-select]')];
     const sync = function () {
         const selected = boxes.filter(function (b) { return b.checked; });
         if (master) master.checked = boxes.length > 0 && selected.length === boxes.length;

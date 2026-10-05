@@ -78,10 +78,17 @@
         </a>
     </form>
 
+    @php
+$bulkRoute = route('admin.elearning.certificates.bulk-destroy');
+$bulkTableId = 'certificatesTable';
+@endphp
+    @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+
     <div class="admin-table-wrap">
-        <table class="admin-table">
+        <table class="admin-table" id="{{ $bulkTableId }}">
             <thead>
                 <tr>
+                    <th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th>
                     <th>Certificate</th>
                     <th>Learner</th>
                     <th>Course</th>
@@ -93,6 +100,7 @@
             <tbody>
                 @forelse($certificates as $certificate)
                     <tr>
+                        <td><input type="checkbox" data-row-select value="{{ $certificate->id }}" aria-label="Select {{ $certificate->certificate_number }}"></td>
                         <td><strong>{{ $certificate->certificate_number }}</strong></td>
                         <td>
                             <strong>{{ data_get($certificate,'user.name','—') }}</strong>
@@ -118,7 +126,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="admin-empty">
                                 <i class="fas fa-certificate"></i>
                                 <strong>No certificates found</strong>

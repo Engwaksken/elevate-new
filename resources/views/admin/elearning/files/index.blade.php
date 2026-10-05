@@ -40,7 +40,10 @@
     <a href="{{ route('admin.elearning.learning-files.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-@php($bulkRoute = route('admin.elearning.learning-files.bulk-destroy')) @php($bulkTableId = 'learningFilesTable')
+@php
+$bulkRoute = route('admin.elearning.learning-files.bulk-destroy');
+$bulkTableId = 'learningFilesTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 
 <div class="admin-table-wrap">

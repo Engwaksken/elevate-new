@@ -8,7 +8,10 @@
 </div>
 <div class="admin-panel">
 <form method="GET" class="admin-toolbar"><div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search company, owner or email..."></div><select name="status"><option value="">All statuses</option>@foreach(['pending','approved','rejected'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst($s) }}</option>@endforeach</select><select name="per_page">@foreach([10,20,25,50,100] as $size)<option value="{{ $size }}" @selected((int)request('per_page',20)===$size)>{{ $size }}/page</option>@endforeach</select><button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.jobs.employers.index') }}" class="btn btn-outline btn-sm">Reset</a></form>
-@php($bulkRoute = route('admin.jobs.employers.bulk-destroy')) @php($bulkTableId = 'employersTable')
+@php
+$bulkRoute = route('admin.jobs.employers.bulk-destroy');
+$bulkTableId = 'employersTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 <div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Company</th><th>Owner</th><th>Status</th><th>Registered</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($employers as $employer)

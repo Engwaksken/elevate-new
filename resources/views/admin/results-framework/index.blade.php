@@ -24,7 +24,10 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.results-framework.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-@php($bulkRoute = route('admin.results-framework.bulk-destroy')) @php($bulkTableId = 'frameworksTable')
+@php
+$bulkRoute = route('admin.results-framework.bulk-destroy');
+$bulkTableId = 'frameworksTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 <div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}">
 <thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Framework</th><th>Results</th><th>Impact</th><th>Outcome</th><th>Output</th><th class="table-actions">Actions</th></tr></thead>

@@ -31,7 +31,10 @@
 <button class="btn btn-primary btn-sm">Apply</button>
 </form>
 
-@php($bulkRoute = route('admin.jobs.bulk-destroy')) @php($bulkTableId = 'jobsTable')
+@php
+$bulkRoute = route('admin.jobs.bulk-destroy');
+$bulkTableId = 'jobsTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 
 <div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}">

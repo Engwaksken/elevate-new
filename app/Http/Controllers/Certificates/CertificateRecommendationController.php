@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Certificates;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\CertificateRecommendation;
 use App\Models\Course;
@@ -14,8 +15,15 @@ use Illuminate\View\View;
 
 class CertificateRecommendationController extends Controller
 {
+    use BulkDeletesRecords;
+
     public function __construct(private CertificateRecommendationService $service)
     {
+    }
+
+    protected function bulkDeleteModel(): string
+    {
+        return CertificateRecommendation::class;
     }
 
     public function index(Request $request): View

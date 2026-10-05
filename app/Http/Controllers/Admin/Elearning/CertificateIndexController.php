@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Elearning;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Certificate;
 use App\Models\Course;
@@ -9,6 +10,13 @@ use Illuminate\Http\Request;
 
 class CertificateIndexController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Certificate::class;
+    }
+
     public function index(Request $request)
     {
         $query = Certificate::query()

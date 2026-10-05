@@ -49,6 +49,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function participantIdAliases(): HasMany { return $this->hasMany(ParticipantIdAlias::class); }
     public function consents(): HasMany { return $this->hasMany(Consent::class); }
     public function goals(): HasMany { return $this->hasMany(ParticipantGoal::class); }
+    public function enrolments(): HasMany { return $this->hasMany(Enrolment::class); }
 
     public function roles(): BelongsToMany
     {

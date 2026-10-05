@@ -20,7 +20,10 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.procurement.suppliers.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-@php($bulkRoute = route('admin.procurement.suppliers.bulk-destroy')) @php($bulkTableId = 'suppliersTable')
+@php
+$bulkRoute = route('admin.procurement.suppliers.bulk-destroy');
+$bulkTableId = 'suppliersTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 <div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Supplier</th><th>Category</th><th>TIN</th><th>Contact</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($suppliers as $supplier)

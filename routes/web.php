@@ -579,6 +579,8 @@ Route::prefix('admin/elearning')->name('admin.elearning.')->middleware(['auth', 
         ->middleware('permission:students.edit')->name('bulk-enrolment.create');
     Route::post('/bulk-enrolment',[BulkEnrolmentController::class,'store'])
         ->middleware('permission:students.edit')->name('bulk-enrolment.store');
+    Route::post('/bulk-enrolment/enroll-selected',[BulkEnrolmentController::class,'enrollSelected'])
+        ->middleware('permission:students.edit')->name('bulk-enrolment.enroll-selected');
 
     Route::post('/courses/{course}/files',[LearningFileAdminController::class,'store'])
         ->middleware('permission:courses.edit')->name('files.store');
@@ -779,6 +781,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
     Route::get('/participant-goals',[AdminParticipantGoalController::class,'index'])
         ->middleware('permission:users.view')->name('participant-goals.index');
 
+    Route::delete('/participant-goals/bulk-delete',[AdminParticipantGoalController::class,'bulkDestroy'])
+        ->middleware('permission:users.delete')->name('participant-goals.bulk-destroy');
+
     Route::get('/workplans',[WorkplanController::class,'index'])->middleware('permission:workplans.view')->name('workplans.index');
     Route::post('/workplans',[WorkplanController::class,'store'])->middleware('permission:workplans.create')->name('workplans.store');
     Route::post('/workplans/{workplan}/submit',[WorkplanController::class,'submit'])->middleware('permission:workplans.edit')->name('workplans.submit');
@@ -850,6 +855,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         Route::post('/jobs/{job}/reject',[JobAdminController::class,'reject'])->middleware('permission:hr.manage')->name('jobs.reject');
 
         Route::get('/employees',[EmployeeController::class,'index'])->middleware('permission:hr.view')->name('employees.index');
+        Route::delete('/employees/bulk-delete',[EmployeeController::class,'bulkDestroy'])->middleware('permission:hr.manage')->name('employees.bulk-destroy');
         Route::post('/employees',[EmployeeController::class,'store'])->middleware('permission:hr.manage')->name('employees.store');
 
         Route::post('/employees/{employee}/contracts',[ContractController::class,'store'])->middleware('permission:hr.manage')->name('contracts.store');
@@ -1007,6 +1013,9 @@ Route::prefix('admin/elearning')->name('admin.elearning.')->middleware(['auth', 
     Route::get('/assignments',[CourseAssignmentController::class,'index'])
         ->middleware('permission:courses.edit')->name('assignments.index');
 
+    Route::delete('/assignments/bulk-delete',[CourseAssignmentController::class,'bulkDestroy'])
+        ->middleware('permission:courses.delete')->name('assignments.bulk-destroy');
+
     // IMPORTANT:
     // Do not call this route files.index because the application already has a
     // per-course route with that name: /admin/elearning/courses/{course}/files.
@@ -1054,6 +1063,9 @@ Route::middleware(['auth'])
     ->group(function () {
         Route::get('/certificates', [CertificateIndexController::class, 'index'])
             ->name('certificates.index');
+
+        Route::delete('/certificates/bulk-delete', [CertificateIndexController::class, 'bulkDestroy'])
+            ->name('certificates.bulk-destroy');
     });
 
 Route::middleware(['auth'])
@@ -1387,6 +1399,7 @@ Route::middleware(['auth', 'staff', 'role:'.implode(',', array_merge(
         Route::get('/', [\App\Http\Controllers\Certificates\CertificateRecommendationController::class, 'index'])->name('index');
         Route::get('/create', [\App\Http\Controllers\Certificates\CertificateRecommendationController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\Certificates\CertificateRecommendationController::class, 'store'])->name('store');
+        Route::delete('/bulk-delete', [\App\Http\Controllers\Certificates\CertificateRecommendationController::class, 'bulkDestroy'])->name('bulk-destroy');
         Route::post('/review', [\App\Http\Controllers\Certificates\CertificateRecommendationController::class, 'review'])->name('review');
     });
 

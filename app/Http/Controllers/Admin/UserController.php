@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\Cohort;
 use App\Models\Course;
 use App\Models\Role;
 use App\Models\User;
@@ -54,6 +55,14 @@ class UserController extends Controller
                 ->orWhereHas('profile', fn ($p) => $p->where('branch_id', $branchId)));
         }
 
+        if ($courseId = $request->integer('course_id')) {
+            $query->whereHas('enrolments', fn ($q) => $q->where('course_id', $courseId));
+        }
+
+        if ($cohortId = $request->integer('cohort_id')) {
+            $query->whereHas('enrolments', fn ($q) => $q->where('cohort_id', $cohortId));
+        }
+
         $perPage = in_array((int) $request->get('per_page'), [10,20,25,50,100], true)
             ? (int) $request->get('per_page')
             : 20;
@@ -64,6 +73,7 @@ class UserController extends Controller
             'roles' => Role::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(['id','name','code','is_active']),
             'courses' => Course::orderBy('title')->get(['id','title','code']),
+            'cohorts' => Cohort::orderBy('name')->get(['id','name']),
             'stats' => [
                 'total' => User::count(),
                 'participants' => User::where('user_type','participant')->count(),

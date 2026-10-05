@@ -57,7 +57,10 @@
         <button class="btn btn-primary btn-sm">Apply</button>
     </form>
 
-    @php($bulkRoute = route('admin.course-calls.bulk-destroy')) @php($bulkTableId = 'courseCallsTable')
+    @php
+$bulkRoute = route('admin.course-calls.bulk-destroy');
+$bulkTableId = 'courseCallsTable';
+@endphp
     @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 
     <div class="admin-table-wrap">

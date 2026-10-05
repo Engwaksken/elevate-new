@@ -18,7 +18,10 @@
 <select name="event_type"><option value="">All event types</option>@foreach(['training','workshop','webinar','meeting','mentorship','career_fair','community','other'] as $type)<option value="{{ $type }}" @selected(request('event_type')===$type)>{{ ucwords(str_replace('_',' ',$type)) }}</option>@endforeach</select>
 <input type="date" name="from" value="{{ request('from') }}"><input type="date" name="to" value="{{ request('to') }}"><button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.events.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
-@php($bulkRoute = route('admin.events.bulk-destroy')) @php($bulkTableId = 'eventsTable')
+@php
+$bulkRoute = route('admin.events.bulk-destroy');
+$bulkTableId = 'eventsTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 <div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Event</th><th>Date & Venue</th><th>Registrations</th><th>Attendance</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($events as $event)

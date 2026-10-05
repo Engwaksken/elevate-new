@@ -54,9 +54,30 @@ class BulkEnrolmentController extends Controller
 
     public function create()
     {
+        $perPage = (int) request('per_page', 25);
+
+        if (! in_array($perPage, [25, 50, 100], true)) {
+            $perPage = 25;
+        }
+
+        $participants = User::query()
+            ->where('user_type', 'participant')
+            ->where('status', 'active')
+            ->when($search = trim((string) request('p_search')), function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('participant_code', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('name')
+            ->paginate($perPage, ['*'], 'p')
+            ->withQueryString();
+
         return view('admin.elearning.bulk-enrolment.create', [
             'courses' => Course::query()->orderBy('title')->get(),
             'cohorts' => Cohort::query()->orderBy('name')->get(),
+            'participants' => $participants,
             'stats' => [
                 'courses' => Course::count(),
                 'participants' => User::where('user_type', 'participant')->count(),
@@ -64,6 +85,58 @@ class BulkEnrolmentController extends Controller
                 'completed' => Enrolment::where('status', 'completed')->count(),
             ],
         ]);
+    }
+
+    public function enrollSelected(Request $request)
+    {
+        $data = $request->validate([
+            'course_id' => ['required', 'exists:courses,id'],
+            'cohort_id' => ['nullable', 'exists:cohorts,id'],
+            'user_ids' => ['required', 'array'],
+            'user_ids.*' => ['integer', 'exists:users,id'],
+        ]);
+
+        $userIds = collect($data['user_ids'])->unique()->values();
+
+        [$created, $updated] = DB::transaction(function () use ($data, $userIds) {
+            $created = 0;
+            $updated = 0;
+
+            foreach ($userIds as $userId) {
+                $enrolment = Enrolment::query()->firstOrNew([
+                    'course_id' => $data['course_id'],
+                    'user_id' => $userId,
+                ]);
+
+                $wasNew = ! $enrolment->exists;
+
+                $payload = ['status' => 'enrolled'];
+
+                if ($data['cohort_id']) {
+                    $payload['cohort_id'] = $data['cohort_id'];
+                }
+
+                if ($wasNew) {
+                    $payload['enrolled_at'] = now();
+                    $payload['progress_percent'] = 0;
+                }
+
+                $enrolment->fill($payload);
+                $enrolment->save();
+
+                $wasNew ? $created++ : $updated++;
+            }
+
+            return [$created, $updated];
+        });
+
+        $message = "{$created} participant(s) enrolled.";
+
+        if ($updated > 0) {
+            $message .= " {$updated} existing enrolment(s) updated.";
+        }
+
+        return back()->with('success', $message);
     }
 
     public function template(): StreamedResponse

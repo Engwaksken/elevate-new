@@ -54,12 +54,18 @@
     <a href="{{ route('admin.participant-goals.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
+@php
+$bulkRoute = route('admin.participant-goals.bulk-destroy');
+$bulkTableId = 'participantGoalsTable';
+@endphp
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 <div class="admin-table-wrap">
-<table class="admin-table">
-<thead><tr><th>Participant</th><th>Goal</th><th>Category</th><th>Progress</th><th>Status</th><th>Target date</th><th>Mentor feedback</th></tr></thead>
+<table class="admin-table" id="{{ $bulkTableId }}">
+<thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Participant</th><th>Goal</th><th>Category</th><th>Progress</th><th>Status</th><th>Target date</th><th>Mentor feedback</th></tr></thead>
 <tbody>
 @forelse($goals as $goal)
 <tr>
+<td><input type="checkbox" data-row-select value="{{ $goal->id }}" aria-label="Select {{ $goal->user?->name ?? 'goal' }}"></td>
 <td>
     <strong>{{ $goal->user?->name ?? 'Participant' }}</strong>
     <small class="admin-cell-hint">{{ $goal->user?->participant_code ?: $goal->user?->email }}</small>
@@ -88,7 +94,7 @@
 </td>
 </tr>
 @empty
-<tr><td colspan="7"><div class="admin-empty">No participant goals match these filters.</div></td></tr>
+<tr><td colspan="8"><div class="admin-empty">No participant goals match these filters.</div></td></tr>
 @endforelse
 </tbody>
 </table>

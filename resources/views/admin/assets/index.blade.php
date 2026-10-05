@@ -53,7 +53,10 @@
     <a href="{{ route('admin.assets.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-@php($bulkRoute = route('admin.assets.bulk-destroy')) @php($bulkTableId = 'assetsTable')
+@php
+$bulkRoute = route('admin.assets.bulk-destroy');
+$bulkTableId = 'assetsTable';
+@endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
 
 <div class="admin-table-wrap">

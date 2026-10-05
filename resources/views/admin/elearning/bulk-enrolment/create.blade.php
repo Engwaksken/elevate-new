@@ -194,4 +194,135 @@
         </div>
     </form>
 </div>
+
+<div class="admin-panel">
+    <div class="admin-panel-head">
+        <div>
+            <h2>Enroll selected participants</h2>
+            <p>Search for participants, tick the ones to enroll, and choose a course (and optional cohort).</p>
+        </div>
+    </div>
+
+    <form method="GET" class="admin-toolbar" action="{{ route('admin.elearning.bulk-enrolment.create') }}">
+        <div class="search-box">
+            <i class="fas fa-magnifying-glass"></i>
+            <input name="p_search" value="{{ request('p_search') }}" placeholder="Search by name, email or participant code...">
+        </div>
+        <select name="per_page">
+            @foreach([25, 50, 100] as $size)
+                <option value="{{ $size }}" @selected((int)request('per_page', 25) === $size)>{{ $size }} per page</option>
+            @endforeach
+        </select>
+        <button class="btn btn-primary btn-sm">Search</button>
+        <a href="{{ route('admin.elearning.bulk-enrolment.create') }}" class="btn btn-outline btn-sm">Reset</a>
+    </form>
+
+    <form method="POST" action="{{ route('admin.elearning.bulk-enrolment.enroll-selected') }}" id="enroll-selected-form">
+        @csrf
+
+        <div class="eh-form-grid">
+            <div>
+                <label>Course *</label>
+                <select name="course_id" required>
+                    <option value="">Select a course</option>
+
+                    @foreach($courses as $course)
+                        <option
+                            value="{{ $course->id }}"
+                            @selected((string)old('course_id') === (string)$course->id)
+                        >
+                            {{ $course->title }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label>Cohort</label>
+                <select name="cohort_id">
+                    <option value="">No cohort</option>
+
+                    @foreach($cohorts as $cohort)
+                        <option
+                            value="{{ $cohort->id }}"
+                            @selected((string)old('cohort_id') === (string)$cohort->id)
+                        >
+                            {{ $cohort->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        <div class="admin-bulk-bar" id="enroll-bulk-bar">
+            <strong><span data-selected-count>0</span> selected</strong>
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-user-check"></i>
+                Enroll selected participants
+            </button>
+        </div>
+    </form>
+
+    <div class="admin-table-wrap">
+        <table class="admin-table" id="enrollTable">
+            <thead>
+                <tr>
+                    <th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#enroll-bulk-bar" aria-label="Select all participants"></th>
+                    <th>Participant</th>
+                    <th>Email</th>
+                    <th>Participant Code</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($participants as $participant)
+                    <tr>
+                        <td>
+                            <input
+                                type="checkbox"
+                                value="{{ $participant->id }}"
+                                data-row-select
+                                aria-label="Select {{ $participant->name }}"
+                            >
+                        </td>
+                        <td><strong>{{ $participant->name }}</strong></td>
+                        <td>{{ $participant->email }}</td>
+                        <td>{{ $participant->participant_code ?? '—' }}</td>
+                        <td>{{ ucfirst($participant->status) }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="5">
+                            <div class="admin-empty">
+                                <i class="fas fa-users"></i>
+                                <strong>No participants found</strong>
+                                <span>Try adjusting your search.</span>
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div class="admin-pagination">{{ $participants->links() }}</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('enroll-selected-form');
+    if (!form) return;
+
+    form.addEventListener('submit', function () {
+        form.querySelectorAll('input[name="user_ids[]"]').forEach(function (input) { input.remove(); });
+        document.querySelectorAll('#enrollTable [data-row-select]:checked').forEach(function (box) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'user_ids[]';
+            input.value = box.value;
+            form.appendChild(input);
+        });
+    });
+});
+</script>
 @endsection

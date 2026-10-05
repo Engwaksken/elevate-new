@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\ParticipantGoal;
 use App\Models\User;
@@ -13,6 +14,13 @@ use Illuminate\View\View;
  */
 class ParticipantGoalController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return ParticipantGoal::class;
+    }
+
     public function index(Request $request): View
     {
         $query = ParticipantGoal::query()
