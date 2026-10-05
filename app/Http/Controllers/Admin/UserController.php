@@ -80,25 +80,26 @@ class UserController extends Controller
             'ids.*' => ['integer','exists:users,id'],
         ]);
 
-        $participants = User::query()
-            ->where('user_type', 'participant')
+        $users = User::query()
             ->whereKey($data['ids'])
             ->where('id', '!=', auth()->id())
-            ->get();
+            ->get()
+            // Super administrator accounts can never be removed in bulk.
+            ->reject(fn (User $user) => $user->isSuperAdmin());
 
-        foreach ($participants as $participant) {
-            $old = $participant->load('roles')->toArray();
-            $participant->delete();
+        foreach ($users as $user) {
+            $old = $user->load('roles')->toArray();
+            $user->delete();
             $audit->log('users', 'deleted', null, $old, []);
         }
 
-        $count = $participants->count();
+        $count = $users->count();
 
         return back()->with(
             $count > 0 ? 'success' : 'error',
             $count > 0
-                ? $count.' participant(s) deleted.'
-                : 'No participants were deleted.'
+                ? $count.' user(s) deleted.'
+                : 'No users were deleted.'
         );
     }
 

@@ -81,21 +81,35 @@ class AdminParticipantsPageTest extends TestCase
         $this->assertStringNotContainsString('data-modal-open="editUser', $html);
     }
 
-    public function test_admin_can_bulk_delete_selected_participants_only(): void
+    public function test_admin_can_bulk_delete_selected_users_and_participants(): void
     {
         $first = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
         $second = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
-        $kept = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
         $staff = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
+        $kept = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
 
         $this->actingAs($this->admin())
-            ->delete(route('admin.participants.bulk-destroy'), ['ids' => [$first->id, $second->id, $staff->id]])
+            ->delete(route('admin.users.bulk-destroy'), ['ids' => [$first->id, $second->id, $staff->id]])
             ->assertRedirect();
 
         $this->assertDatabaseMissing('users', ['id' => $first->id]);
         $this->assertDatabaseMissing('users', ['id' => $second->id]);
+        $this->assertDatabaseMissing('users', ['id' => $staff->id]);
         $this->assertDatabaseHas('users', ['id' => $kept->id]);
-        $this->assertDatabaseHas('users', ['id' => $staff->id]);
+    }
+
+    public function test_bulk_delete_cannot_remove_super_administrators_or_the_current_user(): void
+    {
+        $admin = $this->admin();
+        $super = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
+        $super->roles()->attach(Role::firstOrCreate(['slug' => 'super-administrator'], ['name' => 'Super Administrator']));
+
+        $this->actingAs($admin)
+            ->delete(route('admin.users.bulk-destroy'), ['ids' => [$admin->id, $super->id]])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
+        $this->assertDatabaseHas('users', ['id' => $super->id]);
     }
 
     public function test_bulk_delete_requires_the_users_delete_permission(): void
