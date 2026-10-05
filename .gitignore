@@ -27,3 +27,7 @@ Thumbs.db
 *.sql
 /files/
 /.claude/worktrees/
+
+# Word documents and temporary lock files (local notes, not part of the project)
+*.docx
+~$*
