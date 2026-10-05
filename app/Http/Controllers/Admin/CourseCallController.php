@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
@@ -21,6 +22,13 @@ use Illuminate\Validation\ValidationException;
 
 class CourseCallController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return CourseCall::class;
+    }
+
     public function index(Request $request)
     {
         $q = CourseCall::with(['courses', 'cohort'])

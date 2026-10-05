@@ -77,16 +77,20 @@
 <a href="{{ route('admin.library.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
+@php($bulkRoute = route('admin.library.bulk-destroy')) @php($bulkTableId = 'libraryTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+
 <div class="admin-table-wrap">
-<table class="admin-table">
+<table class="admin-table" id="{{ $bulkTableId }}">
 <thead>
 <tr>
-<th>Resource</th><th>Category</th><th>Language</th><th>Access</th><th>Views</th><th>Downloads</th><th>Status</th><th class="table-actions">Actions</th>
+<th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Resource</th><th>Category</th><th>Language</th><th>Access</th><th>Views</th><th>Downloads</th><th>Status</th><th class="table-actions">Actions</th>
 </tr>
 </thead>
 <tbody>
 @forelse($resources as $resource)
 <tr>
+<td><input type="checkbox" data-row-select value="{{ $resource->id }}" aria-label="Select {{ $resource->title }}"></td>
 <td>
 <strong>{{ $resource->title }}</strong>
 <small class="admin-cell-hint">{{ $resource->author ?: 'No author' }}</small>
@@ -106,7 +110,7 @@
 </td>
 </tr>
 @empty
-<tr><td colspan="8"><div class="admin-empty">No library resources found.</div></td></tr>
+<tr><td colspan="9"><div class="admin-empty">No library resources found.</div></td></tr>
 @endforelse
 </tbody>
 </table>

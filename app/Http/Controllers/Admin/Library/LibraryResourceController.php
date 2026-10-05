@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Library;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\LibraryCategory;
 use App\Models\LibraryResource;
@@ -11,6 +12,13 @@ use Illuminate\Validation\Rule;
 
 class LibraryResourceController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return LibraryResource::class;
+    }
+
     public function index(Request $request)
     {
         $query=LibraryResource::with('category')->latest();

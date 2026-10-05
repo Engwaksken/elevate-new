@@ -57,10 +57,14 @@
         <button class="btn btn-primary btn-sm">Apply</button>
     </form>
 
+    @php($bulkRoute = route('admin.course-calls.bulk-destroy')) @php($bulkTableId = 'courseCallsTable')
+    @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+
     <div class="admin-table-wrap">
-        <table class="admin-table">
+        <table class="admin-table" id="{{ $bulkTableId }}">
             <thead>
                 <tr>
+                    <th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th>
                     <th>Course Call</th>
                     <th>Included Courses</th>
                     <th>Status</th>
@@ -73,6 +77,7 @@
             <tbody>
                 @forelse($calls as $call)
                     <tr>
+                        <td><input type="checkbox" data-row-select value="{{ $call->id }}" aria-label="Select {{ $call->title }}"></td>
                         <td>
                             <strong>{{ $call->title }}</strong>
                             <small class="admin-cell-hint">
@@ -126,7 +131,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6">No Course Calls found.</td>
+                        <td colspan="7">No Course Calls found.</td>
                     </tr>
                 @endforelse
             </tbody>

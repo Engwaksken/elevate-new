@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Admin\Elearning;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Cohort;
 use App\Models\Course;
@@ -10,6 +11,13 @@ use Illuminate\Http\Request;
 
 class EnrolmentAdminController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Enrolment::class;
+    }
+
     public function index(Request $request)
     {
         $query=Enrolment::with(['course','user','cohort'])->latest();

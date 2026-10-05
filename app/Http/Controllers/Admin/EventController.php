@@ -1,9 +1,12 @@
 <?php
 namespace App\Http\Controllers\Admin;
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\{Cohort,Course,Event,EventAttendanceRecord};
 use Illuminate\Http\Request;
 class EventController extends Controller{
+ use BulkDeletesRecords;
+ protected function bulkDeleteModel(): string{return Event::class;}
  public function index(Request $r){
   $q=Event::withCount(['registrations','attendanceRecords'])->with(['cohort','course']);
   if($s=trim((string)$r->search))$q->where(fn($x)=>$x->where('title','like',"%$s%")->orWhere('venue','like',"%$s%")->orWhere('district','like',"%$s%"));

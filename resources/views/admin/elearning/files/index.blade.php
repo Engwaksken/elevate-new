@@ -40,10 +40,14 @@
     <a href="{{ route('admin.elearning.learning-files.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
+@php($bulkRoute = route('admin.elearning.learning-files.bulk-destroy')) @php($bulkTableId = 'learningFilesTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+
 <div class="admin-table-wrap">
-<table class="admin-table">
+<table class="admin-table" id="{{ $bulkTableId }}">
 <thead>
 <tr>
+    <th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th>
     <th>File</th>
     <th>Course</th>
     <th>Type</th>
@@ -55,6 +59,7 @@
 <tbody>
 @forelse($files as $file)
 <tr>
+    <td><input type="checkbox" data-row-select value="{{ $file->id }}" aria-label="Select {{ $file->original_name }}"></td>
     <td><strong>{{ $file->original_name }}</strong></td>
     <td>{{ $courses->firstWhere('id',$file->course_id)?->title ?: '—' }}</td>
     <td>{{ $file->mime_type ?: '—' }}</td>
@@ -78,7 +83,7 @@
     </td>
 </tr>
 @empty
-<tr><td colspan="6"><div class="admin-empty">No learning files found.</div></td></tr>
+<tr><td colspan="7"><div class="admin-empty">No learning files found.</div></td></tr>
 @endforelse
 </tbody>
 </table>

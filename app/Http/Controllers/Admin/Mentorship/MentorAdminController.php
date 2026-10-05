@@ -2,12 +2,20 @@
 
 namespace App\Http\Controllers\Admin\Mentorship;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\MentorProfile;
 use Illuminate\Http\Request;
 
 class MentorAdminController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return MentorProfile::class;
+    }
+
     public function create()
     {
         return view('admin.partners.form', ['type' => 'mentor', 'profile' => new MentorProfile(), 'users' => \App\Models\User::where('user_type', 'participant')->orderBy('name')->get()]);

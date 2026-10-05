@@ -31,11 +31,15 @@
 <button class="btn btn-primary btn-sm">Apply</button>
 </form>
 
-<div class="admin-table-wrap"><table class="admin-table">
-<thead><tr><th>Job</th><th>Employer</th><th>Location</th><th>Deadline</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
+@php($bulkRoute = route('admin.jobs.bulk-destroy')) @php($bulkTableId = 'jobsTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}">
+<thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Job</th><th>Employer</th><th>Location</th><th>Deadline</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
 <tbody>
 @forelse($jobs as $job)
 <tr>
+<td><input type="checkbox" data-row-select value="{{ $job->id }}" aria-label="Select {{ $job->title }}"></td>
 <td><strong>{{ $job->title }}</strong><small class="admin-cell-hint">{{ ucfirst(str_replace('_',' ',$job->employment_type)) }}</small></td>
 <td>{{ $job->employer?->company_name ?: '—' }}</td>
 <td>{{ trim(($job->location ?: '').($job->country ? ', '.$job->country : '')) ?: '—' }}</td>
@@ -47,7 +51,7 @@
 <button type="button" class="btn-icon danger" data-modal-open="deleteJob{{ $job->id }}" title="Archive"><i class="fas fa-box-archive"></i></button>
 </div></td>
 </tr>
-@empty<tr><td colspan="6"><div class="admin-empty">No jobs found.</div></td></tr>@endforelse
+@empty<tr><td colspan="7"><div class="admin-empty">No jobs found.</div></td></tr>@endforelse
 </tbody></table></div>
 <div class="admin-pagination">{{ $jobs->links() }}</div>
 </div>

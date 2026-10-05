@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Admin\Elearning;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\LearningFile;
@@ -11,6 +12,13 @@ use Illuminate\Support\Str;
 
 class LearningFileAdminController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return LearningFile::class;
+    }
+
     public function index(Request $request)
     {
         $query=LearningFile::query()->latest();

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Jobs;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Employer;
 use App\Models\Job;
@@ -11,6 +12,13 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class JobAdminController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Job::class;
+    }
+
     public function index(Request $request)
     {
         $query=Job::with('employer')->latest();

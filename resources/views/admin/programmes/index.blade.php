@@ -20,9 +20,12 @@
 <select name="per_page">@foreach([10,20,25,50,100] as $n)<option value="{{ $n }}" @selected((int)request('per_page',20)===$n)>{{ $n }}/page</option>@endforeach</select>
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.programmes.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
-<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Programme</th><th>Dates</th><th>Targets &amp; Progress</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@php($bulkRoute = route('admin.programmes.bulk-destroy')) @php($bulkTableId = 'programmesTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Programme</th><th>Dates</th><th>Targets &amp; Progress</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($programmes as $programme)
 <tr>
+<td><input type="checkbox" data-row-select value="{{ $programme->id }}" aria-label="Select {{ $programme->name }}"></td>
 <td><strong>{{ $programme->name }}</strong><small class="admin-cell-hint">{{ $programme->code ?: 'No code' }}</small></td>
 <td>{{ optional($programme->start_date)->format('d M Y') ?: '—' }} — {{ optional($programme->end_date)->format('d M Y') ?: '—' }}</td>
 <td style="min-width:170px">
@@ -33,7 +36,7 @@
 <td><span class="status-chip {{ $programme->status }}">{{ ucfirst(str_replace('_',' ',$programme->status)) }}</span></td>
 <td class="table-actions"><div class="action-group"><button class="btn-icon" type="button" data-modal-open="programmeTargets{{ $programme->id }}" title="Targets and progress"><i class="fas fa-bullseye"></i></button><button class="btn-icon" type="button" data-modal-open="programme{{ $programme->id }}" title="Edit"><i class="fas fa-pen"></i></button><button class="btn-icon danger" type="button" data-modal-open="programmeDelete{{ $programme->id }}" title="Delete"><i class="fas fa-trash"></i></button></div></td>
 </tr>
-@empty<tr><td colspan="5"><div class="admin-empty">No programmes found.</div></td></tr>@endforelse
+@empty<tr><td colspan="6"><div class="admin-empty">No programmes found.</div></td></tr>@endforelse
 </tbody></table></div>
 <div class="admin-pagination">{{ $programmes->links() }}</div>
 </div>

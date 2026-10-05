@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Services\AuditService;
@@ -10,6 +11,13 @@ use Illuminate\Http\Request;
 
 class BranchController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Branch::class;
+    }
+
     public function index(Request $request)
     {
         $query=Branch::query();

@@ -2,12 +2,20 @@
 
 namespace App\Http\Controllers\Admin\Jobs;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Employer;
 use Illuminate\Http\Request;
 
 class EmployerAdminController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Employer::class;
+    }
+
     public function create()
     {
         return view('admin.partners.form', ['type' => 'employer', 'profile' => new Employer(), 'users' => \App\Models\User::where('user_type', 'participant')->orderBy('name')->get()]);

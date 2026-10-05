@@ -19,16 +19,20 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.mentorship.matches.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Mentor</th><th>Mentee</th><th>Period</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@php($bulkRoute = route('admin.mentorship.matches.bulk-destroy')) @php($bulkTableId = 'matchesTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Mentor</th><th>Mentee</th><th>Period</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($matches as $match)
 <tr>
+<td><input type="checkbox" data-row-select value="{{ $match->id }}" aria-label="Select match {{ $match->id }}"></td>
 <td>{{ data_get($match,'mentor.user.name',data_get($match,'mentor.name','—')) }}</td>
 <td>{{ data_get($match,'mentee.user.name',data_get($match,'mentee.name','—')) }}</td>
 <td>{{ optional($match->start_date)->format('d M Y') ?: '—' }} — {{ optional($match->end_date)->format('d M Y') ?: '—' }}</td>
 <td><span class="status-chip {{ $match->status }}">{{ ucfirst($match->status) }}</span></td>
 <td class="table-actions"><div class="action-group"><button type="button" class="btn-icon" data-modal-open="editMatch{{ $match->id }}"><i class="fas fa-pen"></i></button><button type="button" class="btn-icon danger" data-modal-open="deleteMatch{{ $match->id }}"><i class="fas fa-trash"></i></button></div></td>
 </tr>
-@empty<tr><td colspan="5"><div class="admin-empty">No mentor matches found.</div></td></tr>@endforelse
+@empty<tr><td colspan="6"><div class="admin-empty">No mentor matches found.</div></td></tr>@endforelse
 </tbody></table></div>
 <div class="admin-pagination">{{ $matches->links() }}</div>
 </div>

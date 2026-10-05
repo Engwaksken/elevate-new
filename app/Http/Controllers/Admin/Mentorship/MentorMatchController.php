@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Mentorship;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\MentorMatch;
 use App\Models\MentorProfile;
@@ -10,6 +11,13 @@ use Illuminate\Http\Request;
 
 class MentorMatchController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return MentorMatch::class;
+    }
+
     public function index(Request $request)
     {
         $query = MentorMatch::with(['mentor','mentee'])->latest();

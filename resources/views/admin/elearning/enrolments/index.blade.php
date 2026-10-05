@@ -24,9 +24,13 @@
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.elearning.enrolments.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Learner</th><th>Course</th><th>Cohort</th><th>Status</th><th>Enrolled</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@php($bulkRoute = route('admin.elearning.enrolments.bulk-destroy')) @php($bulkTableId = 'enrolmentsTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Learner</th><th>Course</th><th>Cohort</th><th>Status</th><th>Enrolled</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($enrolments as $enrolment)
 <tr>
+<td><input type="checkbox" data-row-select value="{{ $enrolment->id }}" aria-label="Select {{ $enrolment->user?->name ?: 'enrolment' }}"></td>
 <td><strong>{{ $enrolment->user?->name ?: '—' }}</strong><small class="admin-cell-hint">{{ $enrolment->user?->email }}</small><small class="admin-cell-hint">Participant ID: {{ $enrolment->enrolment_code }}</small></td>
 <td>{{ $enrolment->course?->title ?: '—' }}</td>
 <td>{{ $enrolment->cohort?->name ?: '—' }}</td>
@@ -37,7 +41,7 @@
 <button type="button" class="btn-icon danger" data-modal-open="deleteEnrolment{{ $enrolment->id }}"><i class="fas fa-trash"></i></button>
 </div></td>
 </tr>
-@empty<tr><td colspan="6"><div class="admin-empty">No enrolments found.</div></td></tr>@endforelse
+@empty<tr><td colspan="7"><div class="admin-empty">No enrolments found.</div></td></tr>@endforelse
 </tbody></table></div><div class="admin-pagination">{{ $enrolments->links() }}</div>
 </div>
 

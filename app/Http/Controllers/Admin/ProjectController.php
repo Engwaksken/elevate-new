@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Programme;
 use App\Models\Project;
@@ -11,6 +12,13 @@ use Illuminate\Http\Request;
 
 class ProjectController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Project::class;
+    }
+
     public function index(Request $request)
     {
         $query=Project::with('programme');

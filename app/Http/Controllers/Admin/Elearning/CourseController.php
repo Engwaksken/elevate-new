@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Elearning;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\Branch;
@@ -14,6 +15,13 @@ use Illuminate\Support\Facades\Storage;
 
 class CourseController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Course::class;
+    }
+
     public function index(Request $request)
     {
         $query=Course::query()

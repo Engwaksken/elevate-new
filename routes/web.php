@@ -472,6 +472,13 @@ Route::prefix('admin/elearning')
             ->middleware('permission:students.view')
             ->name('enrolments.index');
 
+        Route::delete(
+            '/enrolments/bulk-delete',
+            [EnrolmentAdminController::class, 'bulkDestroy']
+        )
+            ->middleware('permission:students.edit')
+            ->name('enrolments.bulk-destroy');
+
         Route::post(
             '/enrolments',
             [EnrolmentAdminController::class, 'store']
@@ -594,6 +601,9 @@ Route::prefix('admin/mentorship')->name('admin.mentorship.')->middleware(['auth'
     Route::delete('/mentors/{mentor}',[MentorAdminController::class,'destroy'])
         ->middleware('permission:mentors.manage')->name('mentors.destroy');
 
+    Route::delete('/mentors/bulk-delete',[MentorAdminController::class,'bulkDestroy'])
+        ->middleware('permission:mentors.manage')->name('mentors.bulk-destroy');
+
     Route::get('/matches',[MentorMatchController::class,'index'])
         ->middleware('permission:mentorship.match')->name('matches.index');
     Route::post('/matches',[MentorMatchController::class,'store'])
@@ -602,6 +612,9 @@ Route::prefix('admin/mentorship')->name('admin.mentorship.')->middleware(['auth'
         ->middleware('permission:mentorship.match')->name('matches.update');
     Route::delete('/matches/{match}',[MentorMatchController::class,'destroy'])
         ->middleware('permission:mentorship.match')->name('matches.destroy');
+
+    Route::delete('/matches/bulk-delete',[MentorMatchController::class,'bulkDestroy'])
+        ->middleware('permission:mentorship.match')->name('matches.bulk-destroy');
 });
 
 Route::get('/jobs',[JobBrowseController::class,'index'])->name('jobs.index');
@@ -635,6 +648,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
     Route::get('/mentorship/mentees/{mentee}/recommendations',[MentorRecommendationController::class,'show'])
         ->middleware('permission:mentorship.match')->name('mentorship.recommendations');
 
+    Route::delete('/jobs/employers/bulk-delete',[EmployerAdminController::class,'bulkDestroy'])
+        ->middleware('permission:employers.approve')->name('jobs.employers.bulk-destroy');
+
     Route::get('/jobs/employers',[EmployerAdminController::class,'index'])
         ->middleware('permission:employers.approve')->name('jobs.employers.index');
     Route::get('/jobs/employers/create', [EmployerAdminController::class, 'create'])->middleware('permission:employers.approve')->name('jobs.employers.create');
@@ -650,6 +666,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 
     Route::get('/jobs',[JobAdminController::class,'index'])
         ->middleware('permission:jobs.manage')->name('jobs.index');
+
+    Route::delete('/jobs/bulk-delete',[JobAdminController::class,'bulkDestroy'])
+        ->middleware('permission:jobs.manage')->name('jobs.bulk-destroy');
+
     Route::post('/jobs',[JobAdminController::class,'store'])
         ->middleware('permission:jobs.manage')->name('jobs.store');
     Route::post('/jobs/import',[JobAdminController::class,'import'])
@@ -740,6 +760,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::prefix('admin/library')->name('admin.library.')->middleware(['auth','staff','permission:library.manage'])->group(function () {
     Route::get('/',[LibraryResourceController::class,'index'])->name('index');
+    Route::delete('/bulk-delete',[LibraryResourceController::class,'bulkDestroy'])->name('bulk-destroy');
     Route::post('/',[LibraryResourceController::class,'store'])->name('store');
     Route::put('/{resource}',[LibraryResourceController::class,'update'])->name('update');
     Route::delete('/{resource}',[LibraryResourceController::class,'destroy'])->name('destroy');
@@ -930,6 +951,7 @@ Route::get('/events/{event}',[EventPortalController::class,'show'])->name('event
 Route::middleware(['auth', 'verified'])->group(function(){Route::post('/events/{event}/register',[EventPortalController::class,'register'])->name('events.register');});
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function(){
  Route::get('/events',[EventController::class,'index'])->name('events.index');
+ Route::delete('/events/bulk-delete',[EventController::class,'bulkDestroy'])->name('events.bulk-destroy');
  Route::post('/events',[EventController::class,'store'])->name('events.store');
  Route::put('/events/{event}',[EventController::class,'update'])->name('events.update');
  Route::delete('/events/{event}',[EventController::class,'destroy'])->name('events.destroy');
@@ -980,6 +1002,9 @@ Route::prefix('admin/elearning')->name('admin.elearning.')->middleware(['auth', 
     // per-course route with that name: /admin/elearning/courses/{course}/files.
     Route::get('/learning-files',[LearningFileAdminController::class,'index'])
         ->middleware('permission:courses.edit')->name('learning-files.index');
+
+    Route::delete('/learning-files/bulk-delete',[LearningFileAdminController::class,'bulkDestroy'])
+        ->middleware('permission:courses.edit')->name('learning-files.bulk-destroy');
 
     Route::delete('/learning-files/{file}',[LearningFileAdminController::class,'destroy'])
         ->middleware('permission:courses.edit')->name('learning-files.destroy');
@@ -1057,6 +1082,7 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/course-calls',[CourseCallController::class,'store'])->name('course-calls.store');
         Route::put('/course-calls/{courseCall}',[CourseCallController::class,'update'])->name('course-calls.update');
         Route::delete('/course-calls/{courseCall}',[CourseCallController::class,'destroy'])->name('course-calls.destroy');
+        Route::delete('/course-calls/bulk-delete',[CourseCallController::class,'bulkDestroy'])->name('course-calls.bulk-destroy');
         Route::post('/course-calls/{courseCall}/questions',[CourseCallController::class,'addQuestion'])->name('course-calls.questions.store');
     });
 

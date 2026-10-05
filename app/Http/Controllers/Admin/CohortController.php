@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Cohort;
@@ -13,6 +14,13 @@ use Illuminate\Http\Request;
 
 class CohortController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Cohort::class;
+    }
+
     public function index(Request $request)
     {
         $query=Cohort::with(['programme','project','branch']);

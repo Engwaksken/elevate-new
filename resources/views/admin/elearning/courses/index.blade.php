@@ -62,10 +62,14 @@
     <a href="{{ route('admin.elearning.courses.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
+@php($bulkRoute = route('admin.elearning.courses.bulk-destroy')) @php($bulkTableId = 'coursesTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+
 <div class="admin-table-wrap">
-<table class="admin-table">
+<table class="admin-table" id="{{ $bulkTableId }}">
 <thead>
 <tr>
+    <th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th>
     <th>Course</th>
     <th>Mode</th>
     <th>Dates</th>
@@ -79,6 +83,7 @@
 <tbody>
 @forelse($courses as $course)
 <tr>
+    <td><input type="checkbox" data-row-select value="{{ $course->id }}" aria-label="Select {{ $course->title }}"></td>
     <td><strong>{{ $course->title }}</strong><small class="admin-cell-hint">{{ $course->code ?: 'No course code' }}</small><small class="admin-cell-hint">{{ $course->branches->pluck('name')->join(', ') }}</small></td>
     <td>{{ ucfirst(str_replace('_',' ',$course->delivery_mode)) }}</td>
     <td>{{ optional($course->start_date)->format('d M Y') ?: '—' }} — {{ optional($course->end_date)->format('d M Y') ?: '—' }}</td>
@@ -98,7 +103,7 @@
 </tr>
 
 <tr>
-<td colspan="8">
+<td colspan="9">
 <details>
 <summary><strong>Course structure</strong> · {{ $course->modules_count }} module(s)</summary>
 
@@ -152,7 +157,7 @@
 </tr>
 
 @empty
-<tr><td colspan="8"><div class="admin-empty">No courses found.</div></td></tr>
+<tr><td colspan="9"><div class="admin-empty">No courses found.</div></td></tr>
 @endforelse
 </tbody>
 </table>

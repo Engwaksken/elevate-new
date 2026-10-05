@@ -21,12 +21,16 @@
 <a href="{{ route('admin.mentorship.mentors.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
+@php($bulkRoute = route('admin.mentorship.mentors.bulk-destroy')) @php($bulkTableId = 'mentorsTable')
+@include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
+
 <div class="admin-table-wrap">
-<table class="admin-table">
-<thead><tr><th>Mentor</th><th>Organisation</th><th>Job Title</th><th>Status</th><th>Applied</th><th class="table-actions">Actions</th></tr></thead>
+<table class="admin-table" id="{{ $bulkTableId }}">
+<thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Mentor</th><th>Organisation</th><th>Job Title</th><th>Status</th><th>Applied</th><th class="table-actions">Actions</th></tr></thead>
 <tbody>
 @forelse($mentors as $mentor)
 <tr>
+<td><input type="checkbox" data-row-select value="{{ $mentor->id }}" aria-label="Select {{ data_get($mentor,'user.name','Mentor') }}"></td>
 <td><strong>{{ data_get($mentor,'user.name','—') }}</strong><small class="admin-cell-hint">{{ data_get($mentor,'user.email','') }}</small></td>
 <td>{{ $mentor->organisation ?: '—' }}</td>
 <td>{{ $mentor->job_title ?: '—' }}</td>
@@ -41,7 +45,7 @@
 <button type="button" class="btn-icon danger" title="Delete" data-modal-open="deleteMentor{{ $mentor->id }}"><i class="fas fa-trash"></i></button>
 </div></td>
 </tr>
-@empty<tr><td colspan="6"><div class="admin-empty">No mentor applications found.</div></td></tr>@endforelse
+@empty<tr><td colspan="7"><div class="admin-empty">No mentor applications found.</div></td></tr>@endforelse
 </tbody>
 </table>
 </div>

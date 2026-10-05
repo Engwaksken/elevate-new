@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Programme;
 use App\Models\User;
@@ -11,6 +12,13 @@ use Illuminate\Http\Request;
 
 class ProgrammeController extends Controller
 {
+    use BulkDeletesRecords;
+
+    protected function bulkDeleteModel(): string
+    {
+        return Programme::class;
+    }
+
     public function index(Request $request)
     {
         $query=Programme::query()->with(['targets' => fn($q)=>$q->orderByDesc('id')]);
