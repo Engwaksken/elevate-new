@@ -31,7 +31,7 @@
                 ElevateHer360 brings training, mentorship,
                 career development, employment opportunities
                 and digital resources together under one
-                participant account.
+                account.
             </p>
 
             <div class="hero-actions">
@@ -67,7 +67,7 @@
                         class="btn btn-primary btn-lg"
                     >
                         <i class="fas fa-user-plus"></i>
-                        Create Participant Account
+                        Create Your Account
                     </a>
 
                     <a
@@ -75,7 +75,7 @@
                         class="btn btn-outline btn-lg"
                     >
                         <i class="fas fa-right-to-bracket"></i>
-                        Participant Sign In
+                        Sign In
                     </a>
 
                 @endauth
@@ -610,7 +610,7 @@
                 </div>
 
                 <p>
-                    Longitudinal outcome tracking.
+                Outcome tracking.
                 </p>
 
             </article>
@@ -633,7 +633,7 @@
 
             <div>
 
-                <div class="eyebrow text-secondary">
+                <div class="eyebrow ">
                     Take the next step
                 </div>
 
