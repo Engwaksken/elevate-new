@@ -434,6 +434,99 @@ p {
     gap: 10px;
 }
 
+/* Keep brand + Sign In/Register on screen at every width (there is no mobile menu toggle):
+   the links drop to their own scrollable row below ~940px, and the auth buttons go
+   icon-only on phones (their text stays available to screen readers). */
+.site-header .brand,
+.site-header .nav-actions {
+    flex-shrink: 0;
+}
+
+.site-header .nav-actions .btn {
+    white-space: nowrap;
+}
+
+@media (max-width: 940px) {
+    .site-header .nav {
+        flex-wrap: wrap;
+        row-gap: 4px;
+        padding-top: 12px;
+    }
+
+    .site-header .nav-links {
+        order: 3;
+        width: 100%;
+        gap: 22px;
+        justify-content: center;
+        overflow-x: auto;
+        padding: 2px 0 12px;
+        scrollbar-width: none;
+    }
+
+    .site-header .nav-links::-webkit-scrollbar {
+        display: none;
+    }
+
+    .site-header .nav-links a {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 640px) {
+    .site-header .nav {
+        min-height: 0;
+        gap: 12px;
+        padding-top: 10px;
+    }
+
+    .site-header .nav-links {
+        justify-content: flex-start;
+        gap: 16px;
+        padding-bottom: 10px;
+        font-size: 0.9rem;
+    }
+
+    .site-header .brand {
+        gap: 8px;
+        min-width: 0;
+        flex-shrink: 1;
+        font-size: 18px;
+    }
+
+    .site-header .brand img {
+        max-width: 44px !important;
+        max-height: 40px !important;
+    }
+
+    .site-header .nav-actions {
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .site-header .nav-actions .btn {
+        width: 38px;
+        min-height: 38px;
+        padding: 0;
+    }
+
+    .site-header .nav-actions .btn span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 340px) {
+    .site-header .brand {
+        font-size: 16px;
+    }
+}
+
 /* ==========================================================================
    Grids
    ========================================================================== */
@@ -2594,10 +2687,6 @@ tbody tr:hover {
     .nav,
     .page-shell {
         width: calc(100% - 20px);
-    }
-
-    .nav-links {
-        display: none;
     }
 
     .brand small {

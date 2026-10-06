@@ -4,25 +4,36 @@
 @section('content')
 
 <style>
-.eh-learning-hero{position:relative;overflow:hidden;border-radius:22px;padding:44px 40px;margin-bottom:28px;background:linear-gradient(120deg,#5f0000,#800000 55%,#a52a2a);color:#fff}
-.eh-learning-hero::after{content:"";position:absolute;right:-70px;top:-70px;width:260px;height:260px;border-radius:50%;background:rgba(212,175,55,.18)}
-.eh-learning-hero .eh-kicker{color:#f7e7a9}
-.eh-learning-hero h1{margin:8px 0 10px;color:#fff;font-size:2.2rem}
-.eh-learning-hero p{max-width:640px;margin:0 0 22px;color:rgba(255,255,255,.9)}
-/* Full-bleed band: breaks out of the guest page-shell container; content stays aligned to it. */
-.page-shell > .eh-learning-hero{width:100vw;margin:-40px calc(50% - 50vw) 28px;border-radius:0;padding:52px max(24px,calc(50vw - 590px))}
-.participant-site-main .eh-learning-hero{width:100%}
+/* Hero: rounded card by default (participant sidebar shell, or browsers without :has). */
+.eh-learning-hero{position:relative;overflow:hidden;border-radius:20px;padding:40px 36px;margin:0 0 32px;background:linear-gradient(120deg,#5f0000,#800000 55%,#a52a2a);color:#fff}
+.eh-learning-hero::after{content:"";position:absolute;right:-70px;top:-70px;width:260px;height:260px;border-radius:50%;background:rgba(212,175,55,.18);pointer-events:none}
 .eh-learning-hero > *{position:relative;z-index:1}
-/* Search, format and button on one row (global CSS makes form controls 100% wide). */
-.eh-learning-search{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,220px) auto;gap:10px;align-items:center;width:100%}
-.eh-learning-search .search-box{min-width:0}
-.eh-learning-search select{width:100%}
-.eh-learning-search .btn{padding-inline:26px;white-space:nowrap}
-.eh-learning-search .search-box input{min-height:46px;background:#fff;border:0;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
-.eh-learning-search select{min-height:46px;padding:0 12px;border:0;border-radius:10px;background:#fff;color:#344054;font:inherit}
-.eh-learning-search .btn{min-height:46px;background:#d4af37;border-color:#d4af37;color:#3a2c00;font-weight:700}
-.eh-learning-search .btn:hover{background:#e6c55a;border-color:#e6c55a;color:#3a2c00}
-.eh-course-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.eh-learning-hero .eh-kicker{color:#f7e7a9}
+.eh-learning-hero h1{margin:8px 0 10px;color:#fff;font-size:2.2rem;line-height:1.2}
+.eh-learning-hero p{max-width:640px;margin:0 0 24px;color:rgba(255,255,255,.9)}
+
+/* Guest page: main.page-shell has overflow-x:hidden, so a 100vw breakout gets clipped.
+   Instead let this page's main span the viewport and re-constrain everything except the hero. */
+main.page-shell:has(> .eh-learning-hero){--eh-gutter:24px;width:100%;padding-top:0}
+main.page-shell:has(> .eh-learning-hero) > :not(.eh-learning-hero){width:min(1180px,calc(100% - 2 * var(--eh-gutter)));margin-inline:auto}
+main.page-shell > .eh-learning-hero{border-radius:0;padding:56px max(var(--eh-gutter,24px),calc(50% - 590px)) 60px}
+
+/* Search row: input, format and button on one row, capped width, equal 48px heights. */
+.eh-learning-search{display:grid;grid-template-columns:minmax(0,1fr) 200px auto;gap:10px;align-items:stretch;width:100%;max-width:920px}
+.eh-learning-search .search-box{position:relative;min-width:0}
+.eh-learning-search .search-box > i{left:16px;color:#98a2b3}
+.eh-learning-search input,
+.eh-learning-search select{width:100%;height:48px;min-height:48px;margin:0;border:0;border-radius:12px;background-color:#fff;color:#344054;font:inherit;font-size:.95rem;box-shadow:0 6px 18px rgba(0,0,0,.14)}
+.eh-learning-search input{padding:0 16px 0 44px}
+.eh-learning-search select{padding:0 14px}
+.eh-learning-search input:focus,
+.eh-learning-search select:focus{outline:3px solid rgba(212,175,55,.6);outline-offset:1px}
+.eh-learning-search .btn{height:48px;min-height:48px;padding:0 26px;border-radius:12px;white-space:nowrap;background:#d4af37;border-color:#d4af37;color:#3a2c00;font-weight:700}
+.eh-learning-search .btn:hover,
+.eh-learning-search .btn:focus-visible{background:#e6c55a;border-color:#e6c55a;color:#3a2c00}
+
+.eh-learning-actions{margin:0 0 24px}
+.eh-course-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
 .eh-course-card{display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid #e5e7eb;border-radius:16px;text-decoration:none;color:inherit;box-shadow:0 1px 2px rgba(16,24,40,.04);transition:transform .18s ease,box-shadow .18s ease}
 .eh-course-card:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(16,24,40,.12)}
 .eh-course-thumb{position:relative;aspect-ratio:16/9;background:#f3f4f6;overflow:hidden}
@@ -35,7 +46,18 @@
 .eh-course-meta span{display:inline-flex;align-items:center;gap:5px}
 .eh-course-meta i{color:#800000}
 @media(max-width:980px){.eh-course-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:620px){.eh-course-grid{grid-template-columns:1fr}.eh-learning-hero,.page-shell > .eh-learning-hero{padding:32px 16px}.eh-learning-search{grid-template-columns:1fr}.eh-learning-search .btn{width:100%}.eh-learning-hero h1{font-size:1.8rem}}
+@media(max-width:640px){
+    main.page-shell:has(> .eh-learning-hero){--eh-gutter:16px}
+    .eh-learning-hero{padding:28px 20px;border-radius:16px}
+    main.page-shell > .eh-learning-hero{padding:36px var(--eh-gutter,16px) 40px}
+    .eh-learning-hero h1{font-size:1.8rem}
+    .eh-learning-search{grid-template-columns:minmax(0,1fr) auto}
+    .eh-learning-search .search-box{grid-column:1 / -1}
+    .eh-course-grid{grid-template-columns:1fr;gap:18px}
+}
+@media(max-width:360px){
+    .eh-learning-search{grid-template-columns:1fr}
+}
 </style>
 
 <section class="eh-learning-hero">
@@ -56,7 +78,7 @@
 
 @auth
     @if(auth()->user()->isParticipant() && Route::has('learning.my-courses'))
-        <div style="margin-bottom:22px"><a href="{{ route('learning.my-courses') }}" class="btn btn-primary"><i class="fas fa-book-open"></i> Go to My Learning</a></div>
+        <div class="eh-learning-actions"><a href="{{ route('learning.my-courses') }}" class="btn btn-primary"><i class="fas fa-book-open"></i> Go to My Learning</a></div>
     @endif
 @endauth
 
