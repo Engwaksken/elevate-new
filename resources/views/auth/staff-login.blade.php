@@ -24,6 +24,7 @@
 <main class="eh-staff-login-shell">
     <section class="eh-staff-login-brand" aria-label="WITU staff portal">
         <div class="eh-staff-login-brand-content">
+            <x-back-to-website tone="dark" class="eh-back-home--panel" />
             <div class="eh-staff-login-badge">WITU STAFF PORTAL</div>
             <h1>Manage programmes and participant impact.</h1>
             <p>Secure access for authorised WITU staff, programme teams and administrators.</p>
@@ -32,7 +33,6 @@
 
     <section class="eh-staff-login-form-side">
         <div class="eh-staff-login-card">
-            <x-back-to-website class="eh-back-home--card" />
             <div class="eh-staff-login-heading">
                 <span class="eh-staff-authorised-badge"><i class="fas fa-shield-halved"></i> Authorised staff only</span>
                 <h2>Staff Sign In</h2>

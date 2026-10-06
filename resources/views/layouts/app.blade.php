@@ -94,7 +94,7 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 </header>
 
 <main id="main-content" class="{{ request()->routeIs('home')?'site-main site-main-home':'site-main page-shell' }}">
-@if(request()->routeIs('login', 'register', 'partners.*', 'public.partners.*', 'password.*', 'verification.*'))
+@if(request()->routeIs('login', 'register', 'partners.*', 'public.partners.*', 'password.*', 'verification.*') && ! View::hasSection('auth_back_inline'))
 <div class="eh-auth-back"><x-back-to-website /></div>
 @endif
 @unless($inlineAuthFeedback)

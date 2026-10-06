@@ -17,6 +17,7 @@
 <main class="eh-staff-login-shell">
     <section class="eh-staff-login-brand" aria-label="WITU staff portal">
         <div class="eh-staff-login-brand-content">
+            <x-back-to-website tone="dark" class="eh-back-home--panel" />
             <div class="eh-staff-login-badge">WITU STAFF PORTAL</div>
             <h1>Reset your staff password.</h1>
             <p>We will email a secure reset link to your authorised staff email address.</p>
@@ -25,7 +26,6 @@
 
     <section class="eh-staff-login-form-side">
         <div class="eh-staff-login-card">
-            <x-back-to-website class="eh-back-home--card" />
             <div class="eh-staff-login-heading">
                 <span class="eh-staff-authorised-badge"><i class="fas fa-shield-halved"></i> Authorised staff only</span>
                 <h2>Forgot Password</h2>

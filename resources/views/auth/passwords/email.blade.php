@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('auth_back_inline', '1')
 
 @section('title', 'Forgot Password | ElevateHer360')
 
@@ -7,6 +8,7 @@
     <div class="eh-login-shell">
         <section class="eh-login-side">
             <div class="eh-login-side__inner">
+                <x-back-to-website tone="dark" class="eh-back-home--panel" />
                 <span class="eh-login-side__eyebrow">ElevateHer360</span>
 
                 <h1>Reset your password.</h1>

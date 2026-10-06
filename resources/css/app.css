@@ -564,6 +564,28 @@ p {
     margin-bottom: 18px;
 }
 
+/* On the maroon left panel of the sign-in pages. */
+.eh-back-home--dark {
+    border-color: rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.eh-back-home--dark:hover,
+.eh-back-home--dark:focus-visible {
+    border-color: #ffffff;
+    background: #ffffff;
+    color: var(--primary);
+}
+
+.eh-back-home--panel {
+    display: flex;
+    width: fit-content;
+    align-self: flex-start;
+    margin-bottom: 22px;
+}
+
 /* Partners menu (mentor / employer sign in & sign up) beside the guest auth buttons. */
 .partner-menu {
     position: relative;

@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('auth_back_inline', '1')
 
 @section('title','Reset Password | ElevateHer360')
 
@@ -9,6 +10,7 @@
     <section class="eh-auth-hero">
 
         <div class="eh-auth-hero-inner">
+            <x-back-to-website tone="dark" class="eh-back-home--panel" />
 
             <div class="eh-auth-gold-line"></div>
 

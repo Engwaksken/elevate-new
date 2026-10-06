@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('auth_back_inline', '1')
 
 @section('title','Create Participant Account | ElevateHer360')
 
@@ -10,6 +11,7 @@
     <section class="eh-register-hero">
 
         <div class="eh-register-hero-inner">
+            <x-back-to-website tone="dark" class="eh-back-home--panel" />
 
             <div class="eh-register-gold-line"></div>
 

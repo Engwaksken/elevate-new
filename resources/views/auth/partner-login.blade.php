@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('auth_back_inline', '1')
 
 @php
     $isMentor = $type === 'mentor';
@@ -12,6 +13,7 @@
     <div class="eh-login-shell">
         <section class="eh-login-side">
             <div class="eh-login-side__inner">
+                <x-back-to-website tone="dark" class="eh-back-home--panel" />
                 <span class="eh-login-side__eyebrow">ElevateHer360</span>
 
                 <h1>{{ $isMentor ? 'Welcome back, mentor.' : 'Welcome back, employer.' }}</h1>
