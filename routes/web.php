@@ -126,6 +126,8 @@ use App\Http\Controllers\HR\StaffAppraisalController;
 use App\Http\Controllers\Auth\StaffAuthController;
 use App\Http\Controllers\Admin\HR\StaffExitController;
 use App\Http\Controllers\Admin\Procurement\SupplierController;
+use App\Http\Controllers\Admin\MasterLists\DepartmentController as MasterListDepartmentController;
+use App\Http\Controllers\Admin\MasterLists\FundingSourceController as MasterListFundingSourceController;
 use App\Http\Controllers\Admin\SurveyController;
 use App\Http\Controllers\Participant\SurveyResponseController;
 use App\Http\Controllers\Admin\ProgrammeManagement\TaskController;
@@ -908,7 +910,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         Route::post('/suppliers',[SupplierController::class,'store'])->middleware('permission:procurement.create')->name('suppliers.store');
         Route::post('/suppliers/{supplier}/approve',[SupplierController::class,'approve'])->middleware('permission:procurement.approve')->name('suppliers.approve');
 
-        Route::get('/requests',[PurchaseRequestController::class,'index'])->name('requests.index');
+        // Procurement Admin: procurement officers, finance, management and admins
+        // (procurement.view). Other staff use My Purchase Requests.
+        Route::get('/requests',[PurchaseRequestController::class,'index'])->middleware('permission:procurement.view')->name('requests.index');
         Route::post('/requests',[PurchaseRequestController::class,'store'])->middleware('permission:procurement.create')->name('requests.store');
         Route::post('/requests/{purchaseRequest}/submit',[PurchaseRequestController::class,'submit'])->middleware('permission:procurement.create')->name('requests.submit');
         Route::post('/requests/{purchaseRequest}/approve',[PurchaseRequestController::class,'approve'])->middleware('permission:procurement.approve')->name('requests.approve');
@@ -922,6 +926,18 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 
         Route::post('/purchase-orders/{purchaseOrder}/receive',[GoodsReceiptController::class,'store'])->middleware('permission:procurement.receive')->name('receipts.store');
     });
+
+    // Managed pick-lists. Access is checked in the controllers
+    // (App\Support\MasterListAccess): HR for departments, procurement /
+    // finance for funding sources, administrators for both.
+    foreach (['departments' => [MasterListDepartmentController::class, 'department'], 'funding-sources' => [MasterListFundingSourceController::class, 'fundingSource']] as $listPath => [$listController, $listParam]) {
+        Route::get("/{$listPath}",[$listController,'index'])->name("{$listPath}.index");
+        Route::post("/{$listPath}",[$listController,'store'])->name("{$listPath}.store");
+        Route::delete("/{$listPath}/bulk-delete",[$listController,'bulkDestroy'])->name("{$listPath}.bulk-destroy");
+        Route::put("/{$listPath}/{{$listParam}}",[$listController,'update'])->name("{$listPath}.update");
+        Route::patch("/{$listPath}/{{$listParam}}/toggle",[$listController,'toggle'])->name("{$listPath}.toggle");
+        Route::delete("/{$listPath}/{{$listParam}}",[$listController,'destroy'])->name("{$listPath}.destroy");
+    }
 
     Route::prefix('assets')->name('assets.')->group(function () {
         Route::get('/',[AssetController::class,'index'])->middleware('permission:assets.view')->name('index');

@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
@@ -78,7 +79,7 @@ class EmployeeController extends Controller
         Employee::create($request->validate([
             'user_id'=>['required','unique:employees,user_id','exists:users,id'],
             'employee_number'=>['required','unique:employees,employee_number'],
-            'department_id'=>['nullable','exists:departments,id'],
+            'department_id'=>['nullable',Rule::exists('departments','id')->where('is_active',true)],
             'position_id'=>['nullable','exists:positions,id'],
             'supervisor_user_id'=>['nullable','exists:users,id'],
             'employment_type'=>['nullable','string','max:100'],

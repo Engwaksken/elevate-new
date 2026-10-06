@@ -58,7 +58,7 @@ $employeeFormTabs = [
 <div class="form-group"><label>Status *</label><select name="status">@foreach(['active','probation','on_leave','suspended'] as $s)<option value="{{ $s }}">{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select></div>
 </div></x-form-tab>
 <x-form-tab name="placement"><div class="modal-grid">
-<div class="form-group"><label>Department</label><select name="department_id"><option value="">None</option>@foreach($departments as $x)<option value="{{ $x->id }}">{{ $x->name }}</option>@endforeach</select></div>
+<div class="form-group"><label for="employee-department">Department</label><select id="employee-department" name="department_id"><option value="">None</option>@foreach($departments as $x)<option value="{{ $x->id }}" @selected((int) old('department_id') === $x->id)>{{ $x->name }}</option>@endforeach</select>@if(\App\Support\MasterListAccess::canManageDepartments(auth()->user()))<small class="form-hint">@if($departments->isEmpty())No departments yet. @endif<a href="{{ route('admin.departments.index') }}">Manage departments</a></small>@endif</div>
 <div class="form-group"><label>Position</label><select name="position_id"><option value="">None</option>@foreach($positions as $x)<option value="{{ $x->id }}">{{ $x->title }}</option>@endforeach</select></div>
 <div class="form-group"><label>Supervisor</label><select name="supervisor_user_id"><option value="">None</option>@foreach($users as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach</select></div>
 <div class="form-group"><label>Work Location</label><input name="work_location"></div>

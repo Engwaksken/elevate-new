@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\ProgrammeManagement;
 use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Cohort;
+use App\Models\FundingSource;
 use App\Models\Programme;
 use App\Models\Project;
 use App\Models\User;
@@ -66,6 +67,7 @@ class WorkplanController extends Controller
             'projects'=>Project::orderBy('name')->get(),
             'cohorts'=>Cohort::orderBy('name')->get(),
             'users'=>User::where('user_type','staff')->orderBy('name')->get(),
+            'fundingSourceOptions'=>FundingSource::activeNames(),
             'stats'=>[
                 'total'=>Workplan::count(),
                 'draft'=>Workplan::where('status','draft')->count(),

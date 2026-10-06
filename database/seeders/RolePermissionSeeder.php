@@ -20,5 +20,9 @@ class RolePermissionSeeder extends Seeder {
         Role::whereIn('slug',['it-lead','it-assistant'])->each(function (Role $role) use ($itSupportPermissions): void {
             $role->permissions()->syncWithoutDetaching($itSupportPermissions);
         });
+        // Procurement Admin access (see the 2026_10_07 grant migration).
+        foreach (['procurement-officer'=>['procurement.view','procurement.create','procurement.approve','procurement.receive'],'finance'=>['procurement.view','procurement.approve']] as $slug=>$grants) {
+            Role::where('slug',$slug)->first()?->permissions()->syncWithoutDetaching(Permission::whereIn('slug',$grants)->pluck('id'));
+        }
     }
 }

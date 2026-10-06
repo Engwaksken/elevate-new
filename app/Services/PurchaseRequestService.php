@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Department;
+use App\Models\FundingSource;
 use App\Models\PurchaseRequest;
 use Illuminate\Support\Facades\DB;
 
@@ -13,8 +15,12 @@ class PurchaseRequestService
 {
     public function __construct(private PurchaseRequestNumberService $numbers) {}
 
-    /** Validation rules shared by every create form. */
-    public static function rules(): array
+    /**
+     * Validation rules shared by every create form. Department and funding
+     * source must be active entries from their managed lists; an existing
+     * request may keep the (possibly older, free-text) value it already has.
+     */
+    public static function rules(?PurchaseRequest $existing = null): array
     {
         return [
             'procurement_plan_id'=>['nullable','exists:procurement_plans,id'],
@@ -22,9 +28,9 @@ class PurchaseRequestService
             'project_id'=>['nullable','exists:projects,id'],
             'workplan_id'=>['nullable','exists:workplans,id'],
             'activity_id'=>['nullable','exists:activities,id'],
-            'department'=>['nullable','string','max:190'],
+            'department'=>Department::nameRules($existing?->department),
             'required_date'=>['nullable','date'],
-            'funding_source'=>['nullable','string','max:190'],
+            'funding_source'=>FundingSource::nameRules($existing?->funding_source),
             'justification'=>['nullable','string'],
             'currency'=>['nullable','string','size:3'],
             'items'=>['required','array','min:1'],

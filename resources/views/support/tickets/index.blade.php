@@ -1,70 +1,92 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
-@section('title', 'Support Ticket Queue | ElevateHer360')
+@section('title', 'IT Support Queue | ElevateHer360')
 
 @section('content')
-@php($canManageQueue = auth()->check() && auth()->user()->hasRole(['it-lead', 'it-assistant', 'IT Lead', 'IT Assistant']))
+@use('App\Models\ItSupportTicket')
+@php($canManageQueue = auth()->user()->can('assign', new ItSupportTicket()))
+@php($priorityLabels = ItSupportTicket::PRIORITIES + ['medium' => 'Normal'])
 
-<div class="page-header">
+<div class="admin-page-header">
     <div>
-        <span class="eh-kicker">IT support</span>
-        <h1>Support tickets</h1>
-        <p>Review requests and track their progress.</p>
+        <span class="admin-eyebrow">IT support</span>
+        <h1>IT Support Queue</h1>
+        <p>{{ $canManageQueue ? 'Every help request from staff and participants. Most urgent and newest first.' : 'Your help requests and their progress.' }}</p>
     </div>
-    <x-export-buttons />
+    <div class="admin-page-actions">
+        <x-export-buttons />
+        @if(Route::has('staff.support.index'))<a href="{{ route('staff.support.index') }}" class="btn btn-outline"><i class="fas fa-life-ring"></i> Help &amp; Support</a>@endif
+    </div>
 </div>
 
-@if($canManageQueue)
-<form method="GET" action="{{ route('it-support.tickets.index') }}" class="eh-tab-section" aria-label="Filter support tickets">
-    <div class="modal-grid">
-        <div class="form-group">
-            <label for="ticket-status">Status</label>
-            <select id="ticket-status" name="status">
-                <option value="">All statuses</option>
-                @foreach(['open' => 'Open', 'in_progress' => 'In progress', 'awaiting_requester' => 'Awaiting requester', 'resolved' => 'Resolved', 'closed' => 'Closed'] as $value => $label)
-                    <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="ticket-priority">Priority</label>
-            <select id="ticket-priority" name="priority">
-                <option value="">All priorities</option>
-                @foreach(['low' => 'Low', 'medium' => 'Medium', 'high' => 'High', 'urgent' => 'Urgent'] as $value => $label)
-                    <option value="{{ $value }}" @selected(request('priority') === $value)>{{ $label }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="ticket-category">Category</label>
-            <input id="ticket-category" type="text" name="category" value="{{ request('category') }}" placeholder="Any category">
-        </div>
-        <div class="form-group">
-            <label for="ticket-assignee">Assignee</label>
-            <input id="ticket-assignee" type="number" name="assignee_id" min="1" value="{{ request('assignee_id') }}" placeholder="Any assignee">
-        </div>
-    </div>
-    <button class="btn btn-primary btn-sm" type="submit">Apply filters</button>
-    <a class="btn btn-outline btn-sm" href="{{ route('it-support.tickets.index') }}">Clear</a>
-</form>
-@endif
+<div class="admin-stats-grid compact itq-stats">
+    @foreach([['open','Open','fa-inbox','open'],['in_progress','In progress','fa-spinner','in_progress'],['awaiting_requester','Awaiting requester','fa-reply','awaiting_requester'],['unassigned','Unassigned','fa-user-slash',null]] as [$key,$label,$icon,$filter])
+        <a class="admin-stat itq-stat" href="{{ route('it-support.tickets.index', $filter ? ['status' => $filter] : ['assignee_id' => 'none']) }}">
+            <span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span>
+            <div><small>{{ $label }}</small><strong>{{ number_format($stats[$key] ?? 0) }}</strong></div>
+        </a>
+    @endforeach
+</div>
 
-<section class="eh-tab-section" aria-label="Ticket results">
-    @forelse($tickets as $ticket)
-        <article class="eh-tab-section">
-            <div class="page-header">
-                <div>
-                    <span class="eh-kicker">Ticket #{{ $ticket->id }} · {{ $ticket->category ?: 'Uncategorized' }}</span>
-                    <h2><a href="{{ route('it-support.tickets.show', $ticket) }}">{{ $ticket->subject }}</a></h2>
-                    <p>From {{ $ticket->requester?->name ?? 'Unknown requester' }} · {{ $ticket->created_at?->format('d M Y, H:i') ?: '—' }}</p>
+<section class="admin-panel">
+    <form method="GET" action="{{ route('it-support.tickets.index') }}" class="itq-filters" aria-label="Filter support tickets">
+        <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search subject, details or requester…" aria-label="Search tickets"></div>
+        <select name="status" aria-label="Status">
+            <option value="">All statuses</option>
+            @foreach(ItSupportTicket::STATUSES as $value => $label)
+                <option value="{{ $value }}" @selected(request('status') === $value)>{{ $value === 'awaiting_requester' ? 'Awaiting requester' : $label }}</option>
+            @endforeach
+        </select>
+        <select name="priority" aria-label="Priority">
+            <option value="">All priorities</option>
+            @foreach(ItSupportTicket::PRIORITIES as $value => $label)
+                <option value="{{ $value }}" @selected(request('priority') === $value)>{{ $label }}</option>
+            @endforeach
+        </select>
+        <select name="category" aria-label="Category">
+            <option value="">All categories</option>
+            @foreach(ItSupportTicket::CATEGORIES as $value => $label)
+                <option value="{{ $value }}" @selected(request('category') === $value)>{{ $label }}</option>
+            @endforeach
+        </select>
+        @if($canManageQueue)
+            <select name="assignee_id" aria-label="Assignee">
+                <option value="">Anyone</option>
+                <option value="none" @selected(request('assignee_id') === 'none')>Unassigned</option>
+                @foreach($assignees as $person)
+                    <option value="{{ $person->id }}" @selected((string) request('assignee_id') === (string) $person->id)>{{ $person->name }}</option>
+                @endforeach
+            </select>
+        @endif
+        <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+        <a class="btn btn-outline btn-sm" href="{{ route('it-support.tickets.index') }}">Reset</a>
+    </form>
+
+    <div class="itq-grid" aria-label="Tickets">
+        @forelse($tickets as $ticket)
+            <a class="itq-card itq-{{ $ticket->status }}" href="{{ route('it-support.tickets.show', $ticket) }}">
+                <div class="itq-card-top">
+                    <span class="itq-id">#{{ $ticket->id }}</span>
+                    <span class="itq-chip itq-chip--{{ $ticket->status }}">{{ $ticket->status === 'awaiting_requester' ? 'Awaiting requester' : (ItSupportTicket::STATUSES[$ticket->status] ?? ucfirst(str_replace('_', ' ', $ticket->status))) }}</span>
                 </div>
-                <p><span class="status-chip {{ $ticket->status }}">{{ ucfirst(str_replace('_', ' ', $ticket->status)) }}</span></p>
-            </div>
-            <p>Priority: {{ $ticket->priority ? ucfirst($ticket->priority) : '—' }} · Assigned to: {{ $ticket->assignee?->name ?? 'Unassigned' }}</p>
-        </article>
-    @empty
-        <div class="admin-empty"><strong>No tickets found</strong><span>Try changing or clearing the filters.</span></div>
-    @endforelse
+                <strong class="itq-subject">{{ $ticket->subject }}</strong>
+                <p class="itq-desc">{{ \Illuminate\Support\Str::limit($ticket->description, 110) }}</p>
+                <div class="itq-meta">
+                    <span><i class="fas fa-tag"></i> {{ ItSupportTicket::categoryLabel($ticket->category) ?: 'Uncategorised' }}</span>
+                    @if($ticket->priority)<span class="itq-pri itq-pri--{{ $ticket->priority }}"><i class="fas fa-flag"></i> {{ $priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority) }}</span>@endif
+                </div>
+                <div class="itq-foot">
+                    <span><i class="fas fa-user"></i> {{ $ticket->requester?->name ?? 'Unknown' }}</span>
+                    <span><i class="fas fa-user-gear"></i> {{ $ticket->assignee?->name ?? 'Unassigned' }}</span>
+                    <span><i class="fas fa-clock"></i> {{ $ticket->created_at?->diffForHumans() ?? '—' }}</span>
+                </div>
+            </a>
+        @empty
+            <div class="admin-empty itq-empty"><i class="fas fa-mug-hot"></i><strong>No tickets found</strong><span>{{ request()->hasAny(['status','priority','category','assignee_id','search']) ? 'Try changing or clearing the filters.' : 'Nothing in the queue right now.' }}</span></div>
+        @endforelse
+    </div>
     <div class="admin-pagination">{{ $tickets->links() }}</div>
 </section>
+
+@include('support.tickets._styles')
 @endsection

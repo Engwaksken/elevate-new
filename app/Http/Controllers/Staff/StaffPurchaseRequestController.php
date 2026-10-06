@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\FundingSource;
 use App\Models\Programme;
 use App\Models\Project;
 use App\Models\PurchaseRequest;
@@ -57,7 +58,10 @@ class StaffPurchaseRequestController extends Controller
             'requests'=>$query->paginate(15)->withQueryString(),
             'programmes'=>Programme::orderBy('name')->get(['id','name']),
             'projects'=>Project::orderBy('name')->get(['id','name']),
-            'defaultDepartment'=>$employee?->department_id ? Department::whereKey($employee->department_id)->value('name') : null,
+            // Pre-select the requester's own department while it is still active.
+            'defaultDepartment'=>$employee?->department_id ? Department::active()->whereKey($employee->department_id)->value('name') : null,
+            'departmentOptions'=>Department::activeNames(),
+            'fundingSourceOptions'=>FundingSource::activeNames(),
             'stats'=>[
                 'draft'=>(clone $mine)->where('status','draft')->count(),
                 'pending'=>(clone $mine)->whereIn('status',['submitted','manager_approved','finance_approved','procurement_review'])->count(),

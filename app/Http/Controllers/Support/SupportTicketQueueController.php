@@ -28,7 +28,16 @@ class SupportTicketQueueController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->validated('status')))
             ->when($request->filled('priority'), fn ($query) => $query->where('priority', $request->validated('priority')))
             ->when($request->filled('category'), fn ($query) => $query->where('category', $request->validated('category')))
-            ->when($request->exists('assignee_id'), fn ($query) => $query->where('assignee_id', $request->validated('assignee_id')))
+            ->when($request->filled('assignee_id'), fn ($query) => $request->validated('assignee_id') === 'none'
+                ? $query->whereNull('assignee_id')
+                : $query->where('assignee_id', (int) $request->validated('assignee_id')))
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $term = '%'.$request->validated('search').'%';
+                $query->where(fn ($q) => $q->where('subject', 'like', $term)->orWhere('description', 'like', $term)
+                    ->orWhereHas('requester', fn ($r) => $r->where('name', 'like', $term)));
+            })
+            ->orderByRaw("case status when 'open' then 0 when 'in_progress' then 1 when 'awaiting_requester' then 2 else 3 end")
+            ->orderByRaw("case priority when 'urgent' then 0 when 'high' then 1 when 'normal' then 2 when 'medium' then 2 else 3 end")
             ->latest();
 
         if ($format = $this->exportFormat($request)) {
@@ -46,21 +55,39 @@ class SupportTicketQueueController extends Controller
         }
 
         $tickets = $query
-            ->paginate(15)
+            ->paginate(24)
             ->withQueryString();
 
-        return view('support.tickets.index', compact('tickets'));
+        $all = ItSupportTicket::query()->when(! $request->user()->can('assign', new ItSupportTicket()), fn ($q) => $q->where('requester_id', $request->user()->id));
+        $stats = [
+            'open' => (clone $all)->where('status', 'open')->count(),
+            'in_progress' => (clone $all)->where('status', 'in_progress')->count(),
+            'awaiting_requester' => (clone $all)->where('status', 'awaiting_requester')->count(),
+            'unassigned' => (clone $all)->whereNull('assignee_id')->where('status', '!=', 'resolved')->count(),
+        ];
+
+        return view('support.tickets.index', [
+            'tickets' => $tickets,
+            'stats' => $stats,
+            'assignees' => $this->itTeam(),
+        ]);
     }
 
     public function show(ItSupportTicket $ticket): View
     {
         Gate::authorize('view', $ticket);
         $ticket->load(['requester', 'assignee']);
-        $assignees = User::query()->where('status', 'active')
-            ->whereHas('roles', fn ($query) => $query->whereIn('slug', ['it-lead', 'it-assistant'])->orWhereIn('name', ['IT Lead', 'IT Assistant']))
-            ->orderBy('name')->get();
+        $assignees = $this->itTeam();
 
         return view('support.tickets.show', compact('ticket', 'assignees'));
+    }
+
+    /** Active IT Leads and Assistants: the people tickets can be assigned to. */
+    private function itTeam()
+    {
+        return User::query()->where('status', 'active')
+            ->whereHas('roles', fn ($query) => $query->whereIn('slug', ['it-lead', 'it-assistant'])->orWhereIn('name', ['IT Lead', 'IT Assistant']))
+            ->orderBy('name')->get(['id', 'name']);
     }
 
     public function status(UpdateSupportTicketStatusRequest $request, ItSupportTicket $ticket, UserNotificationService $notifications, AuditService $audit): RedirectResponse

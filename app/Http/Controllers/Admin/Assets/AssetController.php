@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetCategory;
+use App\Models\FundingSource;
 use App\Models\Programme;
 use App\Models\Project;
 use App\Models\Supplier;
@@ -79,6 +80,7 @@ class AssetController extends Controller
             'suppliers'=>Supplier::where('status','approved')->orderBy('name')->get(),
             'programmes'=>Programme::orderBy('name')->get(),
             'projects'=>Project::orderBy('name')->get(),
+            'fundingSourceOptions'=>FundingSource::activeNames(),
             'stats'=>[
                 'total'=>Asset::count(),
                 'available'=>Asset::where('status','available')->count(),
@@ -103,7 +105,7 @@ class AssetController extends Controller
             'supplier_id'=>['nullable','exists:suppliers,id'],
             'programme_id'=>['nullable','exists:programmes,id'],
             'project_id'=>['nullable','exists:projects,id'],
-            'funding_source'=>['nullable','string','max:190'],
+            'funding_source'=>FundingSource::nameRules(),
             'location'=>['nullable','string','max:190'],
             'condition'=>['nullable','string','max:100'],
             'warranty_end_date'=>['nullable','date'],

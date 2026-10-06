@@ -58,9 +58,9 @@
 <div class="form-group"><label>Project</label><select name="project_id"><option value="">None</option>@foreach($projects as $x)<option value="{{ $x->id }}">{{ $x->name }}</option>@endforeach</select></div>
 <div class="form-group"><label>Workplan</label><select name="workplan_id"><option value="">None</option>@foreach($workplans as $x)<option value="{{ $x->id }}">{{ $x->title }}</option>@endforeach</select></div>
 <div class="form-group"><label>Activity</label><select name="activity_id"><option value="">None</option>@foreach($activities as $x)<option value="{{ $x->id }}">{{ $x->title }}</option>@endforeach</select></div>
-<div class="form-group"><label>Department</label><input name="department"></div>
+<div class="form-group"><label for="pr-department">Department</label><x-list-select id="pr-department" name="department" :options="$departmentOptions" :selected="old('department')" placeholder="Select department" :manage-url="\App\Support\MasterListAccess::departmentsUrl(auth()->user())" manage-label="Manage departments" empty-hint="No departments have been set up yet." /></div>
 <div class="form-group"><label>Required Date</label><input type="date" name="required_date"></div>
-<div class="form-group"><label>Funding Source</label><input name="funding_source"></div>
+<div class="form-group"><label for="pr-funding">Funding Source</label><x-list-select id="pr-funding" name="funding_source" :options="$fundingSourceOptions" :selected="old('funding_source')" placeholder="Select funding source" :manage-url="\App\Support\MasterListAccess::fundingSourcesUrl(auth()->user())" manage-label="Manage funding sources" empty-hint="No funding sources have been set up yet." /></div>
 <div class="form-group"><label>Currency</label><input name="currency" value="UGX" maxlength="3"></div>
 <div class="form-group full"><label>Justification</label><textarea name="justification"></textarea></div>
 </div>

@@ -233,7 +233,7 @@ $bulkTableId = 'assetsTable';
 <div class="form-group"><label>Supplier</label><select name="supplier_id"><option value="">None</option>@foreach($suppliers as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach</select></div>
 <div class="form-group"><label>Programme</label><select name="programme_id"><option value="">None</option>@foreach($programmes as $p)<option value="{{ $p->id }}">{{ $p->name }}</option>@endforeach</select></div>
 <div class="form-group"><label>Project</label><select name="project_id"><option value="">None</option>@foreach($projects as $p)<option value="{{ $p->id }}">{{ $p->name }}</option>@endforeach</select></div>
-<div class="form-group"><label>Funding Source</label><input name="funding_source"></div>
+<div class="form-group"><label for="asset-funding">Funding Source</label><x-list-select id="asset-funding" name="funding_source" :options="$fundingSourceOptions" :selected="old('funding_source')" placeholder="Select funding source" :manage-url="\App\Support\MasterListAccess::fundingSourcesUrl(auth()->user())" manage-label="Manage funding sources" empty-hint="No funding sources have been set up yet." /></div>
 <div class="form-group"><label>Location</label><input name="location"></div>
 <div class="form-group"><label>Condition</label><input name="condition" value="good"></div>
 <div class="form-group"><label>Warranty End Date</label><input type="date" name="warranty_end_date"></div>

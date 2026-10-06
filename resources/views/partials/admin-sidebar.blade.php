@@ -229,7 +229,7 @@
                     'label' => 'IT Support Queue',
                     'icon' => 'fa-headset',
                     'permissions' => [],
-                    'roles' => \App\Services\ItSupportTicketService::SUPPORT_ROLES,
+                    'roles' => [...\App\Services\ItSupportTicketService::SUPPORT_ROLES, 'administrator', 'Administrator'],
                     'active' => ['it-support.tickets.*'],
                 ],
                 [
@@ -360,13 +360,29 @@
                     'route' => 'admin.procurement.requests.index',
                     'label' => 'Procurement Admin',
                     'icon' => 'fa-cart-shopping',
-                    'permissions' => [],
+                    'permissions' => ['procurement.view'],
                 ],
                 [
                     'route' => 'admin.assets.index',
                     'label' => 'Assets',
                     'icon' => 'fa-laptop-file',
                     'permissions' => ['assets.view', 'assets.manage', 'assets.dispose'],
+                ],
+                [
+                    'route' => 'admin.departments.index',
+                    'label' => 'Departments',
+                    'icon' => 'fa-sitemap',
+                    'permissions' => [],
+                    // HR and administrators (App\Support\MasterListAccess).
+                    'visible' => \App\Support\MasterListAccess::canManageDepartments($sidebarUser),
+                ],
+                [
+                    'route' => 'admin.funding-sources.index',
+                    'label' => 'Funding Sources',
+                    'icon' => 'fa-hand-holding-dollar',
+                    'permissions' => [],
+                    // Procurement, finance and administrators.
+                    'visible' => \App\Support\MasterListAccess::canManageFundingSources($sidebarUser),
                 ],
                 [
                     'route' => 'admin.audit-logs.index',
@@ -554,7 +570,7 @@
                     'label' => 'IT Support Queue',
                     'icon' => 'fa-headset',
                     'permissions' => [],
-                    'roles' => \App\Services\ItSupportTicketService::SUPPORT_ROLES,
+                    'roles' => [...\App\Services\ItSupportTicketService::SUPPORT_ROLES, 'administrator', 'Administrator'],
                     'active' => ['it-support.tickets.*'],
                 ],
             ],

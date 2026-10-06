@@ -61,6 +61,10 @@
     </div>
 </div>
 
+@if(\Illuminate\Support\Facades\Route::has('it-support.tickets.index') && auth()->user()?->can('assign', new \App\Models\ItSupportTicket()))
+    @include('support.tickets._dashboard')
+@endif
+
 @if($isInstructor)
     <section class="admin-panel">
         <div class="admin-panel-head">

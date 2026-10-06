@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin\Procurement;
 use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
+use App\Models\Department;
+use App\Models\FundingSource;
 use App\Models\Programme;
 use App\Models\Project;
 use App\Models\PurchaseRequest;
@@ -55,6 +57,8 @@ class PurchaseRequestController extends Controller
             'projects'=>Project::orderBy('name')->get(),
             'workplans'=>Workplan::latest()->get(),
             'activities'=>Activity::latest()->get(),
+            'departmentOptions'=>Department::activeNames(),
+            'fundingSourceOptions'=>FundingSource::activeNames(),
             'stats'=>[
                 'total'=>PurchaseRequest::count(),
                 'draft'=>PurchaseRequest::where('status','draft')->count(),

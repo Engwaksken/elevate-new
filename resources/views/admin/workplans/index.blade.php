@@ -160,6 +160,7 @@
 <div class="form-group"><label>Responsible Staff</label><select name="responsible_user_id"><option value="">None</option>@foreach($users as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach</select></div>
 <div class="form-group"><label>Budget</label><input type="number" name="budget" min="0" step=".01"></div>
 <div class="form-group"><label>Currency</label><input name="currency" value="UGX" maxlength="3"></div>
+<div class="form-group"><label for="activity-funding-{{ $workplan->id }}">Funding Source</label><x-list-select id="activity-funding-{{ $workplan->id }}" name="funding_source" :options="$fundingSourceOptions" placeholder="Select funding source" /></div>
 <div class="form-group full"><label>Expected Output</label><textarea name="expected_output"></textarea></div>
 </div></div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Add Activity</button></div>
 </form></div></div>

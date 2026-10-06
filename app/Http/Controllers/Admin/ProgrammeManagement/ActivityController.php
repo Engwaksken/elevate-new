@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\ProgrammeManagement;
 use App\Http\Controllers\Controller;
 use App\Models\Workplan;
 use App\Models\Activity;
+use App\Models\FundingSource;
 use App\Services\CalendarSyncService;
 use Illuminate\Http\Request;
 
@@ -25,7 +26,7 @@ class ActivityController extends Controller
             'responsible_user_id'=>['nullable','exists:users,id'],
             'budget'=>['nullable','numeric','min:0'],
             'currency'=>['nullable','string','size:3'],
-            'funding_source'=>['nullable','string','max:190'],
+            'funding_source'=>FundingSource::nameRules(),
             'priority'=>['nullable','string','max:50'],
             'expected_output'=>['nullable','string'],
         ]);

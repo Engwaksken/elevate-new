@@ -13,7 +13,7 @@ class ItSupportTicketPolicy
     /** IT support sees the shared queue; requesters may list their own tickets on requester endpoints. */
     public function viewAny(User $user): bool
     {
-        if ($this->isSupportTeam($user)) {
+        if ($this->canOversee($user)) {
             return true;
         }
 
@@ -31,7 +31,7 @@ class ItSupportTicketPolicy
 
     public function view(User $user, ItSupportTicket $ticket): bool
     {
-        return $this->isSupportTeam($user)
+        return $this->canOversee($user)
             || ($user->isActive() && $ticket->requester_id === $user->id);
     }
 
@@ -44,7 +44,7 @@ class ItSupportTicketPolicy
     /** Ticket details and status/assignment may only be changed by the support team. */
     public function update(User $user, ItSupportTicket $ticket): bool
     {
-        return $this->isSupportTeam($user);
+        return $this->canOversee($user);
     }
 
     public function delete(User $user, ItSupportTicket $ticket): bool
@@ -54,24 +54,35 @@ class ItSupportTicketPolicy
 
     public function updateStatus(User $user, ItSupportTicket $ticket): bool
     {
-        return $this->isSupportTeam($user);
+        return $this->canOversee($user);
     }
 
     public function assign(User $user, ItSupportTicket $ticket): bool
     {
-        return $this->isSupportTeam($user);
+        return $this->canOversee($user);
     }
 
     /** Active IT Leads and Assistants may access the restricted IT volume report. */
     public function viewVolumeReport(User $user): bool
     {
-        return $this->isSupportTeam($user);
+        return $this->canOversee($user);
     }
 
     /** Reuse this predicate to validate candidate assignees in controller workflows. */
     public function eligibleAssignee(User $actor, User $candidate): bool
     {
-        return $this->isSupportTeam($actor) && $this->isSupportTeam($candidate);
+        return $this->canOversee($actor) && $this->isSupportTeam($candidate);
+    }
+
+    /**
+     * IT Leads / Assistants work the queue; super admins and administrators
+     * may oversee and manage it too. Tickets are only ever assigned to the
+     * IT team (see eligibleAssignee / isSupportTeam).
+     */
+    private function canOversee(User $user): bool
+    {
+        return $this->isSupportTeam($user)
+            || ($user->isActive() && ($user->isSuperAdmin() || $user->hasRole(['administrator', 'Administrator'])));
     }
 
     private function isSupportTeam(User $user): bool
