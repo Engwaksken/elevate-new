@@ -65,6 +65,24 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 </nav>
 <div class="nav-actions">
 @guest
+@if(Route::has('partners.mentor.login') || Route::has('partners.employer.login'))
+<details class="partner-menu" data-partner-menu>
+<summary class="btn btn-outline btn-sm" aria-label="Partner sign in and sign up"><i class="fas fa-handshake-angle" aria-hidden="true"></i><span>Partners</span><i class="fas fa-chevron-down partner-menu__caret" aria-hidden="true"></i></summary>
+<div class="partner-menu__panel">
+@foreach(['mentor' => ['Mentors', 'fa-user-tie', 'Guide women in tech'], 'employer' => ['Employers', 'fa-building', 'Hire skilled talent']] as $ptype => [$plabel, $picon, $pline])
+@if(Route::has('partners.'.$ptype.'.login'))
+<div class="partner-menu__group">
+<div class="partner-menu__head"><i class="fas {{ $picon }}" aria-hidden="true"></i><div><strong>{{ $plabel }}</strong><small>{{ $pline }}</small></div></div>
+<div class="partner-menu__links">
+<a href="{{ route('partners.'.$ptype.'.login') }}" aria-label="Sign in as {{ \Illuminate\Support\Str::singular($plabel) }}"><i class="fas fa-right-to-bracket" aria-hidden="true"></i> Sign in</a>
+@if(Route::has('public.partners.'.$ptype))<a href="{{ route('public.partners.'.$ptype) }}" class="is-primary" aria-label="Sign up as {{ \Illuminate\Support\Str::singular($plabel) }}"><i class="fas fa-user-plus" aria-hidden="true"></i> Sign up</a>@endif
+</div>
+</div>
+@endif
+@endforeach
+</div>
+</details>
+@endif
 <a href="{{ route('login') }}" class="btn btn-outline btn-sm"><i class="fas fa-right-to-bracket"></i><span>Sign In</span></a>
 <a href="{{ route('register') }}" class="btn btn-primary btn-sm"><i class="fas fa-user-plus"></i><span>Register</span></a>
 @else

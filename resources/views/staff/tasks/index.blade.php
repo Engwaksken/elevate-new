@@ -15,7 +15,7 @@
     ];
 @endphp
 
-<div class="admin-page-header">
+<div class="admin-page-header st-page-header">
 <div>
     <span class="admin-eyebrow">People &amp; Performance</span>
     <h1>{{ $view === 'team' ? 'Team Tasks' : 'My Tasks' }}</h1>
@@ -28,7 +28,7 @@
 </div>
 </div>
 
-<div class="admin-stats-grid compact">
+<div class="admin-stats-grid compact st-stats">
 @foreach([
     ['due_today', 'Due Today', 'fa-sun'],
     ['overdue', 'Overdue', 'fa-triangle-exclamation'],
@@ -80,10 +80,12 @@
         @continue($today[$key]->isEmpty())
         <div class="st-group st-group-{{ $key }}">
             <h3><i class="fas {{ $icon }}"></i> {{ $label }} <span>{{ $today[$key]->count() }}</span></h3>
+            <div class="st-task-grid">
             @foreach($today[$key] as $task)
                 @include('staff.tasks._row', ['task' => $task, 'showAssignee' => $view === 'team'])
                 @php $shown->push($task); @endphp
             @endforeach
+            </div>
         </div>
     @endforeach
 </section>
@@ -120,7 +122,7 @@
 
 @if($past)
 <section class="admin-panel">
-    <form method="GET" class="admin-toolbar">
+    <form method="GET" class="admin-toolbar st-filters">
         <input type="hidden" name="view" value="past">
         <select name="outcome">
             <option value="">All past tasks</option>
@@ -141,10 +143,12 @@
     @forelse($past->getCollection()->groupBy(fn ($task) => ($task->due_date ?? $task->completed_at)?->format('Y-m-d')) as $date => $dayTasks)
         <div class="st-group">
             <h3><i class="fas fa-calendar-day"></i> {{ $date ? \Illuminate\Support\Carbon::parse($date)->format('l d F Y') : 'Undated' }} <span>{{ $dayTasks->where('status', 'completed')->count() }}/{{ $dayTasks->count() }} done</span></h3>
+            <div class="st-task-grid">
             @foreach($dayTasks as $task)
                 @include('staff.tasks._row', ['task' => $task])
                 @php $shown->push($task); @endphp
             @endforeach
+            </div>
         </div>
     @empty
         <div class="admin-empty"><i class="fas fa-clock-rotate-left"></i><strong>No past tasks</strong><span>Completed and missed tasks will appear here.</span></div>

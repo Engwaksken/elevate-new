@@ -14,33 +14,36 @@
 .st-group h3{display:flex;align-items:center;gap:6px;margin:0 0 6px;color:#344054;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
 .st-group h3 span{margin-left:auto;padding:1px 8px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:.68rem}
 .st-group-overdue h3{color:#b42318}
-.st-task{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;margin-bottom:6px;padding:10px 12px;border:1px solid #e4e7ec;border-left:4px solid #d0d5dd;border-radius:9px;background:#fff}
+.st-task-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.st-task{position:relative;display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:start;margin:0;padding:9px 10px;border:1px solid #e4e7ec;border-left:3px solid #d0d5dd;border-radius:9px;background:#fff;min-width:0}
 .st-task.is-overdue{border-left-color:#d92d20;background:#fffbfa}
 .st-task.is-done{border-left-color:#12b76a;background:#fcfffd}
-.st-task.is-done .st-task-title strong{color:#667085;text-decoration:line-through}
-.st-check{width:26px;height:26px;display:grid;place-items:center;border:2px solid #d0d5dd;border-radius:50%;background:#fff;color:transparent;cursor:pointer;font-size:.7rem}
+.st-task.is-done .st-task-name{color:#667085;text-decoration:line-through}
+.st-check{width:18px !important;height:18px !important;min-width:18px !important;min-height:18px !important;margin-top:1px;padding:0 !important;display:grid;place-items:center;border:1.5px solid #98a2b3;border-radius:5px;background:#fff;color:transparent;cursor:pointer;font-size:.6rem;line-height:1;box-shadow:none}
 .st-check:hover,.st-check:focus-visible{border-color:#12b76a;color:#12b76a}
 .st-check.is-checked{border-color:#12b76a;background:#12b76a;color:#fff;cursor:default}
-.st-task-title{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.st-task-title strong{font-size:.86rem;color:#172033}
-.st-task-meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;color:#667085;font-size:.72rem}
+.st-task-body{min-width:0}
+.st-task-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.82rem;line-height:1.3;color:#172033;overflow-wrap:anywhere}
+.st-task-meta{display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;margin-top:5px;color:#667085;font-size:.7rem;line-height:1.35}
 .st-task-meta i{margin-right:3px}
+.st-task-actions{display:flex;gap:4px}
+.st-task-actions form{margin:0;display:contents}
+.st-icon-btn{width:26px !important;height:26px !important;min-width:26px !important;min-height:26px !important;padding:0 !important;display:grid;place-items:center;border:1px solid #e4e7ec;border-radius:7px;background:#fff;color:#800000;font-size:.68rem;cursor:pointer;box-shadow:none}
+.st-icon-btn:hover,.st-icon-btn:focus-visible{border-color:#800000;background:#800000;color:#fff}
 .st-overdue{color:#b42318;font-weight:700}
 .st-kpi{color:#175cd3;font-weight:700}
-.st-outcome{margin:6px 0 0;padding:6px 9px;border-radius:6px;background:#f6fef9;color:#344054;font-size:.76rem;white-space:pre-line}
-.st-priority{padding:1px 7px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:.62rem;font-weight:800;text-transform:uppercase}
+.st-outcome{margin:6px 0 0;padding:5px 8px;border-radius:6px;background:#f6fef9;color:#344054;font-size:.72rem;white-space:pre-line}
+.st-priority{padding:1px 6px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:.6rem;font-weight:800;text-transform:uppercase}
 .st-priority-high{background:#fffaeb;color:#b54708}
 .st-priority-urgent{background:#fef3f2;color:#b42318}
 .st-priority-low{background:#f0f9ff;color:#026aa2}
-.st-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
-.st-day{min-width:0;padding:8px;border:1px solid #eef0f3;border-radius:9px;background:#fcfcfd}
+.st-week{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.st-day{display:flex;flex-direction:column;gap:6px;min-width:0;padding:8px;border:1px solid #eef0f3;border-radius:9px;background:#fcfcfd}
 .st-day.is-today{border-color:#800000;box-shadow:0 0 0 2px rgba(128,0,0,.08)}
 .st-day.is-weekend{background:#f9fafb}
-.st-day h3{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px;margin:0 0 8px;font-size:.8rem;color:#172033}
+.st-day h3{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px;margin:0 0 2px;font-size:.8rem;color:#172033}
 .st-day h3 span{color:#667085;font-weight:400;font-size:.72rem}
-.st-day h3 small{width:100%;color:#067647;font-size:.66rem}
-.st-day .st-task{grid-template-columns:auto minmax(0,1fr);padding:7px}
-.st-day .st-task>.btn{grid-column:2;justify-self:start}
+.st-day h3 small{margin-left:auto;color:#067647;font-size:.66rem}
 .st-empty-day{margin:0;color:#98a2b3;font-size:.7rem}
 .st-kra{margin-bottom:12px}
 .st-kra h4{margin:0 0 6px;color:#344054;font-size:.76rem}
@@ -51,9 +54,20 @@
 .st-kpi-bar span{display:block;height:100%;background:#12b76a}
 .st-kpi-count{color:#667085;font-size:.68rem}
 .st-delete{margin-right:auto}
-@media(max-width:1200px){.st-week{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Page header: keep action buttons on one line. */
+.st-page-header .admin-page-actions{flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.st-page-header .admin-page-actions .btn,.st-page-header .admin-page-actions a{white-space:nowrap}
+.st-page-header .eh-export-buttons{flex-wrap:nowrap !important}
+/* Past filters: wrap inside the panel instead of overflowing it. */
+.st-filters{display:flex !important;flex-wrap:wrap !important;align-items:center;gap:8px !important;margin-bottom:12px}
+.st-filters select,.st-filters input[type=date]{flex:1 1 150px;width:auto !important;min-width:0;max-width:100%;min-height:36px !important;font-size:.8rem}
+.st-filters .btn{flex:0 0 auto}
+/* In the week view the day column already shows the date. */
+.st-day .st-due:not(.st-overdue){display:none}
+@media(max-width:1280px){.st-layout{grid-template-columns:minmax(0,1fr) 280px}}
+@media(max-width:1100px){.st-task-grid,.st-week{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:980px){.st-layout{grid-template-columns:1fr}}
-@media(max-width:560px){.st-week{grid-template-columns:1fr}.st-tabs{width:100%}.st-tabs a{flex:1;justify-content:center}}
+@media(max-width:560px){.st-week,.st-task-grid{grid-template-columns:1fr}.st-stats{grid-template-columns:repeat(2,minmax(0,1fr)) !important}.st-tabs{width:100%}.st-tabs a{flex:1;justify-content:center}}
 /* Task evidence on appraisal KPIs */
 .kpi-evidence{margin-top:4px;font-size:.74rem}
 .kpi-evidence summary{cursor:pointer;color:#175cd3;font-weight:700}
