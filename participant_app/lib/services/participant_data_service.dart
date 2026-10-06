@@ -265,20 +265,26 @@ class ParticipantDataService {
   /// Runs every v2 refresh, tolerating endpoints the server doesn't have
   /// yet (404) so an older backend never breaks sync.
   Future<void> refreshAll() async {
-    for (final task in <Future<void> Function()>[
-      refreshProfile,
-      refreshProgress,
-      refreshMentorship,
-      refreshAssignments,
-    ]) {
-      try {
-        await task();
-      } catch (error) {
-        final mapped = AppException.from(error);
-        if (mapped.kind == AppErrorKind.unauthorised) rethrow;
-        appLog('Participant refresh step failed (${mapped.statusCode})', error);
-      }
-    }
+    // The four requests are independent, so run them together rather than
+    // waiting for each round trip in turn.
+    Object? unauthorised;
+    await Future.wait([
+      for (final task in <Future<void> Function()>[
+        refreshProfile,
+        refreshProgress,
+        refreshMentorship,
+        refreshAssignments,
+      ])
+        task().catchError((Object error) {
+          final mapped = AppException.from(error);
+          if (mapped.kind == AppErrorKind.unauthorised) {
+            unauthorised ??= error;
+          } else {
+            appLog('Participant refresh step failed (${mapped.statusCode})', error);
+          }
+        }),
+    ]);
+    if (unauthorised != null) throw unauthorised!;
   }
 }
 

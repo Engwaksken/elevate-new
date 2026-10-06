@@ -596,9 +596,13 @@ class ParticipantController extends Controller
         $courseIds = $enrolments->pluck('course_id');
         $cohortIds = $enrolments->pluck('cohort_id')->filter();
 
-        $courses = Course::withTrashed()
+        // A first sync (no $since) sends only what is current: deleted rows,
+        // closed jobs, old events and old notifications are only needed to
+        // update an existing cache, and they made first sign-in slow on
+        // phones with little data.
+        $courses = Course::query()
+            ->when($since, fn ($q) => $q->withTrashed()->where('updated_at','>',$since))
             ->whereIn('id',$courseIds)
-            ->when($since, fn ($q) => $q->where('updated_at','>',$since))
             ->get();
 
         $assignments = Assessment::whereIn('course_id',$courseIds)
@@ -606,20 +610,28 @@ class ParticipantController extends Controller
             ->when($since, fn ($q) => $q->where('updated_at','>',$since))
             ->get();
 
-        $announcements = CourseAnnouncement::withTrashed()
+        $announcements = CourseAnnouncement::query()
+            ->when($since, fn ($q) => $q->withTrashed()->where('updated_at','>',$since))
             ->whereIn('course_id',$courseIds)
-            ->when($since, fn ($q) => $q->where('updated_at','>',$since))
             ->get();
 
         $jobs = DB::table('jobs')
-            ->when($since, fn ($q) => $q->where('updated_at','>',$since))
-            ->where(function ($q) {
-                $q->where('status','published')->orWhereNotNull('deleted_at');
-            })
+            ->when($since,
+                fn ($q) => $q->where('updated_at','>',$since)->where(function ($q) {
+                    $q->where('status','published')->orWhereNotNull('deleted_at');
+                }),
+                fn ($q) => $q->where('status','published')->whereNull('deleted_at')
+                    ->where(fn ($q) => $q->whereNull('application_deadline')->orWhere('application_deadline','>=',today()->toDateString()))
+                    ->latest('id')->limit(100)
+            )
             ->get();
 
         $events = DB::table('events')
-            ->when($since, fn ($q) => $q->where('updated_at','>',$since))
+            ->when($since,
+                fn ($q) => $q->where('updated_at','>',$since),
+                fn ($q) => $q->where('is_published',1)->whereNull('deleted_at')
+                    ->where(fn ($q) => $q->where('starts_at','>=',now()->subDays(30))->orWhere('ends_at','>=',now()))
+            )
             ->where(function ($q) use ($courseIds,$cohortIds) {
                 $q->whereNull('course_id')->whereNull('cohort_id')
                     ->orWhereIn('course_id',$courseIds)
@@ -629,7 +641,10 @@ class ParticipantController extends Controller
 
         $notifications = DB::table('user_notifications')
             ->where('user_id',$user->id)
-            ->when($since, fn ($q) => $q->where('updated_at','>',$since))
+            ->when($since,
+                fn ($q) => $q->where('updated_at','>',$since),
+                fn ($q) => $q->latest('id')->limit(100)
+            )
             ->get();
 
         $mentorship = $this->mentorshipBase($user->id)

@@ -311,21 +311,29 @@ class SyncService {
         ids.add(id);
     }
 
-    for (final id in ids.take(30)) {
-      try {
-        final response = await _api.course(id);
-        final course = response['course'];
-        if (course is Map) {
-          await _db.cacheItem(
-            collection: 'course_details',
-            itemId: 'course_$id',
-            payload: Map<String, dynamic>.from(course),
-          );
+    // A few at a time: far quicker than one by one on slow mobile links,
+    // without flooding a weak connection.
+    final queue = ids.take(30).toList();
+    Future<void> worker() async {
+      while (queue.isNotEmpty) {
+        final id = queue.removeLast();
+        try {
+          final response = await _api.course(id);
+          final course = response['course'];
+          if (course is Map) {
+            await _db.cacheItem(
+              collection: 'course_details',
+              itemId: 'course_$id',
+              payload: Map<String, dynamic>.from(course),
+            );
+          }
+        } catch (error) {
+          appLog('Prefetch of course $id failed', error);
         }
-      } catch (error) {
-        appLog('Prefetch of course $id failed', error);
       }
     }
+
+    await Future.wait([for (var i = 0; i < 3; i++) worker()]);
   }
 
   /// Runs a full sync. Concurrent calls share the same run.
@@ -380,6 +388,10 @@ class SyncService {
       if (timetable is List)
         await NotificationService.instance
             .scheduleTimetableReminders(timetable);
+
+      // Courses, assignments, notifications etc. are saved: let open screens
+      // show them now instead of after the slower extras below.
+      dataVersion.value++;
 
       await _prefetchCourseTrees(data['courses']);
 

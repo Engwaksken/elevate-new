@@ -18,12 +18,15 @@ abstract final class AuthFlow {
             (Object error) => appLog('Device registration failed', error),
           ),
     );
-    try {
-      await SyncService.instance.syncNow();
-    } catch (error) {
-      // The app works from whatever is cached; sync retries later.
-      appLog('Initial sync failed', error);
-    }
+    // Not awaited either: the home screen opens straight away and fills in
+    // as the first sync saves data (screens reload on dataVersion), instead
+    // of holding the participant on the login screen for every request.
+    unawaited(
+      SyncService.instance.syncNow().catchError(
+            // The app works from whatever is cached; sync retries later.
+            (Object error) => appLog('Initial sync failed', error),
+          ),
+    );
   }
 
   /// Clears the server token (best effort) and all participant data held

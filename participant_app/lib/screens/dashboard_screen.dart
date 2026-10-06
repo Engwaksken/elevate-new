@@ -8,6 +8,7 @@ import '../services/api_service.dart';
 import '../services/local_database.dart';
 import '../services/participant_data_service.dart';
 import '../services/reading_time_service.dart';
+import '../services/sync_service.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/cached_data.dart';
 import '../widgets/course_card.dart';
@@ -266,15 +267,32 @@ class _DashboardScreenState extends State<DashboardScreen>
               onAction: () => widget.onOpen(AppDestination.learning),
             ),
             if (d.courses.isEmpty)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.menu_book_outlined),
-                  title: const Text('No courses yet'),
-                  subtitle: const Text(
-                    'Your courses will appear here as soon as you are enrolled.',
-                  ),
-                  onTap: refreshFromServer,
-                ),
+              ValueListenableBuilder<bool>(
+                valueListenable: SyncService.instance.syncing,
+                builder: (context, syncing, _) =>
+                    syncing && (d.lastSync == null || d.lastSync!.isEmpty)
+                        // First sign-in: the first sync is still bringing data down.
+                        ? const Card(
+                            child: ListTile(
+                              leading: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2.5),
+                              ),
+                              title: Text('Loading your courses…'),
+                              subtitle: Text('This only takes a moment the first time you sign in.'),
+                            ),
+                          )
+                        : Card(
+                            child: ListTile(
+                              leading: const Icon(Icons.menu_book_outlined),
+                              title: const Text('No courses yet'),
+                              subtitle: const Text(
+                                'Your courses will appear here as soon as you are enrolled.',
+                              ),
+                              onTap: refreshFromServer,
+                            ),
+                          ),
               )
             else
               for (final course in d.courses.take(3))
