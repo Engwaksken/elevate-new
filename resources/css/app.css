@@ -2264,6 +2264,23 @@ tbody tr:hover {
     color: #f8e8e8;
 }
 
+/* The CTA sits on a maroon gradient, so primary-coloured text vanishes. */
+.cta-box .eyebrow {
+    color: var(--secondary, #d4af37);
+}
+
+.cta-box .btn-outline {
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+.cta-box .btn-outline:hover,
+.cta-box .btn-outline:focus-visible {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: var(--primary);
+}
+
 /* ==========================================================================
    Flash Messages
    ========================================================================== */

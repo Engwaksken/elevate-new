@@ -9,8 +9,15 @@
 .eh-learning-hero .eh-kicker{color:#f7e7a9}
 .eh-learning-hero h1{margin:8px 0 10px;color:#fff;font-size:2.2rem}
 .eh-learning-hero p{max-width:640px;margin:0 0 22px;color:rgba(255,255,255,.9)}
-.eh-learning-search{display:flex;gap:10px;flex-wrap:wrap;align-items:center;max-width:760px}
-.eh-learning-search .search-box{flex:1 1 320px}
+/* Full-bleed band: breaks out of the guest page-shell container; content stays aligned to it. */
+.page-shell > .eh-learning-hero{width:100vw;margin:-40px calc(50% - 50vw) 28px;border-radius:0;padding:52px max(24px,calc(50vw - 590px))}
+.participant-site-main .eh-learning-hero{width:100%}
+.eh-learning-hero > *{position:relative;z-index:1}
+/* Search, format and button on one row (global CSS makes form controls 100% wide). */
+.eh-learning-search{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,220px) auto;gap:10px;align-items:center;width:100%}
+.eh-learning-search .search-box{min-width:0}
+.eh-learning-search select{width:100%}
+.eh-learning-search .btn{padding-inline:26px;white-space:nowrap}
 .eh-learning-search .search-box input{min-height:46px;background:#fff;border:0;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
 .eh-learning-search select{min-height:46px;padding:0 12px;border:0;border-radius:10px;background:#fff;color:#344054;font:inherit}
 .eh-learning-search .btn{min-height:46px;background:#d4af37;border-color:#d4af37;color:#3a2c00;font-weight:700}
@@ -28,7 +35,7 @@
 .eh-course-meta span{display:inline-flex;align-items:center;gap:5px}
 .eh-course-meta i{color:#800000}
 @media(max-width:980px){.eh-course-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:620px){.eh-course-grid{grid-template-columns:1fr}.eh-learning-hero{padding:32px 22px}.eh-learning-hero h1{font-size:1.8rem}}
+@media(max-width:620px){.eh-course-grid{grid-template-columns:1fr}.eh-learning-hero,.page-shell > .eh-learning-hero{padding:32px 16px}.eh-learning-search{grid-template-columns:1fr}.eh-learning-search .btn{width:100%}.eh-learning-hero h1{font-size:1.8rem}}
 </style>
 
 <section class="eh-learning-hero">
@@ -43,7 +50,7 @@
                 <option value="{{ $value }}" @selected(request('delivery_mode')===$value)>{{ $label }}</option>
             @endforeach
         </select>
-        <button class="btn">Search</button>
+        <button type="submit" class="btn"><i class="fas fa-search" aria-hidden="true"></i> Search</button>
     </form>
 </section>
 
