@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Procurement</span><h1>Purchase Requests</h1><p>Create and route procurement requests through approval stages.</p></div>
-<div class="admin-page-actions"><x-export-buttons />@if(auth()->user()->hasPermission('procurement.create'))<button type="button" class="btn btn-primary" data-modal-open="createRequestModal"><i class="fas fa-plus"></i> New Request</button>@endif</div>
+<div class="admin-page-actions"><x-export-buttons />@if(auth()->user()->hasPermission('procurement.create'))<button type="button" class="btn btn-primary" data-modal-open="createRequestModal"><i class="fas fa-plus"></i> New Request</button>@elseif(Route::has('staff.purchase-requests.index'))<a href="{{ route('staff.purchase-requests.index') }}" class="btn btn-primary"><i class="fas fa-cart-plus"></i> Raise my own request</a>@endif</div>
 </div>
 
 <div class="admin-stats-grid compact">

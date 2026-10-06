@@ -97,3 +97,14 @@ Route::middleware(['auth', 'staff'])
         Route::put('/{kpi}', [\App\Http\Controllers\Staff\StaffKpiController::class, 'update'])->name('update');
         Route::delete('/{kpi}', [\App\Http\Controllers\Staff\StaffKpiController::class, 'destroy'])->name('destroy');
     });
+
+// Staff self-service purchase requests: any staff member raises and tracks their own.
+Route::middleware(['auth', 'staff'])
+    ->prefix('staff/purchase-requests')
+    ->name('staff.purchase-requests.')
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\Staff\StaffPurchaseRequestController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Staff\StaffPurchaseRequestController::class, 'store'])->name('store');
+        Route::post('/{purchaseRequest}/submit', [\App\Http\Controllers\Staff\StaffPurchaseRequestController::class, 'submit'])->name('submit');
+        Route::delete('/{purchaseRequest}', [\App\Http\Controllers\Staff\StaffPurchaseRequestController::class, 'destroy'])->name('destroy');
+    });

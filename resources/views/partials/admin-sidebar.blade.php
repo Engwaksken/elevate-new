@@ -185,6 +185,20 @@
                     'active' => ['staff.kpis.*'],
                 ],
                 [
+                    'route' => 'hr.leave.index',
+                    'label' => 'My Leave',
+                    'icon' => 'fa-umbrella-beach',
+                    'permissions' => [],
+                    'active' => ['hr.leave.*'],
+                ],
+                [
+                    'route' => 'staff.purchase-requests.index',
+                    'label' => 'My Purchase Requests',
+                    'icon' => 'fa-cart-plus',
+                    'permissions' => [],
+                    'active' => ['staff.purchase-requests.*'],
+                ],
+                [
                     'route' => 'admin.hr.employees.index',
                     'label' => 'Employees',
                     'icon' => 'fa-id-badge',
@@ -192,7 +206,7 @@
                 ],
                 [
                     'route' => 'admin.hr.leave.index',
-                    'label' => 'Leave',
+                    'label' => 'Leave Approvals',
                     'icon' => 'fa-calendar-minus',
                     'permissions' => [],
                 ],
@@ -299,7 +313,7 @@
                 ],
                 [
                     'route' => 'admin.procurement.requests.index',
-                    'label' => 'Procurement',
+                    'label' => 'Procurement Admin',
                     'icon' => 'fa-cart-shopping',
                     'permissions' => [],
                 ],
@@ -402,6 +416,20 @@
                         'icon' => 'fa-bullseye',
                         'permissions' => [],
                         'active' => ['staff.kpis.*'],
+                    ],
+                    [
+                        'route' => 'hr.leave.index',
+                        'label' => 'My Leave',
+                        'icon' => 'fa-umbrella-beach',
+                        'permissions' => [],
+                        'active' => ['hr.leave.*'],
+                    ],
+                    [
+                        'route' => 'staff.purchase-requests.index',
+                        'label' => 'My Purchase Requests',
+                        'icon' => 'fa-cart-plus',
+                        'permissions' => [],
+                        'active' => ['staff.purchase-requests.*'],
                     ],
                     [
                         'route' => 'certificates.recommendations.index',
