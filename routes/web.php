@@ -866,11 +866,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 
         Route::post('/employees/{employee}/contracts',[ContractController::class,'store'])->middleware('permission:hr.manage')->name('contracts.store');
 
+        // Supervisors (own team), HR and administrators; each action checks
+        // App\Support\LeaveApprovalAccess in the controller.
         Route::get('/leave',[LeaveApprovalController::class,'index'])->name('leave.index');
-        Route::delete('/leave/bulk-delete',[LeaveApprovalController::class,'bulkDestroy'])->middleware('permission:leave.approve')->name('leave.bulk-destroy');
-        Route::post('/leave/{leave}/supervisor-approve',[LeaveApprovalController::class,'supervisorApprove'])->middleware('permission:leave.approve')->name('leave.supervisor-approve');
-        Route::post('/leave/{leave}/hr-approve',[LeaveApprovalController::class,'hrApprove'])->middleware('permission:leave.approve')->name('leave.hr-approve');
-        Route::post('/leave/{leave}/reject',[LeaveApprovalController::class,'reject'])->middleware('permission:leave.approve')->name('leave.reject');
+        Route::delete('/leave/bulk-delete',[LeaveApprovalController::class,'bulkDestroy'])->middleware('role:hr,administrator,super-administrator,super-admin')->name('leave.bulk-destroy');
+        Route::post('/leave/{leave}/supervisor-approve',[LeaveApprovalController::class,'supervisorApprove'])->name('leave.supervisor-approve');
+        Route::post('/leave/{leave}/hr-approve',[LeaveApprovalController::class,'hrApprove'])->name('leave.hr-approve');
+        Route::post('/leave/{leave}/reject',[LeaveApprovalController::class,'reject'])->name('leave.reject');
+        Route::put('/leave/{leave}',[LeaveApprovalController::class,'update'])->name('leave.update');
+        Route::post('/leave/{leave}/cancel',[LeaveApprovalController::class,'cancel'])->name('leave.cancel');
 
         Route::get('/kpi-templates',[KpiTemplateController::class,'index'])->middleware(['permission:appraisals.view','role:hr,administrator,super-administrator,super-admin'])->name('kpi-templates.index');
         Route::post('/kpi-templates',[KpiTemplateController::class,'store'])->middleware(['permission:appraisals.manage','role:hr,administrator,super-administrator,super-admin'])->name('kpi-templates.store');

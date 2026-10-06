@@ -43,4 +43,26 @@ class LeaveService
 
         return $request->fresh();
     }
+
+    /** Cancel an approved request and give its days back to the balance. */
+    public function cancelApproved(LeaveRequest $request, ?string $notes = null): LeaveRequest
+    {
+        $balance = LeaveBalance::where('employee_id',$request->employee_id)
+            ->where('leave_type_id',$request->leave_type_id)
+            ->where('year',$request->start_date->format('Y'))
+            ->first();
+
+        $request->update([
+            'status'=>'cancelled',
+            'decision_notes'=>$notes ?: $request->decision_notes,
+        ]);
+
+        if ($balance) {
+            $used = max(0, (float)$balance->used - (float)$request->days_requested);
+            $remaining = (float)$balance->opening_balance + (float)$balance->accrued + (float)$balance->adjustments - $used;
+            $balance->update(['used'=>$used,'remaining'=>$remaining]);
+        }
+
+        return $request->fresh();
+    }
 }

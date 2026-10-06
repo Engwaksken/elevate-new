@@ -90,6 +90,11 @@
             return false;
         }
 
+        // Items can carry their own precomputed rule (e.g. "supervises staff").
+        if (array_key_exists('visible', $item) && ! $item['visible']) {
+            return false;
+        }
+
         if ($isSuperAdmin) {
             return true;
         }
@@ -238,6 +243,8 @@
                     'label' => 'Leave Approvals',
                     'icon' => 'fa-calendar-minus',
                     'permissions' => [],
+                    // Supervisors (own team), HR and administrators only.
+                    'visible' => \App\Support\LeaveApprovalAccess::canAccess($sidebarUser),
                 ],
                 [
                     'route' => 'admin.participants.index',

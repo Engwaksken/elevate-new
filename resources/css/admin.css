@@ -68,3 +68,5 @@
 .admin-page-actions .btn,.admin-page-actions>a{white-space:nowrap}
 .admin-page-actions .eh-export-buttons{flex-wrap:nowrap!important}
 @media(max-width:720px){.admin-page-header{flex-wrap:wrap}.admin-page-actions{justify-content:flex-start}}
+/* Secondary line under a table cell value (email, reason, notes). Used across admin tables. */
+.admin-cell-hint{display:block;margin-top:2px;color:var(--ad-muted,#667085);font-size:.72rem;font-weight:400;line-height:1.35}

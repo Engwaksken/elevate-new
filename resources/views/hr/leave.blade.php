@@ -2,7 +2,7 @@
 @section('title','My Leave | ElevateHer360')
 @section('content')
 @php
-    $statusLabels = ['draft' => 'Draft', 'submitted' => 'Awaiting supervisor', 'supervisor_approved' => 'Awaiting HR', 'hr_approved' => 'Approved', 'rejected' => 'Rejected', 'cancelled' => 'Cancelled'];
+    $statusLabels = ['draft' => 'Draft', 'pending' => 'Awaiting supervisor', 'submitted' => 'Awaiting supervisor', 'supervisor_approved' => 'Awaiting HR', 'hr_approved' => 'Approved', 'rejected' => 'Rejected', 'cancelled' => 'Cancelled'];
 @endphp
 
 <div class="admin-page-header">
@@ -43,7 +43,7 @@
             @if($leave->reason)<p class="lv-reason">{{ $leave->reason }}</p>@endif
             @if($leave->decision_notes)<p class="lv-note"><i class="fas fa-comment-dots"></i> {{ $leave->decision_notes }}</p>@endif
             <ol class="lv-steps" aria-label="Approval progress">
-                @php $step = ['submitted' => 1, 'supervisor_approved' => 2, 'hr_approved' => 3][$leave->status] ?? 0; @endphp
+                @php $step = ['pending' => 1, 'submitted' => 1, 'supervisor_approved' => 2, 'hr_approved' => 3][$leave->status] ?? 0; @endphp
                 <li class="{{ $step >= 1 ? 'done' : '' }}">Submitted</li>
                 <li class="{{ $step >= 2 ? 'done' : ($step === 1 ? 'current' : '') }}">Supervisor</li>
                 <li class="{{ $step >= 3 ? 'done' : ($step === 2 ? 'current' : '') }}">HR</li>

@@ -57,7 +57,7 @@ class LeaveRequestController extends Controller
                 ? $employee->leaveRequests()->with('leaveType')->latest()->paginate(15)
                 : null,
             'stats'=>$employee ? [
-                'pending'=>$employee->leaveRequests()->whereIn('status',['submitted','supervisor_approved'])->count(),
+                'pending'=>$employee->leaveRequests()->whereIn('status',['pending','submitted','supervisor_approved'])->count(),
                 'approved'=>$employee->leaveRequests()->where('status','hr_approved')->whereYear('start_date',$year)->count(),
                 'days'=>(float)$employee->leaveRequests()->where('status','hr_approved')->whereYear('start_date',$year)->sum('days_requested'),
             ] : null,
