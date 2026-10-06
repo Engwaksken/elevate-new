@@ -13,6 +13,7 @@ import '../services/sync_service.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/feedback.dart';
 import 'about_screen.dart';
+import 'appointments_screen.dart';
 import 'assignments_screen.dart';
 import 'cached_list_screen.dart';
 import 'career_documents_screen.dart';
@@ -129,6 +130,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     switch (destination) {
+      case AppDestination.appointments:
+        _push(const AppointmentsScreen());
       case AppDestination.careerDocuments:
         _push(const CareerDocumentsScreen());
       case AppDestination.assignments:
@@ -189,7 +192,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final value = destination.toLowerCase();
 
     AppDestination? target;
-    if (value.contains('certificate')) {
+    // Appointment notifications (types `appointment_*`) open Appointments.
+    if (value.contains('appointment')) {
+      target = AppDestination.appointments;
+    } else if (value.contains('certificate')) {
       target = AppDestination.certificates;
     } else if (value.contains('course') ||
         value.contains('lesson') ||

@@ -1,4 +1,7 @@
 import 'formatters.dart';
+import 'learning_file.dart';
+
+export 'learning_file.dart';
 
 /// Typed view over the lesson JSON from GET /courses/{id} and
 /// GET /lessons/{id} (see docs/participant_api_contract.md).
@@ -68,14 +71,46 @@ class LessonInfo {
 
   int? get fileSizeBytes => int.tryParse(raw['file_size_bytes']?.toString() ?? '');
 
-  List<LessonFile> get extraFiles {
-    final files = raw['files'];
-    if (files is! List) return const [];
-    return files
-        .whereType<Map>()
-        .map((f) => LessonFile(Map<String, dynamic>.from(f)))
-        .where((f) => f.downloadPath != null)
-        .toList();
+  /// Whether the lesson's primary file may be saved on the device. Server
+  /// `file_downloadable` wins; older payloads use the extension policy.
+  bool get fileDownloadable {
+    if (raw['file_downloadable'] != null) return isTruthy(raw['file_downloadable']);
+    return isDownloadableFileName(fileName);
+  }
+
+  /// Every material file of the lesson (`files[]`, in upload order; the
+  /// first one is the primary file). Payloads without `files[]` fall back
+  /// to the single primary file.
+  List<LearningFileInfo> get files {
+    final list = raw['files'];
+    final parsed = list is List
+        ? list
+            .whereType<Map>()
+            .map((f) => LearningFileInfo(Map<String, dynamic>.from(f)))
+            .where((f) => f.downloadPath != null)
+            .toList()
+        : <LearningFileInfo>[];
+    if (parsed.isNotEmpty || !hasFile) return parsed;
+
+    return [
+      LearningFileInfo({
+        'id': null,
+        'name': fileName ?? title,
+        'mime_type': fileMimeType,
+        'size_bytes': fileSizeBytes,
+        'downloadable': fileDownloadable,
+        'download_path': downloadPath,
+      }),
+    ];
+  }
+
+  /// Offline key for one of [files]: the primary file keeps the lesson key
+  /// (shown as "Available offline" in the course outline).
+  String? fileDownloadKey(LearningFileInfo file, int index) {
+    final lessonId = id;
+    if (lessonId == null) return null;
+    if (index == 0 || file.id == null) return 'lesson_$lessonId';
+    return 'lesson_${lessonId}_file_${file.id}';
   }
 
   bool get completedOnServer {
@@ -91,30 +126,5 @@ class LessonInfo {
       [kind.label, durationLabel].whereType<String>().join(' · ');
 }
 
-class LessonFile {
-  LessonFile(this.raw);
-
-  final Map<String, dynamic> raw;
-
-  dynamic get id => raw['id'];
-
-  String get name {
-    final value = raw['name']?.toString().trim() ?? '';
-    return value.isEmpty ? 'Attachment' : value;
-  }
-
-  int? get sizeBytes => int.tryParse(raw['size_bytes']?.toString() ?? '');
-
-  String? get downloadPath {
-    final path = (raw['download_path'] ?? raw['download_url'])?.toString().trim() ?? '';
-    if (path.isEmpty || path.contains('/storage/')) return null;
-    return path;
-  }
-}
-
-String? fileSizeLabel(int? bytes) {
-  if (bytes == null || bytes <= 0) return null;
-  if (bytes < 1024) return '$bytes B';
-  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
-  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-}
+/// Older name for a lesson file.
+typedef LessonFile = LearningFileInfo;

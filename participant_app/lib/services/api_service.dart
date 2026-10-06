@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -8,6 +9,14 @@ import '../core/app_config.dart';
 import '../core/logger.dart';
 import '../core/network/app_exception.dart';
 import '../core/session_events.dart';
+
+/// A file held in memory by the in-app viewer.
+class FileBytes {
+  const FileBytes(this.bytes, {this.contentType});
+
+  final Uint8List bytes;
+  final String? contentType;
+}
 
 /// Single HTTP client for the participant API
 /// (base: https://site.elevateher360.org/api/v1/participant).
@@ -428,6 +437,60 @@ class ApiService {
         );
       });
 
+  /// Fetches a view-only file (lesson file, assignment attachment) into
+  /// memory for the in-app viewer. Asks for `inline=1`; the bytes are never
+  /// written to the offline downloads folder.
+  Future<FileBytes> fetchFileBytes({
+    required String path,
+    ProgressCallback? onProgress,
+    CancelToken? cancelToken,
+  }) =>
+      _guard(() async {
+        final target = resolveApiPath(path);
+        if (target == null) {
+          throw const AppException(
+            AppErrorKind.notFound,
+            "This file isn't available yet.",
+          );
+        }
+        final response = await dio.get<List<int>>(
+          target,
+          queryParameters: const {'inline': 1},
+          onReceiveProgress: onProgress,
+          cancelToken: cancelToken,
+          options: Options(
+            responseType: ResponseType.bytes,
+            headers: {'Accept': '*/*'},
+            receiveTimeout: const Duration(minutes: 3),
+          ),
+        );
+        final data = response.data ?? const <int>[];
+        return FileBytes(
+          data is Uint8List ? data : Uint8List.fromList(data),
+          contentType: response.headers.value('content-type'),
+        );
+      });
+
+  /// Absolute `inline=1` URL for streaming a view-only file in a player
+  /// (sent with [authHeaders]); null when [path] isn't an API path.
+  Uri? inlineFileUri(String path) {
+    final target = resolveApiPath(path);
+    if (target == null) return null;
+    final uri = Uri.parse(
+      Uri.parse(target).hasScheme ? target : '${AppConfig.apiBaseUrl}$target',
+    );
+    return uri.replace(queryParameters: {...uri.queryParameters, 'inline': '1'});
+  }
+
+  /// Bearer header for players that fetch API files themselves.
+  Future<Map<String, String>> authHeaders() async {
+    final token = await getToken();
+    return {
+      'Accept': '*/*',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
   /// Returns a Dio path for [value] if it is a relative API path or an
   /// absolute URL on the API host; otherwise null.
   String? resolveApiPath(String? value) {
@@ -492,23 +555,32 @@ class ApiService {
         return _mapResponse(response.data);
       });
 
+  /// POST /assignments/{id}/submit (multipart). One file goes as the legacy
+  /// `submission_file`; several go as `submission_files[]` (max 10). A 422
+  /// names the failing file as `submission_files.N`.
   Future<Map<String, dynamic>> submitAssignment({
     required int assessmentId,
     String? text,
     String? localFilePath,
+    List<String> localFilePaths = const [],
     String? clientSubmissionId,
     String? clientCreatedAt,
   }) =>
       _guard(() async {
-        MultipartFile? file;
+        final files = <MultipartFile>[];
+        final paths = <String>{
+          if (localFilePath != null) localFilePath,
+          ...localFilePaths,
+        };
 
-        if (localFilePath != null && localFilePath.trim().isNotEmpty) {
-          final localFile = File(localFilePath);
+        for (final path in paths) {
+          if (path.trim().isEmpty) continue;
+          final localFile = File(path);
           if (await localFile.exists()) {
-            file = await MultipartFile.fromFile(
+            files.add(await MultipartFile.fromFile(
               localFile.path,
               filename: localFile.uri.pathSegments.last,
-            );
+            ));
           }
         }
 
@@ -523,8 +595,11 @@ class ApiService {
               clientCreatedAt != null &&
               clientCreatedAt.trim().isNotEmpty)
             'client_created_at': clientCreatedAt.trim(),
-          if (file != null) 'submission_file': file,
+          if (files.length == 1) 'submission_file': files.single,
         });
+        if (files.length > 1) {
+          form.files.addAll(files.map((f) => MapEntry('submission_files[]', f)));
+        }
 
         final response = await dio.post(
           '/assignments/$assessmentId/submit',

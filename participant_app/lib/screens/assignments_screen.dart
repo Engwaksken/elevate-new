@@ -1,8 +1,10 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../core/app_config.dart';
 import '../core/assignment_info.dart';
 import '../core/formatters.dart';
+import '../core/learning_file.dart' show fileSizeLabel;
 import '../core/network/app_exception.dart';
 import '../core/theme/app_theme.dart';
 import '../services/api_service.dart';
@@ -11,6 +13,7 @@ import '../services/local_database.dart';
 import '../services/sync_service.dart';
 import '../widgets/cached_data.dart';
 import '../widgets/feedback.dart';
+import '../widgets/learning_file_tile.dart';
 import '../widgets/state_views.dart';
 
 /// Result of the submission sheet.
@@ -28,7 +31,6 @@ class AssignmentsScreen extends StatefulWidget {
 
 class _AssignmentsScreenState extends State<AssignmentsScreen>
     with CachedDataMixin<AssignmentsScreen, List<AssignmentInfo>> {
-  final Set<String> _downloading = {};
 
   @override
   Future<List<AssignmentInfo>> readCache() async {
@@ -43,6 +45,13 @@ class _AssignmentsScreenState extends State<AssignmentsScreen>
       }
       return AssignmentInfo(raw);
     }).toList();
+    // Offline copies of instructions files that are view-only now are
+    // deleted from the device.
+    await DownloadService.instance.purgeViewOnlyCopies(viewOnlyKeys: [
+      for (final a in items)
+        for (final file in a.attachments)
+          if (file.viewOnly) a.attachmentDownloadKey(file),
+    ]);
     // Overdue and soonest-due first; submitted work after; no due date last.
     items.sort((a, b) {
       final rank = a.sortRank.compareTo(b.sortRank);
@@ -54,42 +63,6 @@ class _AssignmentsScreenState extends State<AssignmentsScreen>
       return ad.compareTo(bd);
     });
     return items;
-  }
-
-  /// Authenticated attachment path per the API contract. Legacy public
-  /// /storage URLs are ignored.
-  String? _attachmentPath(Map<String, dynamic> item) {
-    final path = item['attachment_download_path']?.toString().trim() ?? '';
-    if (path.isNotEmpty) return path;
-    final url = item['attachment_url']?.toString().trim() ?? '';
-    if (url.isEmpty || url.contains('/storage/')) return null;
-    return url;
-  }
-
-  Future<void> _attachment(AssignmentInfo a) async {
-    final item = a.raw;
-    final id = item['id']?.toString() ?? '';
-    final path = _attachmentPath(item);
-    if (path == null) return;
-
-    final key = DownloadService.assessmentKey(id);
-
-    try {
-      if (await DownloadService.instance.localPath(key) == null) {
-        setState(() => _downloading.add(key));
-        await DownloadService.instance.download(
-          key: key,
-          apiPath: path,
-          title: a.title,
-          fileName: item['attachment_name']?.toString(),
-        );
-      }
-      await DownloadService.instance.open(key);
-    } catch (error) {
-      if (mounted) showErrorSnackBar(context, error, onRetry: () => _attachment(a));
-    } finally {
-      if (mounted) setState(() => _downloading.remove(key));
-    }
   }
 
   Future<void> _submit(AssignmentInfo a) async {
@@ -169,13 +142,9 @@ class _AssignmentsScreenState extends State<AssignmentsScreen>
               itemBuilder: (context, index) {
                 if (index == 0) return _CountsHeader(counts: counts);
                 final a = items[index - 1];
-                final id = a.raw['id']?.toString() ?? '';
                 return AssignmentCard(
                   assignment: a,
-                  hasAttachment: _attachmentPath(a.raw) != null,
-                  downloading: _downloading.contains(DownloadService.assessmentKey(id)),
                   onSubmit: () => _submit(a),
-                  onAttachment: () => _attachment(a),
                   onRequestExtension: () => _requestExtension(a),
                 );
               },
@@ -239,17 +208,11 @@ class AssignmentCard extends StatelessWidget {
     required this.assignment,
     required this.onSubmit,
     required this.onRequestExtension,
-    this.onAttachment,
-    this.hasAttachment = false,
-    this.downloading = false,
   });
 
   final AssignmentInfo assignment;
   final VoidCallback onSubmit;
   final VoidCallback onRequestExtension;
-  final VoidCallback? onAttachment;
-  final bool hasAttachment;
-  final bool downloading;
 
   static (PillTone, IconData) statusStyle(AssignmentStatus s) => switch (s) {
         AssignmentStatus.notSubmitted => (PillTone.neutral, Icons.radio_button_unchecked),
@@ -275,6 +238,8 @@ class AssignmentCard extends StatelessWidget {
     final relative = a.relativeDue;
     final ext = a.extensionRequest;
     final attemptsLeft = a.attemptsRemaining;
+    final attachments = a.attachments;
+    final submitted = a.submittedFiles;
 
     return Card(
       child: Padding(
@@ -363,6 +328,35 @@ class AssignmentCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.md),
               _ExtensionState(assignment: a),
             ],
+            if (attachments.isNotEmpty)
+              _FilesSection(
+                title: attachments.length == 1 ? 'Instructions file' : 'Instructions files',
+                children: [
+                  for (final file in attachments)
+                    LearningFileTile(
+                      key: ValueKey('attachment-${a.attachmentDownloadKey(file)}'),
+                      file: file,
+                      downloadKey: a.attachmentDownloadKey(file),
+                      websiteUrl: a.id == null
+                          ? null
+                          : '${AppConfig.siteUrl}/learning/assessments/${a.id}',
+                      compact: true,
+                    ),
+                ],
+              ),
+            if (submitted.isNotEmpty)
+              _FilesSection(
+                title: 'Your submitted files',
+                children: [
+                  for (final file in submitted)
+                    LearningFileTile(
+                      key: ValueKey('submitted-${file.id}'),
+                      file: file,
+                      downloadKey: DownloadService.submissionFileKey(file.id),
+                      compact: true,
+                    ),
+                ],
+              ),
             const SizedBox(height: AppSpacing.md),
             if (a.canSubmit)
               Wrap(
@@ -374,7 +368,6 @@ class AssignmentCard extends StatelessWidget {
                     icon: const Icon(Icons.upload_outlined),
                     label: Text(a.hasSubmitted ? 'Submit again' : 'Submit work'),
                   ),
-                  if (hasAttachment) _attachmentButton(),
                   if (a.canRequestExtension)
                     TextButton.icon(
                       onPressed: onRequestExtension,
@@ -412,10 +405,6 @@ class AssignmentCard extends StatelessWidget {
                   tone: PillTone.success,
                   message: "You've used all your attempts for this assignment. Great effort!",
                 ),
-              if (hasAttachment) ...[
-                const SizedBox(height: AppSpacing.sm),
-                _attachmentButton(),
-              ],
             ],
           ],
         ),
@@ -423,16 +412,32 @@ class AssignmentCard extends StatelessWidget {
     );
   }
 
-  Widget _attachmentButton() => OutlinedButton.icon(
-        onPressed: downloading ? null : onAttachment,
-        icon: downloading
-            ? const SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.attach_file),
-        label: const Text('Instructions file'),
-      );
+}
+
+/// "Instructions files" / "Your submitted files" inside an assignment card.
+class _FilesSection extends StatelessWidget {
+  const _FilesSection({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(title, style: theme.textTheme.labelLarge),
+          ),
+          ...children,
+        ],
+      ),
+    );
+  }
 }
 
 /// Shown instead of the submit button once the due date has passed.
@@ -729,9 +734,13 @@ class _SubmissionSheet extends StatefulWidget {
 
 class _SubmissionSheetState extends State<_SubmissionSheet> {
   final _text = TextEditingController();
-  String? _filePath;
+  final List<PlatformFile> _files = [];
   bool _sending = false;
   AppException? _error;
+
+  /// Server limits (config/elearning.php): 10 files, 50 MB each.
+  static const int maxFiles = 10;
+  static const int maxFileBytes = 50 * 1024 * 1024;
 
   @override
   void dispose() {
@@ -739,14 +748,40 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
     super.dispose();
   }
 
-  Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(allowMultiple: false);
-    final path = result?.files.single.path;
-    if (path != null) setState(() => _filePath = path);
+  Future<void> _pickFiles() async {
+    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+    if (result == null || !mounted) return;
+
+    final known = {for (final f in _files) f.path};
+    final picked =
+        result.files.where((f) => f.path != null && !known.contains(f.path)).toList();
+    final tooBig = [for (final f in picked) if (f.size > maxFileBytes) f.name];
+    final accepted = [for (final f in picked) if (f.size <= maxFileBytes) f];
+    final room = maxFiles - _files.length;
+
+    setState(() {
+      _files.addAll(accepted.take(room < 0 ? 0 : room));
+      _error = null;
+    });
+
+    final notes = [
+      if (tooBig.isNotEmpty)
+        '${tooBig.join(', ')} ${tooBig.length == 1 ? 'is' : 'are'} larger than 50 MB.',
+      if (accepted.length > room) 'You can attach up to $maxFiles files.',
+    ];
+    if (notes.isNotEmpty) showAppSnackBar(context, notes.join(' '), error: true);
   }
 
+  void _removeFile(int index) => setState(() {
+        _files.removeAt(index);
+        // Server errors point at file positions, which just changed.
+        _error = null;
+      });
+
+  List<String> get _paths => [for (final f in _files) f.path!];
+
   Future<void> _send() async {
-    if (_text.text.trim().isEmpty && _filePath == null) {
+    if (_text.text.trim().isEmpty && _files.isEmpty) {
       setState(() => _error = const AppException(
             AppErrorKind.validation,
             'Add a response or attach a file before submitting.',
@@ -766,7 +801,7 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
       await SyncService.instance.queueAssignmentSubmission(
         assessmentId: id,
         text: _text.text,
-        localFilePath: _filePath,
+        localFilePaths: _paths,
       );
       return _SubmitOutcome.queued;
     }
@@ -778,7 +813,7 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
           await ApiService.instance.submitAssignment(
             assessmentId: id,
             text: _text.text,
-            localFilePath: _filePath,
+            localFilePaths: _paths,
           );
           outcome = _SubmitOutcome.submitted;
         } catch (error) {
@@ -805,12 +840,10 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final instructions =
         plainParagraphs(widget.assignment.raw['instructions']?.toString()).join('\n\n');
-    final textError = _error?.fieldError('submission_text');
-    final fileError = _error?.fieldError('submission_file');
-    final generalError =
-        _error != null && textError == null && fileError == null ? _error!.message : null;
+    final errors = SubmissionFileErrors.of(_error, fileCount: _files.length);
     final relative = widget.assignment.relativeDue;
 
     return Padding(
@@ -826,7 +859,7 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
               if (relative != null)
                 Text(
                   relative,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: scheme.secondary),
                 ),
               if (instructions.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.sm),
@@ -843,29 +876,41 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
                 decoration: InputDecoration(
                   labelText: 'Your response',
                   alignLabelWithHint: true,
-                  errorText: textError,
+                  errorText: errors.text,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
+              for (var i = 0; i < _files.length; i++)
+                PickedFileRow(
+                  name: _files[i].name,
+                  sizeBytes: _files[i].size,
+                  error: errors.perFile[i],
+                  onRemove: _sending ? null : () => _removeFile(i),
+                ),
               OutlinedButton.icon(
-                onPressed: _sending ? null : _pickFile,
+                onPressed: _sending || _files.length >= maxFiles ? null : _pickFiles,
                 icon: const Icon(Icons.attach_file),
-                label: Text(
-                  _filePath == null
-                      ? 'Attach a file'
-                      : _filePath!.split(RegExp(r'[\\/]')).last,
-                  overflow: TextOverflow.ellipsis,
+                label: Text(_files.isEmpty ? 'Attach files' : 'Add more files'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(
+                  'Up to $maxFiles files, 50 MB each '
+                  '(${_files.length} of $maxFiles attached)',
+                  style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               ),
-              if (fileError != null)
+              if (errors.files != null)
                 Padding(
                   padding: const EdgeInsets.only(top: AppSpacing.xs),
-                  child: Text(fileError,
-                      style: TextStyle(color: theme.colorScheme.error)),
+                  child: Text(errors.files!, style: TextStyle(color: scheme.error)),
                 ),
-              if (generalError != null) ...[
+              if (errors.general != null) ...[
                 const SizedBox(height: AppSpacing.md),
-                Text(generalError, style: TextStyle(color: theme.colorScheme.error)),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(errors.general!, style: TextStyle(color: scheme.error)),
+                ),
               ],
               const SizedBox(height: AppSpacing.lg),
               FilledButton.icon(
@@ -881,6 +926,110 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Server (422) errors of a submission, split by where they are shown.
+class SubmissionFileErrors {
+  const SubmissionFileErrors({
+    this.text,
+    this.files,
+    this.perFile = const [],
+    this.general,
+  });
+
+  /// [fileCount] picked files map to `submission_files.N`; a single file
+  /// is sent as the legacy `submission_file`.
+  factory SubmissionFileErrors.of(AppException? error, {required int fileCount}) {
+    if (error == null) return SubmissionFileErrors(perFile: List.filled(fileCount, null));
+
+    final text = error.fieldError('submission_text');
+    final files = error.fieldError('submission_files');
+    final perFile = [
+      for (var i = 0; i < fileCount; i++)
+        error.fieldError('submission_files.$i') ??
+            (fileCount == 1 ? error.fieldError('submission_file') : null),
+    ];
+    final shown = text != null || files != null || perFile.any((e) => e != null);
+    String? general;
+    if (!shown) {
+      // e.g. an error for a file that has since been removed from the list.
+      general = error.fieldErrors.entries
+              .where((e) => e.key.startsWith('submission_file'))
+              .map((e) => e.value)
+              .firstOrNull ??
+          error.message;
+    }
+    return SubmissionFileErrors(text: text, files: files, perFile: perFile, general: general);
+  }
+
+  final String? text;
+  final String? files;
+  final List<String?> perFile;
+  final String? general;
+}
+
+/// One picked file in the submission sheet, with its server error and a
+/// remove (×) button.
+class PickedFileRow extends StatelessWidget {
+  const PickedFileRow({
+    super.key,
+    required this.name,
+    required this.onRemove,
+    this.sizeBytes,
+    this.error,
+  });
+
+  final String name;
+  final int? sizeBytes;
+  final VoidCallback? onRemove;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final size = fileSizeLabel(sizeBytes);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: Icon(
+              error != null ? Icons.error_outline : Icons.insert_drive_file_outlined,
+              color: error != null ? scheme.error : scheme.primary,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: theme.textTheme.bodyMedium),
+                  if (size != null)
+                    Text(
+                      size,
+                      style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                  if (error != null)
+                    Text(error!, style: theme.textTheme.bodySmall?.copyWith(color: scheme.error)),
+                ],
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Remove $name',
+            onPressed: onRemove,
+            icon: const Icon(Icons.close),
+          ),
+        ],
       ),
     );
   }

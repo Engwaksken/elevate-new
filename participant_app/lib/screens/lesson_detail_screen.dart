@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/app_config.dart';
 import '../core/formatters.dart';
 import '../core/lesson_info.dart';
 import '../core/logger.dart';
@@ -17,10 +17,12 @@ import '../services/local_database.dart';
 import '../services/reading_time_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/feedback.dart';
+import '../widgets/learning_file_tile.dart';
 import '../widgets/state_views.dart';
 
 /// Lesson viewer for reading, document, video and link lessons, with
-/// offline downloads and a "Mark as complete" action.
+/// every lesson file (view-only in the app, or downloadable for offline
+/// use when the policy allows) and a "Mark as complete" action.
 class LessonDetailScreen extends StatefulWidget {
   const LessonDetailScreen({
     super.key,
@@ -155,8 +157,21 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
     }
     await _refreshStoredSeconds();
     await _loadCompletion();
+    await _purgeViewOnlyCopies();
     await _fetch();
   }
+
+  /// Offline copies saved before a file became view-only are deleted.
+  Future<void> _purgeViewOnlyCopies() async {
+    final files = _lesson.files;
+    await DownloadService.instance.purgeViewOnlyCopies(viewOnlyKeys: [
+      for (var i = 0; i < files.length; i++)
+        if (files[i].viewOnly) _lesson.fileDownloadKey(files[i], i),
+    ].whereType<String>());
+  }
+
+  /// The lesson page on the website (for files the app can't display).
+  String? get _websiteUrl => _id == null ? null : '${AppConfig.siteUrl}/learning/lessons/$_id';
 
   Future<void> _loadCompletion() async {
     final id = _id;
@@ -190,6 +205,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
       );
       await _refreshStoredSeconds();
       await _loadCompletion();
+      await _purgeViewOnlyCopies();
     } catch (error) {
       final mapped = AppException.from(error);
       // The course payload already holds the lesson content, so only an
@@ -306,8 +322,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
     final lesson = _lesson;
     final paragraphs = plainParagraphs(lesson.body);
     final hasAnything = paragraphs.isNotEmpty ||
-        lesson.hasFile ||
-        lesson.extraFiles.isNotEmpty ||
+        lesson.files.isNotEmpty ||
         lesson.videoUrl != null ||
         lesson.externalUrl != null;
 
@@ -379,27 +394,15 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
                     ),
                     const SizedBox(height: AppSpacing.md),
                   ],
-                  if (lesson.hasFile && _id != null) ...[
-                    _FileCard(
-                      downloadKey: DownloadService.lessonKey(_id!),
-                      apiPath: lesson.downloadPath!,
-                      title: lesson.title,
-                      fileName: lesson.fileName,
-                      sizeBytes: lesson.fileSizeBytes,
+                  for (final (index, file) in lesson.files.indexed) ...[
+                    LearningFileTile(
+                      key: ValueKey('lesson-file-$index-${file.id}'),
+                      file: file,
+                      downloadKey: lesson.fileDownloadKey(file, index),
+                      websiteUrl: _websiteUrl,
                     ),
                     const SizedBox(height: AppSpacing.md),
                   ],
-                  for (final file in lesson.extraFiles)
-                    if (_id != null) ...[
-                      _FileCard(
-                        downloadKey: DownloadService.lessonFileKey(_id!, file.id),
-                        apiPath: file.downloadPath!,
-                        title: file.name,
-                        fileName: file.name,
-                        sizeBytes: file.sizeBytes,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                    ],
                   if (lesson.externalUrl != null) ...[
                     _ActionCard(
                       icon: Icons.link,
@@ -495,200 +498,6 @@ class _ActionCard extends StatelessWidget {
               icon: Icon(buttonIcon),
               label: Text(buttonLabel),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Download / open / remove one lesson file, with progress.
-class _FileCard extends StatefulWidget {
-  const _FileCard({
-    required this.downloadKey,
-    required this.apiPath,
-    required this.title,
-    this.fileName,
-    this.sizeBytes,
-  });
-
-  final String downloadKey;
-  final String apiPath;
-  final String title;
-  final String? fileName;
-  final int? sizeBytes;
-
-  @override
-  State<_FileCard> createState() => _FileCardState();
-}
-
-class _FileCardState extends State<_FileCard> {
-  bool _available = false;
-  bool _downloading = false;
-  double? _progress;
-  CancelToken? _cancel;
-
-  @override
-  void initState() {
-    super.initState();
-    _check();
-  }
-
-  @override
-  void dispose() {
-    _cancel?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _check() async {
-    final path = await DownloadService.instance.localPath(widget.downloadKey);
-    if (mounted) setState(() => _available = path != null);
-  }
-
-  Future<void> _download() async {
-    _cancel = CancelToken();
-    setState(() {
-      _downloading = true;
-      _progress = null;
-    });
-
-    try {
-      await DownloadService.instance.download(
-        key: widget.downloadKey,
-        apiPath: widget.apiPath,
-        title: widget.title,
-        fileName: widget.fileName,
-        cancelToken: _cancel,
-        onProgress: (value) {
-          if (mounted) setState(() => _progress = value);
-        },
-      );
-      if (!mounted) return;
-      setState(() => _available = true);
-      showAppSnackBar(context, 'Saved for offline use.', actionLabel: 'Open', onAction: _open);
-    } catch (error) {
-      if (!mounted || (_cancel?.isCancelled ?? false)) return;
-      showErrorSnackBar(context, error, onRetry: _download);
-    } finally {
-      if (mounted) setState(() => _downloading = false);
-    }
-  }
-
-  Future<void> _open() async {
-    try {
-      await DownloadService.instance.open(widget.downloadKey);
-    } catch (error) {
-      if (!mounted) return;
-      showErrorSnackBar(context, error);
-      await _check();
-    }
-  }
-
-  Future<void> _remove() async {
-    final ok = await confirmDialog(
-      context,
-      title: 'Remove offline copy?',
-      message: 'The file will be deleted from this device. You can download it again later.',
-      confirmLabel: 'Remove',
-      destructive: true,
-    );
-    if (!ok) return;
-    await DownloadService.instance.remove(widget.downloadKey);
-    await _check();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final name = widget.fileName ?? widget.title;
-    final details = [
-      fileSizeLabel(widget.sizeBytes),
-      if (_available) 'Available offline',
-    ].whereType<String>().join(' · ');
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  _available ? Icons.offline_pin_outlined : Icons.description_outlined,
-                  color: scheme.primary,
-                  size: 32,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(name, style: theme.textTheme.titleMedium),
-                      if (details.isNotEmpty)
-                        Text(
-                          details,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            if (_downloading) ...[
-              Semantics(
-                label: _progress == null
-                    ? 'Downloading'
-                    : 'Downloading, ${(_progress! * 100).round()} percent',
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  child: LinearProgressIndicator(value: _progress),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _progress == null
-                          ? 'Downloading…'
-                          : 'Downloading… ${(_progress! * 100).round()}%',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => _cancel?.cancel(),
-                    child: const Text('Cancel'),
-                  ),
-                ],
-              ),
-            ] else if (_available)
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  FilledButton.icon(
-                    onPressed: _open,
-                    icon: const Icon(Icons.open_in_new),
-                    label: const Text('Open'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: _remove,
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Remove offline copy'),
-                  ),
-                ],
-              )
-            else
-              FilledButton.icon(
-                onPressed: _download,
-                icon: const Icon(Icons.download_outlined),
-                label: const Text('Download'),
-              ),
           ],
         ),
       ),

@@ -12,6 +12,7 @@ enum AppDestination {
   progress('My progress', Icons.insights_outlined, Icons.insights_rounded),
   certificates('My certificates', Icons.workspace_premium_outlined, Icons.workspace_premium_rounded),
   mentorship('Mentorship', Icons.diversity_3_outlined, Icons.diversity_3_rounded),
+  appointments('Appointments', Icons.event_available_outlined, Icons.event_available_rounded),
   jobs('Jobs & opportunities', Icons.work_outline_rounded, Icons.work_rounded),
   careerDocuments('Resumes & cover letters', Icons.description_outlined, Icons.description_rounded),
   events('Events', Icons.event_outlined, Icons.event_rounded),

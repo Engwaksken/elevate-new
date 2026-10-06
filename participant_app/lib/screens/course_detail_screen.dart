@@ -249,6 +249,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         apiPath: path,
         title: lesson.title,
         fileName: lesson.fileName,
+        downloadable: lesson.fileDownloadable,
       );
       if (mounted) showAppSnackBar(context, 'Saved for offline use.');
     } catch (error) {
@@ -574,7 +575,7 @@ class _LessonTile extends StatelessWidget {
                     title: Text(completed ? 'Mark as not complete' : 'Mark as complete'),
                   ),
                 ),
-                if (lesson.hasFile && !downloaded)
+                if (lesson.hasFile && lesson.fileDownloadable && !downloaded)
                   const PopupMenuItem(
                     value: _LessonAction.download,
                     child: ListTile(

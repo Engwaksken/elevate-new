@@ -7,12 +7,17 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/learning_file.dart';
 import '../core/logger.dart';
 import '../core/network/app_exception.dart';
 import 'api_service.dart';
 import 'local_database.dart';
 
 /// Saves lesson files and assessment attachments for offline use.
+///
+/// Only files the download policy allows (spreadsheets, CSV and ZIP, plus
+/// her own submissions and certificates) are ever saved here. View-only
+/// files are shown by the in-app viewer from memory instead.
 class DownloadService {
   DownloadService._();
 
@@ -22,6 +27,16 @@ class DownloadService {
 
   static String lessonKey(int lessonId) => 'lesson_$lessonId';
   static String assessmentKey(String id) => 'assessment_$id';
+  static String submissionFileKey(dynamic fileId) => 'submission_file_$fileId';
+
+  static const String viewOnlyMessage =
+      "This file is view-only, so it can't be saved on your device. Tap View to read it in the app.";
+
+  /// Course material keys (lesson files and assignment attachments), which
+  /// fall under the view-only policy. Certificates and her own submissions
+  /// use other prefixes and are never purged.
+  static bool isCourseMaterialKey(String key) =>
+      key.startsWith('lesson_') || key.startsWith('assessment_');
 
   Future<bool> wifiOnly() async {
     final prefs = await SharedPreferences.getInstance();
@@ -70,9 +85,13 @@ class DownloadService {
     required String apiPath,
     required String title,
     String? fileName,
+    bool downloadable = true,
     void Function(double? progress)? onProgress,
     CancelToken? cancelToken,
   }) async {
+    if (!downloadable) {
+      throw const AppException(AppErrorKind.forbidden, viewOnlyMessage, statusCode: 403);
+    }
     await _checkConnectionPolicy();
 
     final dir = await _downloadsDir();
@@ -114,8 +133,38 @@ class DownloadService {
     } catch (error) {
       final temp = File(tempPath);
       if (await temp.exists()) await temp.delete();
-      throw AppException.from(error);
+      final mapped = AppException.from(error);
+      // The server refuses to hand out view-only files as downloads.
+      if (mapped.statusCode == 403 && isCourseMaterialKey(key)) {
+        throw const AppException(AppErrorKind.forbidden, viewOnlyMessage, statusCode: 403);
+      }
+      throw mapped;
     }
+  }
+
+  /// Deletes offline copies of course files that are view-only now: every
+  /// key in [viewOnlyKeys] (from the server's flags) and any lesson or
+  /// assignment file whose type isn't downloadable (copies saved before
+  /// the policy existed). Returns how many copies were removed.
+  Future<int> purgeViewOnlyCopies({Iterable<String> viewOnlyKeys = const []}) async {
+    final flagged = viewOnlyKeys.toSet();
+    var removed = 0;
+    try {
+      for (final row in await _db.downloads()) {
+        final key = row['download_key']?.toString() ?? '';
+        if (!isCourseMaterialKey(key)) continue;
+        final name = row['file_name']?.toString();
+        final path = row['local_path']?.toString();
+        final allowed = isDownloadableFileName(name) || isDownloadableFileName(path);
+        if (flagged.contains(key) || !allowed) {
+          await remove(key);
+          removed++;
+        }
+      }
+    } catch (error) {
+      appLog('Purging view-only offline copies failed', error);
+    }
+    return removed;
   }
 
   String _extensionFor(Response<dynamic> response, String? fileName) {

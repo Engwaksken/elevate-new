@@ -10,6 +10,7 @@ import '../services/sync_service.dart';
 import '../widgets/cached_data.dart';
 import '../widgets/feedback.dart';
 import '../widgets/state_views.dart';
+import 'appointments_screen.dart';
 import 'assignments_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -73,6 +74,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   static bool _isExtensionDecision(Map<String, dynamic> item) =>
       (item['type']?.toString() ?? '').startsWith('assignment_extension');
 
+  static bool _isAppointment(Map<String, dynamic> item) =>
+      (item['type']?.toString() ?? '').startsWith('appointment');
+
   /// Extension decisions arrive only as notifications (no push): refresh
   /// assignments so the new due date or reviewer note is shown.
   Future<void> _openAssignments() async {
@@ -121,6 +125,19 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                   },
                   icon: const Icon(Icons.assignment_outlined),
                   label: const Text('View assignment'),
+                ),
+              ],
+              if (_isAppointment(item)) ...[
+                const SizedBox(height: AppSpacing.lg),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.of(this.context).push(
+                      MaterialPageRoute(builder: (_) => const AppointmentsScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.event_available_outlined),
+                  label: const Text('View appointments'),
                 ),
               ],
             ],

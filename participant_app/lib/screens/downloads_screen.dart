@@ -26,6 +26,8 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
 
   Future<void> _load() async {
     try {
+      // Course files that are view-only now never stay on the device.
+      await DownloadService.instance.purgeViewOnlyCopies();
       final rows = await LocalDatabase.instance.downloads();
       if (mounted) {
         setState(() {
@@ -79,7 +81,8 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
           ? const EmptyState(
               icon: Icons.download_outlined,
               title: 'No downloads yet',
-              message: 'Download lesson files to read them without an internet connection.',
+              message: 'Spreadsheets, CSV and ZIP files from your lessons can be saved here '
+                  'for use without an internet connection. Other course files open in the app.',
             )
           : ListView.separated(
               padding: AppSpacing.listPadding,

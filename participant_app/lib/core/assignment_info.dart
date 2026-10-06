@@ -1,4 +1,5 @@
 import 'formatters.dart';
+import 'learning_file.dart';
 
 /// Where an assignment stands for the participant.
 enum AssignmentStatus { notSubmitted, submitted, graded, overdue }
@@ -179,6 +180,60 @@ class AssignmentInfo {
       return 'Was due ${formatDateTime(due.toIso8601String(), withTime: false)}';
     }
     return relativeDueText(due, now: now);
+  }
+
+  /// Authenticated path of the first attachment (legacy single-file
+  /// fields). Public /storage URLs are ignored.
+  String? get legacyAttachmentPath {
+    final path = raw['attachment_download_path']?.toString().trim() ?? '';
+    if (path.isNotEmpty) return path;
+    final url = raw['attachment_url']?.toString().trim() ?? '';
+    if (url.isEmpty || url.contains('/storage/')) return null;
+    return url;
+  }
+
+  /// Instructor files for the brief (`attachments[]`). Older servers only
+  /// send `attachment_url`/`attachment_name`, used as a single file.
+  List<LearningFileInfo> get attachments {
+    final list = raw['attachments'];
+    if (list is List) {
+      return list
+          .whereType<Map>()
+          .map((f) => LearningFileInfo(Map<String, dynamic>.from(f)))
+          .where((f) => f.downloadPath != null)
+          .toList();
+    }
+    final path = legacyAttachmentPath;
+    if (path == null) return const [];
+    final name = raw['attachment_name']?.toString().trim() ?? '';
+    return [
+      LearningFileInfo({
+        'id': null,
+        'name': name.isEmpty ? '$title instructions' : name,
+        if (raw['attachment_downloadable'] != null)
+          'downloadable': raw['attachment_downloadable'],
+        'download_path': path,
+      }),
+    ];
+  }
+
+  /// Offline key for one of [attachments].
+  String attachmentDownloadKey(LearningFileInfo file) {
+    final key = 'assessment_${id ?? raw['id']}';
+    return file.id == null ? key : '${key}_file_${file.id}';
+  }
+
+  /// Files of the latest submission (`latest_submission.files[]`): her own
+  /// work, so always downloadable.
+  List<LearningFileInfo> get submittedFiles {
+    final latest = raw['latest_submission'];
+    final list = latest is Map ? latest['files'] : null;
+    if (list is! List) return const [];
+    return list
+        .whereType<Map>()
+        .map((f) => LearningFileInfo(Map<String, dynamic>.from(f), ownSubmission: true))
+        .where((f) => f.downloadPath != null)
+        .toList();
   }
 
   /// Sort key: overdue and soonest-due first, submitted work last.

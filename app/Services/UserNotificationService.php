@@ -3,6 +3,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Services\Push\PushNotificationService;
 use App\Support\NotificationPreferences;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ class UserNotificationService
             return null;
         }
 
-        return UserNotification::create([
+        $notification = UserNotification::create([
             'user_id'=>$user->id,
             'type'=>$type,
             'title'=>$title,
@@ -23,6 +24,10 @@ class UserNotificationService
             'action_url'=>$actionUrl,
             'data'=>$data ?: null,
         ]);
+
+        $this->push([$user->id], $type, $title, $message, $actionUrl, $notification->id);
+
+        return $notification;
     }
 
     /**
@@ -74,7 +79,19 @@ class UserNotificationService
             ])->all());
         }
 
+        $this->push($ids->all(), $type, $title, $message, $actionUrl);
+
         return $ids->count();
+    }
+
+    /** Mirror the in-app notice to the users' phones; never fails the caller. */
+    private function push(array $userIds, string $type, string $title, ?string $message, ?string $actionUrl, ?int $notificationId = null): void
+    {
+        try {
+            app(PushNotificationService::class)->sendLater($userIds, $type, $title, $message, $actionUrl, $notificationId);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**

@@ -84,11 +84,13 @@ class SyncService {
     required int assessmentId,
     String? text,
     String? localFilePath,
+    List<String> localFilePaths = const [],
   }) async {
     await queueAction(submissionOperation, {
       'assessment_id': assessmentId,
       'submission_text': text,
       'local_file_path': localFilePath,
+      'local_file_paths': localFilePaths,
       // When she pressed Submit: lets the server apply the 72-hour offline
       // grace window if the due date passes before the device reconnects.
       'client_created_at': DateTime.now().toUtc().toIso8601String(),
@@ -175,6 +177,10 @@ class SyncService {
             assessmentId: assessmentId ?? 0,
             text: payload['submission_text']?.toString(),
             localFilePath: payload['local_file_path']?.toString(),
+            localFilePaths: [
+              for (final path in payload['local_file_paths'] as List? ?? const [])
+                path.toString(),
+            ],
             clientSubmissionId: clientId,
             // Older queued items have no client_created_at: fall back to
             // the time the operation was queued.

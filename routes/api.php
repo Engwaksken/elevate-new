@@ -92,6 +92,19 @@ Route::prefix('v1')->group(function () {
                 Route::post('/mentorship/assistant',[App\Http\Controllers\Api\V1\Participant\MentorshipAssistantController::class,'message'])
                     ->middleware('throttle:20,1')->name('api.participant.mentorship.assistant');
 
+                Route::prefix('appointments')
+                    ->controller(\App\Http\Controllers\Api\V1\Participant\AppointmentController::class)
+                    ->name('api.participant.appointments.')
+                    ->group(function () {
+                        Route::get('/', 'index')->name('index');
+                        Route::get('/options', 'options')->name('options');
+                        Route::post('/', 'store')->middleware('throttle:20,1')->name('store');
+                        Route::get('/{appointment}', 'show')->whereNumber('appointment')->name('show');
+                        Route::post('/{appointment}/accept-proposal', 'acceptProposal')->whereNumber('appointment')->name('accept-proposal');
+                        Route::post('/{appointment}/decline-proposal', 'declineProposal')->whereNumber('appointment')->name('decline-proposal');
+                        Route::post('/{appointment}/cancel', 'cancel')->whereNumber('appointment')->name('cancel');
+                    });
+
                 Route::get('/goals',[App\Http\Controllers\Api\V1\Participant\GoalController::class,'index'])->name('api.participant.goals.index');
                 Route::post('/goals',[App\Http\Controllers\Api\V1\Participant\GoalController::class,'store'])->name('api.participant.goals.store');
                 Route::put('/goals/{goal}',[App\Http\Controllers\Api\V1\Participant\GoalController::class,'update'])->whereNumber('goal')->name('api.participant.goals.update');

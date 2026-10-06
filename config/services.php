@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    // Firebase Cloud Messaging (mobile push). Leave unset to disable push.
+    'fcm' => [
+        'enabled' => env('PUSH_ENABLED', true),
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+        'credentials' => env('FIREBASE_CREDENTIALS'),
+        'android_channel' => env('FIREBASE_ANDROID_CHANNEL', 'elevateher360_updates'),
+    ],
+
 ];
