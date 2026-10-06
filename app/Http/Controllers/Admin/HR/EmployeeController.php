@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\HR;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Employee;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 
 class EmployeeController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -35,6 +37,24 @@ class EmployeeController extends Controller
         }
 
         if($status=$request->get('status')) $query->where('status',$status);
+
+        if($format=$this->exportFormat($request)){
+            $departments=Department::pluck('name','id');
+            $positions=Position::pluck('title','id');
+
+            return $this->exportTable($format,'Employees',$query,[
+                'Employee'=>'user.name',
+                'Email'=>'user.email',
+                'Employee No.'=>'employee_number',
+                'Department'=>fn($e)=>$departments[$e->department_id]??'',
+                'Position'=>fn($e)=>$positions[$e->position_id]??'',
+                'Employment Type'=>fn($e)=>str_replace('_',' ',(string)$e->employment_type),
+                'Location'=>'work_location',
+                'Start Date'=>'start_date',
+                'Probation Ends'=>'probation_end_date',
+                'Status'=>fn($e)=>str_replace('_',' ',(string)$e->status),
+            ]);
+        }
 
         $perPage=in_array((int)$request->get('per_page'),[10,25,50,100],true)
             ? (int)$request->get('per_page') : 25;

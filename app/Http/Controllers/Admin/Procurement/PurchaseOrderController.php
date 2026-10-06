@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Procurement;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class PurchaseOrderController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request)
     {
         $query=PurchaseOrder::with(['supplier','items'])->latest();
@@ -24,6 +26,21 @@ class PurchaseOrderController extends Controller
         }
 
         if($status=$request->get('status')) $query->where('status',$status);
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Purchase Orders',$query,[
+                'PO Number'=>'po_number',
+                'Supplier'=>'supplier.name',
+                'Order Date'=>'order_date',
+                'Expected Delivery'=>'expected_delivery_date',
+                'Items'=>fn($o)=>$o->items->count(),
+                'Subtotal'=>fn($o)=>number_format((float)$o->subtotal,2),
+                'Tax'=>fn($o)=>number_format((float)$o->tax_amount,2),
+                'Total'=>fn($o)=>number_format((float)$o->total_amount,2),
+                'Currency'=>'currency',
+                'Status'=>fn($o)=>str_replace('_',' ',(string)$o->status),
+            ]);
+        }
 
         $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
             ? (int)$request->get('per_page') : 20;

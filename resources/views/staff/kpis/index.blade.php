@@ -13,6 +13,7 @@
     <p>Set the KPIs for your contract, get them approved by your supervisor, link your tasks to them, and carry them into each quarterly appraisal.</p>
 </div>
 <div class="admin-page-actions">
+    <x-export-buttons />
     <a href="{{ route('staff.tasks.index') }}" class="btn btn-outline"><i class="fas fa-list-check"></i> My Tasks</a>
     @if($employee)<button type="button" class="btn btn-primary" data-modal-open="kpi-new"><i class="fas fa-plus"></i> Add KPI</button>@endif
 </div>

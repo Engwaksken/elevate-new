@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','M&E Surveys | ElevateHer360')
 @section('content')
-<div class="admin-page-header"><div><span class="admin-eyebrow">MEAL</span><h1>Survey Builder</h1><p>Create Kobo/Google Forms-style participant surveys.</p></div><button data-modal-open="createSurvey" class="btn btn-primary"><i class="fas fa-plus"></i> New Survey</button></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">MEAL</span><h1>Survey Builder</h1><p>Create Kobo/Google Forms-style participant surveys.</p></div><div class="admin-page-actions"><x-export-buttons /><button data-modal-open="createSurvey" class="btn btn-primary"><i class="fas fa-plus"></i> New Survey</button></div></div>
 <div class="admin-panel"><form method="GET" class="admin-toolbar"><div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{request('search')}}" placeholder="Search surveys..."></div><select name="status"><option value="">All statuses</option>@foreach(['draft','published','closed','archived'] as $s)<option value="{{$s}}" @selected(request('status')===$s)>{{ucfirst($s)}}</option>@endforeach</select><button class="btn btn-primary btn-sm">Apply</button></form>
 @php
 $bulkRoute = route('admin.surveys.bulk-destroy');

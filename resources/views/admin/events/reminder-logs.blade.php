@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Reminder Delivery Logs | ElevateHer360')
 @section('content')
-<div class="admin-page-header"><div><span class="admin-eyebrow">Event Reminders</span><h1>{{ $event->title }}</h1><p>Delivery history for automatic event reminders.</p></div><div class="admin-page-actions"><a href="{{ route('admin.events.view',$event) }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Event View</a></div></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Event Reminders</span><h1>{{ $event->title }}</h1><p>Delivery history for automatic event reminders.</p></div><div class="admin-page-actions"><x-export-buttons /><a href="{{ route('admin.events.view',$event) }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Event View</a></div></div>
 <div class="admin-panel">
 <form method="GET" class="admin-toolbar">
 <select name="channel"><option value="">All channels</option><option value="email" @selected(request('channel')==='email')>Email</option><option value="system" @selected(request('channel')==='system')>System</option></select>

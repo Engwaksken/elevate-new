@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Cohort;
@@ -17,6 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
+    use ExportsTables;
     private const PARTICIPANT_ROLE_SLUGS = [
         'student',
         'alumni',
@@ -61,6 +63,22 @@ class UserController extends Controller
 
         if ($cohortId = $request->integer('cohort_id')) {
             $query->whereHas('enrolments', fn ($q) => $q->where('cohort_id', $cohortId));
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, $forcedType ? 'Participants' : 'Users', $query, [
+                'Name' => 'name',
+                'Email' => 'email',
+                'Phone' => 'phone',
+                'Participant code' => 'participant_code',
+                'Type' => fn ($u) => ucfirst((string) $u->user_type),
+                'Status' => fn ($u) => ucfirst((string) $u->status),
+                'Roles' => fn ($u) => $u->roles->pluck('name')->implode(', '),
+                'Branches' => fn ($u) => $u->branches->pluck('name')->implode(', '),
+                'Courses taught' => fn ($u) => $u->instructedCourses->pluck('title')->implode(', '),
+                'Last login' => 'last_login_at',
+                'Registered' => 'created_at',
+            ]);
         }
 
         $perPage = in_array((int) $request->get('per_page'), [10,20,25,50,100], true)

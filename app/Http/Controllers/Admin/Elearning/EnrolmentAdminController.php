@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Admin\Elearning;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Cohort;
 use App\Models\Course;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 
 class EnrolmentAdminController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -32,6 +34,21 @@ class EnrolmentAdminController extends Controller
         if($courseId=$request->get('course_id')) $query->where('course_id',$courseId);
         if($cohortId=$request->get('cohort_id')) $query->where('cohort_id',$cohortId);
         if($status=$request->get('status')) $query->where('status',$status);
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Enrolments',$query,[
+                'Learner'=>'user.name',
+                'Email'=>'user.email',
+                'Participant code'=>'user.participant_code',
+                'Enrolment code'=>'enrolment_code',
+                'Course'=>'course.title',
+                'Cohort'=>'cohort.name',
+                'Status'=>'status',
+                'Progress (%)'=>'progress_percent',
+                'Enrolled'=>'enrolled_at',
+                'Completed'=>'completed_at',
+            ],null,['course_id'=>'Course','cohort_id'=>'Cohort']);
+        }
 
         return view('admin.elearning.enrolments.index',[
             'enrolments'=>$query->paginate(25)->withQueryString(),

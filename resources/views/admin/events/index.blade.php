@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Programme Delivery</span><h1>Events</h1><p>Create events, publish opportunities, manage registrations and track attendance.</p></div>
-<div class="admin-page-actions"><button class="btn btn-primary" type="button" data-modal-open="createEvent"><i class="fas fa-plus"></i> Add Event</button></div>
+<div class="admin-page-actions"><x-export-buttons /><button class="btn btn-primary" type="button" data-modal-open="createEvent"><i class="fas fa-plus"></i> Add Event</button></div>
 </div>
 @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 @if(session('error'))<div class="alert alert-error">{{ session('error') }}</div>@endif

@@ -53,6 +53,7 @@
 @import './course-call-auth-fixes.css';
 @import './legal-pages.css';
 @import './cms-sections.css';
+@import './role-shell.css';
 
 /* ==========================================================================
    ElevateHer360 Global Styles
@@ -2607,7 +2608,8 @@ tbody tr:hover {
     }
 
     .hero h1 {
-        font-size: 44px;
+        font-size: clamp(30px, 8.5vw, 44px);
+        margin-bottom: 16px;
     }
 
     .journey-card {

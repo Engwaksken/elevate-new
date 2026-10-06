@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Programme Delivery</span><h1>Course Enrolments</h1><p>Manage participant enrolments by course, cohort and status.</p></div>
-<div class="admin-page-actions"><button class="btn btn-primary" type="button" data-modal-open="addEnrolment"><i class="fas fa-user-plus"></i> Add Enrolment</button></div>
+<div class="admin-page-actions"><x-export-buttons /><button class="btn btn-primary" type="button" data-modal-open="addEnrolment"><i class="fas fa-user-plus"></i> Add Enrolment</button></div>
 </div>
 
 @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif

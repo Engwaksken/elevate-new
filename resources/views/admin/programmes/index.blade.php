@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Programme Management</span><h1>Programmes</h1><p>Manage organisation programmes, dates and implementation status.</p></div>
-<div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="programmeCreate"><i class="fas fa-plus"></i> Add Programme</button></div>
+<div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="programmeCreate"><i class="fas fa-plus"></i> Add Programme</button></div>
 </div>
 @include('admin.shared.feedback')
 <div class="admin-stats-grid compact">

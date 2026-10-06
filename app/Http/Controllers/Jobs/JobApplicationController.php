@@ -1,5 +1,6 @@
 <?php
 namespace App\Http\Controllers\Jobs;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Job;
 use App\Models\JobApplication;
@@ -8,6 +9,8 @@ use App\Services\NotificationDispatcher;
 use Illuminate\Http\Request;
 class JobApplicationController extends Controller
 {
+    use ExportsTables;
+
     public function store(Request $request,Job $job)
     {
         abort_unless($job->status==='published',404);
@@ -95,6 +98,17 @@ class JobApplicationController extends Controller
             false
         );
     }
-    public function index(){ $base=JobApplication::query()->where('user_id',auth()->id()); return view('jobs.applications',['applications'=>(clone $base)->with(['job.employer','statusHistory'])->latest()->paginate(20),'stats'=>['total'=>(clone $base)->count(),'review'=>(clone $base)->whereIn('status',['submitted','under_review','reviewing'])->count(),'shortlisted'=>(clone $base)->whereIn('status',['shortlisted','interview','interview_scheduled'])->count(),'successful'=>(clone $base)->whereIn('status',['offered','offer','hired','successful'])->count()]]); }
+    public function index(Request $request){ $base=JobApplication::query()->where('user_id',auth()->id());
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'My Job Applications',(clone $base)->with('job.employer')->latest(),[
+                'Job'=>'job.title',
+                'Employer'=>'job.employer.company_name',
+                'Location'=>fn($a)=>collect([$a->job?->location,$a->job?->country])->filter()->implode(', '),
+                'Status'=>fn($a)=>ucwords(str_replace('_',' ',(string)$a->status)),
+                'Applied'=>fn($a)=>$a->applied_at ?? $a->created_at,
+                'Last Updated'=>'updated_at',
+            ]);
+        }
+        return view('jobs.applications',['applications'=>(clone $base)->with(['job.employer','statusHistory'])->latest()->paginate(20),'stats'=>['total'=>(clone $base)->count(),'review'=>(clone $base)->whereIn('status',['submitted','under_review','reviewing'])->count(),'shortlisted'=>(clone $base)->whereIn('status',['shortlisted','interview','interview_scheduled'])->count(),'successful'=>(clone $base)->whereIn('status',['offered','offer','hired','successful'])->count()]]); }
     public function withdraw(JobApplication $application){abort_unless($application->user_id===auth()->id(),403);abort_if(in_array($application->status,['hired','rejected','withdrawn'],true),422);$application->update(['status'=>'withdrawn']);return back()->with('success','Application withdrawn.');}
 }

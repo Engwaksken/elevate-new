@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Certificates;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\CertificateRecommendation;
 use App\Models\Course;
@@ -15,6 +16,7 @@ use Illuminate\View\View;
 
 class CertificateRecommendationController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     public function __construct(private CertificateRecommendationService $service)
@@ -26,7 +28,7 @@ class CertificateRecommendationController extends Controller
         return CertificateRecommendation::class;
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $user = $request->user();
         abort_unless($this->service->canRecommend($user), 403);
@@ -48,6 +50,23 @@ class CertificateRecommendationController extends Controller
                     ->orWhereHas('course', fn ($q) => $q->where('title', 'like', "%{$search}%"))
                     ->orWhereHas('event', fn ($q) => $q->where('title', 'like', "%{$search}%"));
             });
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Certificate Recommendations', $query, [
+                'Participant' => 'user.name',
+                'Email' => 'user.email',
+                'Participant code' => 'user.participant_code',
+                'Context' => fn ($r) => ucfirst((string) $r->context_type),
+                'Course / Event' => fn ($r) => $r->course?->title ?? $r->event?->title,
+                'Recommended by' => 'recommender.name',
+                'Reason' => 'reason',
+                'Status' => fn ($r) => ucfirst((string) $r->status),
+                'Reviewed by' => 'reviewer.name',
+                'Reviewed at' => 'reviewed_at',
+                'Review notes' => 'review_notes',
+                'Recommended' => 'created_at',
+            ]);
         }
 
         return view('certificates.recommendations.index', [

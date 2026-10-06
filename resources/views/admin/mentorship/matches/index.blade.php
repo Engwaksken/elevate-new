@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Programme Delivery</span><h1>Mentor Matches</h1><p>Create and manage mentor-to-mentee assignments.</p></div>
-<div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createMatchModal"><i class="fas fa-plus"></i> New Match</button></div>
+<div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="createMatchModal"><i class="fas fa-plus"></i> New Match</button></div>
 </div>
 
 <div class="admin-stats-grid compact">

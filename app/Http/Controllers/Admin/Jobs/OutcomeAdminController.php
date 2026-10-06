@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Admin\Jobs;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\ParticipantOutcome;
 use Illuminate\Http\Request;
 
 class OutcomeAdminController extends Controller
 {
+    use ExportsTables;
+
     public function index(Request $request)
     {
         $query = ParticipantOutcome::with('user')->latest();
@@ -24,6 +27,20 @@ class OutcomeAdminController extends Controller
 
         if ($status = $request->get('verification_status')) {
             $query->where('verification_status',$status);
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Participant Outcomes', $query, [
+                'Participant' => 'user.name',
+                'Email' => 'user.email',
+                'Outcome Type' => fn ($o) => ucwords(str_replace('_', ' ', (string) $o->outcome_type)),
+                'Organisation' => 'organisation_name',
+                'Job Title' => 'job_title',
+                'Outcome Date' => 'outcome_date',
+                'Income' => fn ($o) => $o->income_amount !== null ? trim($o->income_currency.' '.number_format((float) $o->income_amount, 2)) : '',
+                'Verification' => fn ($o) => ucfirst((string) $o->verification_status),
+                'Verified At' => 'verified_at',
+            ], null, ['verification_status' => 'Verification']);
         }
 
         $stats = [

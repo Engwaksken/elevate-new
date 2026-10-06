@@ -8,7 +8,8 @@ use App\Models\Enrolment;
 use App\Models\Course;
 use App\Models\Programme;
 use App\Models\Branch;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\Export\TableExport;
+use App\Support\Export\TableExporter;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LearningReportController extends Controller
@@ -44,18 +45,33 @@ class LearningReportController extends Controller
 
     public function pdf(LearningReportRequest $request)
     {
-        $rows = $this->rows($request);
-        $html = '<h1>Learning report</h1><table border="1" cellpadding="5" cellspacing="0"><thead><tr><th>Course</th><th>Programme</th><th>Branch</th><th>Enrolments</th><th>Completed</th><th>In progress</th><th>Completion rate (%)</th><th>Average progress (%)</th></tr></thead><tbody>';
-        foreach ($rows as $row) {
-            $html .= '<tr>';
-            foreach ($row as $value) {
-                $html .= '<td>' . e((string) $value) . '</td>';
-            }
-            $html .= '</tr>';
+        $columns = [];
+        foreach ([
+            'course' => 'Course',
+            'programme_id' => 'Programme ID',
+            'branch_id' => 'Branch ID',
+            'enrolments' => 'Enrolments',
+            'completed' => 'Completed',
+            'in_progress' => 'In progress',
+            'completion_rate_percent' => 'Completion rate (%)',
+            'average_progress_percent' => 'Average progress (%)',
+        ] as $key => $label) {
+            $columns[$label] = $key;
         }
-        $html .= '</tbody></table>';
 
-        return Pdf::loadHTML($html)->download('learning-report-' . now()->format('Ymd_His') . '.pdf');
+        // Rendered through the shared branded export template.
+        return app(TableExporter::class)->pdf(
+            TableExport::make('Learning report')
+                ->columns($columns)
+                ->source($this->rows($request))
+                ->filters([
+                    'From' => $request->validated('from'),
+                    'To' => $request->validated('to'),
+                    'Course' => $request->filled('course_id') ? Course::find($request->validated('course_id'))?->title : null,
+                    'Programme' => $request->filled('programme_id') ? Programme::find($request->validated('programme_id'))?->name : null,
+                    'Branch' => $request->filled('branch_id') ? Branch::find($request->validated('branch_id'))?->name : null,
+                ])
+        );
     }
 
     private function rows(LearningReportRequest $request): array

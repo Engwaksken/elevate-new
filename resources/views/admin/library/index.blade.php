@@ -9,6 +9,7 @@
     <p>Manage library resources, files, categories, visibility and access levels.</p>
 </div>
 <div class="admin-page-actions">
+    <x-export-buttons />
     <button type="button" class="btn btn-primary" data-modal-open="createLibraryResource">
         <i class="fas fa-plus"></i> Add Resource
     </button>

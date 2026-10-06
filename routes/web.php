@@ -177,6 +177,10 @@ Route::middleware('guest')->group(function () {
     }
 });
 
+// Mentors and employers sign out back to the public landing page.
+Route::post('/partners/logout', [\App\Http\Controllers\Auth\PartnerAuthController::class, 'logout'])
+    ->middleware('auth')->name('partners.logout');
+
 Route::prefix('admin/cms')->name('admin.cms.')->middleware(['auth', 'staff', 'permission:cms.manage'])->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\CmsPageController::class, 'index'])->name('index');
     Route::post('/', [\App\Http\Controllers\Admin\CmsPageController::class, 'store'])->name('store');
@@ -536,19 +540,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/learning/files/{file}/download',[LearningFileController::class,'download'])
         ->name('learning.files.download');
 
-    Route::get('/mentorship',[MentorshipDashboardController::class,'index'])->name('mentorship.dashboard');
-    Route::get('/mentorship/mentors',[ParticipantMentorController::class,'index'])->name('mentorship.mentors.index');
-    Route::post('/mentorship/mentors',[ParticipantMentorController::class,'store'])->name('mentorship.mentors.store');
-    Route::delete('/mentorship/matches/{match}',[ParticipantMentorController::class,'destroy'])->name('mentorship.matches.destroy');
+    Route::get('/mentorship',[MentorshipDashboardController::class,'index'])->middleware('user_type:participant,mentor')->name('mentorship.dashboard');
+    Route::get('/mentorship/mentors',[ParticipantMentorController::class,'index'])->middleware('user_type:participant')->name('mentorship.mentors.index');
+    Route::post('/mentorship/mentors',[ParticipantMentorController::class,'store'])->middleware('user_type:participant')->name('mentorship.mentors.store');
+    Route::delete('/mentorship/matches/{match}',[ParticipantMentorController::class,'destroy'])->middleware('user_type:participant')->name('mentorship.matches.destroy');
     Route::post('/mentorship/assistant',[MentorshipAssistantController::class,'message'])
-        ->middleware('throttle:20,1')->name('mentorship.assistant.message');
-    Route::get('/mentorship/mentor-profile',[MentorProfileController::class,'edit'])->name('mentorship.mentor-profile.edit');
-    Route::put('/mentorship/mentor-profile',[MentorProfileController::class,'update'])->name('mentorship.mentor-profile.update');
-    Route::post('/mentorship/matches/{match}/sessions',[MentorshipSessionController::class,'store'])->name('mentorship.sessions.store');
-    Route::put('/mentorship/sessions/{session}/complete',[MentorshipSessionController::class,'complete'])->name('mentorship.sessions.complete');
-    Route::post('/mentorship/sessions/{session}/reports',[MentorshipSessionReportController::class,'store'])->name('mentorship.sessions.reports.store');
+        ->middleware('throttle:20,1')->middleware('user_type:participant,mentor')->name('mentorship.assistant.message');
+    Route::get('/mentorship/mentor-profile',[MentorProfileController::class,'edit'])->middleware('user_type:mentor')->name('mentorship.mentor-profile.edit');
+    Route::put('/mentorship/mentor-profile',[MentorProfileController::class,'update'])->middleware('user_type:mentor')->name('mentorship.mentor-profile.update');
+    Route::post('/mentorship/matches/{match}/sessions',[MentorshipSessionController::class,'store'])->middleware('user_type:participant,mentor')->name('mentorship.sessions.store');
+    Route::put('/mentorship/sessions/{session}/complete',[MentorshipSessionController::class,'complete'])->middleware('user_type:participant,mentor')->name('mentorship.sessions.complete');
+    Route::post('/mentorship/sessions/{session}/reports',[MentorshipSessionReportController::class,'store'])->middleware('user_type:participant,mentor')->name('mentorship.sessions.reports.store');
     Route::post('/mentorship/goals/{goal}/review',[MentorshipParticipantGoalController::class,'review'])
-        ->whereNumber('goal')->name('mentorship.participant-goals.review');
+        ->whereNumber('goal')->middleware('user_type:participant,mentor')->name('mentorship.participant-goals.review');
 
     Route::post('/profile/goals',[ParticipantGoalController::class,'store'])->name('profile.goals.store');
     Route::put('/profile/goals/{goal}',[ParticipantGoalController::class,'update'])->name('profile.goals.update');
@@ -635,15 +639,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/my-job-applications',[JobApplicationController::class,'index'])->name('jobs.applications');
     Route::post('/job-applications/{application}/withdraw',[JobApplicationController::class,'withdraw'])->name('jobs.withdraw');
 
-    Route::post('/mentorship/matches/{match}/goals',[MentorshipGoalController::class,'store'])->name('mentorship.goals.store');
-    Route::put('/mentorship/goals/{goal}',[MentorshipGoalController::class,'update'])->name('mentorship.goals.update');
+    Route::post('/mentorship/matches/{match}/goals',[MentorshipGoalController::class,'store'])->middleware('user_type:participant,mentor')->name('mentorship.goals.store');
+    Route::put('/mentorship/goals/{goal}',[MentorshipGoalController::class,'update'])->middleware('user_type:participant,mentor')->name('mentorship.goals.update');
 
-    Route::get('/employer/profile',[EmployerProfileController::class,'edit'])->name('employer.profile.edit');
-    Route::put('/employer/profile',[EmployerProfileController::class,'update'])->name('employer.profile.update');
-    Route::get('/employer/jobs',[EmployerJobController::class,'index'])->name('employer.jobs.index');
-    Route::post('/employer/jobs',[EmployerJobController::class,'store'])->name('employer.jobs.store');
-    Route::get('/employer/applicants',[ApplicantController::class,'index'])->name('employer.applicants.index');
-    Route::put('/employer/applicants/{application}/status',[ApplicantController::class,'status'])->name('employer.applicants.status');
+    Route::get('/employer/profile',[EmployerProfileController::class,'edit'])->middleware('user_type:employer')->name('employer.profile.edit');
+    Route::put('/employer/profile',[EmployerProfileController::class,'update'])->middleware('user_type:employer')->name('employer.profile.update');
+    Route::get('/employer/jobs',[EmployerJobController::class,'index'])->middleware('user_type:employer')->name('employer.jobs.index');
+    Route::post('/employer/jobs',[EmployerJobController::class,'store'])->middleware('user_type:employer')->name('employer.jobs.store');
+    Route::get('/employer/applicants',[ApplicantController::class,'index'])->middleware('user_type:employer')->name('employer.applicants.index');
+    Route::put('/employer/applicants/{application}/status',[ApplicantController::class,'status'])->middleware('user_type:employer')->name('employer.applicants.status');
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function () {
@@ -755,8 +759,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/jobs/{job}/save',[SavedJobController::class,'store'])->name('jobs.save');
     Route::delete('/jobs/{job}/save',[SavedJobController::class,'destroy'])->name('jobs.unsave');
 
-    Route::post('/employer/applications/{application}/interviews',[InterviewController::class,'store'])->name('employer.interviews.store');
-    Route::post('/employer/applications/{application}/offers',[OfferController::class,'store'])->name('employer.offers.store');
+    Route::post('/employer/applications/{application}/interviews',[InterviewController::class,'store'])->middleware('user_type:employer')->name('employer.interviews.store');
+    Route::post('/employer/applications/{application}/offers',[OfferController::class,'store'])->middleware('user_type:employer')->name('employer.offers.store');
     Route::post('/library/{resource}/bookmark',[LibraryController::class,'bookmark'])->name('library.bookmark');
 });
 

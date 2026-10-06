@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use App\Services\SettingsService;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 
 class SettingsController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -30,6 +32,18 @@ class SettingsController extends Controller
 
         if($group=$request->get('group')){
             $query->where('group',$group);
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'System Settings',$query,[
+                'Group'=>'group',
+                'Key'=>'key',
+                'Type'=>'type',
+                // Encrypted values are never exported in plain text.
+                'Value'=>fn($s)=>$s->is_encrypted ? '********' : (is_scalar($s->value) || $s->value===null ? (string)$s->value : json_encode($s->value)),
+                'Public'=>fn($s)=>(bool)$s->is_public,
+                'Encrypted'=>fn($s)=>(bool)$s->is_encrypted,
+            ]);
         }
 
         return view('admin.settings.index',[

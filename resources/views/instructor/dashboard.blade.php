@@ -33,9 +33,12 @@
         <h1>My Courses</h1>
         <p>Search, filter and open assigned courses. All course functions stay inside the selected course workspace.</p>
     </div>
-    <a href="{{ route('admin.dashboard') }}" class="btn btn-outline">
-        <i class="fas fa-gauge-high"></i> Dashboard
-    </a>
+    <div class="admin-page-actions">
+        <x-export-buttons />
+        <a href="{{ route('admin.dashboard') }}" class="btn btn-outline">
+            <i class="fas fa-gauge-high"></i> Dashboard
+        </a>
+    </div>
 </div>
 
 <div class="mc-tabset" data-mc-tabs>

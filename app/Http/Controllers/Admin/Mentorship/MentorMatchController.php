@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Mentorship;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\MentorMatch;
 use App\Models\MentorProfile;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 
 class MentorMatchController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -23,6 +25,20 @@ class MentorMatchController extends Controller
         $query = MentorMatch::with(['mentor','mentee'])->latest();
 
         if ($status = $request->get('status')) $query->where('status',$status);
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Mentor Matches', $query, [
+                'Mentor' => 'mentor.name',
+                'Mentor email' => 'mentor.email',
+                'Mentee' => 'mentee.name',
+                'Mentee email' => 'mentee.email',
+                'Start date' => 'start_date',
+                'End date' => 'end_date',
+                'Status' => 'status',
+                'Matching score' => 'matching_score',
+                'Notes' => 'matching_notes',
+            ]);
+        }
 
         $stats = [
             'total' => MentorMatch::count(),

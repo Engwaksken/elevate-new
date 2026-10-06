@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">MEAL Reporting</span><h1>Event Participation & Evaluation</h1><p>MEAL-ready event outputs covering registrations, attendance and participant feedback.</p></div>
-<div class="admin-page-actions"><a href="{{ route('admin.events.meal-report.csv',request()->query()) }}" class="btn btn-outline"><i class="fas fa-file-csv"></i> Export CSV</a></div>
+<div class="admin-page-actions"><a href="{{ route('admin.events.meal-report.csv',request()->query()) }}" class="btn btn-outline"><i class="fas fa-file-csv"></i> Export CSV</a><x-export-buttons :formats="['pdf']" size="md" /></div>
 </div>
 <div class="admin-panel"><form method="GET" class="admin-toolbar"><div><label>From</label><input type="date" name="from" value="{{ $from->format('Y-m-d') }}"></div><div><label>To</label><input type="date" name="to" value="{{ $to->format('Y-m-d') }}"></div><button class="btn btn-primary btn-sm">Apply</button></form></div>
 <div class="admin-stats-grid compact">

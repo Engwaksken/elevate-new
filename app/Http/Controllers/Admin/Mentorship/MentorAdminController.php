@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin\Mentorship;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\MentorProfile;
 use Illuminate\Http\Request;
 
 class MentorAdminController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -52,6 +54,22 @@ class MentorAdminController extends Controller
         }
 
         if ($status = $request->get('status')) $query->where('status',$status);
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Mentors', $query, [
+                'Mentor' => 'user.name',
+                'Email' => 'user.email',
+                'Organisation' => 'organisation',
+                'Job title' => 'job_title',
+                'Industry' => 'industry',
+                'Years experience' => 'years_experience',
+                'Country' => 'country',
+                'Mentoring areas' => 'mentoring_areas',
+                'Status' => 'status',
+                'Applied' => 'created_at',
+                'Approved' => 'approved_at',
+            ]);
+        }
 
         $stats = [
             'total' => MentorProfile::count(),

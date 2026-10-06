@@ -3,6 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Monitoring & Attendance</span><h1>Participant Attendance Summary</h1><p>Overall attendance performance for learners with recorded course attendance.</p></div>
+<div class="admin-page-actions"><x-export-buttons /></div>
 </div>
 
 <div class="admin-panel">

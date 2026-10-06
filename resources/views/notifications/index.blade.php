@@ -18,14 +18,15 @@
     <p>Review updates and actions that need your attention.</p>
 </div>
 
-@if($unreadCount>0)
 <div class="admin-page-actions">
+    <x-export-buttons />
+    @if($unreadCount>0)
     <form method="POST" action="{{ route('notifications.read-all') }}">
         @csrf @method('PATCH')
         <button class="btn btn-outline"><i class="fas fa-check-double"></i> Mark All Read</button>
     </form>
+    @endif
 </div>
-@endif
 </div>
 
 <div class="admin-stats-grid compact">

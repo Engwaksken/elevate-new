@@ -1,0 +1,292 @@
+/* ==========================================================================
+   Role shell: landing role chooser + role-aware app shell
+   (participant / mentor / employer). Uses the global brand tokens:
+   --primary #800000, --secondary #d4af37.
+   ========================================================================== */
+
+.role-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---------- Role badge ---------- */
+
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border: 1px solid #ead9b0;
+    border-radius: 999px;
+    background: #fbf3dc;
+    color: #5f0000;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.role-badge i {
+    font-size: 0.72rem;
+}
+
+.role-badge--on-dark {
+    border-color: rgba(212, 175, 55, 0.55);
+    background: rgba(212, 175, 55, 0.18);
+    color: #f7e7a9;
+}
+
+.role-badge--compact {
+    padding: 1px 8px;
+    font-size: 0.62rem;
+}
+
+.ps-user-copy .ps-user-role {
+    margin-top: 6px;
+    align-self: flex-start;
+}
+
+.ps-user-copy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* ---------- Role shell: focus visibility ---------- */
+
+.role-sidebar .ps-link:focus-visible,
+.role-sidebar .ps-logout:focus-visible,
+.role-sidebar .ps-brand-link:focus-visible,
+.role-sidebar .ps-close:focus-visible {
+    outline: 3px solid var(--secondary, #d4af37);
+    outline-offset: 2px;
+}
+
+/* ---------- Desktop top bar inside the role shell ---------- */
+
+.role-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 56px;
+    padding: 10px clamp(20px, 3vw, 42px);
+    background: #ffffff;
+    border-bottom: 1px solid #eadede;
+}
+
+.role-topbar__context {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.role-topbar__hint {
+    color: #6b7280;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.role-topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.role-topbar__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    color: #800000;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.role-topbar__link:hover {
+    background: #fbf3ef;
+    color: #5f0000;
+}
+
+.role-topbar__link:focus-visible {
+    outline: 3px solid #800000;
+    outline-offset: 2px;
+}
+
+.participant-mobile-brand-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+}
+
+@media (max-width: 991px) {
+    .role-topbar {
+        display: none;
+    }
+}
+
+/* ---------- Landing: role chooser ---------- */
+
+.role-chooser {
+    padding-block: clamp(48px, 7vw, 80px);
+    background: #ffffff;
+    border-top: 1px solid #f1e4dc;
+    scroll-margin-top: 16px;
+}
+
+.container .role-chooser > .container {
+    width: 100%;
+}
+
+.role-chooser__head {
+    max-width: 680px;
+    margin: 0 auto clamp(28px, 4vw, 40px);
+    text-align: center;
+}
+
+.role-chooser__head h2 {
+    margin: 8px 0 10px;
+    color: #111827;
+    font-size: clamp(1.6rem, 1.1rem + 2vw, 2.4rem);
+    line-height: 1.15;
+}
+
+.role-chooser__head p {
+    margin: 0;
+    color: #4b5563;
+    font-size: 1.02rem;
+}
+
+.role-chooser__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+@media (min-width: 720px) {
+    .role-chooser__grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
+    }
+}
+
+.role-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: clamp(20px, 3vw, 28px);
+    background: #ffffff;
+    border: 1px solid #eadede;
+    border-top: 4px solid #800000;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(128, 0, 0, 0.06);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.role-card--mentor {
+    border-top-color: #d4af37;
+}
+
+.role-card--employer {
+    border-top-color: #5f0000;
+}
+
+.role-card:hover,
+.role-card:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 40px rgba(128, 0, 0, 0.12);
+}
+
+.role-card__icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: #fbf3ef;
+    color: #800000;
+    font-size: 1.35rem;
+}
+
+.role-card--mentor .role-card__icon {
+    background: #fbf3dc;
+    color: #7a5c00;
+}
+
+.role-card__title {
+    margin: 4px 0 0;
+    color: #111827;
+    font-size: 1.3rem;
+}
+
+.role-card__text {
+    flex: 1;
+    margin: 0;
+    color: #4b5563;
+    line-height: 1.6;
+}
+
+.role-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.role-card__actions .btn {
+    flex: 1 1 120px;
+}
+
+.role-card__actions .btn:focus-visible,
+.role-chooser__signed-in .btn:focus-visible {
+    outline: 3px solid #d4af37;
+    outline-offset: 2px;
+}
+
+.role-chooser__signed-in {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 20px 24px;
+    background: #fffaf5;
+    border: 1px solid #eadede;
+    border-left: 4px solid #800000;
+    border-radius: 14px;
+}
+
+.role-chooser__signed-in p {
+    margin: 8px 0 0;
+    color: #374151;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .role-card,
+    .role-card:hover,
+    .role-card:focus-within {
+        transition: none;
+        transform: none;
+    }
+}

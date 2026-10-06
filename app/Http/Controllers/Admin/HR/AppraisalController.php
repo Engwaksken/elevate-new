@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\HR;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Appraisal;
 use App\Models\AppraisalCycle;
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
 
 class AppraisalController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -23,17 +25,34 @@ class AppraisalController extends Controller
         return Appraisal::class;
     }
 
-    public function index(AppraisalProgressService $progressService)
+    public function index(Request $request, AppraisalProgressService $progressService)
     {
-        $appraisals=Appraisal::with([
+        $query=Appraisal::with([
                 'employee.user',
                 'cycle',
                 'manager',
                 'kpiTemplate',
             ])
             ->withCount('kras')
-            ->latest()
-            ->paginate(25);
+            ->latest();
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Performance Appraisals',$query,[
+                'Employee'=>'employee.user.name',
+                'Employee No.'=>'employee.employee_number',
+                'Cycle'=>'cycle.name',
+                'Template'=>'kpiTemplate.name',
+                'Flow'=>fn($a)=>$a->kras_count>0?'KRA/KPI workspace':($a->hr_kpi_template_id?'KPI template':'Standard'),
+                'Manager'=>'manager.name',
+                'Status'=>fn($a)=>str_replace('_',' ',(string)$a->status),
+                'Completion %'=>'completion_percent',
+                'Performance %'=>'performance_percent',
+                'Final Score'=>'final_score',
+                'HR Finalised'=>'hr_finalised_at',
+            ]);
+        }
+
+        $appraisals=$query->paginate(25);
 
         foreach($appraisals as $appraisal){
             if($appraisal->hr_kpi_template_id){

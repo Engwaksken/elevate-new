@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Admin\Elearning;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\LearningFile;
@@ -12,6 +13,7 @@ use Illuminate\Support\Str;
 
 class LearningFileAdminController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -27,6 +29,17 @@ class LearningFileAdminController extends Controller
 
         if($search=trim((string)$request->get('search'))){
             $query->where('original_name','like',"%{$search}%");
+        }
+
+        if($format=$this->exportFormat($request)){
+            $courseTitles=Course::query()->pluck('title','id');
+            return $this->exportTable($format,'Learning Files',$query,[
+                'File'=>'original_name',
+                'Course'=>fn($f)=>$courseTitles[$f->course_id]??'',
+                'Type'=>'mime_type',
+                'Size (KB)'=>fn($f)=>$f->size_bytes!==null?round($f->size_bytes/1024,1):'',
+                'Uploaded'=>'created_at',
+            ],null,['course_id'=>'Course']);
         }
 
         return view('admin.elearning.files.index',[

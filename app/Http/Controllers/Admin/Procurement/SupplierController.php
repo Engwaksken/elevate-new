@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin\Procurement;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -30,6 +32,21 @@ class SupplierController extends Controller
         }
 
         if($status=$request->get('status')) $query->where('status',$status);
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Suppliers',$query,[
+                'Supplier'=>'name',
+                'Category'=>'category',
+                'Registration No.'=>'registration_number',
+                'TIN'=>'tin',
+                'Contact Person'=>'contact_person',
+                'Phone'=>'phone',
+                'Email'=>'email',
+                'Address'=>'address',
+                'Performance Score'=>'performance_score',
+                'Status'=>fn($s)=>str_replace('_',' ',(string)$s->status),
+            ]);
+        }
 
         $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
             ? (int)$request->get('per_page') : 20;

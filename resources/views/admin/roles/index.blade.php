@@ -8,6 +8,7 @@
     <h1>Roles & Permissions</h1>
     <p>Review role usage and control module permissions.</p>
 </div>
+<div class="admin-page-actions"><x-export-buttons /></div>
 </div>
 
 <div class="admin-stats-grid compact">

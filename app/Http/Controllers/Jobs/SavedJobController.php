@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Jobs;
 
+use App\Http\Controllers\Concerns\ExportsTables;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Job;
 use Illuminate\Support\Facades\DB;
 
 class SavedJobController extends Controller
 {
+    use ExportsTables;
+
     public function store(Job $job)
     {
         DB::table('saved_jobs')->updateOrInsert([
@@ -31,13 +35,25 @@ class SavedJobController extends Controller
         return back()->with('success','Saved job removed.');
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $jobs = Job::whereIn('id', DB::table('saved_jobs')
+        $query = Job::whereIn('id', DB::table('saved_jobs')
             ->where('user_id',auth()->id())
             ->pluck('job_id'))
-            ->with('employer')
-            ->paginate(20);
+            ->with('employer');
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Saved Jobs',$query,[
+                'Title'=>'title',
+                'Employer'=>'employer.company_name',
+                'Location'=>fn($j)=>collect([$j->location,$j->country])->filter()->implode(', '),
+                'Employment Type'=>fn($j)=>ucfirst(str_replace('_',' ',(string)$j->employment_type)),
+                'Deadline'=>'application_deadline',
+                'Status'=>fn($j)=>ucfirst((string)$j->status),
+            ]);
+        }
+
+        $jobs = $query->paginate(20);
 
         return view('jobs.saved',compact('jobs'));
     }

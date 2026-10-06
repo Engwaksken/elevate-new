@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Services\AuditService;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 class BranchController extends Controller
 {
     use BulkDeletesRecords;
+    use ExportsTables;
 
     protected function bulkDeleteModel(): string
     {
@@ -31,6 +33,17 @@ class BranchController extends Controller
 
         if($request->filled('status')){
             $query->where('is_active',$request->get('status')==='active');
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Branches',$query->orderBy('name'),[
+                'Name'=>'name',
+                'Code'=>'code',
+                'District'=>'district',
+                'Country'=>'country',
+                'Status'=>fn($b)=>$b->is_active?'Active':'Inactive',
+                'Created'=>'created_at',
+            ]);
         }
 
         $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Participant;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\UserNotification;
 use Illuminate\Http\RedirectResponse;
@@ -11,7 +12,9 @@ use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
-    public function index(Request $request): View
+    use ExportsTables;
+
+    public function index(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $query = UserNotification::query()
             ->where('user_id', $request->user()->id);
@@ -31,6 +34,16 @@ class NotificationController extends Controller
                 $inner->where('title', 'like', "%{$search}%")
                     ->orWhere('message', 'like', "%{$search}%");
             });
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'My Notifications', $query->latest(), [
+                'Title' => 'title',
+                'Message' => 'message',
+                'Status' => fn ($n) => $n->read_at ? 'Read' : 'Unread',
+                'Received' => 'created_at',
+                'Read At' => 'read_at',
+            ]);
         }
 
         return view('notifications.index', [

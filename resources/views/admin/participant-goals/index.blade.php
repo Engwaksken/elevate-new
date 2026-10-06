@@ -8,6 +8,7 @@
         <p>Review every participant's personal goals and how far each one has progressed.</p>
     </div>
     <div class="admin-page-actions">
+        <x-export-buttons />
         <a href="{{ route('admin.users.index') }}" class="btn btn-outline"><i class="fas fa-users"></i> Users</a>
     </div>
 </div>

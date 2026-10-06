@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Planning & Delivery</span><h1>Tasks</h1><p>Manage activity tasks, assignees, priorities, due dates and progress.</p></div>
-<div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createTaskModal"><i class="fas fa-plus"></i> New Task</button></div>
+<div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="createTaskModal"><i class="fas fa-plus"></i> New Task</button></div>
 </div>
 
 <div class="admin-stats-grid compact">

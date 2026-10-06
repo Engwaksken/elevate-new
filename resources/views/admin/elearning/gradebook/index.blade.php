@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Programme Delivery</span><h1>Gradebook — {{ $course->title }}</h1><p>Review assessment attempts and grade submitted learner work.</p></div>
-<div class="admin-page-actions"><a href="{{ route('admin.elearning.assessments.index',$course) }}" class="btn btn-outline"><i class="fas fa-clipboard-question"></i> Assessments</a></div>
+<div class="admin-page-actions"><x-export-buttons /><a href="{{ route('admin.elearning.assessments.index',$course) }}" class="btn btn-outline"><i class="fas fa-clipboard-question"></i> Assessments</a></div>
 </div>
 
 <div class="admin-stats-grid compact">

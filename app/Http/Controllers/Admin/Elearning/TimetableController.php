@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Elearning;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\CourseTimeSlot;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 
 class TimetableController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request)
     {
         $query = CourseTimeSlot::with(['course.branches', 'creator'])->orderBy('starts_at');
@@ -22,6 +24,21 @@ class TimetableController extends Controller
         if ($request->filled('status')) {
             $request->validate(['status' => ['in:scheduled,cancelled']]);
             $query->where('status', $request->input('status'));
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Course Timetables', $query, [
+                'Course' => 'course.title',
+                'Branches' => fn ($s) => $s->course?->branches->pluck('name')->join(', '),
+                'Session' => 'title',
+                'Starts' => 'starts_at',
+                'Ends' => 'ends_at',
+                'Timezone' => 'timezone',
+                'Venue' => 'venue',
+                'Added by' => 'creator.name',
+                'Status' => 'status',
+                'Notes' => 'notes',
+            ], null, ['course_id' => 'Course', 'branch_id' => 'Branch']);
         }
 
         return view('admin.elearning.timetable.index', [

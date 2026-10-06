@@ -9,6 +9,7 @@
     <p>{{ $canApprove ? 'Review recommendations from instructors and programme staff, and track issued certificates.' : 'Track the participants you have recommended for certificates.' }}</p>
 </div>
 <div class="admin-page-actions">
+    <x-export-buttons />
     @if($canApprove && Route::has('admin.elearning.certificates.templates.index'))
         <a href="{{ route('admin.elearning.certificates.templates.index') }}" class="btn btn-outline"><i class="fas fa-image"></i> Templates</a>
     @endif

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 
 class CourseAttendanceReportController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request)
     {
         $sessions=AttendanceSession::query();
@@ -45,6 +47,20 @@ class CourseAttendanceReportController extends Controller
         if($search=trim((string)$request->get('search'))){
             $query->whereHas('user',fn($q)=>$q->where('name','like',"%{$search}%")
                 ->orWhere('email','like',"%{$search}%"));
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Course Attendance Report',
+                (clone $query)->with(['session.course','session.cohort'])->latest('id'),[
+                    'Date'=>fn($r)=>$r->session?->session_date,
+                    'Session'=>'session.title',
+                    'Course'=>'session.course.title',
+                    'Cohort'=>'session.cohort.name',
+                    'Participant'=>'user.name',
+                    'Email'=>'user.email',
+                    'Status'=>fn($r)=>ucfirst((string)$r->status),
+                    'Remarks'=>'remarks',
+                ],null,['course_id'=>'Course','cohort_id'=>'Cohort']);
         }
 
         $all=(clone $query)->get();
@@ -142,6 +158,18 @@ class CourseAttendanceReportController extends Controller
                 $q->where('u.name','like',"%{$search}%")
                     ->orWhere('u.email','like',"%{$search}%");
             });
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Participant Attendance Summary',(clone $query)->orderBy('u.name'),[
+                'Participant'=>'name',
+                'Email'=>'email',
+                'Total records'=>'attendance_total',
+                'Present / late'=>'attendance_present',
+                'Late'=>'attendance_late',
+                'Absent'=>'attendance_absent',
+                'Attendance %'=>fn($r)=>$r->attendance_total>0 ? round(($r->attendance_present/$r->attendance_total)*100,1) : 0,
+            ]);
         }
 
         return view('admin.attendance.participant-summary',[

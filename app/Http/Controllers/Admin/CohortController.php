@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Cohort;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 
 class CohortController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -33,6 +35,19 @@ class CohortController extends Controller
         if($status=$request->get('status')) $query->where('status',$status);
         if($programme=$request->get('programme_id')) $query->where('programme_id',$programme);
         if($branch=$request->get('branch_id')) $query->where('branch_id',$branch);
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Cohorts',$query->latest(),[
+                'Cohort'=>'name',
+                'Code'=>'code',
+                'Programme'=>'programme.name',
+                'Project'=>'project.name',
+                'Branch'=>'branch.name',
+                'Start date'=>'start_date',
+                'End date'=>'end_date',
+                'Status'=>fn($c)=>ucfirst((string)$c->status),
+            ]);
+        }
 
         $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
             ? (int)$request->get('per_page') : 20;

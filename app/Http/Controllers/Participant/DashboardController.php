@@ -13,14 +13,20 @@ use App\Models\Resume;
 use App\Models\Survey;
 use App\Models\SurveyResponse;
 use App\Models\UserNotification;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $user=$request->user();
+
+        // Mentors and employers have their own home; send them there.
+        if(in_array(\App\Support\RoleShell::roleFor($user),['mentor','employer'],true)){
+            return redirect(\App\Support\RoleShell::homeUrl($user) ?? route('home'));
+        }
 
         $enrolments=Enrolment::query()
             ->with('course')

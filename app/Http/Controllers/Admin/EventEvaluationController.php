@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventCertificate;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class EventEvaluationController extends Controller
 {
+    use ExportsTables;
     public function settings(Request $request,Event $event)
     {
         $data=$request->validate([
@@ -34,8 +36,23 @@ class EventEvaluationController extends Controller
         return back()->with('success','Event evaluation and certificate settings updated.');
     }
 
-    public function feedback(Event $event)
+    public function feedback(Request $request,Event $event)
     {
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Event Feedback: '.$event->title,
+                EventFeedbackResponse::with('user')->where('event_id',$event->id)->latest('submitted_at'),[
+                    'Participant'=>fn($r)=>$r->user?->name ?? 'Anonymous',
+                    'Email'=>'user.email',
+                    'Overall'=>'overall_rating',
+                    'Relevance'=>'relevance_rating',
+                    'Facilitation'=>'facilitation_rating',
+                    'Organisation'=>'organisation_rating',
+                    'Recommend'=>'recommend_rating',
+                    'Key learning'=>'key_learning',
+                    'Submitted'=>'submitted_at',
+                ],null,[],fn($e)=>$e->filename('event-feedback-'.$event->id));
+        }
+
         $responses=EventFeedbackResponse::with('user')
             ->where('event_id',$event->id)
             ->latest('submitted_at')
@@ -97,6 +114,20 @@ class EventEvaluationController extends Controller
             $query->whereNull('d.error_message');
         }
 
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Event Reminder Logs: '.$event->title,$query,[
+                'User'=>'name',
+                'Email'=>'email',
+                'Channel'=>fn($l)=>ucfirst((string)$l->channel),
+                'Reminder'=>fn($l)=>$l->minutes_before>=1440 && $l->minutes_before%1440===0
+                    ? ($l->minutes_before/1440).' day(s) before'
+                    : $l->minutes_before.' minutes before',
+                'Sent at'=>'sent_at',
+                'Status'=>fn($l)=>$l->error_message ? 'Failed' : 'Sent',
+                'Error'=>'error_message',
+            ],null,[],fn($e)=>$e->filename('event-reminder-logs-'.$event->id));
+        }
+
         return view('admin.events.reminder-logs',[
             'event'=>$event,
             'logs'=>$query->paginate(30)->withQueryString(),
@@ -135,6 +166,21 @@ class EventEvaluationController extends Controller
                 'recommend_rating'=>round((float)$eventFeedback->avg('recommend_rating'),2),
             ];
         });
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Event Participation & Evaluation',$rows,[
+                'Event'=>'event.title',
+                'Type'=>fn($r)=>ucwords(str_replace('_',' ',(string)$r['event']->event_type)),
+                'Date'=>fn($r)=>$r['event']->starts_at?->format('Y-m-d'),
+                'Registered'=>'registered',
+                'Attended'=>'attended',
+                'Attendance rate %'=>'attendance_rate',
+                'Feedback responses'=>'feedback_count',
+                'Overall rating'=>'overall_rating',
+                'Relevance rating'=>'relevance_rating',
+                'Recommend rating'=>'recommend_rating',
+            ],['From'=>$from->format('Y-m-d'),'To'=>$to->format('Y-m-d')]);
+        }
 
         return view('admin.events.meal-report',[
             'from'=>$from,

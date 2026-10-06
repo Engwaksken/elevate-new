@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Staff;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Task;
 use App\Services\StaffTaskService;
@@ -14,13 +15,14 @@ use Illuminate\View\View;
 
 class StaffTaskController extends Controller
 {
+    use ExportsTables;
     public const VIEWS = ['today', 'week', 'past', 'team'];
 
     public function __construct(private StaffTaskService $tasks)
     {
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $user = $request->user();
         $view = in_array($request->get('view'), self::VIEWS, true) ? $request->get('view') : 'today';
@@ -36,6 +38,33 @@ class StaffTaskController extends Controller
             : collect([$user->id]);
 
         $weekStart = $this->weekStart($request->get('week'));
+
+        if ($format = $this->exportFormat($request)) {
+            $source = match ($view) {
+                'past' => $this->tasks->past($scope, $request->only(['outcome', 'from', 'to', 'kpi'])),
+                'week' => $this->tasks->week($scope, $weekStart)->flatten(1)->unique('id')->values(),
+                'team' => $this->tasks->today($scope)->flatten(1)
+                    ->merge($this->tasks->week($scope, $weekStart)->flatten(1))->unique('id')->values(),
+                default => $this->tasks->today($scope)->flatten(1)->unique('id')->values(),
+            };
+            $titles = ['today' => 'My Tasks - Today', 'week' => 'My Tasks - Week of '.$weekStart->format('d M Y'), 'past' => 'My Tasks - Past', 'team' => 'Team Tasks'];
+
+            return $this->exportTable($format, $titles[$view] ?? 'My Tasks', $source, [
+                'Task' => 'title',
+                'Assignee' => 'assignee.name',
+                'KPI' => fn (Task $t) => $t->kpiTitle(),
+                'Activity' => 'activity.title',
+                'Priority' => fn ($r) => str_replace('_', ' ', (string) $r->priority),
+                'Start' => 'start_date',
+                'Due' => 'due_date',
+                'Progress %' => 'progress_percent',
+                'Status' => fn ($r) => str_replace('_', ' ', (string) $r->status),
+                'Completed At' => 'completed_at',
+                'Outcome' => 'outcome',
+                'Assigned By' => 'creator.name',
+            ]);
+        }
+
         $assignable = $this->tasks->assignableUsers($user);
         $kpis = $this->tasks->linkableKpis($assignable->pluck('id'));
 

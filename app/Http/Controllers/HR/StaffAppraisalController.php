@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\HR;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Appraisal;
 use App\Models\AppraisalKpiScore;
@@ -13,9 +14,27 @@ use Illuminate\Support\Facades\DB;
 
 class StaffAppraisalController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request, AppraisalProgressService $progressService)
     {
         $employee=Employee::where('user_id',auth()->id())->first();
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'My Appraisals',$employee
+                ? Appraisal::with(['cycle','kpiTemplate','manager'])->where('employee_id',$employee->id)->latest()
+                : collect(),[
+                'Cycle'=>'cycle.name',
+                'Template'=>'kpiTemplate.name',
+                'Manager'=>'manager.name',
+                'Status'=>fn($r)=>str_replace('_',' ',(string)$r->status),
+                'Completion %'=>'completion_percent',
+                'Performance %'=>'performance_percent',
+                'Self Score'=>'self_score',
+                'Manager Score'=>'manager_score',
+                'Final Score'=>'final_score',
+                'Submitted'=>'employee_submitted_at',
+            ]);
+        }
 
         $appraisals=$employee
             ? Appraisal::with(['cycle','kpiTemplate'])

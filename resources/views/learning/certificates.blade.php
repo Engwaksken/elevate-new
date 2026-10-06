@@ -7,6 +7,7 @@
         <h1>My Certificates</h1>
         <p>Preview, download and share certificates issued to you.</p>
     </div>
+    <div class="page-actions"><x-export-buttons /></div>
 </div>
 
 <div class="eh-data-list">

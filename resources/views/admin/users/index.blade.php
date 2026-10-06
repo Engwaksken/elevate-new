@@ -16,6 +16,7 @@
     <p>{{ $isParticipantsView ? 'All participant accounts and their status.' : 'Manage participant and staff accounts, access status and assigned roles.' }}</p>
 </div>
 <div class="admin-page-actions">
+    <x-export-buttons />
     @unless($isParticipantsView)
         <a href="{{ route('admin.participants.index') }}" class="btn btn-outline"><i class="fas fa-user-graduate"></i> Participants</a>
     @endunless

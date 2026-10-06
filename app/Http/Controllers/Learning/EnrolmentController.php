@@ -1,11 +1,14 @@
 <?php
 namespace App\Http\Controllers\Learning;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Models\Course;
 use App\Models\Enrolment;
 use App\Services\EnrolmentService;
 class EnrolmentController extends Controller
 {
+    use ExportsTables;
     public function store(Course $course, EnrolmentService $enrolments)
     {
         abort_unless($course->status === 'published', 404);
@@ -21,9 +24,20 @@ class EnrolmentController extends Controller
 
         return redirect()->route('learning.my-courses')->with('success','You have been enrolled successfully.');
     }
-    public function myCourses()
+    public function myCourses(Request $request)
     {
         $base=Enrolment::query()->where('user_id',auth()->id())->whereHas('course');
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'My Learning',(clone $base)->with('course')->latest(),[
+                'Course'=>'course.title',
+                'Code'=>'course.code',
+                'Status'=>fn($e)=>ucfirst(str_replace('_',' ',(string)$e->status)),
+                'Progress (%)'=>fn($e)=>number_format((float)$e->progress_percent,1),
+                'Final score'=>'final_score',
+                'Enrolled'=>'enrolled_at',
+                'Completed'=>'completed_at',
+            ],[]);
+        }
         $total=(clone $base)->count();
         $completed=(clone $base)->where(fn($q)=>$q->whereNotNull('completed_at')->orWhereIn('status',['completed','passed']))->count();
         $inProgress=(clone $base)->where(fn($q)=>$q->whereIn('status',['in_progress','started','active'])->orWhere(fn($n)=>$n->where('progress_percent','>',0)->where('progress_percent','<',100)))->count();

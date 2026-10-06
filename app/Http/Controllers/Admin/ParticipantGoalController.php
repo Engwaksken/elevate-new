@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\ParticipantGoal;
 use App\Models\User;
@@ -14,6 +15,7 @@ use Illuminate\View\View;
  */
 class ParticipantGoalController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -21,7 +23,7 @@ class ParticipantGoalController extends Controller
         return ParticipantGoal::class;
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $query = ParticipantGoal::query()
             ->with(['user:id,name,email,participant_code', 'mentorReviewer:id,name'])
@@ -48,6 +50,26 @@ class ParticipantGoalController extends Controller
 
         if ($participant = $request->integer('user_id')) {
             $query->where('user_id', $participant);
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Participant Goals', $query, [
+                'Participant' => 'user.name',
+                'Participant code' => 'user.participant_code',
+                'Email' => 'user.email',
+                'Goal' => 'title',
+                'Category' => 'category',
+                'Priority' => 'priority',
+                'Baseline' => 'baseline_value',
+                'Current' => 'current_value',
+                'Target' => 'target_value',
+                'Unit' => 'unit',
+                'Progress (%)' => 'progress_percent',
+                'Status' => fn ($g) => ucfirst(str_replace('_', ' ', (string) $g->status)),
+                'Target date' => 'target_date',
+                'Mentor feedback' => 'mentor_comment',
+                'Reviewed by' => 'mentorReviewer.name',
+            ], null, ['user_id' => 'Participant ID']);
         }
 
         $perPage = in_array((int) $request->get('per_page'), [10, 20, 25, 50, 100], true)

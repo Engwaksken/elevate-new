@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Procurement</span><h1>Quotations — {{ $purchaseRequest->request_number }}</h1><p>Record supplier quotations and evaluation scores.</p></div>
-<div class="admin-page-actions"><a href="{{ route('admin.procurement.requests.index') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Requests</a><button type="button" class="btn btn-primary" data-modal-open="addQuotationModal"><i class="fas fa-plus"></i> Add Quotation</button></div>
+<div class="admin-page-actions"><x-export-buttons /><a href="{{ route('admin.procurement.requests.index') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Requests</a><button type="button" class="btn btn-primary" data-modal-open="addQuotationModal"><i class="fas fa-plus"></i> Add Quotation</button></div>
 </div>
 
 <div class="admin-stats-grid compact">

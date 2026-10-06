@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Event Attendance | ElevateHer360')
 @section('content')
-<div class="admin-page-header"><div><span class="admin-eyebrow">Events</span><h1>Attendance — {{ $event->title }}</h1><p>{{ $event->starts_at->format('d M Y H:i') }}</p></div><div class="admin-page-actions"><a href="{{ route('admin.events.index') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Events</a></div></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Events</span><h1>Attendance — {{ $event->title }}</h1><p>{{ $event->starts_at->format('d M Y H:i') }}</p></div><div class="admin-page-actions"><x-export-buttons /><a href="{{ route('admin.events.index') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Events</a></div></div>
 @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 @php($records=$event->attendanceRecords->keyBy('event_registration_id'))
 <form method="POST" action="{{ route('admin.events.attendance.save',$event) }}">@csrf

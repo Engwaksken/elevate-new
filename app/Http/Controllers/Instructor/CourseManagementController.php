@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Instructor;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
@@ -23,6 +24,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CourseManagementController extends Controller
 {
+    use ExportsTables;
     public function show(Request $request, Course $course)
     {
         $this->authorise($course);
@@ -90,7 +92,7 @@ class CourseManagementController extends Controller
             ->paginate(24, ['*'], 'assessments_page')
             ->withQueryString();
 
-        $participants = $course->enrolments()
+        $participantQuery = $course->enrolments()
             ->with(['user', 'cohort'])
             ->when($request->filled('participant_search'), function ($query) use ($request) {
                 $search = trim((string) $request->get('participant_search'));
@@ -111,11 +113,9 @@ class CourseManagementController extends Controller
                 $request->filled('cohort_id'),
                 fn ($query) => $query->where('cohort_id', (int) $request->get('cohort_id'))
             )
-            ->latest()
-            ->paginate(20, ['*'], 'participants_page')
-            ->withQueryString();
+            ->latest();
 
-        $submissions = AssessmentAttempt::query()
+        $submissionQuery = AssessmentAttempt::query()
             ->with(['assessment', 'user'])
             ->whereHas('assessment', fn ($query) => $query->where('course_id', $course->id))
             ->when($request->filled('submission_search'), function ($query) use ($request) {
@@ -137,7 +137,49 @@ class CourseManagementController extends Controller
                 $request->filled('submission_status'),
                 fn ($query) => $query->where('status', (string) $request->get('submission_status'))
             )
-            ->latest('submitted_at')
+            ->latest('submitted_at');
+
+        if ($format = $this->exportFormat($request)) {
+            if ($request->query('list') === 'submissions') {
+                return $this->exportTable($format, 'Submissions - '.$course->title, $submissionQuery, [
+                    'Participant' => 'user.name',
+                    'Email' => 'user.email',
+                    'Assessment' => 'assessment.title',
+                    'Type' => 'assessment.type',
+                    'Attempt' => 'attempt_number',
+                    'Submitted' => 'submitted_at',
+                    'Score' => 'score',
+                    'Percentage' => 'percentage',
+                    'Status' => 'status',
+                    'Feedback' => 'instructor_feedback',
+                ], [
+                    'Search' => $request->get('submission_search'),
+                    'Status' => $request->get('submission_status'),
+                ]);
+            }
+
+            return $this->exportTable($format, 'Participants - '.$course->title, $participantQuery, [
+                'Participant' => 'user.name',
+                'Participant code' => 'user.participant_code',
+                'Email' => 'user.email',
+                'Cohort' => 'cohort.name',
+                'Status' => fn ($e) => ucfirst(str_replace('_', ' ', (string) $e->status)),
+                'Progress (%)' => fn ($e) => number_format((float) $e->progress_percent, 1),
+                'Final score (%)' => 'final_score',
+                'Enrolled' => 'enrolled_at',
+                'Completed' => 'completed_at',
+            ], [
+                'Search' => $request->get('participant_search'),
+                'Status' => $request->get('participant_status'),
+                'Cohort' => $request->filled('cohort_id') ? $course->cohorts->firstWhere('id', (int) $request->get('cohort_id'))?->name : null,
+            ]);
+        }
+
+        $participants = $participantQuery
+            ->paginate(20, ['*'], 'participants_page')
+            ->withQueryString();
+
+        $submissions = $submissionQuery
             ->paginate(20, ['*'], 'submissions_page')
             ->withQueryString();
 

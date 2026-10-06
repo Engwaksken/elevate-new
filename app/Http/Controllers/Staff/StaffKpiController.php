@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Staff;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Appraisal;
 use App\Models\AppraisalCycle;
@@ -16,16 +17,33 @@ use Illuminate\View\View;
 
 class StaffKpiController extends Controller
 {
+    use ExportsTables;
     public function __construct(private StaffKpiService $kpis)
     {
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $user = $request->user();
         $employee = Employee::with('contracts')->where('user_id', $user->id)->first();
         $contract = $employee ? $this->kpis->contractFor($employee, $request->integer('contract') ?: null) : null;
         $kpis = $employee ? $this->kpis->kpis($employee, $contract) : collect();
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'My KPIs', $kpis, [
+                'KRA' => 'kra',
+                'KPI' => 'title',
+                'Description' => 'description',
+                'Measurement' => 'measurement_method',
+                'Target' => 'target',
+                'Unit' => 'unit',
+                'Weight %' => 'weight',
+                'Status' => fn ($r) => str_replace('_', ' ', (string) $r->status),
+                'Reviewed At' => 'reviewed_at',
+            ], array_filter([
+                'Contract' => $contract ? trim(($contract->start_date?->format('d M Y') ?? '').' - '.($contract->end_date?->format('d M Y') ?? 'open')) : null,
+            ]));
+        }
         $quarters = $this->kpis->quarters($contract);
 
         return view('staff.kpis.index', [

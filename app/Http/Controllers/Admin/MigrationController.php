@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\MigrationBatch;
 use App\Models\MigrationStagingRecord;
@@ -12,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class MigrationController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request)
     {
         $query=MigrationBatch::latest();
@@ -30,6 +32,19 @@ class MigrationController extends Controller
 
         if($status=$request->get('status')){
             $query->where('status',$status);
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Data Migration Batches',$query,[
+                'Batch'=>'batch_name',
+                'Source'=>'source_system',
+                'File'=>'source_file',
+                'Rows'=>'total_rows',
+                'Successful'=>'successful_rows',
+                'Failed'=>'failed_rows',
+                'Status'=>fn($b)=>ucfirst((string)$b->status),
+                'Created'=>'created_at',
+            ]);
         }
 
         $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
@@ -203,6 +218,18 @@ class MigrationController extends Controller
                     ->orWhere('source_payload->phone','like',"%{$search}%")
                     ->orWhere('source_payload->name','like',"%{$search}%");
             });
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Migration Records: '.$migration->batch_name,$query,[
+                'Source ID'=>'source_record_id',
+                'Name'=>fn($r)=>data_get($r->source_payload,'name') ?: data_get($r->source_payload,'full_name'),
+                'Email'=>fn($r)=>data_get($r->source_payload,'email'),
+                'Phone'=>fn($r)=>data_get($r->source_payload,'phone') ?: data_get($r->source_payload,'contact'),
+                'Match'=>fn($r)=>ucfirst((string)$r->match_status),
+                'Matched user'=>'matchedUser.name',
+                'Matched email'=>'matchedUser.email',
+            ],null,[],fn($e)=>$e->filename('migration-records-'.$migration->id));
         }
 
         $perPage=in_array((int)$request->get('per_page'),[25,50,100,200],true)

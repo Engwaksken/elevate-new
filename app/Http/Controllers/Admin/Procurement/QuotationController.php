@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Admin\Procurement;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseRequest;
 use App\Models\Supplier;
@@ -8,8 +9,23 @@ use Illuminate\Http\Request;
 
 class QuotationController extends Controller
 {
-    public function index(PurchaseRequest $purchaseRequest)
+    use ExportsTables;
+    public function index(Request $request, PurchaseRequest $purchaseRequest)
     {
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Quotations - '.$purchaseRequest->request_number,$purchaseRequest->quotations()->with('supplier')->latest(),[
+                'Supplier'=>'supplier.name',
+                'Quotation No.'=>'quotation_number',
+                'Date'=>'quotation_date',
+                'Valid Until'=>'valid_until',
+                'Subtotal'=>fn($q)=>number_format((float)$q->subtotal,2),
+                'Tax'=>fn($q)=>number_format((float)$q->tax_amount,2),
+                'Total'=>fn($q)=>number_format((float)$q->total_amount,2),
+                'Currency'=>'currency',
+                'Status'=>fn($q)=>str_replace('_',' ',(string)$q->status),
+            ],['Purchase Request'=>$purchaseRequest->request_number]);
+        }
+
         return view('admin.procurement.quotations.index',[
             'purchaseRequest'=>$purchaseRequest->load('quotations.supplier'),
             'suppliers'=>Supplier::where('status','approved')->orderBy('name')->get(),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Elearning;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentAnswer;
 use App\Models\AssessmentAttempt;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class GradebookController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request, Course $course)
     {
         $query=AssessmentAttempt::with(['assessment','assessment.questions','user'])
@@ -27,6 +29,20 @@ class GradebookController extends Controller
         }
 
         if($status=$request->get('status')) $query->where('status',$status);
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Gradebook - '.$course->title,(clone $query)->setEagerLoads(['assessment'=>fn($q)=>$q,'user'=>fn($q)=>$q]),[
+                'Learner'=>'user.name',
+                'Email'=>'user.email',
+                'Assessment'=>'assessment.title',
+                'Attempt'=>'attempt_number',
+                'Submitted'=>'submitted_at',
+                'Score'=>'score',
+                'Percentage'=>'percentage',
+                'Status'=>'status',
+                'Graded'=>'graded_at',
+            ]);
+        }
 
         $perPage=in_array((int)$request->get('per_page'),[10,20,30,50,100],true)
             ? (int)$request->get('per_page') : 30;

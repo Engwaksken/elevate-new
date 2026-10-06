@@ -8,6 +8,7 @@
         <p>Upload one background design for multiple courses, a specific event, or the default certificate. Participant details are printed on top.</p>
     </div>
     <div class="admin-page-actions">
+        <x-export-buttons />
         <a href="{{ route('certificates.recommendations.index') }}" class="btn btn-outline"><i class="fas fa-list-check"></i> Recommendations</a>
         <button type="button" class="btn btn-primary" data-modal-open="cert-template-upload"><i class="fas fa-upload"></i> Upload template</button>
     </div>

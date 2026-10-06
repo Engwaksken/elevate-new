@@ -9,4 +9,6 @@ class AssessmentQuestion extends Model
         'assessment_id','question_type','question_text','options','correct_answer','marks','position'
     ];
     protected $casts = ['options'=>'array','correct_answer'=>'array','marks'=>'decimal:2'];
+
+    public function assessment(){ return $this->belongsTo(Assessment::class); }
 }

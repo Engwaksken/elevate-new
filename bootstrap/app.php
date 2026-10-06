@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => \App\Http\Middleware\EnsureStaffUser::class,
             'permission' => \App\Http\Middleware\EnsureUserHasPermission::class,
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
+            'user_type' => \App\Http\Middleware\EnsureUserType::class,
         ]);
 
         $middleware->web(

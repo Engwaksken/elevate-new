@@ -13,28 +13,30 @@
 <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
 </head>
 @php
-$participantShell=auth()->check() && method_exists(auth()->user(),'isParticipant') && auth()->user()->isParticipant();
-$partnerType=auth()->check() && method_exists(auth()->user(),'isPartner') && auth()->user()->isPartner() ? auth()->user()->user_type : null;
-$partnerHome=$partnerType === 'mentor' ? 'mentorship.dashboard' : 'employer.jobs.index';
+// Participants, mentors and employers share one role-aware app shell
+// (sidebar + role badge); staff keep layouts/admin and guests the public site.
+$roleShell=\App\Support\RoleShell::roleFor(auth()->user());
+$participantShell=$roleShell !== null;
 $inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.login') || request()->routeIs('register') || request()->routeIs('partners.*') || request()->routeIs('public.partners.*');
 $brandLogoPath = app(\App\Services\SettingsService::class)->get('branding.logo_path');
 $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('branding.asset')
     ? route('branding.asset', ['type' => 'logo', 'v' => md5((string) $brandLogoPath)])
     : null;
 @endphp
-<body class="{{ $participantShell?'participant-app-body':'' }}">
+<body class="{{ $participantShell?'participant-app-body role-shell-body role-shell-body--'.$roleShell:'' }}">
 <a href="#main-content" class="skip-link">Skip to main content</a>
 
 @if($participantShell)
 <div class="participant-app-shell">
-@include('partials.participant-sidebar')
+<x-role-sidebar :role="$roleShell" />
 <div class="ps-overlay" data-sidebar-overlay aria-hidden="true"></div>
 <div class="participant-app-main">
 <header class="participant-mobile-header">
 <button type="button" data-sidebar-toggle aria-controls="participantSidebar" aria-expanded="false" aria-label="Open navigation"><i class="fas fa-bars"></i></button>
-<a href="{{ route('dashboard') }}" class="participant-mobile-brand">@if($brandLogoUrl)<img src="{{ $brandLogoUrl }}" alt="ElevateHer360" style="max-width:36px;max-height:36px;object-fit:contain">@else<span class="ps-mobile-mark">E360</span>@endif<strong>ElevateHer360</strong></a>
+<a href="{{ \App\Support\RoleShell::homeUrl(auth()->user()) ?? route('home') }}" class="participant-mobile-brand">@if($brandLogoUrl)<img src="{{ $brandLogoUrl }}" alt="ElevateHer360" style="max-width:36px;max-height:36px;object-fit:contain">@else<span class="ps-mobile-mark">E360</span>@endif<span class="participant-mobile-brand-copy"><strong>ElevateHer360</strong><x-role-badge :role="$roleShell" tone="dark" class="role-badge--compact" /></span></a>
 @if(Route::has('notifications.index'))<a href="{{ route('notifications.index') }}" class="participant-mobile-action" aria-label="Notifications"><i class="fas fa-bell"></i></a>@else<span></span>@endif
 </header>
+<x-role-topbar :role="$roleShell" />
 <main id="main-content" class="site-main participant-site-main">
 @if(session('success'))<div class="flash-message success-box" data-auto-dismiss><i class="fas fa-circle-check"></i><span>{{ session('success') }}</span></div>@endif
 @if(session('error'))<div class="flash-message error-box" data-auto-dismiss><i class="fas fa-circle-exclamation"></i><span>{{ session('error') }}</span></div>@endif
@@ -68,8 +70,6 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 @else
 @if(method_exists(auth()->user(),'isStaff') && auth()->user()->isStaff() && Route::has('admin.dashboard'))
 <a href="{{ route('admin.dashboard') }}" class="btn btn-primary btn-sm"><i class="fas fa-gauge-high"></i><span>Dashboard</span></a>
-@elseif($partnerType && Route::has($partnerHome))
-<a href="{{ route($partnerHome) }}" class="btn btn-primary btn-sm"><i class="fas fa-gauge-high"></i><span>Dashboard</span></a>
 @endif
 @endguest
 </div></div>

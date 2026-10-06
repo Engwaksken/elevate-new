@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\{Cohort,Course,Programme,Project,Survey,SurveyAssignment,SurveyQuestion,User};
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class SurveyController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -34,6 +36,18 @@ class SurveyController extends Controller
 
         if($request->status) {
             $q->where('status',$request->status);
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Surveys',$q,[
+                'Survey'=>'title',
+                'Access'=>fn($s)=>ucwords((string)$s->access_type),
+                'Status'=>fn($s)=>ucfirst((string)$s->status),
+                'Responses'=>'responses_count',
+                'Opens'=>'opens_at',
+                'Closes'=>'closes_at',
+                'Public link'=>fn($s)=>$s->status==='published' ? route('surveys.public.show',$s) : '',
+            ]);
         }
 
         return view('admin.surveys.index',[
@@ -288,9 +302,36 @@ class SurveyController extends Controller
         return back()->with('success','Survey participant assignments updated.');
     }
 
-    public function responses(Survey $survey)
+    public function responses(Request $request, Survey $survey)
     {
         $survey->load('questions');
+
+        if($format=$this->exportFormat($request)){
+            // Same permission as the dedicated responses CSV download.
+            abort_unless(
+                auth()->user()->isSuperAdmin()
+                || auth()->user()->hasPermission('survey_responses.export'),
+                403
+            );
+
+            $columns=[
+                'Respondent'=>fn($r)=>$r->user?->name ?? 'Anonymous',
+                'Email'=>'user.email',
+                'Status'=>fn($r)=>ucfirst((string)$r->status),
+                'Submitted'=>'submitted_at',
+            ];
+            foreach($survey->questions as $question){
+                if(in_array($question->question_type,['heading','description'],true)) continue;
+                $columns[Str::limit('Q'.$question->id.' '.$question->question_text,80)]=function($r) use($question){
+                    $a=$r->answers->firstWhere('survey_question_id',$question->id);
+                    return $a ? ($a->answer_text ?? implode(', ',(array)($a->answer_json ?? []))) : '';
+                };
+            }
+
+            return $this->exportTable($format,'Survey Responses: '.$survey->title,
+                $survey->responses()->with(['user','answers'])->latest(),
+                $columns,null,[],fn($e)=>$e->filename(Str::slug($survey->title).'-responses'));
+        }
 
         $responses=$survey->responses()
             ->with(['user','answers.question'])

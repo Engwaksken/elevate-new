@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Employer;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Employer;
 use App\Models\Job;
@@ -9,9 +10,29 @@ use Illuminate\Http\Request;
 
 class EmployerJobController extends Controller
 {
-    public function index()
+    use ExportsTables;
+
+    public function index(Request $request)
     {
-        $employer = Employer::where('owner_user_id',auth()->id())->firstOrFail();
+        $employer = Employer::where('owner_user_id',auth()->id())->first();
+
+        if(!$employer){
+            return redirect()->route('employer.profile.edit')
+                ->with('info','Set up your company profile before posting jobs.');
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'My Job Postings',$employer->jobs()->withCount('applications')->latest(),[
+                'Title'=>'title',
+                'Industry'=>'industry',
+                'Location'=>fn($j)=>collect([$j->location,$j->country])->filter()->implode(', '),
+                'Positions'=>'positions',
+                'Deadline'=>'application_deadline',
+                'Applications'=>'applications_count',
+                'Status'=>fn($j)=>ucfirst((string)$j->status),
+                'Posted'=>'created_at',
+            ], null, [], fn($e)=>$e->subtitle($employer->company_name));
+        }
 
         return view('employer.jobs', [
             'employer'=>$employer,

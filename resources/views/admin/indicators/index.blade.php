@@ -4,7 +4,7 @@
 
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">MEAL</span><h1>Indicators</h1><p>Manage indicators, targets, calculated results and verification.</p></div>
-<div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createIndicatorModal"><i class="fas fa-plus"></i> New Indicator</button></div>
+<div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="createIndicatorModal"><i class="fas fa-plus"></i> New Indicator</button></div>
 </div>
 
 <div class="admin-stats-grid compact">

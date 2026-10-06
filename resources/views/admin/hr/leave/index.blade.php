@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Leave Approvals | ElevateHer360 Administration')
 @section('content')
-<div class="admin-page-header"><div><span class="admin-eyebrow">Human Resources</span><h1>Leave Approvals</h1><p>Review and approve staff leave requests.</p></div></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Human Resources</span><h1>Leave Approvals</h1><p>Review and approve staff leave requests.</p></div><div class="admin-page-actions"><x-export-buttons /></div></div>
 <div class="admin-stats-grid compact">@foreach([['total','Total Requests','fa-calendar-days'],['pending','Pending','fa-clock'],['supervisor_approved','Supervisor Approved','fa-user-check'],['approved','HR Approved','fa-circle-check']] as [$key,$label,$icon])<div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span><div><small>{{ $label }}</small><strong>{{ number_format($stats[$key] ?? 0) }}</strong></div></div>@endforeach</div>
 
 <div class="admin-panel">

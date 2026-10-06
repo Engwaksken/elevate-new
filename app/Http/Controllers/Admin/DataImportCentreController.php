@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\DataImport;
 use App\Services\Import\CsvTemplateService;
@@ -11,10 +12,22 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class DataImportCentreController extends Controller
 {
+    use ExportsTables;
+
     private const MODULES = ['appraisal_kras', 'appraisal_kpis', 'employees', 'mentorship', 'jobs_tracking', 'enrolments'];
 
-    public function index()
+    public function index(Request $request)
     {
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Data Imports', DataImport::latest(), [
+                'File' => 'original_filename',
+                'Module' => fn ($i) => \Illuminate\Support\Str::headline((string) $i->module),
+                'Rows' => 'total_rows',
+                'Status' => fn ($i) => ucfirst((string) $i->status),
+                'Uploaded' => 'created_at',
+            ]);
+        }
+
         return view('admin.imports.index', [
             'imports' => DataImport::latest()->paginate(30),
             'modules' => self::MODULES,

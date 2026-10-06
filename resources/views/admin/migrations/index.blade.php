@@ -9,6 +9,7 @@
     <p>Stage legacy CSV data, review identity matching and resolve migration quality before processing.</p>
 </div>
 <div class="admin-page-actions">
+    <x-export-buttons />
     <button type="button" class="btn btn-primary" data-modal-open="newMigrationModal">
         <i class="fas fa-file-import"></i> New Migration Batch
     </button>

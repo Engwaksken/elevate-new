@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Staff Exits | ElevateHer360 Administration')
 @section('content')
-<div class="admin-page-header"><div><span class="admin-eyebrow">Human Resources</span><h1>Staff Exits</h1><p>Manage staff exits, handover, clearance and account deactivation.</p></div><div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createExitModal"><i class="fas fa-person-walking-arrow-right"></i> Start Exit</button></div></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Human Resources</span><h1>Staff Exits</h1><p>Manage staff exits, handover, clearance and account deactivation.</p></div><div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="createExitModal"><i class="fas fa-person-walking-arrow-right"></i> Start Exit</button></div></div>
 <div class="admin-stats-grid compact">@foreach([['total','Total Exits','fa-door-open'],['initiated','Initiated','fa-clock'],['exiting','Employees Exiting','fa-person-walking-arrow-right'],['completed','Completed','fa-circle-check']] as [$key,$label,$icon])<div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span><div><small>{{ $label }}</small><strong>{{ number_format($stats[$key] ?? 0) }}</strong></div></div>@endforeach</div>
 
 <div class="admin-panel">

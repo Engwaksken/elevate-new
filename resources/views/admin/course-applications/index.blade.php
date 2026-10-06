@@ -7,7 +7,7 @@
         <h1>{{ $courseCall->title }}</h1>
         <p>{{ $courseCall->courses->pluck('title')->join(', ') ?: 'No courses linked' }}</p>
     </div>
-    <div class="admin-page-actions"><a href="{{ route('admin.course-calls.index') }}" class="btn btn-outline">Back</a></div>
+    <div class="admin-page-actions"><x-export-buttons /><a href="{{ route('admin.course-calls.index') }}" class="btn btn-outline">Back</a></div>
 </div>
 
 <div class="admin-panel">

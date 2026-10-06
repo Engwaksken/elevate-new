@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\HR;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\HrKpiTemplate;
 use App\Services\HR\KpiWorkbookImportService;
@@ -9,10 +10,27 @@ use Illuminate\Http\Request;
 
 class KpiTemplateController extends Controller
 {
-    public function index()
+    use ExportsTables;
+    public function index(Request $request)
     {
+        $query=HrKpiTemplate::withCount('items')->latest();
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'KPI & Appraisal Templates',$query,[
+                'Template'=>'name',
+                'Type'=>fn($t)=>str_replace('_',' ',(string)$t->template_type),
+                'Quarter'=>'quarter',
+                'Year'=>'year',
+                'Items'=>'items_count',
+                'Source File'=>'source_file',
+                'Source Sheet'=>'source_sheet',
+                'Status'=>fn($t)=>$t->is_active?'Active':'Inactive',
+                'Uploaded'=>'created_at',
+            ]);
+        }
+
         return view('admin.hr.appraisal-templates.index',[
-            'templates'=>HrKpiTemplate::withCount('items')->latest()->paginate(20),
+            'templates'=>$query->paginate(20),
         ]);
     }
 

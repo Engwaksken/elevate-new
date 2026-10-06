@@ -7,6 +7,7 @@
     <h1>Learning Files</h1>
     <p>Review and manage files uploaded to courses and lessons.</p>
 </div>
+<div class="admin-page-actions"><x-export-buttons /></div>
 </div>
 
 @if(session('success'))

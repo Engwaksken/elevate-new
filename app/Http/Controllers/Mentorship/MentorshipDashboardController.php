@@ -1,13 +1,16 @@
 <?php
 namespace App\Http\Controllers\Mentorship;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Models\MentorMatch;
 use App\Models\MentorshipGoal;
 use App\Models\MentorshipSession;
 use App\Models\ParticipantGoal;
 class MentorshipDashboardController extends Controller
 {
-    public function index()
+    use ExportsTables;
+    public function index(Request $request)
     {
         $userId=auth()->id();
         $mentorMatches=MentorMatch::with('mentee')->where('mentor_user_id',$userId)->whereIn('status',['active','pending'])->get();
@@ -24,6 +27,32 @@ class MentorshipDashboardController extends Controller
             'completed'=>$myGoals->where('status','completed')->count(),
             'average'=>$myGoals->isEmpty()?0:round((float)$myGoals->avg('progress_percent'),1),
         ];
+        if($format=$this->exportFormat($request)){
+            $goalColumns=[
+                'Goal'=>'title',
+                'Category'=>'category',
+                'Progress (%)'=>'progress_percent',
+                'Status'=>fn($g)=>ucfirst(str_replace('_',' ',(string)$g->status)),
+                'Target date'=>'target_date',
+                'Mentor feedback'=>'mentor_comment',
+            ];
+            return match($request->query('list')){
+                'goals'=>$this->exportTable($format,'My Goals',$myGoals,$goalColumns,[]),
+                'mentee-goals'=>$this->exportTable($format,'Mentee Goals',$menteeGoals,['Mentee'=>'user.name']+$goalColumns,[]),
+                default=>$this->exportTable($format,'Mentorship Sessions',$sessions->load(['match.mentor:id,name','match.mentee:id,name']),[
+                    'Session'=>'title',
+                    'Mentor'=>'match.mentor.name',
+                    'Mentee'=>'match.mentee.name',
+                    'Scheduled'=>'scheduled_at',
+                    'Duration (min)'=>'duration_minutes',
+                    'Venue'=>'venue',
+                    'Status'=>'status',
+                    'Agreed actions'=>'agreed_actions',
+                    'Next session'=>'next_session_at',
+                ],[]),
+            };
+        }
+
         $aiEnabled=\App\Models\AiIntegration::query()->where('feature','system_ai')->where('enabled',true)->whereNotNull('encrypted_api_key')->exists();
         $completedSessions=$sessions->filter(fn($s)=>in_array(strtolower((string)$s->status),['completed','done'],true))->count();
         $upcomingSessions=$sessions->filter(fn($s)=>$s->scheduled_at&&$s->scheduled_at->isFuture()&&!in_array(strtolower((string)$s->status),['completed','cancelled'],true))->count();

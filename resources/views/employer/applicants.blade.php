@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('content')
-<div class="card"><h1>Applicants</h1>
+<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h1>Applicants</h1><x-export-buttons /></div>
 @foreach($applications as $application)
 <div class="card"><strong>{{ $application->user->name }}</strong><br>{{ $application->job->title }} · {{ $application->status }}
 <form method="POST" action="{{ route('employer.applicants.status',$application) }}">@csrf @method('PUT')

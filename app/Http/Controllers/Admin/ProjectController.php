@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Programme;
 use App\Models\Project;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 
 class ProjectController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -31,6 +33,17 @@ class ProjectController extends Controller
 
         if($status=$request->get('status')) $query->where('status',$status);
         if($programme=$request->get('programme_id')) $query->where('programme_id',$programme);
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Projects',$query->latest(),[
+                'Project'=>'name',
+                'Code'=>'code',
+                'Programme'=>'programme.name',
+                'Start date'=>'start_date',
+                'End date'=>'end_date',
+                'Status'=>fn($p)=>ucfirst((string)$p->status),
+            ]);
+        }
 
         $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
             ? (int)$request->get('per_page') : 20;

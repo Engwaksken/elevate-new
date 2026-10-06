@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Jobs;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Employer;
@@ -12,6 +13,8 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class JobAdminController extends Controller
 {
+    use ExportsTables;
+
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -32,6 +35,22 @@ class JobAdminController extends Controller
 
         if($status=$request->get('status')) $query->where('status',$status);
         if($type=$request->get('employment_type')) $query->where('employment_type',$type);
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Jobs',$query,[
+                'Title'=>'title',
+                'Employer'=>'employer.company_name',
+                'Category'=>'category',
+                'Industry'=>'industry',
+                'Employment Type'=>fn($j)=>ucfirst(str_replace('_',' ',(string)$j->employment_type)),
+                'Location'=>fn($j)=>collect([$j->location,$j->country])->filter()->implode(', '),
+                'Positions'=>'positions',
+                'Salary'=>fn($j)=>$j->salary_min||$j->salary_max ? trim(($j->salary_currency?$j->salary_currency.' ':'').collect([$j->salary_min,$j->salary_max])->filter()->map(fn($v)=>number_format((float)$v))->implode(' - ')) : '',
+                'Deadline'=>'application_deadline',
+                'Status'=>fn($j)=>ucfirst((string)$j->status),
+                'Published'=>'published_at',
+            ]);
+        }
 
         $routePrefix=str_starts_with((string)$request->route()?->getName(),'admin.hr.jobs')
             ? 'admin.hr.jobs'

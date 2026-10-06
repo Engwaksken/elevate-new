@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\HR;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\LeaveRequest;
 use App\Services\LeaveService;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 
 class LeaveApprovalController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -28,6 +30,23 @@ class LeaveApprovalController extends Controller
         }
 
         if($status=$request->get('status')) $query->where('status',$status);
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Leave Requests',$query,[
+                'Employee'=>'employee.user.name',
+                'Employee No.'=>'employee.employee_number',
+                'Leave Type'=>'leaveType.name',
+                'Start Date'=>'start_date',
+                'End Date'=>'end_date',
+                'Days'=>'days_requested',
+                'Reason'=>'reason',
+                'Status'=>fn($r)=>str_replace('_',' ',(string)$r->status),
+                'Supervisor Approved'=>'supervisor_approved_at',
+                'HR Approved'=>'hr_approved_at',
+                'Decision Notes'=>'decision_notes',
+                'Submitted'=>'created_at',
+            ]);
+        }
 
         $perPage=in_array((int)$request->get('per_page'),[10,25,50,100],true)
             ? (int)$request->get('per_page') : 25;

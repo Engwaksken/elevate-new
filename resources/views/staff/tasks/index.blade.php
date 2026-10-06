@@ -22,6 +22,7 @@
     <p>Plan daily and weekly work, link each task to a KPI in your appraisal, and keep a record of what was done.</p>
 </div>
 <div class="admin-page-actions">
+    <x-export-buttons />
     <a href="{{ route('staff.kpis.index') }}" class="btn btn-outline"><i class="fas fa-bullseye"></i> My KPIs</a>
     <button type="button" class="btn btn-primary" data-modal-open="task-new"><i class="fas fa-plus"></i> New task</button>
 </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Elearning;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Certificate;
 use App\Models\Course;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 
 class CertificateIndexController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -48,6 +50,17 @@ class CertificateIndexController extends Controller
             if ($status === 'pending') {
                 $query->whereNull('pdf_path');
             }
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Course Certificates', (clone $query)->latest('issued_on')->latest('id'), [
+                'Certificate number' => 'certificate_number',
+                'Learner' => 'user.name',
+                'Email' => 'user.email',
+                'Course' => 'course.title',
+                'Issued on' => 'issued_on',
+                'Status' => fn ($c) => $c->pdf_path ? 'Generated' : 'Pending',
+            ], null, ['course_id' => 'Course']);
         }
 
         $certificates = $query

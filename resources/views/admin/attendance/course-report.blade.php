@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Monitoring & Attendance</span><h1>Course Attendance Report</h1><p>Filter and export daily course attendance across courses and cohorts.</p></div>
-<div class="admin-page-actions"><a href="{{ route('admin.course-attendance-report.csv',request()->query()) }}" class="btn btn-outline"><i class="fas fa-file-csv"></i> Export CSV</a></div>
+<div class="admin-page-actions"><a href="{{ route('admin.course-attendance-report.csv',request()->query()) }}" class="btn btn-outline"><i class="fas fa-file-csv"></i> Export CSV</a><x-export-buttons :formats="['pdf']" size="md" /></div>
 </div>
 
 <div class="admin-stats-grid compact">

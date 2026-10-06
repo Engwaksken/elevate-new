@@ -7,7 +7,7 @@
 <h1>System Settings</h1>
 <p>Manage grouped platform settings, public configuration and encrypted values.</p>
 </div>
-<div class="admin-page-actions">
+<div class="admin-page-actions"><x-export-buttons />
 <button type="button" class="btn btn-primary" data-modal-open="createSetting"><i class="fas fa-plus"></i> Add Setting</button>
 </div>
 </div>

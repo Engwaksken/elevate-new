@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
 
 class NotificationAdminController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request)
     {
         $query=UserNotification::with('user')->latest();
@@ -28,6 +30,18 @@ class NotificationAdminController extends Controller
         if($read=$request->get('read_status')){
             if($read==='unread') $query->whereNull('read_at');
             if($read==='read') $query->whereNotNull('read_at');
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Notification History',$query,[
+                'Recipient'=>'user.name',
+                'Recipient email'=>'user.email',
+                'Type'=>'type',
+                'Title'=>'title',
+                'Message'=>'message',
+                'Created'=>'created_at',
+                'Read at'=>'read_at',
+            ]);
         }
 
         $perPage=in_array((int)$request->get('per_page'),[10,25,50,100],true)

@@ -3,7 +3,8 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Programme Delivery</span><h1>Mentors</h1><p>Review mentor applications and manage approval status.</p></div>
-<button type="button" class="btn btn-primary" data-modal-open="createMentorModal"><i class="fas fa-plus"></i> Add Mentor</button>
+<div class="admin-page-actions"><x-export-buttons />
+<button type="button" class="btn btn-primary" data-modal-open="createMentorModal"><i class="fas fa-plus"></i> Add Mentor</button></div>
 </div>
 
 <div class="admin-stats-grid compact">

@@ -9,6 +9,8 @@
         <p>Create one general call and include multiple active courses.</p>
     </div>
 
+    <div class="admin-page-actions">
+    <x-export-buttons />
     <button
         type="button"
         class="btn btn-primary"
@@ -17,6 +19,7 @@
         <i class="fas fa-plus"></i>
         New Course Call
     </button>
+    </div>
 </div>
 
 @if(session('success'))

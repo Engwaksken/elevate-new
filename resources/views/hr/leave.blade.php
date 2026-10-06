@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('content')
-<div class="card"><h1>My Leave</h1>
+<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h1>My Leave</h1><x-export-buttons /></div>
 <form method="POST" action="{{ route('hr.leave.store') }}">@csrf
 <label>Leave Type</label><select name="leave_type_id">@foreach($leaveTypes as $type)<option value="{{ $type->id }}">{{ $type->name }}</option>@endforeach</select>
 <label>Start Date</label><input type="date" name="start_date" required>

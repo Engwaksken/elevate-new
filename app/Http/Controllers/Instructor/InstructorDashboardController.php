@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Instructor;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -9,12 +10,13 @@ use Illuminate\View\View;
 
 class InstructorDashboardController extends Controller
 {
+    use ExportsTables;
     public function index(): RedirectResponse
     {
         return redirect()->route('admin.dashboard');
     }
 
-    public function myCourses(Request $request): View
+    public function myCourses(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
         $user = $request->user();
 
@@ -63,6 +65,19 @@ class InstructorDashboardController extends Controller
                 'year' => $query->where('courses.updated_at', '>=', now()->startOfYear()),
                 default => null,
             };
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'My Courses', (clone $query)->orderBy('title'), [
+                'Course' => 'title',
+                'Code' => 'code',
+                'Cohorts' => fn ($c) => $c->cohorts->pluck('name')->join(', '),
+                'Learners' => 'enrolments_count',
+                'Lead instructor' => fn ($c) => (bool) data_get($c, 'pivot.is_lead', false),
+                'Status' => 'status',
+                'Start date' => 'start_date',
+                'End date' => 'end_date',
+            ], null, ['course_id' => 'Course', 'cohort_id' => 'Cohort']);
         }
 
         $courses = $query

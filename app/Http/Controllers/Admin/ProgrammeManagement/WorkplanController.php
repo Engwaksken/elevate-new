@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\ProgrammeManagement;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Cohort;
 use App\Models\Programme;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 
 class WorkplanController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request)
     {
         $query = Workplan::with([
@@ -35,6 +37,25 @@ class WorkplanController extends Controller
         if ($period = $request->get('period_type')) $query->where('period_type',$period);
         if ($request->filled('from')) $query->whereDate('start_date','>=',$request->date('from'));
         if ($request->filled('to')) $query->whereDate('end_date','<=',$request->date('to'));
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Workplans', $query->with(['programme','project','responsible']), [
+                'Workplan' => 'title',
+                'Programme' => 'programme.name',
+                'Project' => 'project.name',
+                'Financial Year' => 'financial_year',
+                'Period' => fn($r)=>str_replace('_',' ',(string)$r->period_type),
+                'Start' => 'start_date',
+                'End' => 'end_date',
+                'Responsible' => 'responsible.name',
+                'Progress %' => 'progress_percent',
+                'Milestones' => 'milestones_count',
+                'Activities' => 'activities_count',
+                'Status' => fn($r)=>str_replace('_',' ',(string)$r->status),
+                'Approved By' => 'approver.name',
+                'Approved At' => 'approved_at',
+            ], null, ['period_type' => 'Period']);
+        }
 
         $perPage = in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
             ? (int)$request->get('per_page') : 20;

@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Cohorts | ElevateHer360 Administration')
 @section('content')
-<div class="admin-page-header"><div><span class="admin-eyebrow">Programme Management</span><h1>Cohorts</h1><p>Manage programme cohorts, delivery locations, dates and status.</p></div><div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="cohortCreate"><i class="fas fa-plus"></i> Add Cohort</button></div></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Programme Management</span><h1>Cohorts</h1><p>Manage programme cohorts, delivery locations, dates and status.</p></div><div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="cohortCreate"><i class="fas fa-plus"></i> Add Cohort</button></div></div>
 @include('admin.shared.feedback')
 <div class="admin-stats-grid compact">@foreach([['total','Total Cohorts','fa-users-rectangle'],['active','Active','fa-circle-check'],['open','Open','fa-door-open'],['completed','Completed','fa-flag-checkered']] as [$k,$l,$i])<div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $i }}"></i></span><div><small>{{ $l }}</small><strong>{{ number_format($stats[$k]??0) }}</strong></div></div>@endforeach</div>
 <div class="admin-panel"><form method="GET" class="admin-toolbar">

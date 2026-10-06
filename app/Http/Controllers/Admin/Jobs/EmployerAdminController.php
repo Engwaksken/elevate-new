@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Jobs;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Controller;
 use App\Models\Employer;
@@ -9,6 +10,8 @@ use Illuminate\Http\Request;
 
 class EmployerAdminController extends Controller
 {
+    use ExportsTables;
+
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -52,6 +55,23 @@ class EmployerAdminController extends Controller
 
         if ($status = $request->get('status')) {
             $query->where('status',$status);
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Employers', $query, [
+                'Company' => 'company_name',
+                'Type' => 'company_type',
+                'Industry' => 'industry',
+                'Contact Person' => 'contact_person',
+                'Email' => 'email',
+                'Phone' => 'phone',
+                'Location' => fn ($e) => collect([$e->location, $e->country])->filter()->implode(', '),
+                'Account Owner' => 'owner.name',
+                'Owner Email' => 'owner.email',
+                'Status' => fn ($e) => ucfirst((string) $e->status),
+                'Approved' => 'approved_at',
+                'Registered' => 'created_at',
+            ]);
         }
 
         $stats = [

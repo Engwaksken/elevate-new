@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\ProgrammeManagement;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Task;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -42,6 +44,21 @@ class TaskController extends Controller
 
         if($request->filled('to')) {
             $query->whereDate('due_date','<=',$request->date('to'));
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Tasks',$query,[
+                'Task'=>'title',
+                'Activity'=>'activity.title',
+                'Assignee'=>'assignee.name',
+                'Priority'=>fn($r)=>str_replace('_',' ',(string)$r->priority),
+                'Start'=>'start_date',
+                'Due'=>'due_date',
+                'Progress %'=>'progress_percent',
+                'Status'=>fn($r)=>str_replace('_',' ',(string)$r->status),
+                'Completed At'=>'completed_at',
+                'Outcome'=>'outcome',
+            ]);
         }
 
         $perPage=in_array((int)$request->get('per_page'),[10,25,50,100],true)

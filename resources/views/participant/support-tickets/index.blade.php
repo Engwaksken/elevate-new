@@ -4,7 +4,7 @@
 @section('content')
 <div class="page-header">
     <div><span class="eh-kicker">Support</span><h1>My Support Requests</h1><p>Review your requests and track their current status.</p></div>
-    <div class="page-actions"><a href="#new-support-request" class="btn btn-primary">Submit a request</a></div>
+    <div class="page-actions"><x-export-buttons /><a href="#new-support-request" class="btn btn-primary">Submit a request</a></div>
 </div>
 
 @if(session('success'))<div class="alert alert-success" role="status">{{ session('success') }}</div>@endif

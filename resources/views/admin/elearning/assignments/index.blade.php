@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Course Assignments | ElevateHer360 Administration')
 @section('content')
-<div class="admin-page-header"><div><span class="admin-eyebrow">Programme Delivery</span><h1>Course Assignments</h1><p>Assign instructors and cohorts to courses.</p></div></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Programme Delivery</span><h1>Course Assignments</h1><p>Assign instructors and cohorts to courses.</p></div><div class="admin-page-actions"><x-export-buttons /></div></div>
 @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 <div class="admin-stats-grid compact">
 @foreach([['courses','Courses','fa-graduation-cap'],['assigned','With Instructor','fa-user-tie'],['unassigned','Without Instructor','fa-user-clock'],['cohort_linked','Linked to Cohort','fa-users-rectangle']] as [$k,$l,$i])

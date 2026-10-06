@@ -369,7 +369,7 @@
 
 @if($activeTab === 'submissions')
 <section class="icm-panel">
-    <div class="icm-panel-head"><div><h2>Submissions</h2><p class="icm-muted">Review participant submissions and record marks and feedback.</p></div></div>
+    <div class="icm-panel-head"><div><h2>Submissions</h2><p class="icm-muted">Review participant submissions and record marks and feedback.</p></div><x-export-buttons :params="['tab' => 'submissions', 'list' => 'submissions']" /></div>
     @if($pendingExtensionCount > 0)
         <div class="icm-notice">
             <span><i class="fas fa-clock"></i> <strong>{{ $pendingExtensionCount }}</strong> pending extension {{ \Illuminate\Support\Str::plural('request', $pendingExtensionCount) }} waiting for review.</span>
@@ -545,7 +545,7 @@
 
 @if($activeTab === 'participants')
 <section class="icm-panel">
-    <div class="icm-panel-head"><div><h2>Course Participants</h2><p class="icm-muted">View and update enrolment status and course progress.</p></div><a class="btn btn-primary" href="{{ route('certificates.recommendations.create', ['course_id' => $course->id]) }}"><i class="fas fa-award"></i> Recommend certificates</a></div>
+    <div class="icm-panel-head"><div><h2>Course Participants</h2><p class="icm-muted">View and update enrolment status and course progress.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><x-export-buttons :params="['tab' => 'participants', 'list' => 'participants']" /><a class="btn btn-primary" href="{{ route('certificates.recommendations.create', ['course_id' => $course->id]) }}"><i class="fas fa-award"></i> Recommend certificates</a></div></div>
     <form method="GET" class="icm-filter">
         <input type="hidden" name="tab" value="participants">
         <input name="participant_search" value="{{ request('participant_search') }}" placeholder="Search name, email or participant ID">

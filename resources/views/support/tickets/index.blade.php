@@ -11,6 +11,7 @@
         <h1>Support tickets</h1>
         <p>Review requests and track their progress.</p>
     </div>
+    <x-export-buttons />
 </div>
 
 @if($canManageQueue)

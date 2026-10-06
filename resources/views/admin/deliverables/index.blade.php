@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Planning & Delivery</span><h1>Deliverables</h1><p>Track activity deliverables, owners, due dates and completion progress.</p></div>
-<div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createDeliverableModal"><i class="fas fa-plus"></i> New Deliverable</button></div>
+<div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="createDeliverableModal"><i class="fas fa-plus"></i> New Deliverable</button></div>
 </div>
 
 <div class="admin-stats-grid compact">

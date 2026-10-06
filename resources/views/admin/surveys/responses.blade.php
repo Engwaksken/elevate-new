@@ -12,6 +12,7 @@
             <a href="{{route('admin.surveys.responses.csv',$survey)}}" class="btn btn-outline">
                 <i class="fas fa-file-csv"></i> Export CSV
             </a>
+            <x-export-buttons :formats="['pdf']" size="md" />
         @endif
         <a href="{{route('admin.surveys.builder',$survey)}}" class="btn btn-outline">Builder</a>
     </div>

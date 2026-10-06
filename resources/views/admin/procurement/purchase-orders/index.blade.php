@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Procurement</span><h1>Purchase Orders</h1><p>Create purchase orders from approved requests and record goods received.</p></div>
-<div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createPOModal"><i class="fas fa-plus"></i> New Purchase Order</button></div>
+<div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="createPOModal"><i class="fas fa-plus"></i> New Purchase Order</button></div>
 </div>
 
 <div class="admin-stats-grid compact">

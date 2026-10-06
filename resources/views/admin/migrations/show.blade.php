@@ -9,6 +9,7 @@
     <p>{{ ucfirst($batch->source_system) }} · {{ number_format($batch->total_rows) }} staged records · {{ $batch->source_file ?: 'No source filename' }}</p>
 </div>
 <div class="admin-page-actions">
+    <x-export-buttons />
     <a href="{{ route('admin.migrations.index') }}" class="btn btn-outline">
         <i class="fas fa-arrow-left"></i> Migration Batches
     </a>

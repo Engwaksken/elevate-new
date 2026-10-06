@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Procurement;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Programme;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 class PurchaseRequestController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request)
     {
         $query=PurchaseRequest::with(['items','approvals'])->latest();
@@ -28,6 +30,22 @@ class PurchaseRequestController extends Controller
         }
 
         if($status=$request->get('status')) $query->where('status',$status);
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Purchase Requests',$query->with('requester'),[
+                'Request No.'=>'request_number',
+                'Requester'=>'requester.name',
+                'Department'=>'department',
+                'Required Date'=>'required_date',
+                'Funding Source'=>'funding_source',
+                'Items'=>fn($r)=>$r->items->count(),
+                'Estimated Total'=>fn($r)=>number_format((float)$r->estimated_total,2),
+                'Currency'=>'currency',
+                'Status'=>fn($r)=>str_replace('_',' ',(string)$r->status),
+                'Justification'=>'justification',
+                'Created'=>'created_at',
+            ]);
+        }
 
         $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)
             ? (int)$request->get('per_page') : 20;

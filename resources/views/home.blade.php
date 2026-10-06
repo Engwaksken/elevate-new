@@ -63,19 +63,19 @@
                 @else
 
                     <a
-                        href="{{ route('register') }}"
+                        href="#get-started"
                         class="btn btn-primary btn-lg"
                     >
-                        <i class="fas fa-user-plus"></i>
-                        Create Your Account
+                        <i class="fas fa-arrow-down" aria-hidden="true"></i>
+                        Get Started
                     </a>
 
                     <a
-                        href="{{ route('login') }}"
+                        href="#platform"
                         class="btn btn-outline btn-lg"
                     >
-                        <i class="fas fa-right-to-bracket"></i>
-                        Sign In
+                        <i class="fas fa-compass" aria-hidden="true"></i>
+                        Explore the Platform
                     </a>
 
                 @endauth
@@ -148,6 +148,12 @@
     </div>
 
 </section>
+
+
+{{-- =========================================================
+     ROLE CHOOSER: Participant / Mentor / Employer entry points
+     ========================================================= --}}
+<x-role-chooser class="full-width-section" />
 
 
 {{-- =========================================================

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
@@ -22,6 +23,7 @@ use Illuminate\Validation\ValidationException;
 
 class CourseCallController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -46,6 +48,18 @@ class CourseCallController extends Controller
 
         if ($request->filled('status')) {
             $q->where('status', $request->status);
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Course Calls', $q, [
+                'Course call' => 'title',
+                'Included courses' => fn ($c) => $c->courses->pluck('title')->implode(', '),
+                'Cohort' => 'cohort.name',
+                'Status' => fn ($c) => ucfirst((string) $c->status),
+                'Applications' => 'applications_count',
+                'Opens' => 'opens_at',
+                'Closes' => 'closes_at',
+            ]);
         }
 
         return view('admin.course-calls.index', [
@@ -207,7 +221,7 @@ class CourseCallController extends Controller
             ->with('success', 'Course call deleted.');
     }
 
-    public function applications(CourseCall $courseCall, ParticipantHistoryService $history)
+    public function applications(Request $request, CourseCall $courseCall, ParticipantHistoryService $history)
     {
         /*
          * A general Course Call can contain several courses. Staff with the
@@ -219,6 +233,23 @@ class CourseCallController extends Controller
             || auth()->user()->hasPermission('applications.review'),
             403
         );
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Course Applications: '.$courseCall->title, $courseCall->applications()
+                ->with(['user.profile.branch', 'assessmentAttempt', 'assessor'])
+                ->latest(), [
+                    'Participant' => 'user.name',
+                    'Email' => 'user.email',
+                    'Phone' => 'user.phone',
+                    'Branch' => 'user.profile.branch.name',
+                    'Status' => fn ($a) => ucfirst(str_replace('_', ' ', (string) $a->status)),
+                    'Entry score' => 'entry_assessment_score',
+                    'Application score' => 'application_score',
+                    'Assessor' => 'assessor.name',
+                    'Submitted' => 'submitted_at',
+                    'Reviewer comments' => 'reviewer_comments',
+                ], null, [], fn ($e) => $e->filename('course-applications-'.$courseCall->id));
+        }
 
         $applications = $courseCall->applications()
             ->with(['user.profile.branch', 'assessmentAttempt', 'assessor'])

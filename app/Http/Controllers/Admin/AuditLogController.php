@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
 
 class AuditLogController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request)
     {
         $query=AuditLog::with('user')->latest('occurred_at');
@@ -33,6 +35,18 @@ class AuditLogController extends Controller
 
         if($request->filled('to')){
             $query->whereDate('occurred_at','<=',$request->date('to'));
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Audit Logs',$query,[
+                'Time'=>'occurred_at',
+                'User'=>fn($l)=>$l->user?->name ?? 'System',
+                'User email'=>'user.email',
+                'Module'=>'module',
+                'Action'=>'action',
+                'Record'=>fn($l)=>$l->auditable_type ? class_basename($l->auditable_type).' #'.$l->auditable_id : '',
+                'IP address'=>'ip_address',
+            ]);
         }
 
         $perPage=in_array((int)$request->get('per_page'),[10,25,50,100],true)

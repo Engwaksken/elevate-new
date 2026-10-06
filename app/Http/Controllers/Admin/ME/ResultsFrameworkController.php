@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\ME;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Programme;
 use App\Models\Project;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 
 class ResultsFrameworkController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -28,6 +30,18 @@ class ResultsFrameworkController extends Controller
                 $q->where('title','like',"%{$search}%")
                   ->orWhere('description','like',"%{$search}%");
             });
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Results Frameworks', $query, [
+                'Framework' => 'title',
+                'Description' => 'description',
+                'Results' => fn ($f) => $f->results->count(),
+                'Impact' => fn ($f) => $f->results->where('result_level', 'impact')->count(),
+                'Outcome' => fn ($f) => $f->results->where('result_level', 'outcome')->count(),
+                'Output' => fn ($f) => $f->results->where('result_level', 'output')->count(),
+                'Created' => 'created_at',
+            ]);
         }
 
         $perPage = in_array((int)$request->get('per_page'),[10,20,25,50,100],true)

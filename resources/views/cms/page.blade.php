@@ -6,8 +6,17 @@
 @php($sections = $cms->sections($content))
 <div class="container" style="padding:0 16px 48px">
 @if($preview ?? false)<div class="warning-box">Draft preview — this content is not necessarily published.</div>@endif
+@php($showRoleChooser = request()->routeIs('home') && !($preview ?? false))
+@php($leadHero = !empty($sections) && (($sections[0]['type'] ?? null) === 'hero'))
+@if($showRoleChooser && !$leadHero)<x-role-chooser />@endif
 @if(!empty($sections))
-    @include('cms.sections', ['sections' => $sections])
+    @if($leadHero)
+        @include('cms.sections', ['sections' => array_slice($sections, 0, 1)])
+        @if($showRoleChooser)<x-role-chooser />@endif
+        @include('cms.sections', ['sections' => array_slice($sections, 1)])
+    @else
+        @include('cms.sections', ['sections' => $sections])
+    @endif
 @else
     <div style="padding:32px 0 0">
         <div class="page-header"><div><h1>{{ $content['title'] }}</h1>@if($content['summary'] ?? null)<p>{{ $content['summary'] }}</p>@endif</div></div>

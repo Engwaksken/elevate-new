@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\ME;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Indicator;
 use App\Models\IndicatorResult;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 
 class IndicatorController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -48,6 +50,22 @@ class IndicatorController extends Controller
 
         if ($type = $request->get('indicator_type')) {
             $query->where('indicator_type',$type);
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Indicators', $query, [
+                'Code' => 'code',
+                'Indicator' => 'name',
+                'Level' => fn($r)=>str_replace('_',' ',(string)$r->result_level),
+                'Type' => fn($r)=>str_replace('_',' ',(string)$r->indicator_type),
+                'Unit' => 'unit_of_measure',
+                'Baseline' => fn ($i) => $i->baseline_numeric ?? $i->baseline_text,
+                'Frequency' => 'frequency',
+                'Data Source' => 'data_source',
+                'Targets' => 'targets_count',
+                'Results' => 'results_count',
+                'Status' => fn($r)=>str_replace('_',' ',(string)$r->status),
+            ], null, ['result_level' => 'Level', 'indicator_type' => 'Type']);
         }
 
         $perPage = in_array((int)$request->get('per_page'),[10,20,25,50,100],true)

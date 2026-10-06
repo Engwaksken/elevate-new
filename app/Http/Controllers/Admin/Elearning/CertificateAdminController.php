@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Elearning;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Certificate;
 use App\Models\CertificateTemplate;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 
 class CertificateAdminController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request)
     {
         $query = Certificate::with(['course','event','user','template'])->latest();
@@ -50,8 +52,20 @@ class CertificateAdminController extends Controller
         return back()->with('success', 'Certificate PDF generated.');
     }
 
-    public function templates()
+    public function templates(Request $request)
     {
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Certificate Templates', CertificateTemplate::with(['course','courses','event'])->latest(), [
+                'Name' => 'name',
+                'Context' => fn ($t) => $t->context_type === 'default' ? 'Default template' : ucfirst((string) $t->context_type),
+                'Course(s)' => fn ($t) => $t->courses->pluck('title')->push($t->course?->title)->filter()->unique()->join(', '),
+                'Event' => 'event.title',
+                'Orientation' => 'orientation',
+                'Status' => fn ($t) => $t->is_active ? 'Active' : 'Inactive',
+                'Created' => 'created_at',
+            ]);
+        }
+
         return view('admin.elearning.certificates.templates', [
             'templates' => CertificateTemplate::with(['course','courses','event'])->latest()->paginate(20),
             'courses' => Course::orderBy('title')->get(),

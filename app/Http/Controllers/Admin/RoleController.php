@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
 use App\Models\Role;
@@ -11,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class RoleController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request)
     {
         $query = Role::with(['permissions'])
@@ -19,6 +21,16 @@ class RoleController extends Controller
 
         if ($search = trim((string) $request->get('search'))) {
             $query->where('name','like',"%{$search}%");
+        }
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Roles & Permissions', $query, [
+                'Role' => 'name',
+                'Type' => fn ($r) => $r->is_system ? 'System' : 'Custom',
+                'Users' => 'users_count',
+                'Permissions' => 'permissions_count',
+                'Permission list' => fn ($r) => $r->permissions->pluck('name')->implode(', '),
+            ]);
         }
 
         $perPage = in_array(

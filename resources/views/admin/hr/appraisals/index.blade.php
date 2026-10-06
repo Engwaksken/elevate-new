@@ -21,6 +21,7 @@
 </div>
 
 <div class="admin-page-actions">
+<x-export-buttons />
 @if($canAdministerAppraisals && Route::has('admin.hr.kpi-templates.index'))
 <a href="{{ route('admin.hr.kpi-templates.index') }}" class="btn btn-outline"><i class="fas fa-file-excel"></i> KPI Templates</a>
 @endif

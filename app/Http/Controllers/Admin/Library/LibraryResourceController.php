@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Library;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\LibraryCategory;
 use App\Models\LibraryResource;
@@ -12,6 +13,7 @@ use Illuminate\Validation\Rule;
 
 class LibraryResourceController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -45,6 +47,22 @@ class LibraryResourceController extends Controller
 
         if($request->filled('status')){
             $query->where('is_active',$request->get('status')==='active');
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Library Resources',$query,[
+                'Resource'=>'title',
+                'Author'=>'author',
+                'Category'=>'category.name',
+                'Language'=>'language',
+                'Access'=>'access_level',
+                'Publication date'=>'publication_date',
+                'Tags'=>'tags',
+                'Views'=>'views_count',
+                'Downloads'=>'downloads_count',
+                'Status'=>fn($r)=>$r->is_active?'Active':'Inactive',
+                'Added'=>'created_at',
+            ],null,['category'=>'Category ID','access_level'=>'Access']);
         }
 
         $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)

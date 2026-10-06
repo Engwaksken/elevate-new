@@ -8,6 +8,7 @@
 <p>Admin and HR can add, upload, publish, update and archive job opportunities.</p>
 </div>
 <div class="admin-page-actions">
+<x-export-buttons />
 <button class="btn btn-outline" type="button" data-modal-open="importJobs"><i class="fas fa-file-import"></i> Upload Jobs</button>
 <button class="btn btn-primary" type="button" data-modal-open="createJob"><i class="fas fa-plus"></i> Add Job</button>
 </div>

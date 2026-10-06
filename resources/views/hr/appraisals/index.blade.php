@@ -25,6 +25,7 @@
     </div>
 
     <div class="admin-page-actions">
+        <x-export-buttons />
         @if(Route::has('staff.appraisals.team'))
             <a href="{{ route('staff.appraisals.team') }}" class="btn btn-outline">
                 <i class="fas fa-users"></i>

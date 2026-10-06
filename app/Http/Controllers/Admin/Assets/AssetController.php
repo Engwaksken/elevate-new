@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Assets;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetCategory;
@@ -15,6 +16,7 @@ use Illuminate\Http\Request;
 
 class AssetController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -45,6 +47,26 @@ class AssetController extends Controller
                     ->orWhere('model','like',"%{$search}%")
                     ->orWhere('location','like',"%{$search}%");
             });
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Asset Register',$query->with('assignments.assignedTo'),[
+                'Asset Code'=>'asset_code',
+                'Description'=>'description',
+                'Brand'=>'brand',
+                'Model'=>'model',
+                'Tag'=>'asset_tag',
+                'Serial No.'=>'serial_number',
+                'Location'=>'location',
+                'Condition'=>fn($r)=>str_replace('_',' ',(string)$r->condition),
+                'Assigned To'=>fn($a)=>$a->assignments->firstWhere('status','active')?->assignedTo?->name,
+                'Purchase Date'=>'purchase_date',
+                'Purchase Value'=>fn($a)=>$a->purchase_price!==null?number_format((float)$a->purchase_price,2):'',
+                'Currency'=>'currency',
+                'Funding Source'=>'funding_source',
+                'Warranty Ends'=>'warranty_end_date',
+                'Status'=>fn($r)=>str_replace('_',' ',(string)$r->status),
+            ]);
         }
 
         $perPage=in_array((int)$request->get('per_page'),[10,25,50,100],true)

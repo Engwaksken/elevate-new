@@ -9,6 +9,7 @@
     <p>Manage courses, modules, lessons, publication status and learning structure.</p>
 </div>
 <div class="admin-page-actions">
+    <x-export-buttons />
     <button type="button" class="btn btn-primary" data-modal-open="createCourseModal">
         <i class="fas fa-plus"></i> Add Course
     </button>

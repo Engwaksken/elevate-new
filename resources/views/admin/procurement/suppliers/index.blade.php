@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Procurement</span><h1>Suppliers</h1><p>Manage supplier records and approval status.</p></div>
-<div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createSupplierModal"><i class="fas fa-plus"></i> New Supplier</button></div>
+<div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="createSupplierModal"><i class="fas fa-plus"></i> New Supplier</button></div>
 </div>
 
 <div class="admin-stats-grid compact">

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Support;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Support\AssignSupportTicketRequest;
 use App\Http\Requests\Support\IndexSupportTicketQueueRequest;
@@ -16,18 +17,35 @@ use Illuminate\Support\Facades\Gate;
 
 class SupportTicketQueueController extends Controller
 {
-    public function index(IndexSupportTicketQueueRequest $request): View
+    use ExportsTables;
+    public function index(IndexSupportTicketQueueRequest $request): View|\Symfony\Component\HttpFoundation\Response
     {
         Gate::authorize('viewAny', ItSupportTicket::class);
 
-        $tickets = ItSupportTicket::query()
+        $query = ItSupportTicket::query()
             ->with(['requester', 'assignee'])
             ->when(! $request->user()->can('assign', new ItSupportTicket()), fn ($query) => $query->where('requester_id', $request->user()->id))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->validated('status')))
             ->when($request->filled('priority'), fn ($query) => $query->where('priority', $request->validated('priority')))
             ->when($request->filled('category'), fn ($query) => $query->where('category', $request->validated('category')))
             ->when($request->exists('assignee_id'), fn ($query) => $query->where('assignee_id', $request->validated('assignee_id')))
-            ->latest()
+            ->latest();
+
+        if ($format = $this->exportFormat($request)) {
+            return $this->exportTable($format, 'Support Tickets', $query, [
+                'Ticket #' => 'id',
+                'Subject' => 'subject',
+                'Category' => fn ($r) => str_replace('_', ' ', (string) $r->category),
+                'Priority' => fn ($r) => str_replace('_', ' ', (string) $r->priority),
+                'Status' => fn ($r) => str_replace('_', ' ', (string) $r->status),
+                'Requester' => 'requester.name',
+                'Assignee' => 'assignee.name',
+                'Opened' => 'created_at',
+                'Status Updated' => 'status_updated_at',
+            ]);
+        }
+
+        $tickets = $query
             ->paginate(15)
             ->withQueryString();
 

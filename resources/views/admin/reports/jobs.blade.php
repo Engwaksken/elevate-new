@@ -8,6 +8,7 @@
         <h1>Jobs Tracking</h1>
         <p>Latest 200 job tracking events by stage.</p>
     </div>
+    <div class="admin-page-actions"><x-export-buttons /></div>
 </div>
 
 @if($funnel->isNotEmpty())

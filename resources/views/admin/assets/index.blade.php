@@ -9,6 +9,7 @@
         <p>Register, assign, return, maintain and dispose organisational assets.</p>
     </div>
     <div class="admin-page-actions">
+        <x-export-buttons />
         <button type="button" class="btn btn-primary" data-modal-open="createAssetModal">
             <i class="fas fa-plus"></i> Register Asset
         </button>

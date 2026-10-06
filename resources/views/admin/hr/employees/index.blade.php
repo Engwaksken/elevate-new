@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Employees | ElevateHer360 Administration')
 @section('content')
-<div class="admin-page-header"><div><span class="admin-eyebrow">Human Resources</span><h1>Employees</h1><p>Manage employee records, employment status and contracts.</p></div><div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createEmployeeModal"><i class="fas fa-plus"></i> New Employee</button></div></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Human Resources</span><h1>Employees</h1><p>Manage employee records, employment status and contracts.</p></div><div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="createEmployeeModal"><i class="fas fa-plus"></i> New Employee</button></div></div>
 
 <div class="admin-stats-grid compact">
 @foreach([['total','Total Employees','fa-users'],['active','Active','fa-circle-check'],['probation','Probation','fa-hourglass-half'],['on_leave','On Leave','fa-plane-departure']] as [$key,$label,$icon])

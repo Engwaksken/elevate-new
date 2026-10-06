@@ -8,6 +8,7 @@
     <h1>Audit Logs & Activity History</h1>
     <p>Review recorded user actions, affected records, IP addresses and before/after values.</p>
 </div>
+<div class="admin-page-actions"><x-export-buttons /></div>
 </div>
 
 <div class="admin-stats-grid compact">

@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Employers | ElevateHer360 Administration')
 @section('content')
-<div class="admin-page-header"><div><span class="admin-eyebrow">Opportunities</span><h1>Employers</h1><p>Review employer registrations and approve access to employer services.</p></div><button type="button" class="btn btn-primary" data-modal-open="createEmployerModal"><i class="fas fa-plus"></i> Add Employer</button></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Opportunities</span><h1>Employers</h1><p>Review employer registrations and approve access to employer services.</p></div><div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="createEmployerModal"><i class="fas fa-plus"></i> Add Employer</button></div></div>
 <div class="admin-stats-grid compact">
 @foreach([['total','Total Employers','fa-building'],['pending','Pending','fa-clock'],['approved','Approved','fa-circle-check'],['rejected','Rejected','fa-circle-xmark']] as [$key,$label,$icon])
 <div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span><div><small>{{ $label }}</small><strong>{{ number_format($stats[$key] ?? 0) }}</strong></div></div>@endforeach

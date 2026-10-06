@@ -84,6 +84,7 @@
 
         <section class="eh-tab-pane" data-eh-pane="sessions">
             <div class="eh-tab-section">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><x-export-buttons :params="['list' => 'sessions']" /></div>
                 <div class="eh-data-list">
                     @forelse($sessions as $session)
                         <div class="eh-data-row">
@@ -165,6 +166,7 @@
                     </form>
                 </details>
 
+                @if(($myGoals ?? collect())->isNotEmpty())<div style="display:flex;justify-content:flex-end;margin:10px 0"><x-export-buttons :params="['list' => 'goals']" /></div>@endif
                 @if(($myGoals ?? collect())->isEmpty())
                     <div style="background:#faf7f2;border-radius:12px;padding:20px;text-align:center;color:#667085">
                         <p style="margin:0">You have not set any goals yet. Add your first goal below.</p>
@@ -339,7 +341,7 @@
 
 @isset($menteeGoals)
 @if($menteeGoals->isNotEmpty())
-<section class="eh-mentee-goals" aria-labelledby="mentee-goals-heading" style="margin-top:26px">
+<section id="mentee-goals" class="eh-mentee-goals" aria-labelledby="mentee-goals-heading" style="margin-top:26px">
 <style>
 .eh-mentee-goals{background:#fff;border:1px solid #eadede;border-radius:16px;padding:22px}
 .eh-mentee-goals h2{margin:0 0 4px;display:flex;align-items:center;gap:10px}
@@ -358,6 +360,7 @@
 </style>
 <h2 id="mentee-goals-heading"><i class="fas fa-flag"></i> Mentee goals</h2>
 <p class="eh-mg-sub">Review your mentees' personal goals and leave encouraging, actionable feedback.</p>
+<div style="margin-bottom:10px"><x-export-buttons :params="['list' => 'mentee-goals']" /></div>
 @foreach($menteeGoals->groupBy('user_id') as $userId => $goals)
 <div class="eh-mg-group">
     <h3>{{ $goals->first()->user?->name ?? 'Mentee' }} <span style="color:#98a2b3;font-weight:400">({{ $goals->count() }} goal{{ $goals->count() === 1 ? '' : 's' }})</span></h3>

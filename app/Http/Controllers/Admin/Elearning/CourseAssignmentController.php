@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Admin\Elearning;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Cohort;
 use App\Models\Course;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 
 class CourseAssignmentController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -25,6 +27,17 @@ class CourseAssignmentController extends Controller
         if($search=trim((string)$request->get('search'))){
             $query->where(fn($q)=>$q->where('title','like',"%{$search}%")
                 ->orWhere('code','like',"%{$search}%"));
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Course Assignments',(clone $query)->orderBy('title'),[
+                'Course'=>'title',
+                'Code'=>'code',
+                'Instructors'=>fn($c)=>$c->instructors->pluck('name')->join(', '),
+                'Instructor count'=>'instructors_count',
+                'Cohorts'=>fn($c)=>$c->cohorts->pluck('name')->join(', '),
+                'Cohort count'=>'cohorts_count',
+            ]);
         }
 
         return view('admin.elearning.assignments.index',[

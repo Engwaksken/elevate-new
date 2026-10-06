@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">Programme Delivery</span><h1>Assessments — {{ $course->title }}</h1><p>Build quizzes, assignments and exams for this course.</p></div>
-<div class="admin-page-actions">
+<div class="admin-page-actions"><x-export-buttons />
 <a href="{{ route('admin.elearning.courses.index') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Courses</a>
 @if(Route::has('admin.elearning.gradebook.index'))<a href="{{ route('admin.elearning.gradebook.index',$course) }}" class="btn btn-outline"><i class="fas fa-table-list"></i> Gradebook</a>@endif
 <button type="button" class="btn btn-primary" data-modal-open="createAssessmentModal"><i class="fas fa-plus"></i> New Assessment</button>

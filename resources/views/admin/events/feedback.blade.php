@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title','Event Feedback | ElevateHer360')
 @section('content')
-<div class="admin-page-header"><div><span class="admin-eyebrow">Event Evaluation</span><h1>{{ $event->title }}</h1><p>Participant feedback and event quality indicators.</p></div><div class="admin-page-actions"><a href="{{ route('admin.events.view',$event) }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Event View</a></div></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Event Evaluation</span><h1>{{ $event->title }}</h1><p>Participant feedback and event quality indicators.</p></div><div class="admin-page-actions"><x-export-buttons /><a href="{{ route('admin.events.view',$event) }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Event View</a></div></div>
 <div class="admin-stats-grid compact">
 @foreach([['responses','Responses','fa-comments'],['overall','Overall / 5','fa-star'],['relevance','Relevance / 5','fa-bullseye'],['recommend','Recommend / 5','fa-thumbs-up']] as [$k,$l,$i])
 <div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $i }}"></i></span><div><small>{{ $l }}</small><strong>{{ number_format((float)($stats[$k]??0),$k==='responses'?0:2) }}</strong></div></div>

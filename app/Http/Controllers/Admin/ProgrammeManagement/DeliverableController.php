@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\ProgrammeManagement;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Deliverable;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 
 class DeliverableController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -41,6 +43,18 @@ class DeliverableController extends Controller
 
         if($request->filled('to')) {
             $query->whereDate('due_date','<=',$request->date('to'));
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Deliverables',$query,[
+                'Deliverable'=>'title',
+                'Activity'=>'activity.title',
+                'Owner'=>'owner.name',
+                'Due'=>'due_date',
+                'Progress %'=>'progress_percent',
+                'Status'=>fn($r)=>str_replace('_',' ',(string)$r->status),
+                'Description'=>'description',
+            ]);
         }
 
         $perPage=in_array((int)$request->get('per_page'),[10,25,50,100],true)

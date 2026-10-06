@@ -18,6 +18,7 @@
 <p>Your employer profile must be approved before posting jobs.</p>
 @endif
 </div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0 8px"><h2>Posted Jobs</h2><x-export-buttons /></div>
 @foreach($jobs as $job)<div class="card">{{ $job->title }} · {{ $job->status }}</div>@endforeach
 {{ $jobs->links() }}
 @endsection

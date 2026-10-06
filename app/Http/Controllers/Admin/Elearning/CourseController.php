@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Elearning;
 
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\Branch;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
 
 class CourseController extends Controller
 {
+    use ExportsTables;
     use BulkDeletesRecords;
 
     protected function bulkDeleteModel(): string
@@ -49,6 +51,21 @@ class CourseController extends Controller
 
         if ($branchId = $request->integer('branch_id')) {
             $query->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId));
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Courses',(clone $query)->setEagerLoads(['branches'=>fn($q)=>$q])->latest(),[
+                'Course'=>'title',
+                'Code'=>'code',
+                'Branches'=>fn($c)=>$c->branches->pluck('name')->join(', '),
+                'Mode'=>'delivery_mode',
+                'Start date'=>'start_date',
+                'End date'=>'end_date',
+                'Modules'=>'modules_count',
+                'Enrolments'=>'enrolments_count',
+                'Assessments'=>'assessments_count',
+                'Status'=>'status',
+            ],null,['branch_id'=>'Branch','delivery_mode'=>'Delivery mode']);
         }
 
         $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)

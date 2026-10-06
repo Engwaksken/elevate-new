@@ -8,6 +8,7 @@
         <h1>Data Import &amp; Migration Centre</h1>
         <p>Download a CSV template, fill it in, then upload CSV or Excel to preview it before import.</p>
     </div>
+    <div class="admin-page-actions"><x-export-buttons /></div>
 </div>
 
 <div class="admin-panel" style="margin-bottom:16px">

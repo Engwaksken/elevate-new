@@ -10,6 +10,7 @@
 </div>
 
 <div class="admin-page-actions">
+    <x-export-buttons />
     <button class="btn btn-primary" type="button" data-modal-open="uploadKpiTemplate">
         <i class="fas fa-file-excel"></i> Upload Template
     </button>

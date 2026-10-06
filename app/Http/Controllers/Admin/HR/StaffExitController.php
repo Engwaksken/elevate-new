@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\HR;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\StaffExit;
@@ -11,11 +12,26 @@ use Illuminate\Http\Request;
 
 class StaffExitController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request)
     {
         $query=StaffExit::with(['employee.user','clearances'])->latest();
 
         if($status=$request->get('status')) $query->where('status',$status);
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Staff Exits',$query,[
+                'Employee'=>'employee.user.name',
+                'Employee No.'=>'employee.employee_number',
+                'Exit Type'=>fn($x)=>str_replace('_',' ',(string)$x->exit_type),
+                'Notice Date'=>'notice_date',
+                'Last Working Day'=>'last_working_date',
+                'Reason'=>'reason',
+                'Destination'=>'destination_organisation',
+                'Clearance'=>fn($x)=>$x->clearances->where('status','cleared')->count().'/'.$x->clearances->count(),
+                'Status'=>fn($x)=>str_replace('_',' ',(string)$x->status),
+            ]);
+        }
 
         $perPage=in_array((int)$request->get('per_page'),[10,25,50,100],true)
             ? (int)$request->get('per_page') : 25;

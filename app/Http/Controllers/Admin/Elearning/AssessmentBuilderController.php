@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Elearning;
 
+use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\AssessmentQuestion;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 
 class AssessmentBuilderController extends Controller
 {
+    use ExportsTables;
     public function index(Request $request, Course $course)
     {
         $query=$course->assessments()->withCount('questions')->latest();
@@ -22,6 +24,19 @@ class AssessmentBuilderController extends Controller
 
         if($request->filled('published')){
             $query->where('is_published',$request->boolean('published'));
+        }
+
+        if($format=$this->exportFormat($request)){
+            return $this->exportTable($format,'Assessments - '.$course->title,$query,[
+                'Assessment'=>'title',
+                'Type'=>'type',
+                'Questions'=>'questions_count',
+                'Pass mark'=>'pass_mark',
+                'Max attempts'=>'max_attempts',
+                'Opens'=>'opens_at',
+                'Due'=>'due_at',
+                'Status'=>fn($a)=>$a->is_published?'Published':'Draft',
+            ]);
         }
 
         $assessments=$query->paginate(

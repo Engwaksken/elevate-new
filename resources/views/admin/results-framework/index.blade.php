@@ -3,7 +3,7 @@
 @section('content')
 <div class="admin-page-header">
 <div><span class="admin-eyebrow">MEAL</span><h1>Results Framework</h1><p>Structure programme and project impacts, outcomes and outputs.</p></div>
-<div class="admin-page-actions"><button type="button" class="btn btn-primary" data-modal-open="createFramework"><i class="fas fa-plus"></i> New Framework</button></div>
+<div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="createFramework"><i class="fas fa-plus"></i> New Framework</button></div>
 </div>
 
 <div class="admin-stats-grid compact">

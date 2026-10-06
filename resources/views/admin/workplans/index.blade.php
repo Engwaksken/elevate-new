@@ -9,6 +9,7 @@
         <p>Create, submit, approve and monitor workplans, milestones and activities.</p>
     </div>
     <div class="admin-page-actions">
+        <x-export-buttons />
         <button type="button" class="btn btn-primary" data-modal-open="createWorkplanModal">
             <i class="fas fa-plus"></i> New Workplan
         </button>

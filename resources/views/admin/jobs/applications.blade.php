@@ -7,6 +7,7 @@
         <h1>Job Applications</h1>
         <p>Track every application and follow up with employers through the pipeline.</p>
     </div>
+    <div class="admin-page-actions"><x-export-buttons /></div>
 </div>
 
 <div class="admin-stats-grid compact">

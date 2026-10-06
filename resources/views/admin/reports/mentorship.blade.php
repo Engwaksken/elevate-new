@@ -8,6 +8,7 @@
         <h1>Mentorship Tracking</h1>
         <p>Mentors, matches, sessions and goals across the programme.</p>
     </div>
+    <div class="admin-page-actions"><x-export-buttons /></div>
 </div>
 
 @php
