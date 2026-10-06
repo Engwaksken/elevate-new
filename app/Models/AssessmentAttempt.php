@@ -35,6 +35,12 @@ class AssessmentAttempt extends Model
         return $this->belongsTo(User::class, 'graded_by');
     }
 
+    /** Files the participant submitted with this attempt. */
+    public function files()
+    {
+        return $this->hasMany(AssessmentAttemptFile::class)->orderBy('id');
+    }
+
     public function answers()
     {
         return $this->hasMany(AssessmentAnswer::class);

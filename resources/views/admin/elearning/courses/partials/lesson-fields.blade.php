@@ -7,6 +7,15 @@
     <div class="form-group"><label class="modal-check"><input type="checkbox" name="is_published" value="1" @checked($editing && $lesson->is_published)><span>Published</span></label></div>
     <div class="form-group full"><label>Video URL</label><input type="url" name="video_url" value="{{ $editing ? $lesson->video_url : '' }}" placeholder="https://..."></div>
     <div class="form-group full"><label>External URL</label><input type="url" name="external_url" value="{{ $editing ? $lesson->external_url : '' }}" placeholder="https://..."></div>
-    <div class="form-group full"><label>File Path / Reference</label><input name="file_path" value="{{ $editing ? $lesson->file_path : '' }}" placeholder="Existing file reference or managed learning file path"></div>
+    <div class="form-group full"><label>File Path / Reference (legacy)</label><input name="file_path" value="{{ $editing ? $lesson->file_path : '' }}" placeholder="Existing file reference or managed learning file path"></div>
+    @if($editing && $lesson->files->isNotEmpty())
+    <div class="form-group full">
+        <label>Current files</label>
+        @foreach($lesson->files as $existingFile)
+            <label class="modal-check"><input type="checkbox" name="remove_files[]" value="{{ $existingFile->id }}"><span>Remove {{ $existingFile->displayName() }}</span></label>
+        @endforeach
+    </div>
+    @endif
+    <x-learning.multi-file-input class="form-group full" name="resource_files" label="Upload files" mimes="lesson_mimes" />
     <div class="form-group full"><label>Lesson Content</label><textarea name="content" rows="8">{{ $editing ? $lesson->content : '' }}</textarea></div>
 </div>

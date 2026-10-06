@@ -287,7 +287,7 @@ $bulkTableId = 'coursesTable';
     <button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button>
 </div>
 
-<form method="POST" action="{{ route('admin.elearning.lessons.store',$module) }}">
+<form method="POST" enctype="multipart/form-data" action="{{ route('admin.elearning.lessons.store',$module) }}">
 @csrf
 <div class="eh-modal-body">
 @include('admin.elearning.courses.partials.lesson-fields',['lesson'=>null,'module'=>$module])
@@ -308,7 +308,7 @@ $bulkTableId = 'coursesTable';
     <button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button>
 </div>
 
-<form method="POST" action="{{ route('admin.elearning.lessons.update',[$module,$lesson]) }}">
+<form method="POST" enctype="multipart/form-data" action="{{ route('admin.elearning.lessons.update',[$module,$lesson]) }}">
 @csrf
 @method('PUT')
 <div class="eh-modal-body">

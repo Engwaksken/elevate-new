@@ -33,14 +33,17 @@
     pre { margin:0; padding:16px; overflow:auto; background:var(--panel); border:1px solid var(--line); border-radius:8px; white-space:pre-wrap; word-break:break-word; }
 </style>
 </head>
-<body @class(['embedded' => $embedded])>
+@php($allowDownload = $allowDownload ?? true)
+<body @class(['embedded' => $embedded]) @unless($allowDownload) oncontextmenu="return false" @endunless>
 @unless($embedded)
 <header>
     <div style="min-width:0">
         <h1>{{ $name }}</h1>
-        <small>{{ number_format($size / 1024, 1) }} KB · Preview</small>
+        <small>{{ number_format($size / 1024, 1) }} KB · {{ $allowDownload ? 'Preview' : 'View only' }}</small>
     </div>
-    <a class="btn" href="{{ $downloadUrl }}">Download</a>
+    @if($allowDownload)
+        <a class="btn" href="{{ $downloadUrl }}">Download</a>
+    @endif
 </header>
 @endunless
 
@@ -48,17 +51,34 @@
     @if($tooLarge)
         <div class="notice">
             <p>This file is too large to preview ({{ number_format($size / 1048576, 1) }} MB).</p>
-            <a class="btn" href="{{ $downloadUrl }}">Download to open</a>
+            @if($allowDownload)
+                <a class="btn" href="{{ $downloadUrl }}">Download to open</a>
+            @else
+                <p style="color:var(--muted)">This file is view-only and cannot be downloaded. Ask your instructor for help.</p>
+            @endif
         </div>
     @elseif($error)
-        <div class="notice"><p>{{ $error }}</p><a class="btn" href="{{ $downloadUrl }}">Download</a></div>
+        <div class="notice"><p>{{ $error }}</p>@if($allowDownload)<a class="btn" href="{{ $downloadUrl }}">Download</a>@endif</div>
     @elseif($kind === 'pdf' || $kind === 'word')
-        <iframe class="frame" src="{{ $rawUrl }}" title="{{ $name }}"></iframe>
+        <iframe class="frame" src="{{ $rawUrl }}{{ $allowDownload ? '' : '#toolbar=0&navpanes=0' }}" title="{{ $name }}"></iframe>
     @elseif($kind === 'image')
-        <img class="image" src="{{ $rawUrl }}" alt="{{ $name }}">
+        <img class="image" src="{{ $rawUrl }}" alt="{{ $name }}" @unless($allowDownload) draggable="false" @endunless>
+    @elseif($kind === 'video')
+        <video class="image" style="width:100%;max-height:calc(100vh - 120px);background:#000" controls preload="metadata" playsinline @unless($allowDownload) controlslist="nodownload" disablepictureinpicture @endunless>
+            <source src="{{ $rawUrl }}" type="{{ $mediaType ?? 'video/mp4' }}">
+            Your browser cannot play this video.
+        </video>
+    @elseif($kind === 'audio')
+        <div class="notice">
+            <p>{{ $name }}</p>
+            <audio style="width:100%" controls preload="metadata" @unless($allowDownload) controlslist="nodownload" @endunless>
+                <source src="{{ $rawUrl }}" type="{{ $mediaType ?? 'audio/mpeg' }}">
+                Your browser cannot play this audio file.
+            </audio>
+        </div>
     @elseif($kind === 'spreadsheet')
         @if($truncated)
-            <div class="warn">Showing the first {{ \App\Services\Files\FilePreviewService::MAX_ROWS }} rows and {{ \App\Services\Files\FilePreviewService::MAX_COLUMNS }} columns of up to {{ \App\Services\Files\FilePreviewService::MAX_SHEETS }} sheets. Download the file to see everything.</div>
+            <div class="warn">Showing the first {{ \App\Services\Files\FilePreviewService::MAX_ROWS }} rows and {{ \App\Services\Files\FilePreviewService::MAX_COLUMNS }} columns of up to {{ \App\Services\Files\FilePreviewService::MAX_SHEETS }} sheets.@if($allowDownload) Download the file to see everything.@endif</div>
         @endif
 
         @if(count($sheets) > 1)
@@ -115,8 +135,13 @@
         <pre>{{ $text }}</pre>
     @else
         <div class="notice">
-            <p>Preview isn't available for this file type.</p>
-            <a class="btn" href="{{ $downloadUrl }}">Download</a>
+            @if($allowDownload)
+                <p>Preview isn't available for this file type.</p>
+                <a class="btn" href="{{ $downloadUrl }}">Download</a>
+            @else
+                <p><strong>Preview not available in the browser — this file is view-only.</strong></p>
+                <p style="color:var(--muted)">Files of this type can't be shown here and can't be downloaded. Please ask your instructor if you need access to it.</p>
+            @endif
         </div>
     @endif
 </main>

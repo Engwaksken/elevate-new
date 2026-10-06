@@ -7,9 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\LearningFile;
 use App\Models\Lesson;
+use App\Services\Learning\LearningFileService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class LearningFileAdminController extends Controller
 {
@@ -23,7 +22,7 @@ class LearningFileAdminController extends Controller
 
     public function index(Request $request)
     {
-        $query=LearningFile::query()->latest();
+        $query=LearningFile::query()->with(['lesson:id,title','assessment:id,title,type'])->latest();
 
         if($courseId=$request->get('course_id')) $query->where('course_id',$courseId);
 
@@ -36,6 +35,8 @@ class LearningFileAdminController extends Controller
             return $this->exportTable($format,'Learning Files',$query,[
                 'File'=>'original_name',
                 'Course'=>fn($f)=>$courseTitles[$f->course_id]??'',
+                'Attached to'=>fn($f)=>self::attachedTo($f),
+                'Participant access'=>fn($f)=>app(LearningFileService::class)->isDownloadable($f)?'Downloadable':'View only',
                 'Type'=>'mime_type',
                 'Size (KB)'=>fn($f)=>$f->size_bytes!==null?round($f->size_bytes/1024,1):'',
                 'Uploaded'=>'created_at',
@@ -56,38 +57,35 @@ class LearningFileAdminController extends Controller
         ]);
     }
 
+    /** "Lesson: X" / "Assignment: Y" / "Course" label for a file. */
+    public static function attachedTo(LearningFile $file): string
+    {
+        if($file->lesson_id) return 'Lesson: '.($file->lesson?->title ?? '#'.$file->lesson_id);
+        if($file->assessment_id) return ucfirst($file->assessment?->type ?? 'assessment').': '.($file->assessment?->title ?? '#'.$file->assessment_id);
+
+        return 'Course';
+    }
+
+    /** Upload one ("file") or several ("files[]") course/lesson files. */
     public function store(Request $request,Course $course,?Lesson $lesson=null)
     {
-        $request->validate([
-            'file'=>['required','file','max:51200','mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png,mp4,mp3,zip'],
-        ]);
+        $files=app(LearningFileService::class);
 
-        $upload=$request->file('file');
-        $stored=Str::uuid().'.'.$upload->getClientOriginalExtension();
-        $path=$upload->storeAs("learning/{$course->id}",$stored,'local');
+        $request->validate($files->uploadRules('files','lesson_mimes','file'));
+        $uploads=$files->uploadedFiles($request,'file','files');
 
-        LearningFile::create([
-            'course_id'=>$course->id,
-            'lesson_id'=>$lesson?->id,
-            'original_name'=>$upload->getClientOriginalName(),
-            'stored_name'=>$stored,
-            'disk'=>'local',
-            'path'=>$path,
-            'mime_type'=>$upload->getMimeType(),
-            'size_bytes'=>$upload->getSize(),
-            'uploaded_by'=>auth()->id(),
-        ]);
+        if($uploads===[]){
+            return back()->withErrors(['files'=>'Choose at least one file to upload.']);
+        }
 
-        return back()->with('success','Learning file uploaded securely.');
+        $stored=$files->storeMaterials($uploads,$course->id,$lesson,null,$request->user());
+
+        return back()->with('success',$stored->count().' learning file(s) uploaded securely.');
     }
 
     public function destroy(LearningFile $file)
     {
-        if($file->path && Storage::disk($file->disk ?: 'local')->exists($file->path)){
-            Storage::disk($file->disk ?: 'local')->delete($file->path);
-        }
-
-        $file->delete();
+        app(LearningFileService::class)->deleteLearningFile($file);
 
         return back()->with('success','Learning file deleted.');
     }

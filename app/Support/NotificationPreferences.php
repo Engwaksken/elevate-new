@@ -20,6 +20,9 @@ class NotificationPreferences
         'mentorship' => [
             'mentorship', 'mentor', 'goal_review',
         ],
+        'appointments' => [
+            'appointment',
+        ],
         'jobs' => [
             'job_application', 'jobs',
         ],
@@ -36,6 +39,7 @@ class NotificationPreferences
         return [
             'learning' => 'Learning, courses and assessments',
             'mentorship' => 'Mentorship and goals',
+            'appointments' => 'Instructor appointments',
             'jobs' => 'Jobs and opportunities',
             'account' => 'Account and roles',
             'reminders' => 'Timetable reminders',

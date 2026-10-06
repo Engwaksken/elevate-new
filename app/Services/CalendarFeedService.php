@@ -6,6 +6,7 @@ use App\Models\CalendarEvent;
 use App\Models\CourseTimeSlot;
 use App\Models\Enrolment;
 use App\Models\Event;
+use App\Models\InstructorAppointment;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -53,6 +54,29 @@ class CalendarFeedService
             $entries->push($this->entry('calendar-'.$event->id, $event->title, $event->event_type, $event->starts_at, $event->ends_at, $zone, [
                 'venue'=>$event->venue, 'status'=>$event->status, 'url'=>null, 'meeting_link'=>null,
             ]));
+        }
+
+        if (! $type || $type === 'appointment') {
+            // Approved instructor appointments are private to the two people involved.
+            $appointments = InstructorAppointment::with(['participant:id,name', 'instructor:id,name', 'course:id,title'])
+                ->forUser($user)
+                ->whereIn('status', [InstructorAppointment::APPROVED, InstructorAppointment::COMPLETED])
+                ->where('starts_at', '>=', $from)->where('starts_at', '<', $to)
+                ->when($programme, fn ($q) => $q->whereHas('course', fn ($c) => $c->where('programme_id', $programme)))
+                ->get();
+            foreach ($appointments as $appointment) {
+                $isInstructor = $appointment->instructor_user_id === $user->id;
+                $other = $isInstructor ? $appointment->participant?->name : $appointment->instructor?->name;
+                $entries->push($this->entry('appointment-'.$appointment->id, 'Appointment: '.$appointment->topic.($other ? ' with '.$other : ''), 'appointment', $appointment->starts_at, $appointment->ends_at, $zone, [
+                    'course_title' => $appointment->course?->title,
+                    'venue' => $appointment->location,
+                    'status' => $appointment->status === InstructorAppointment::COMPLETED ? 'completed' : 'scheduled',
+                    'url' => $isInstructor
+                        ? route('instructor.appointments.index', ['tab' => $appointment->ends_at->isPast() ? 'past' : 'upcoming'])
+                        : route('appointments.index'),
+                    'meeting_link' => $appointment->status === InstructorAppointment::APPROVED ? $appointment->meeting_url : null,
+                ]));
+            }
         }
 
         $events = Event::where('starts_at', '>=', $from)->where('starts_at', '<', $to);

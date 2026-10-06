@@ -3,19 +3,18 @@
 namespace App\Services\Participant;
 
 use App\Models\Assessment;
+use App\Models\AssessmentAttempt;
+use App\Models\AssessmentAttemptFile;
 use App\Models\Enrolment;
 use App\Models\LearningFile;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\User;
+use App\Services\Learning\LearningFileService;
 use App\Services\Learning\ModuleAccessService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 /**
  * Shared lesson logic for the participant mobile API: access checks,
@@ -23,8 +22,10 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
  */
 class ParticipantLessonService
 {
-    public function __construct(private readonly ModuleAccessService $moduleAccess)
-    {
+    public function __construct(
+        private readonly ModuleAccessService $moduleAccess,
+        private readonly LearningFileService $files
+    ) {
     }
 
     /**
@@ -64,55 +65,77 @@ class ParticipantLessonService
     }
 
     /**
-     * Resolve the lesson's primary downloadable file, or null when none exists on disk.
+     * The lesson's material files (legacy single file_path included), in upload order.
+     */
+    public function lessonFiles(Lesson $lesson, ?Collection $learningFiles = null): Collection
+    {
+        if ($learningFiles === null || ($learningFiles->isEmpty() && $this->files->normalisePath($lesson->file_path) !== null)) {
+            $this->files->syncLesson($lesson);
+            $learningFiles = LearningFile::where('lesson_id', $lesson->id)->orderBy('id')->get();
+        }
+
+        return $learningFiles->filter(fn (LearningFile $file) => $this->learningFileExists($file))->values();
+    }
+
+    /**
+     * Resolve the lesson's primary (first) file, or null when none exists on disk.
      *
-     * @return array{disk:string,path:string,name:string,mime:?string,size:?int,learning_file_id:?int}|null
+     * @return array{disk:string,path:string,name:string,mime:?string,size:?int,learning_file_id:?int,downloadable:bool}|null
      */
     public function primaryFile(Lesson $lesson, ?Collection $learningFiles = null): ?array
     {
-        $path = trim((string) $lesson->file_path);
+        $file = $this->lessonFiles($lesson, $learningFiles)->first();
 
-        if ($path !== '' && ! $this->isExternalUrl($path)) {
-            $path = ltrim(preg_replace('#^/?storage/#', '', $path), '/');
-
-            foreach (['public', 'local'] as $disk) {
-                if (Storage::disk($disk)->exists($path)) {
-                    $extension = pathinfo($path, PATHINFO_EXTENSION);
-                    $base = Str::slug($lesson->title) ?: 'lesson-'.$lesson->id;
-
-                    return [
-                        'disk' => $disk,
-                        'path' => $path,
-                        'name' => $extension ? "{$base}.{$extension}" : $base,
-                        'mime' => Storage::disk($disk)->mimeType($path) ?: null,
-                        'size' => Storage::disk($disk)->size($path),
-                        'learning_file_id' => null,
-                    ];
-                }
-            }
+        if (! $file) {
+            return null;
         }
 
-        $learningFiles ??= LearningFile::where('lesson_id', $lesson->id)->orderBy('id')->get();
-
-        foreach ($learningFiles as $file) {
-            if ($this->learningFileExists($file)) {
-                return [
-                    'disk' => $file->disk ?: 'local',
-                    'path' => $file->path,
-                    'name' => $file->original_name ?: $file->stored_name,
-                    'mime' => $file->mime_type,
-                    'size' => (int) $file->size_bytes,
-                    'learning_file_id' => $file->id,
-                ];
-            }
-        }
-
-        return null;
+        return [
+            'disk' => $file->diskName(),
+            'path' => $file->path,
+            'name' => $file->displayName(),
+            'mime' => $file->mime_type,
+            'size' => (int) $file->size_bytes,
+            'learning_file_id' => $file->id,
+            'downloadable' => $this->files->isDownloadable($file),
+        ];
     }
 
     public function learningFileExists(LearningFile $file): bool
     {
-        return $file->path && Storage::disk($file->disk ?: 'local')->exists($file->path);
+        return $file->existsOnDisk();
+    }
+
+    /** API payload for one material or submission file. */
+    public function presentFile(LearningFile|AssessmentAttemptFile $file, string $downloadPath, string $downloadUrl, ?bool $downloadable = null): array
+    {
+        $downloadable ??= $this->files->isDownloadable($file);
+
+        return [
+            'id' => $file->id,
+            'name' => $file->displayName(),
+            'mime_type' => $file->mime_type,
+            'size_bytes' => (int) $file->size_bytes,
+            // false = view-only: the endpoint always answers with Content-Disposition: inline.
+            'downloadable' => $downloadable,
+            'view_only' => ! $downloadable,
+            'download_path' => $downloadPath,
+            'download_url' => $downloadUrl,
+        ];
+    }
+
+    /** Files a participant attached to one of their attempts. */
+    public function presentAttemptFiles(AssessmentAttempt $attempt): array
+    {
+        return $this->files->attemptFiles($attempt)
+            ->map(fn (AssessmentAttemptFile $file) => $this->presentFile(
+                $file,
+                "/submissions/files/{$file->id}",
+                route('api.participant.submissions.files.download', $file),
+                true
+            ))
+            ->values()
+            ->all();
     }
 
     /**
@@ -127,7 +150,7 @@ class ParticipantLessonService
         bool $includeContent = true
     ): array {
         $lesson->loadMissing('module');
-        $learningFiles ??= LearningFile::where('lesson_id', $lesson->id)->orderBy('id')->get();
+        $learningFiles = $this->lessonFiles($lesson, $learningFiles);
 
         if ($user && ! $progress) {
             $progress = LessonProgress::where('lesson_id', $lesson->id)->where('user_id', $user->id)->first();
@@ -139,15 +162,11 @@ class ParticipantLessonService
         $externalFile = $this->isExternalUrl((string) $lesson->file_path) ? $lesson->file_path : null;
 
         $files = $learningFiles
-            ->filter(fn (LearningFile $file) => $this->learningFileExists($file))
-            ->map(fn (LearningFile $file) => [
-                'id' => $file->id,
-                'name' => $file->original_name,
-                'mime_type' => $file->mime_type,
-                'size_bytes' => (int) $file->size_bytes,
-                'download_path' => "/lessons/{$lesson->id}/files/{$file->id}/download",
-                'download_url' => route('api.participant.lessons.files.download', [$lesson, $file]),
-            ])
+            ->map(fn (LearningFile $file) => $this->presentFile(
+                $file,
+                "/lessons/{$lesson->id}/files/{$file->id}/download",
+                route('api.participant.lessons.files.download', [$lesson, $file])
+            ))
             ->values()
             ->all();
 
@@ -170,6 +189,7 @@ class ParticipantLessonService
             'file_name' => $primary['name'] ?? null,
             'file_mime_type' => $primary['mime'] ?? null,
             'file_size_bytes' => $primary['size'] ?? null,
+            'file_downloadable' => $primary['downloadable'] ?? false,
             'resource_url' => $downloadUrl,
             'file_url' => $downloadUrl,
             'download_url' => $downloadUrl,
@@ -197,28 +217,30 @@ class ParticipantLessonService
     /**
      * Stream a stored file with the correct headers. Local disks use BinaryFileResponse,
      * which supports HTTP Range requests (needed for in-app video/audio playback).
+     *
+     * View-only files ($downloadable = false) are always served inline with no-store
+     * caching; an explicit ?download=1 for them is refused with 403.
      */
-    public function fileResponse(string $disk, string $path, string $name, ?string $mime, bool $inline): Response
+    public function fileResponse(string $disk, string $path, string $name, ?string $mime, bool $inline, bool $downloadable = true, bool $forceDownload = false): Response
     {
-        $storage = Storage::disk($disk);
-        abort_unless($storage->exists($path), 404, 'The file for this lesson is not available.');
+        abort_unless(\Illuminate\Support\Facades\Storage::disk($disk)->exists($path), 404, 'The file for this lesson is not available.');
+        abort_if(! $downloadable && $forceDownload, 403, LearningFileService::VIEW_ONLY_MESSAGE);
 
-        $mime = $mime ?: ($storage->mimeType($path) ?: 'application/octet-stream');
-        $disposition = $inline ? ResponseHeaderBag::DISPOSITION_INLINE : ResponseHeaderBag::DISPOSITION_ATTACHMENT;
-        $fallbackName = Str::ascii($name) ?: 'download';
+        return $this->files->stream($disk, $path, $name, $mime, $inline || ! $downloadable, $downloadable);
+    }
 
-        if (config("filesystems.disks.{$disk}.driver") === 'local') {
-            $response = new BinaryFileResponse($storage->path($path), 200, [
-                'Content-Type' => $mime,
-                'Cache-Control' => 'private, max-age=0, must-revalidate',
-                'X-Content-Type-Options' => 'nosniff',
-            ]);
-            $response->setContentDisposition($disposition, $name, preg_replace('/[^\x20-\x7e]|[%\/\\\\]/', '_', $fallbackName));
-
-            return $response;
-        }
-
-        return $storage->response($path, $name, ['Content-Type' => $mime], $disposition);
+    /** Stream a material/submission file model through fileResponse(). */
+    public function streamFile(LearningFile|AssessmentAttemptFile $file, \Illuminate\Http\Request $request, ?bool $downloadable = null): Response
+    {
+        return $this->fileResponse(
+            $file->diskName(),
+            (string) $file->path,
+            $file->displayName(),
+            $file->mime_type,
+            $request->boolean('inline'),
+            $downloadable ?? $this->files->isDownloadable($file),
+            $request->boolean('download')
+        );
     }
 
     /** Upper bound for a single reading-time delta (seconds). Larger values are clamped. */
@@ -337,14 +359,24 @@ class ParticipantLessonService
     public function presentAssessment(Assessment $assessment): array
     {
         $data = $assessment->toArray();
-        $hasAttachment = $assessment->attachment_path
-            && Storage::disk('public')->exists($assessment->attachment_path);
+        unset($data['files']);
 
-        $data['attachment_url'] = $hasAttachment
-            ? route('api.participant.assignments.attachment', $assessment)
-            : null;
-        $data['attachment_download_path'] = $hasAttachment ? "/assignments/{$assessment->id}/attachment" : null;
-        $data['attachment_name'] = $hasAttachment ? basename($assessment->attachment_path) : null;
+        $attachments = $this->files->assessmentFiles($assessment);
+        $first = $attachments->first();
+
+        // Legacy single-attachment fields point at the first file.
+        $data['attachment_url'] = $first ? route('api.participant.assignments.attachment', $assessment) : null;
+        $data['attachment_download_path'] = $first ? "/assignments/{$assessment->id}/attachment" : null;
+        $data['attachment_name'] = $first?->displayName();
+        $data['attachment_downloadable'] = $first ? $this->files->isDownloadable($first) : false;
+        $data['attachments'] = $attachments
+            ->map(fn (LearningFile $file) => $this->presentFile(
+                $file,
+                "/assignments/{$assessment->id}/attachments/{$file->id}",
+                route('api.participant.assignments.attachments.download', [$assessment, $file])
+            ))
+            ->values()
+            ->all();
 
         return $data;
     }

@@ -47,7 +47,9 @@ class LessonController extends Controller
         $progress->last_opened_at=now();
         $progress->save();
 
-        return view('learning.lessons.show',compact('lesson','course'));
+        $files=app(\App\Services\Learning\LearningFileService::class)->lessonFiles($lesson);
+
+        return view('learning.lessons.show',compact('lesson','course','files'));
     }
 
     public function complete(

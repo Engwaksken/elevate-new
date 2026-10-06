@@ -130,6 +130,10 @@ Route::prefix('v1')->group(function () {
 
                 Route::get('/assignments/{assessment}/attachment',[ParticipantLessonController::class,'assessmentAttachment'])
                     ->name('api.participant.assignments.attachment');
+                Route::get('/assignments/{assessment}/attachments/{file}',[ParticipantLessonController::class,'assessmentAttachmentFile'])
+                    ->name('api.participant.assignments.attachments.download');
+                Route::get('/submissions/files/{file}',[ParticipantLessonController::class,'submissionFile'])
+                    ->name('api.participant.submissions.files.download');
 
                 Route::post('/offline-actions',[ParticipantController::class,'processOfflineActions']);
                 Route::get('/sync',[ParticipantController::class,'sync']);

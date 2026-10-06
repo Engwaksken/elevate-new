@@ -107,15 +107,28 @@ class ParticipantLessonApiTest extends TestCase
     {
         $this->participant();
 
+        // PDFs are view-only for participants: always served inline, never as an attachment.
         $response = $this->get(self::BASE."/lessons/{$this->fileLesson->id}/download");
 
         $response->assertOk();
         $this->assertStringContainsString('application/pdf', $response->headers->get('Content-Type'));
-        $this->assertStringContainsString('attachment', $response->headers->get('Content-Disposition'));
+        $this->assertStringStartsWith('inline', $response->headers->get('Content-Disposition'));
         $this->assertStringContainsString('lesson-1.pdf', $response->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
 
         $inline = $this->get(self::BASE."/lessons/{$this->fileLesson->id}/download?inline=1");
         $this->assertStringContainsString('inline', $inline->headers->get('Content-Disposition'));
+
+        // Forcing a download of a view-only file is refused.
+        $this->getJson(self::BASE."/lessons/{$this->fileLesson->id}/download?download=1")
+            ->assertForbidden()
+            ->assertJsonPath('message', 'This file is view-only and cannot be downloaded.');
+
+        $this->getJson(self::BASE."/lessons/{$this->fileLesson->id}")
+            ->assertJsonPath('lesson.file_downloadable', false)
+            ->assertJsonPath('lesson.files.0.downloadable', false)
+            ->assertJsonPath('lesson.files.0.view_only', true);
     }
 
     public function test_attached_learning_file_is_downloadable(): void
@@ -135,9 +148,27 @@ class ParticipantLessonApiTest extends TestCase
             ->assertJsonPath('lesson.has_file', true)
             ->assertJsonPath('lesson.files.0.name', 'Handout.docx');
 
+        // Word documents are view-only: inline, never an attachment.
         $this->get(self::BASE."/lessons/{$this->textLesson->id}/files/{$file->id}/download")
             ->assertOk()
-            ->assertHeader('Content-Disposition', 'attachment; filename=Handout.docx');
+            ->assertHeader('Content-Disposition', 'inline; filename=Handout.docx');
+
+        // Spreadsheets stay downloadable.
+        Storage::disk('local')->put('learning/1/sheet.xlsx', 'xlsx-bytes');
+        $sheet = LearningFile::create([
+            'course_id' => $this->course->id, 'lesson_id' => $this->textLesson->id,
+            'original_name' => 'Budget.xlsx', 'stored_name' => 'sheet.xlsx', 'disk' => 'local',
+            'path' => 'learning/1/sheet.xlsx', 'size_bytes' => 10,
+        ]);
+
+        $this->getJson(self::BASE."/lessons/{$this->textLesson->id}")
+            ->assertJsonPath('lesson.files.0.downloadable', false)
+            ->assertJsonPath('lesson.files.1.name', 'Budget.xlsx')
+            ->assertJsonPath('lesson.files.1.downloadable', true);
+
+        $this->get(self::BASE."/lessons/{$this->textLesson->id}/files/{$sheet->id}/download")
+            ->assertOk()
+            ->assertHeader('Content-Disposition', 'attachment; filename=Budget.xlsx');
 
         // A file belonging to another lesson must not be served through this lesson.
         $this->getJson(self::BASE."/lessons/{$this->fileLesson->id}/files/{$file->id}/download")
@@ -265,9 +296,10 @@ class ParticipantLessonApiTest extends TestCase
 
         $this->getJson(self::BASE.'/sync?since=not-a-date')->assertStatus(422);
 
+        // The PDF brief is view-only for participants.
         $this->get(self::BASE."/assignments/{$assessment->id}/attachment")
             ->assertOk()
-            ->assertHeader('Content-Disposition', 'attachment; filename='.basename($path));
+            ->assertHeader('Content-Disposition', 'inline; filename='.basename($path));
     }
 
     public function test_device_token_accepts_fcm_token_and_can_be_removed(): void

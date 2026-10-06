@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Api\V1\Participant;
 
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
+use App\Models\AssessmentAttemptFile;
 use App\Models\LearningFile;
 use App\Models\Lesson;
 use App\Services\Participant\ParticipantLessonService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class LessonController extends Controller
 {
@@ -35,6 +35,7 @@ class LessonController extends Controller
     /**
      * GET /lessons/{lesson}/download — stream the lesson's primary file.
      * ?inline=1 sets Content-Disposition: inline (for in-app viewers / video players).
+     * View-only files (anything but xlsx/xls/csv/zip) are always inline; ?download=1 → 403.
      */
     public function download(Request $request, Lesson $lesson)
     {
@@ -44,7 +45,8 @@ class LessonController extends Controller
         abort_unless($file, 404, 'This lesson has no downloadable file.');
 
         return $this->lessons->fileResponse(
-            $file['disk'], $file['path'], $file['name'], $file['mime'], $request->boolean('inline')
+            $file['disk'], $file['path'], $file['name'], $file['mime'], $request->boolean('inline'),
+            $file['downloadable'], $request->boolean('download')
         );
     }
 
@@ -56,13 +58,7 @@ class LessonController extends Controller
         $this->lessons->authorize($request->user(), $lesson);
         abort_unless((int) $file->lesson_id === (int) $lesson->id, 404, 'File not found for this lesson.');
 
-        return $this->lessons->fileResponse(
-            $file->disk ?: 'local',
-            (string) $file->path,
-            $file->original_name ?: $file->stored_name,
-            $file->mime_type,
-            $request->boolean('inline')
-        );
+        return $this->lessons->streamFile($file, $request);
     }
 
     /**
@@ -124,28 +120,47 @@ class LessonController extends Controller
     }
 
     /**
-     * GET /assignments/{assessment}/attachment — stream an assessment's instructor attachment.
+     * GET /assignments/{assessment}/attachment — stream an assessment's first instructor attachment.
      */
     public function assessmentAttachment(Request $request, Assessment $assessment)
+    {
+        $this->authorizeAssessment($request, $assessment);
+
+        $file = app(\App\Services\Learning\LearningFileService::class)->assessmentFiles($assessment)->first();
+        abort_unless($file, 404, 'This assessment has no attachment.');
+
+        return $this->lessons->streamFile($file, $request);
+    }
+
+    /**
+     * GET /assignments/{assessment}/attachments/{file} — stream one of an assessment's attachments.
+     */
+    public function assessmentAttachmentFile(Request $request, Assessment $assessment, LearningFile $file)
+    {
+        $this->authorizeAssessment($request, $assessment);
+        abort_unless((int) $file->assessment_id === (int) $assessment->id, 404, 'File not found for this assessment.');
+
+        return $this->lessons->streamFile($file, $request);
+    }
+
+    /**
+     * GET /submissions/files/{file} — a participant's own submitted file (always downloadable).
+     */
+    public function submissionFile(Request $request, AssessmentAttemptFile $file)
+    {
+        $file->loadMissing('attempt');
+        abort_unless($file->attempt && (int) $file->attempt->user_id === (int) $request->user()->id, 404, 'File not found.');
+
+        return $this->lessons->streamFile($file, $request, true);
+    }
+
+    private function authorizeAssessment(Request $request, Assessment $assessment): void
     {
         abort_unless($assessment->is_published, 404, 'Assessment not found.');
         abort_unless(
             $assessment->course_id && $this->lessons->isEnrolled($request->user(), (int) $assessment->course_id),
             403,
             'You are not enrolled in the course for this assessment.'
-        );
-        abort_unless(
-            $assessment->attachment_path && Storage::disk('public')->exists($assessment->attachment_path),
-            404,
-            'This assessment has no attachment.'
-        );
-
-        return $this->lessons->fileResponse(
-            'public',
-            $assessment->attachment_path,
-            basename($assessment->attachment_path),
-            null,
-            $request->boolean('inline')
         );
     }
 }

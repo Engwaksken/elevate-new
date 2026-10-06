@@ -5,7 +5,7 @@
 <div>
     <span class="admin-eyebrow">Programme Delivery</span>
     <h1>Learning Files</h1>
-    <p>Review and manage files uploaded to courses and lessons.</p>
+    <p>Review and manage files uploaded to courses, lessons and assignments. Participants can download only {{ strtoupper(implode(', ', config('elearning.downloadable_extensions', []))) }} files; everything else is view-only for them.</p>
 </div>
 <div class="admin-page-actions"><x-export-buttons /></div>
 </div>
@@ -54,6 +54,8 @@ $bulkTableId = 'learningFilesTable';
     <th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th>
     <th>File</th>
     <th>Course</th>
+    <th>Attached to</th>
+    <th>Participants</th>
     <th>Type</th>
     <th>Size</th>
     <th>Uploaded</th>
@@ -66,6 +68,8 @@ $bulkTableId = 'learningFilesTable';
     <td><input type="checkbox" data-row-select value="{{ $file->id }}" aria-label="Select {{ $file->original_name }}"></td>
     <td><strong>{{ $file->original_name }}</strong></td>
     <td>{{ $courses->firstWhere('id',$file->course_id)?->title ?: '—' }}</td>
+    <td>{{ \App\Http\Controllers\Admin\Elearning\LearningFileAdminController::attachedTo($file) }}</td>
+    <td>@if(app(\App\Services\Learning\LearningFileService::class)->isDownloadable($file))<span class="status-chip active">Downloadable</span>@else<span class="status-chip inactive">View only</span>@endif</td>
     <td>{{ $file->mime_type ?: '—' }}</td>
     <td>{{ number_format(($file->size_bytes ?? 0)/1024,1) }} KB</td>
     <td>{{ optional($file->created_at)->format('d M Y') }}</td>
@@ -87,7 +91,7 @@ $bulkTableId = 'learningFilesTable';
     </td>
 </tr>
 @empty
-<tr><td colspan="7"><div class="admin-empty">No learning files found.</div></td></tr>
+<tr><td colspan="9"><div class="admin-empty">No learning files found.</div></td></tr>
 @endforelse
 </tbody>
 </table>

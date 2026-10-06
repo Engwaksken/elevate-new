@@ -1,5 +1,6 @@
 {{-- In-page file preview. Any link with data-file-preview opens its preview in this dialog;
-     without JavaScript the link still opens in a new tab. --}}
+     without JavaScript the link still opens in a new tab. Add data-file-preview-no-download for
+     view-only files and data-file-download-url to point the Download button at a specific URL. --}}
 <style>
     .fp-modal { position:fixed; inset:0; z-index:2000; display:none; align-items:center; justify-content:center; padding:16px; background:rgba(16,24,40,.6); }
     .fp-modal.is-open { display:flex; }
@@ -55,7 +56,11 @@
     function open(link) {
         opener = link;
         title.textContent = link.dataset.filePreviewTitle || link.getAttribute('title') || 'Preview';
-        download.href = withParams(link.href, { preview: null, embed: null });
+        // View-only files (data-file-preview-no-download) never offer a download.
+        var viewOnly = link.hasAttribute('data-file-preview-no-download');
+        download.hidden = viewOnly;
+        download.style.display = viewOnly ? 'none' : '';
+        download.href = viewOnly ? '#' : (link.dataset.fileDownloadUrl || withParams(link.href, { preview: null, embed: null }));
         newTab.href = withParams(link.href, { preview: '1', embed: null });
         loading.hidden = false;
         frame.src = withParams(link.href, { preview: '1', embed: '1' });

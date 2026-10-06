@@ -132,6 +132,7 @@ class RoleShell
                     ['route' => 'learning.index', 'requires' => 'learning.my-courses', 'label' => 'Browse Courses', 'icon' => 'fa-magnifying-glass', 'active' => ['learning.index', 'learning.course.show']],
                     ['route' => 'mentorship.dashboard', 'label' => 'Mentorship', 'icon' => 'fa-user-group', 'active' => ['mentorship.*']],
                     ['route' => 'mentorship.dashboard', 'fragment' => '#goals', 'label' => 'Goals', 'icon' => 'fa-flag', 'active' => []],
+                    ['route' => 'appointments.index', 'label' => 'Appointments', 'icon' => 'fa-calendar-check', 'active' => ['appointments.*']],
                     ['route' => 'career.resume.index', 'label' => 'Resume Builder', 'icon' => 'fa-file-lines', 'active' => ['career.*']],
                 ],
                 'Opportunities' => [

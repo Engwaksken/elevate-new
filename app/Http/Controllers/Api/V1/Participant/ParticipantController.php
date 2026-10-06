@@ -137,6 +137,7 @@ class ParticipantController extends Controller
         $user = $request->user();
         $lessonIds = $course->modules->flatMap(fn ($module) => $module->lessons->pluck('id'));
 
+        app(\App\Services\Learning\LearningFileService::class)->syncLessons($course->modules->flatMap->lessons);
         $learningFiles = LearningFile::whereIn('lesson_id', $lessonIds)->orderBy('id')->get()->groupBy('lesson_id');
         $progressRows = LessonProgress::where('user_id', $user->id)->whereIn('lesson_id', $lessonIds)->get()->keyBy('lesson_id');
 
@@ -209,30 +210,35 @@ class ParticipantController extends Controller
 
         $data = $request->validate([
             'submission_text' => ['nullable','string'],
-            'submission_file' => ['nullable','file','max:51200','mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,zip,jpg,jpeg,png,webp'],
             'client_submission_id' => ['nullable','string','max:190'],
             // When a queued offline submission was made on the device (offline grace window).
             'client_created_at' => ['nullable','date'],
-        ]);
+        ] + app(\App\Services\Learning\LearningFileService::class)
+            ->uploadRules('submission_files', 'submission_mimes', 'submission_file'));
 
         $result = $this->assignments->submit(
             $user,
             $assessment,
             $data['submission_text'] ?? null,
-            $request->file('submission_file'),
+            app(\App\Services\Learning\LearningFileService::class)
+                ->uploadedFiles($request, 'submission_file', 'submission_files'),
             $data['client_submission_id'] ?? null,
             ! empty($data['client_created_at']) ? Carbon::parse($data['client_created_at']) : null
         );
 
+        // Files are presented with authenticated download URLs (never storage paths).
+        $attempt = $result['attempt']->withoutRelations()->toArray()
+            + ['files' => $this->lessonService->presentAttemptFiles($result['attempt'])];
+
         if ($result['duplicate']) {
             return response()->json([
                 'message' => 'Submission already received.',
-                'attempt' => $result['attempt'],
+                'attempt' => $attempt,
                 'duplicate' => true,
             ]);
         }
 
-        return response()->json(['message' => 'Submission received.', 'attempt' => $result['attempt']], 201);
+        return response()->json(['message' => 'Submission received.', 'attempt' => $attempt], 201);
     }
 
     /**

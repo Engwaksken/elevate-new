@@ -180,7 +180,7 @@
 
 @if($activeTab === 'lessons')
 <section class="icm-panel">
-    <div class="icm-panel-head"><div><h2>Lessons</h2><p class="icm-muted">Create lessons with text, video, links and downloadable files.</p></div></div>
+    <div class="icm-panel-head"><div><h2>Lessons</h2><p class="icm-muted">Create lessons with text, video, links and files. Participants can download only Excel/CSV and zip files; all other files are view-only for them.</p></div></div>
 
     <form method="POST" enctype="multipart/form-data" action="{{ $allModules->isNotEmpty() ? route('instructor.courses.lessons.store',[$course,$allModules->first()]) : '#' }}" class="icm-form-grid" id="lessonCreateForm">
         @csrf
@@ -197,7 +197,7 @@
         <div><label>Position</label><input type="number" name="position" min="1"></div>
         <div><label>Video URL</label><input type="url" name="video_url"></div>
         <div><label>External URL</label><input type="url" name="external_url"></div>
-        <div><label>Resource file</label><input type="file" name="resource_file"></div>
+        <x-learning.multi-file-input class="full" name="resource_files" label="Resource files" mimes="lesson_mimes" />
         <div class="full"><label>Lesson content</label><textarea name="content"></textarea></div>
         <label><input type="checkbox" name="is_published" value="1"> Published</label>
         <div><button class="btn btn-primary" @disabled($allModules->isEmpty())><i class="fas fa-plus"></i> Add Lesson</button></div>
@@ -222,10 +222,11 @@
             <p class="icm-muted">{{ $lesson->module?->title }} · {{ $lesson->is_published ? 'Published' : 'Draft' }}</p>
 
             <div class="icm-actions">
-                @if($lesson->file_path)<a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="{{ $lesson->title }}"><i class="fas fa-eye"></i> Preview</a> <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson]) }}"><i class="fas fa-download"></i> File</a>@endif
                 @if($lesson->video_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->video_url }}" target="_blank"><i class="fas fa-video"></i> Video</a>@endif
                 @if($lesson->external_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->external_url }}" target="_blank"><i class="fas fa-link"></i> Link</a>@endif
             </div>
+            <x-learning.file-list compact :files="$lesson->files" :title="$lesson->files->count().' file(s)'"
+                :delete-url="fn ($file) => route('instructor.courses.files.destroy', [$course, $file])" />
 
             <details class="icm-details">
                 <summary>Edit lesson</summary>
@@ -237,8 +238,7 @@
                     <div><label>Position</label><input type="number" name="position" min="1" value="{{ $lesson->position }}"></div>
                     <div><label>Video URL</label><input type="url" name="video_url" value="{{ $lesson->video_url }}"></div>
                     <div><label>External URL</label><input type="url" name="external_url" value="{{ $lesson->external_url }}"></div>
-                    <div><label>Replace file</label><input type="file" name="resource_file"></div>
-                    <div><label><input type="checkbox" name="remove_file" value="1"> Remove existing file</label></div>
+                    <x-learning.multi-file-input class="full" name="resource_files" label="Add files" mimes="lesson_mimes" :hint="'Adds to the files already on this lesson. Use Remove on a file above to delete it.'" />
                     <div class="full"><label>Content</label><textarea name="content">{{ $lesson->content }}</textarea></div>
                     <label><input type="checkbox" name="is_published" value="1" @checked($lesson->is_published)> Published</label>
                     <div><button class="btn btn-primary btn-sm">Save Lesson</button></div>
@@ -262,12 +262,12 @@
 <section class="icm-panel">
     <div class="icm-panel-head"><div><h2>Learning Materials</h2><p class="icm-muted">Files, links and media attached to lessons.</p></div></div>
     <div class="icm-card-grid">
-        @forelse($course->modules()->with('lessons')->orderBy('position')->get()->flatMap->lessons->filter(fn($lesson)=>$lesson->file_path || $lesson->video_url || $lesson->external_url) as $lesson)
+        @forelse($course->modules()->with('lessons.files')->orderBy('position')->get()->flatMap->lessons->filter(fn($lesson)=>$lesson->files->isNotEmpty() || $lesson->video_url || $lesson->external_url) as $lesson)
             <article class="icm-card">
                 <h3>{{ $lesson->title }}</h3>
                 <p class="icm-muted">{{ $lesson->module?->title }}</p>
+                <x-learning.file-list compact :files="$lesson->files" />
                 <div class="icm-actions">
-                    @if($lesson->file_path)<a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="{{ $lesson->title }}"><i class="fas fa-eye"></i> Preview</a> <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.lessons.file',[$course,$lesson->module,$lesson]) }}"><i class="fas fa-download"></i> Download</a>@endif
                     @if($lesson->video_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->video_url }}" target="_blank"><i class="fas fa-video"></i> Video</a>@endif
                     @if($lesson->external_url)<a class="btn btn-outline btn-sm" href="{{ $lesson->external_url }}" target="_blank"><i class="fas fa-link"></i> Resource</a>@endif
                 </div>
@@ -297,7 +297,7 @@
         <div><label>Due / closes at</label><input type="datetime-local" name="due_at"></div>
         <div><label>Duration minutes</label><input type="number" name="duration_minutes" min="1"></div>
         <div><label>Total marks</label><input type="number" name="total_marks" min="0" step="0.01"></div>
-        <div><label>Attachment</label><input type="file" name="assessment_file"></div>
+        <x-learning.multi-file-input class="full" name="assessment_files" label="Brief / material files" mimes="assignment_mimes" />
         <label><input type="checkbox" name="is_published" value="1"> Published</label>
         <div class="full"><label>Instructions</label><textarea name="instructions"></textarea></div>
         <div><button class="btn btn-primary"><i class="fas fa-plus"></i> Add {{ ucfirst($assessmentType) }}</button></div>
@@ -306,7 +306,7 @@
 
 <section class="icm-panel">
     <div class="icm-card-grid">
-        @forelse($course->assessments()->where('type',$assessmentType)->withCount(['questions','attempts'])->latest()->get() as $assessment)
+        @forelse($course->assessments()->where('type',$assessmentType)->with('files')->withCount(['questions','attempts'])->latest()->get() as $assessment)
         <article class="icm-card">
             <span class="icm-chip">{{ ucfirst($assessment->type) }}</span>
             <h3>{{ $assessment->title }}</h3>
@@ -317,6 +317,8 @@
             @if($assessment->duration_minutes)<p><strong>Duration:</strong> {{ $assessment->duration_minutes }} minutes</p>@endif
             @if($assessment->total_marks !== null)<p><strong>Total marks:</strong> {{ number_format((float)$assessment->total_marks,1) }}</p>@endif
             @if($assessment->due_at)<p><strong>Closes:</strong> {{ $assessment->due_at->format('d M Y H:i') }}</p>@endif
+            <x-learning.file-list compact :files="$assessment->files" :title="$assessment->files->count().' file(s)'"
+                :delete-url="fn ($file) => route('instructor.courses.files.destroy', [$course, $file])" />
 
             <details class="icm-details">
                 <summary>Edit {{ $assessmentType }}</summary>
@@ -331,8 +333,7 @@
                     <div><label>Due / closes</label><input type="datetime-local" name="due_at" value="{{ $assessment->due_at?->format('Y-m-d\TH:i') }}"></div>
                     <div><label>Duration minutes</label><input type="number" name="duration_minutes" min="1" value="{{ $assessment->duration_minutes }}"></div>
                     <div><label>Total marks</label><input type="number" name="total_marks" min="0" step=".01" value="{{ $assessment->total_marks }}"></div>
-                    <div><label>Replace attachment</label><input type="file" name="assessment_file"></div>
-                    <div><label><input type="checkbox" name="remove_attachment" value="1"> Remove attachment</label></div>
+                    <x-learning.multi-file-input class="full" name="assessment_files" label="Add files" mimes="assignment_mimes" :hint="'Adds to the files already attached. Use Remove on a file above to delete it.'" />
                     <div class="full"><label>Instructions</label><textarea name="instructions">{{ $assessment->instructions }}</textarea></div>
                     <label><input type="checkbox" name="is_published" value="1" @checked($assessment->is_published)> Published</label>
                     <div><button class="btn btn-primary btn-sm">Save</button></div>
@@ -387,9 +388,9 @@
                     <td>{{ ucfirst($attempt->status) }}</td>
                     <td>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '—' }}</td>
                     <td>
-                        @if($attempt->submission_file_path)
-                            <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="Submission · {{ $attempt->user?->name }}"><i class="fas fa-eye"></i> Preview</a>
-                            <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt]) }}"><i class="fas fa-download"></i> File</a>
+                        @if($attempt->files->isNotEmpty())
+                            <small>{{ $attempt->files->count() }} file(s)</small>
+                            <x-learning.file-list compact :files="$attempt->files" />
                         @endif
                         <button type="button" class="btn btn-primary btn-sm" data-modal-open="review-attempt-{{ $attempt->id }}"><i class="fas fa-pen-to-square"></i> Grade / feedback</button>
                     </td>
@@ -432,10 +433,9 @@
                                 <div class="admin-readonly" style="max-height:220px;overflow:auto;white-space:pre-wrap">{{ $attempt->submission_text }}</div>
                             </div>
                         @endif
-                        @if($attempt->submission_file_path)
-                            <div style="display:flex;gap:8px;margin-bottom:16px">
-                                <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="Submission · {{ $attempt->user?->name }}"><i class="fas fa-eye"></i> Preview file</a>
-                                <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.file',[$course,$attempt]) }}"><i class="fas fa-download"></i> Download</a>
+                        @if($attempt->files->isNotEmpty())
+                            <div style="margin-bottom:16px">
+                                <x-learning.file-list :files="$attempt->files" :title="'Submitted files ('.$attempt->files->count().')'" />
                             </div>
                         @endif
                         <div class="modal-grid">

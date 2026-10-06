@@ -7,6 +7,7 @@ use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
 use App\Models\AssignmentExtensionRequest;
 use App\Models\User;
+use App\Services\Learning\LearningFileService;
 use App\Services\UserNotificationService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -29,7 +30,8 @@ class ParticipantAssignmentService
 
     public function __construct(
         private readonly ParticipantLessonService $lessons,
-        private readonly UserNotificationService $notifications
+        private readonly UserNotificationService $notifications,
+        private readonly LearningFileService $files
     ) {
     }
 
@@ -124,6 +126,7 @@ class ParticipantAssignmentService
                 'score' => $isGraded && $attempt->score !== null ? (float) $attempt->score : null,
                 'percentage' => $isGraded && $attempt->percentage !== null ? (float) $attempt->percentage : null,
                 'instructor_feedback' => $isGraded ? $attempt->getAttribute('instructor_feedback') : null,
+                'files' => $this->lessons->presentAttemptFiles($attempt),
             ] : null,
             'effective_due_at' => $due?->toIso8601String(),
             'is_overdue' => $isOverdue,
@@ -156,14 +159,16 @@ class ParticipantAssignmentService
 
     /**
      * Create a submission (shared by POST /assignments/{id}/submit and the offline-actions queue).
+     * $file accepts one upload or a list of uploads (multi-file submissions).
      *
+     * @param  UploadedFile|array<int,UploadedFile>|null  $file
      * @return array{attempt: AssessmentAttempt, duplicate: bool}
      */
     public function submit(
         User $user,
         Assessment $assessment,
         ?string $text,
-        ?UploadedFile $file,
+        UploadedFile|array|null $file,
         ?string $clientSubmissionId,
         ?Carbon $clientCreatedAt = null
     ): array {
@@ -186,7 +191,10 @@ class ParticipantAssignmentService
 
         $this->ensureNotOverdue($assessment, $context, $clientSubmissionId ? $clientCreatedAt : null);
 
-        $filePath = $file?->store('participant-submissions/'.$user->id.'/'.$assessment->id, 'local');
+        $uploads = array_values(array_filter(
+            $file instanceof UploadedFile ? [$file] : (array) $file,
+            fn ($upload) => $upload instanceof UploadedFile
+        ));
 
         $attempt = AssessmentAttempt::create([
             'assessment_id' => $assessment->id,
@@ -194,11 +202,13 @@ class ParticipantAssignmentService
             'attempt_number' => $existingAttempts + 1,
             'client_submission_id' => $clientSubmissionId,
             'submission_text' => $text,
-            'submission_file_path' => $filePath,
             'status' => 'submitted',
             'started_at' => now(),
             'submitted_at' => now(),
         ]);
+
+        $this->files->storeSubmissionFiles($attempt, $uploads);
+        $attempt->load('files');
 
         return ['attempt' => $attempt, 'duplicate' => false];
     }

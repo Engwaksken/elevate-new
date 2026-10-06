@@ -29,7 +29,7 @@ class CourseController extends Controller
         $query=Course::query()
             ->with([
                 'branches',
-                'modules'=>fn($q)=>$q->with('lessons')->orderBy('position'),
+                'modules'=>fn($q)=>$q->with('lessons.files')->orderBy('position'),
             ])
             ->withCount(['modules','enrolments','assessments']);
 

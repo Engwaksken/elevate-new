@@ -17,11 +17,13 @@
         </div>
 
         @php
-            $offlineUrls = [request()->fullUrl()];
-
-            if ($lesson->file_path) {
-                $offlineUrls[] = \Illuminate\Support\Facades\Storage::disk('public')->url($lesson->file_path);
-            }
+            // Only files participants may download are cached for offline use;
+            // view-only files stay on the server.
+            $fileService = app(\App\Services\Learning\LearningFileService::class);
+            $offlineUrls = collect([request()->fullUrl()])
+                ->merge($files->filter(fn ($file) => $fileService->canDownloadLearningFile(auth()->user(), $file))
+                    ->map(fn ($file) => route('learning.files.download', [$file, 'download' => 1])))
+                ->all();
         @endphp
 
         <button
@@ -51,16 +53,12 @@
         </p>
     @endif
 
-    @if($lesson->file_path)
-        <p>
-            <a
-                class="btn btn-outline"
-                href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($lesson->file_path) }}"
-                target="_blank"
-            >
-                <i class="fas fa-file-arrow-down"></i> Open lesson file
-            </a>
-        </p>
+    @if($files->isNotEmpty())
+        <section class="lesson-files" aria-labelledby="lesson-files-title">
+            <h2 id="lesson-files-title" style="font-size:1.05rem;margin:16px 0 4px"><i class="fas fa-paperclip"></i> Lesson files</h2>
+            <p class="text-muted" style="margin:0 0 6px;font-size:.85rem">Excel/CSV and zip files can be downloaded. Other files open in the viewer and are view-only.</p>
+            <x-learning.file-list :files="$files" />
+        </section>
     @endif
 
     <div class="lesson-content">

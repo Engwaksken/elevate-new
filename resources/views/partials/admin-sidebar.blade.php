@@ -29,6 +29,19 @@
         ])
         : null;
 
+    // Pending appointment requests addressed to this instructor (sidebar badge).
+    $appointmentPending = 0;
+    if ($sidebarUser && ($isInstructor || $isSuperAdmin) && Route::has('instructor.appointments.index')) {
+        try {
+            $appointmentPending = \App\Models\InstructorAppointment::query()
+                ->where('instructor_user_id', $sidebarUser->id)
+                ->where('status', \App\Models\InstructorAppointment::PENDING)
+                ->count();
+        } catch (\Throwable) {
+            $appointmentPending = 0;
+        }
+    }
+
     $routeExists = static fn (?string $name): bool =>
         filled($name) && Route::has($name);
 
@@ -254,6 +267,15 @@
                     'active' => ['admin.elearning.timetable.*'],
                 ],
                 [
+                    'route' => 'instructor.appointments.index',
+                    'label' => 'Appointments',
+                    'icon' => 'fa-calendar-check',
+                    'permissions' => [],
+                    'roles' => ['instructor', 'trainer'],
+                    'active' => ['instructor.appointments.*'],
+                    'badge' => $appointmentPending,
+                ],
+                [
                     'route' => 'admin.cms.index',
                     'label' => 'Frontend CMS',
                     'icon' => 'fa-file-pen',
@@ -390,6 +412,14 @@
                         'label' => 'My Courses',
                         'icon' => 'fa-chalkboard-user',
                         'permissions' => [],
+                    ],
+                    [
+                        'route' => 'instructor.appointments.index',
+                        'label' => 'Appointments',
+                        'icon' => 'fa-calendar-check',
+                        'permissions' => [],
+                        'active' => ['instructor.appointments.*'],
+                        'badge' => $appointmentPending,
                     ],
                     [
                         'route' => 'admin.elearning.timetable.index',
@@ -595,6 +625,9 @@
                             >
                                 <i class="fas {{ $item['icon'] }}" aria-hidden="true"></i>
                                 <span>{{ $item['label'] }}</span>
+                                @if(! empty($item['badge']))
+                                    <span class="eh-admin-sidebar__badge" style="flex:0 0 auto;width:auto;margin-left:auto;min-width:20px;padding:1px 7px;border-radius:999px;background:#b42318;color:#fff;font-size:.68rem;font-weight:800;line-height:18px;text-align:center" aria-label="{{ $item['badge'] }} pending">{{ $item['badge'] > 99 ? '99+' : $item['badge'] }}</span>
+                                @endif
                             </a>
                         @endforeach
                     </div>

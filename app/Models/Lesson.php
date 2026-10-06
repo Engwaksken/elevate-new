@@ -12,4 +12,7 @@ class Lesson extends Model
     protected $casts = ['is_published'=>'boolean'];
 
     public function module(){ return $this->belongsTo(CourseModule::class,'course_module_id'); }
+
+    /** Lesson material files (many per lesson). The legacy single file_path is synced into these rows. */
+    public function files(){ return $this->hasMany(LearningFile::class)->orderBy('id'); }
 }

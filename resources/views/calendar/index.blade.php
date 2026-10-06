@@ -6,7 +6,7 @@
 <div class="admin-panel"><form method="GET" class="schedule-toolbar">
 <a class="btn btn-outline btn-sm" href="{{ route('calendar.index', array_merge(request()->except(['month','page']), ['month'=>$start->subMonth()->format('Y-m')])) }}">Previous month</a>
 <label>Month <input type="month" name="month" value="{{ $start->format('Y-m') }}"></label>
-<select name="event_type"><option value="">All activities</option><option value="course_timetable" @selected(request('event_type')==='course_timetable')>Course timetable</option>@foreach(['event','workshop','training','mentorship','programme_activity'] as $type)<option value="{{ $type }}" @selected(request('event_type')===$type)>{{ ucfirst(str_replace('_',' ',$type)) }}</option>@endforeach</select>
+<select name="event_type"><option value="">All activities</option><option value="course_timetable" @selected(request('event_type')==='course_timetable')>Course timetable</option>@foreach(['event','workshop','training','mentorship','appointment','programme_activity'] as $type)<option value="{{ $type }}" @selected(request('event_type')===$type)>{{ ucfirst(str_replace('_',' ',$type)) }}</option>@endforeach</select>
 @if(request('programme_id'))<input type="hidden" name="programme_id" value="{{ request('programme_id') }}">@endif
 <button class="btn btn-primary btn-sm">Show calendar</button>
 <a class="btn btn-outline btn-sm" href="{{ route('calendar.index', array_merge(request()->except(['month','page']), ['month'=>$start->addMonth()->format('Y-m')])) }}">Next month</a>

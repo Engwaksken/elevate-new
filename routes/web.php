@@ -539,6 +539,8 @@ Route::prefix('instructor')
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/learning/files/{file}/download',[LearningFileController::class,'download'])
         ->name('learning.files.download');
+    Route::get('/learning/submissions/files/{file}',[LearningFileController::class,'submissionFile'])
+        ->name('learning.submissions.files.show');
 
     Route::get('/mentorship',[MentorshipDashboardController::class,'index'])->middleware('user_type:participant,mentor')->name('mentorship.dashboard');
     Route::get('/mentorship/mentors',[ParticipantMentorController::class,'index'])->middleware('user_type:participant')->name('mentorship.mentors.index');
@@ -1281,6 +1283,39 @@ Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-a
 Route::get('/admin/my-courses', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'myCourses'])
     ->middleware(['auth','staff','role:instructor,trainer,administrator,super-administrator,super-admin'])
     ->name('admin.my-courses');
+
+/*
+|--------------------------------------------------------------------------
+| Instructor appointments
+|--------------------------------------------------------------------------
+| Participants request a time with an instructor of one of their courses
+| (participant side: /appointments); the instructor approves, declines or
+| proposes another time here. Rules live in App\Services\AppointmentService.
+*/
+Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-administrator,super-admin'])
+    ->prefix('admin/appointments')
+    ->name('instructor.appointments.')
+    ->controller(\App\Http\Controllers\Instructor\AppointmentController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/{appointment}/approve', 'approve')->whereNumber('appointment')->name('approve');
+        Route::post('/{appointment}/decline', 'decline')->whereNumber('appointment')->name('decline');
+        Route::post('/{appointment}/propose', 'propose')->whereNumber('appointment')->name('propose');
+        Route::post('/{appointment}/cancel', 'cancel')->whereNumber('appointment')->name('cancel');
+        Route::post('/{appointment}/complete', 'complete')->whereNumber('appointment')->name('complete');
+    });
+
+Route::middleware(['auth','verified',\App\Http\Middleware\EnsureParticipantUser::class])
+    ->prefix('appointments')
+    ->name('appointments.')
+    ->controller(\App\Http\Controllers\Participant\AppointmentController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->middleware('throttle:20,1')->name('store');
+        Route::post('/{appointment}/accept', 'accept')->whereNumber('appointment')->name('accept');
+        Route::post('/{appointment}/decline-proposal', 'declineProposal')->whereNumber('appointment')->name('decline-proposal');
+        Route::post('/{appointment}/cancel', 'cancel')->whereNumber('appointment')->name('cancel');
+    });
 Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-administrator,super-admin'])
     ->group(function () {
         Route::get(
@@ -1292,6 +1327,11 @@ Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-a
             '/instructor/courses/{course}/assessments/{assessment}/file',
             [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadAssessmentFile']
         )->name('instructor.courses.assessments.file');
+
+        Route::delete(
+            '/instructor/courses/{course}/files/{file}',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'destroyFile']
+        )->name('instructor.courses.files.destroy');
     });
 Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-administrator,super-admin'])
     ->prefix('instructor/courses')

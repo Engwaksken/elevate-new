@@ -12,8 +12,10 @@ use App\Models\Course;
 use App\Models\CourseAnnouncement;
 use App\Models\CourseModule;
 use App\Models\Enrolment;
+use App\Models\LearningFile;
 use App\Models\Lesson;
 use App\Services\Files\FilePreviewService;
+use App\Services\Learning\LearningFileService;
 use App\Services\Participant\ParticipantAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -46,8 +48,10 @@ class CourseManagementController extends Controller
             ->paginate(20, ['*'], 'modules_page')
             ->withQueryString();
 
+        $this->syncLegacyFiles($course);
+
         $lessonQuery = Lesson::query()
-            ->with('module')
+            ->with(['module', 'files'])
             ->whereHas('module', fn ($query) => $query->where('course_id', $course->id));
 
         if ($request->filled('lesson_search')) {
@@ -73,6 +77,7 @@ class CourseManagementController extends Controller
             ->withQueryString();
 
         $assessmentQuery = $course->assessments()
+            ->with('files')
             ->withCount(['questions', 'attempts']);
 
         if ($request->filled('assessment_search')) {
@@ -116,7 +121,7 @@ class CourseManagementController extends Controller
             ->latest();
 
         $submissionQuery = AssessmentAttempt::query()
-            ->with(['assessment', 'user'])
+            ->with(['assessment', 'user', 'files'])
             ->whereHas('assessment', fn ($query) => $query->where('course_id', $course->id))
             ->when($request->filled('submission_search'), function ($query) use ($request) {
                 $term = trim((string) $request->get('submission_search'));
@@ -152,6 +157,7 @@ class CourseManagementController extends Controller
                     'Percentage' => 'percentage',
                     'Status' => 'status',
                     'Feedback' => 'instructor_feedback',
+                    'Files' => fn ($attempt) => $attempt->files->pluck('original_name')->join(', '),
                 ], [
                     'Search' => $request->get('submission_search'),
                     'Status' => $request->get('submission_status'),
@@ -306,23 +312,26 @@ class CourseManagementController extends Controller
 
         $data = $this->validateLesson($request);
 
-        $filePath = $request->hasFile('resource_file')
-            ? $request->file('resource_file')->store("courses/{$course->id}/lessons", 'public')
-            : null;
-
-        $module->lessons()->create([
+        $lesson = $module->lessons()->create([
             'title' => $data['title'],
             'content' => $data['content'] ?? null,
             'content_type' => $data['content_type'],
             'video_url' => $data['video_url'] ?? null,
             'external_url' => $data['external_url'] ?? null,
-            'file_path' => $filePath,
             'estimated_minutes' => $data['estimated_minutes'] ?? null,
             'position' => $data['position'] ?? (($module->lessons()->max('position') ?? 0) + 1),
             'is_published' => $request->boolean('is_published'),
         ]);
 
-        return back()->with('success', 'Lesson added.');
+        $stored = $this->files()->storeMaterials(
+            $this->files()->uploadedFiles($request, 'resource_files', 'resource_file'),
+            $course->id,
+            $lesson,
+            null,
+            $request->user()
+        );
+
+        return back()->with('success', 'Lesson added'.($stored->isNotEmpty() ? ' with '.$stored->count().' file(s).' : '.'));
     }
 
     public function updateLesson(
@@ -335,21 +344,28 @@ class CourseManagementController extends Controller
 
         $data = $this->validateLesson($request);
 
-        $filePath = $lesson->file_path;
-
-        if ($request->boolean('remove_file') && $filePath) {
-            Storage::disk('public')->delete($filePath);
-            $filePath = null;
-        }
-
-        if ($request->hasFile('resource_file')) {
-            if ($filePath) {
-                Storage::disk('public')->delete($filePath);
+        // Legacy "remove existing file" checkbox: removes the original single file.
+        if ($request->boolean('remove_file') && $lesson->file_path) {
+            $this->files()->syncLesson($lesson);
+            $legacyPath = (string) $this->files()->normalisePath($lesson->file_path);
+            $lesson->files()->where('path', $legacyPath)->get()
+                ->each(fn (LearningFile $file) => $this->files()->deleteLearningFile($file));
+            if ($legacyPath !== '') {
+                Storage::disk('public')->delete($legacyPath);
             }
-
-            $filePath = $request->file('resource_file')
-                ->store("courses/{$course->id}/lessons", 'public');
+            $lesson->forceFill(['file_path' => null])->save();
         }
+
+        // Existing files ticked for removal in the edit form.
+        $this->removeSelectedFiles($request, $lesson->files());
+
+        $this->files()->storeMaterials(
+            $this->files()->uploadedFiles($request, 'resource_files', 'resource_file'),
+            $course->id,
+            $lesson,
+            null,
+            $request->user()
+        );
 
         $lesson->update([
             'title' => $data['title'],
@@ -357,7 +373,6 @@ class CourseManagementController extends Controller
             'content_type' => $data['content_type'],
             'video_url' => $data['video_url'] ?? null,
             'external_url' => $data['external_url'] ?? null,
-            'file_path' => $filePath,
             'estimated_minutes' => $data['estimated_minutes'] ?? null,
             'position' => $data['position'] ?? $lesson->position,
             'is_published' => $request->boolean('is_published'),
@@ -370,8 +385,10 @@ class CourseManagementController extends Controller
     {
         $this->authoriseLesson($course, $module, $lesson);
 
-        if ($lesson->file_path) {
-            Storage::disk('public')->delete($lesson->file_path);
+        $this->files()->deleteAllFor($lesson);
+
+        if ($path = $this->files()->normalisePath($lesson->file_path)) {
+            Storage::disk('public')->delete($path);
         }
 
         $lesson->delete();
@@ -383,16 +400,11 @@ class CourseManagementController extends Controller
     {
         $this->authoriseLesson($course, $module, $lesson);
 
-        abort_unless(
-            $lesson->file_path && Storage::disk('public')->exists($lesson->file_path),
-            404
-        );
+        // Legacy single-file route: serves the lesson's first file (staff keep full download).
+        $file = $this->files()->lessonFiles($lesson)->first();
+        abort_unless($file, 404);
 
-        if ($this->previews()->wantsPreview(request())) {
-            return $this->previews()->respond(request(), 'public', $lesson->file_path);
-        }
-
-        return Storage::disk('public')->download($lesson->file_path);
+        return $this->files()->respond(request(), $file, true);
     }
 
     public function storeAssessment(Request $request, Course $course)
@@ -401,11 +413,7 @@ class CourseManagementController extends Controller
 
         $data = $this->validateAssessment($request);
 
-        $attachmentPath = $request->hasFile('assessment_file')
-            ? $request->file('assessment_file')->store("courses/{$course->id}/assessments", 'public')
-            : null;
-
-        $course->assessments()->create([
+        $assessment = $course->assessments()->create([
             'course_module_id' => $data['course_module_id'] ?? null,
             'title' => $data['title'],
             'type' => $data['type'],
@@ -416,9 +424,16 @@ class CourseManagementController extends Controller
             'due_at' => $data['due_at'] ?? null,
             'duration_minutes' => $data['duration_minutes'] ?? null,
             'total_marks' => $data['total_marks'] ?? null,
-            'attachment_path' => $attachmentPath,
             'is_published' => $request->boolean('is_published'),
         ]);
+
+        $this->files()->storeMaterials(
+            $this->files()->uploadedFiles($request, 'assessment_files', 'assessment_file'),
+            $course->id,
+            null,
+            $assessment,
+            $request->user()
+        );
 
         return back()->with('success', ucfirst($data['type']).' added.');
     }
@@ -429,21 +444,27 @@ class CourseManagementController extends Controller
 
         $data = $this->validateAssessment($request);
 
-        $attachmentPath = $assessment->attachment_path;
-
-        if ($request->boolean('remove_attachment') && $attachmentPath) {
-            Storage::disk('public')->delete($attachmentPath);
-            $attachmentPath = null;
-        }
-
-        if ($request->hasFile('assessment_file')) {
-            if ($attachmentPath) {
-                Storage::disk('public')->delete($attachmentPath);
+        // Legacy "remove attachment" checkbox: removes the original single attachment.
+        if ($request->boolean('remove_attachment') && $assessment->attachment_path) {
+            $this->files()->syncAssessments([$assessment]);
+            $legacyPath = (string) $this->files()->normalisePath($assessment->attachment_path);
+            $assessment->files()->where('path', $legacyPath)->get()
+                ->each(fn (LearningFile $file) => $this->files()->deleteLearningFile($file));
+            if ($legacyPath !== '') {
+                Storage::disk('public')->delete($legacyPath);
             }
-
-            $attachmentPath = $request->file('assessment_file')
-                ->store("courses/{$course->id}/assessments", 'public');
+            $assessment->forceFill(['attachment_path' => null])->save();
         }
+
+        $this->removeSelectedFiles($request, $assessment->files());
+
+        $this->files()->storeMaterials(
+            $this->files()->uploadedFiles($request, 'assessment_files', 'assessment_file'),
+            $course->id,
+            null,
+            $assessment,
+            $request->user()
+        );
 
         $assessment->update([
             'course_module_id' => $data['course_module_id'] ?? null,
@@ -456,7 +477,6 @@ class CourseManagementController extends Controller
             'due_at' => $data['due_at'] ?? null,
             'duration_minutes' => $data['duration_minutes'] ?? null,
             'total_marks' => $data['total_marks'] ?? null,
-            'attachment_path' => $attachmentPath,
             'is_published' => $request->boolean('is_published'),
         ]);
 
@@ -467,8 +487,10 @@ class CourseManagementController extends Controller
     {
         $this->authoriseAssessment($course, $assessment);
 
-        if ($assessment->attachment_path) {
-            Storage::disk('public')->delete($assessment->attachment_path);
+        $this->files()->deleteAllFor($assessment);
+
+        if ($path = $this->files()->normalisePath($assessment->attachment_path)) {
+            Storage::disk('public')->delete($path);
         }
 
         $assessment->delete();
@@ -480,17 +502,30 @@ class CourseManagementController extends Controller
     {
         $this->authoriseAssessment($course, $assessment);
 
-        abort_unless(
-            $assessment->attachment_path
-            && Storage::disk('public')->exists($assessment->attachment_path),
-            404
-        );
+        // Legacy single-file route: serves the assessment's first attachment.
+        $file = $this->files()->assessmentFiles($assessment)->first();
+        abort_unless($file, 404);
 
-        if ($this->previews()->wantsPreview(request())) {
-            return $this->previews()->respond(request(), 'public', $assessment->attachment_path);
-        }
+        return $this->files()->respond(request(), $file, true);
+    }
 
-        return Storage::disk('public')->download($assessment->attachment_path);
+    /**
+     * Remove one lesson or assessment material file.
+     */
+    public function destroyFile(Course $course, LearningFile $file)
+    {
+        $this->authorise($course);
+
+        $belongsToCourse = (int) $file->course_id === (int) $course->id
+            || ($file->lesson_id && Lesson::whereKey($file->lesson_id)->whereHas('module', fn ($q) => $q->where('course_id', $course->id))->exists())
+            || ($file->assessment_id && Assessment::whereKey($file->assessment_id)->where('course_id', $course->id)->exists());
+
+        abort_unless($belongsToCourse, 404);
+
+        $name = $file->displayName();
+        $this->files()->deleteLearningFile($file);
+
+        return back()->with('success', 'File "'.$name.'" removed.');
     }
 
     public function addQuestion(Request $request, Course $course, Assessment $assessment)
@@ -678,18 +713,13 @@ class CourseManagementController extends Controller
 
         $attempt->loadMissing('assessment');
 
-        abort_unless(
-            (int) $attempt->assessment?->course_id === (int) $course->id
-            && $attempt->submission_file_path
-            && Storage::disk('local')->exists($attempt->submission_file_path),
-            404
-        );
+        abort_unless((int) $attempt->assessment?->course_id === (int) $course->id, 404);
 
-        if ($this->previews()->wantsPreview(request())) {
-            return $this->previews()->respond(request(), 'local', $attempt->submission_file_path);
-        }
+        // Legacy single-file route: serves the submission's first file.
+        $file = $this->files()->attemptFiles($attempt)->first();
+        abort_unless($file, 404);
 
-        return Storage::disk('local')->download($attempt->submission_file_path);
+        return $this->files()->respond(request(), $file, true);
     }
 
     public function updateParticipant(Request $request, Course $course, Enrolment $enrolment)
@@ -830,6 +860,49 @@ class CourseManagementController extends Controller
         return app(FilePreviewService::class);
     }
 
+    private function files(): LearningFileService
+    {
+        return app(LearningFileService::class);
+    }
+
+    /** Copy legacy single-file columns of this course into the files tables. */
+    private function syncLegacyFiles(Course $course): void
+    {
+        $this->files()->syncLessons(
+            Lesson::query()
+                ->whereHas('module', fn ($query) => $query->where('course_id', $course->id))
+                ->whereNotNull('file_path')
+                ->where('file_path', '!=', '')
+                ->with('module')
+                ->get()
+        );
+
+        $this->files()->syncAssessments(
+            $course->assessments()->whereNotNull('attachment_path')->where('attachment_path', '!=', '')->get()
+        );
+
+        $this->files()->syncAttempts(
+            AssessmentAttempt::query()
+                ->whereHas('assessment', fn ($query) => $query->where('course_id', $course->id))
+                ->whereNotNull('submission_file_path')
+                ->where('submission_file_path', '!=', '')
+                ->get()
+        );
+    }
+
+    /** Delete the files ticked in "remove_files[]" that belong to the given relation. */
+    private function removeSelectedFiles(Request $request, $relation): void
+    {
+        $ids = collect((array) $request->input('remove_files', []))->map(fn ($id) => (int) $id)->filter();
+
+        if ($ids->isEmpty()) {
+            return;
+        }
+
+        $relation->whereIn('id', $ids)->get()
+            ->each(fn (LearningFile $file) => $this->files()->deleteLearningFile($file));
+    }
+
     private function validateLesson(Request $request): array
     {
         return $request->validate([
@@ -838,16 +911,14 @@ class CourseManagementController extends Controller
             'content_type' => ['required', 'in:text,video,file,link,mixed'],
             'video_url' => ['nullable', 'url'],
             'external_url' => ['nullable', 'url'],
-            'resource_file' => [
-                'nullable',
-                'file',
-                'max:51200',
-                'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,zip,jpg,jpeg,png,webp,mp3,mp4,m4a',
-            ],
             'estimated_minutes' => ['nullable', 'integer', 'min:1'],
             'position' => ['nullable', 'integer', 'min:1'],
             'is_published' => ['nullable', 'boolean'],
             'remove_file' => ['nullable', 'boolean'],
+            'remove_files' => ['nullable', 'array'],
+            'remove_files.*' => ['integer'],
+        ] + $this->files()->uploadRules('resource_files', 'lesson_mimes', 'resource_file'), [
+            'resource_files.max' => 'You can upload up to :max files at a time.',
         ]);
     }
 
@@ -864,14 +935,12 @@ class CourseManagementController extends Controller
             'due_at' => ['nullable', 'date', 'after_or_equal:opens_at'],
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
             'total_marks' => ['nullable', 'numeric', 'min:0'],
-            'assessment_file' => [
-                'nullable',
-                'file',
-                'max:51200',
-                'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,zip,jpg,jpeg,png,webp',
-            ],
             'is_published' => ['nullable', 'boolean'],
             'remove_attachment' => ['nullable', 'boolean'],
+            'remove_files' => ['nullable', 'array'],
+            'remove_files.*' => ['integer'],
+        ] + $this->files()->uploadRules('assessment_files', 'assignment_mimes', 'assessment_file'), [
+            'assessment_files.max' => 'You can upload up to :max files at a time.',
         ]);
     }
 

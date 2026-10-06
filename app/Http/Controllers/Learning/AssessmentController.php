@@ -8,6 +8,7 @@ use App\Models\AssessmentAnswer;
 use App\Models\AssessmentAttempt;
 use App\Models\Enrolment;
 use App\Services\CertificateService;
+use App\Services\Learning\LearningFileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -34,7 +35,17 @@ class AssessmentController extends Controller
 
         abort_if($attempts >= $assessment->max_attempts, 403, 'Maximum attempts reached.');
 
-        return view('learning.assessments.show', compact('assessment','attempts'));
+        $files = app(LearningFileService::class);
+        $briefFiles = $files->assessmentFiles($assessment);
+
+        $previousAttempts = AssessmentAttempt::where('assessment_id', $assessment->id)
+            ->where('user_id', auth()->id())
+            ->orderByDesc('attempt_number')
+            ->get();
+        $files->syncAttempts($previousAttempts);
+        $previousAttempts->load('files');
+
+        return view('learning.assessments.show', compact('assessment','attempts','briefFiles','previousAttempts'));
     }
 
     public function submit(Request $request, Assessment $assessment, CertificateService $certificateService)
@@ -49,17 +60,28 @@ class AssessmentController extends Controller
 
         abort_if($attemptNumber > $assessment->max_attempts, 403);
 
+        $fileService = app(LearningFileService::class);
+        $data = $request->validate([
+            'submission_text' => ['nullable', 'string', 'max:20000'],
+        ] + $fileService->uploadRules('submission_files', 'submission_mimes'), [
+            'submission_files.max' => 'You can upload up to :max files at a time.',
+        ]);
+        $uploads = $fileService->uploadedFiles($request, 'submission_files');
+
         $answers = $request->input('answers', []);
 
-        $attempt = DB::transaction(function () use ($assessment, $answers, $attemptNumber) {
+        $attempt = DB::transaction(function () use ($assessment, $answers, $attemptNumber, $data, $uploads, $fileService) {
             $attempt = AssessmentAttempt::create([
                 'assessment_id' => $assessment->id,
                 'user_id' => auth()->id(),
                 'attempt_number' => $attemptNumber,
+                'submission_text' => $data['submission_text'] ?? null,
                 'status' => 'submitted',
                 'started_at' => now(),
                 'submitted_at' => now(),
             ]);
+
+            $fileService->storeSubmissionFiles($attempt, $uploads);
 
             $possible = 0;
             $awarded = 0;

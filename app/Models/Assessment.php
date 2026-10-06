@@ -55,6 +55,12 @@ class Assessment extends Model
         return $this->hasMany(AssignmentExtensionRequest::class);
     }
 
+    /** Assignment brief/material files (many per assessment). */
+    public function files()
+    {
+        return $this->hasMany(LearningFile::class)->orderBy('id');
+    }
+
     public function module()
     {
         return $this->belongsTo(CourseModule::class, 'course_module_id');

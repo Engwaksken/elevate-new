@@ -24,6 +24,8 @@ class FilePreviewService
     public const SPREADSHEET = ['xlsx', 'xlsm', 'xls', 'ods', 'csv'];
     public const WORD = ['docx' => 'Word2007', 'odt' => 'ODText', 'rtf' => 'RTF'];
     public const TEXT = ['txt', 'md', 'log', 'json', 'xml'];
+    public const VIDEO = ['mp4' => 'video/mp4', 'm4v' => 'video/mp4', 'webm' => 'video/webm', 'mov' => 'video/quicktime', 'ogv' => 'video/ogg'];
+    public const AUDIO = ['mp3' => 'audio/mpeg', 'm4a' => 'audio/mp4', 'aac' => 'audio/aac', 'wav' => 'audio/wav', 'ogg' => 'audio/ogg', 'oga' => 'audio/ogg'];
 
     public const MAX_BYTES = 15 * 1024 * 1024;
     public const MAX_ROWS = 500;
@@ -46,12 +48,17 @@ class FilePreviewService
             in_array($extension, self::SPREADSHEET, true) => 'spreadsheet',
             isset(self::WORD[$extension]) => 'word',
             in_array($extension, self::TEXT, true) => 'text',
+            isset(self::VIDEO[$extension]) => 'video',
+            isset(self::AUDIO[$extension]) => 'audio',
             default => 'unsupported',
         };
     }
 
-    /** Preview a file stored on a filesystem disk. */
-    public function respond(Request $request, string $disk, string $path, ?string $name = null): Response
+    /**
+     * Preview a file stored on a filesystem disk.
+     * $allowDownload = false renders a view-only preview: no download links and no caching.
+     */
+    public function respond(Request $request, string $disk, string $path, ?string $name = null, bool $allowDownload = true): Response
     {
         $storage = Storage::disk($disk);
         abort_unless($storage->exists($path), 404);
@@ -71,7 +78,7 @@ class FilePreviewService
         }
 
         try {
-            return $this->respondForPath($request, $absolute, $name ?: basename($path));
+            return $this->respondForPath($request, $absolute, $name ?: basename($path), null, $allowDownload);
         } finally {
             if ($temporary) {
                 @unlink($temporary);
@@ -80,14 +87,14 @@ class FilePreviewService
     }
 
     /** Preview a file at an absolute local path (e.g. a freshly generated export). */
-    public function respondForPath(Request $request, string $absolute, string $name, ?string $downloadUrl = null): Response
+    public function respondForPath(Request $request, string $absolute, string $name, ?string $downloadUrl = null, bool $allowDownload = true): Response
     {
         $kind = $this->kind($name);
         $size = (int) @filesize($absolute);
-        $downloadUrl ??= $request->fullUrlWithoutQuery(['preview', 'embed']);
+        $downloadUrl = $allowDownload ? ($downloadUrl ?? $request->fullUrlWithoutQuery(['preview', 'embed'])) : null;
 
         if ($request->query('preview') === 'raw') {
-            return $this->raw($absolute, $name, $kind);
+            return $this->raw($absolute, $name, $kind, $allowDownload);
         }
 
         $data = [
@@ -96,12 +103,16 @@ class FilePreviewService
             'size' => $size,
             'downloadUrl' => $downloadUrl,
             'rawUrl' => $request->fullUrlWithQuery(['preview' => 'raw']),
-            'tooLarge' => $size > self::MAX_BYTES,
+            'tooLarge' => $size > self::MAX_BYTES && ! in_array($kind, ['video', 'audio'], true),
             'sheets' => [],
             'text' => null,
             'truncated' => false,
             'error' => null,
             'embedded' => $request->boolean('embed'),
+            'allowDownload' => $allowDownload,
+            'mediaType' => self::VIDEO[strtolower(pathinfo($name, PATHINFO_EXTENSION))]
+                ?? self::AUDIO[strtolower(pathinfo($name, PATHINFO_EXTENSION))]
+                ?? null,
         ];
 
         if (! $data['tooLarge']) {
@@ -114,24 +125,36 @@ class FilePreviewService
                 }
             } catch (Throwable $e) {
                 report($e);
-                $data['error'] = 'This file could not be read for preview. Download it to open it.';
+                $data['error'] = $allowDownload
+                    ? 'This file could not be read for preview. Download it to open it.'
+                    : 'This file could not be read for preview.';
             }
         }
 
         return response()
             ->view('files.preview', $data)
-            ->header('X-Content-Type-Options', 'nosniff');
+            ->header('X-Content-Type-Options', 'nosniff')
+            ->header('Cache-Control', $allowDownload ? 'private, max-age=0, must-revalidate' : 'private, no-store, max-age=0');
     }
 
-    private function raw(string $absolute, string $name, string $kind): Response
+    private function raw(string $absolute, string $name, string $kind, bool $allowDownload = true): Response
     {
-        abort_if((int) @filesize($absolute) > self::MAX_BYTES, 413, 'File is too large to preview.');
-
         $headers = [
             'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'private, max-age=300',
+            'Cache-Control' => $allowDownload ? 'private, max-age=300' : 'private, no-store, max-age=0',
         ];
-        $inlineName = str_replace('"', '', $name);
+        $inlineName = str_replace(['"', '/', '\\'], '', $name);
+        $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+
+        if ($kind === 'video' || $kind === 'audio') {
+            // BinaryFileResponse honours Range requests so media can be streamed and seeked.
+            return response()->file($absolute, $headers + [
+                'Content-Type' => self::VIDEO[$extension] ?? self::AUDIO[$extension],
+                'Content-Disposition' => 'inline; filename="'.$inlineName.'"',
+            ]);
+        }
+
+        abort_if((int) @filesize($absolute) > self::MAX_BYTES, 413, 'File is too large to preview.');
 
         if ($kind === 'pdf') {
             return response((string) file_get_contents($absolute), 200, $headers + [
@@ -141,8 +164,6 @@ class FilePreviewService
         }
 
         if ($kind === 'image') {
-            $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-
             return response((string) file_get_contents($absolute), 200, $headers + [
                 'Content-Type' => self::IMAGE[$extension],
                 'Content-Disposition' => 'inline; filename="'.$inlineName.'"',
