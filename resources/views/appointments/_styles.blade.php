@@ -6,12 +6,12 @@
 .appt-stat strong{font-size:1.25rem;color:#101828}
 .appt-section{margin:0 0 22px}
 .appt-section>h2{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:1.05rem;color:#101828}
-.appt-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.appt-card{display:flex;gap:14px;min-width:0;padding:14px 16px;border:1px solid #e4e7ec;border-left:4px solid #d0d5dd;border-radius:12px;background:#fff}
+.appt-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}
+.appt-card{display:flex;flex-direction:column;gap:10px;min-width:0;height:100%;padding:14px;border:1px solid #e4e7ec;border-left:4px solid #d0d5dd;border-radius:12px;background:#fff}
 .appt-card--pending{border-left-color:#f79009}.appt-card--rescheduled_proposed{border-left-color:#7a5af8}.appt-card--approved{border-left-color:#12b76a}
 .appt-card--declined,.appt-card--cancelled{border-left-color:#f04438}.appt-card--completed{border-left-color:#2e90fa}
-.appt-date{flex:0 0 58px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;background:#fff4e3;color:#800000;line-height:1.1}
-.appt-date b{font-size:1.35rem}.appt-date span{font-size:.7rem;font-weight:800;text-transform:uppercase}
+.appt-date{align-self:flex-start;display:inline-flex;align-items:baseline;gap:6px;padding:5px 10px;border-radius:8px;background:#fff4e3;color:#800000;line-height:1.1}
+.appt-date b{font-size:1.1rem}.appt-date span{font-size:.7rem;font-weight:800;text-transform:uppercase}
 .appt-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .appt-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:6px 10px}
 .appt-head h3{margin:0;font-size:.95rem;color:#101828;overflow-wrap:anywhere}
@@ -41,7 +41,9 @@
 .appt-tabs .appt-count{min-width:20px;padding:0 6px;border-radius:999px;background:#f2f4f7;color:#344054;font-size:.68rem;line-height:18px;text-align:center}
 .appt-tabs a[aria-current="page"] .appt-count{background:#800000;color:#fff}
 .eh-modal .eh-modal-dialog{max-width:100%}
-@media(max-width:1100px){.appt-list{grid-template-columns:1fr}}
+@media(max-width:1279px){.appt-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1100px){.appt-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.appt-list{grid-template-columns:1fr}}
 @media(max-width:900px){.appt-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){
     .appt-stats{grid-template-columns:1fr 1fr;gap:8px}

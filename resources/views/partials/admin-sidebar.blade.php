@@ -211,6 +211,22 @@
                     'permissions' => [],
                     'active' => ['staff.purchase-requests.*'],
                 ],
+                // Help & Support: every staff member can raise and track IT / help requests.
+                [
+                    'route' => 'staff.support.index',
+                    'label' => 'Help & Support',
+                    'icon' => 'fa-life-ring',
+                    'permissions' => [],
+                    'active' => ['staff.support.*'],
+                ],
+                [
+                    'route' => 'it-support.tickets.index',
+                    'label' => 'IT Support Queue',
+                    'icon' => 'fa-headset',
+                    'permissions' => [],
+                    'roles' => \App\Services\ItSupportTicketService::SUPPORT_ROLES,
+                    'active' => ['it-support.tickets.*'],
+                ],
                 [
                     'route' => 'admin.hr.employees.index',
                     'label' => 'Employees',
@@ -503,6 +519,8 @@
                     'label' => 'Mentorship',
                     'icon' => 'fa-handshake',
                     'permissions' => [],
+                    // Instructors use mentorship as mentees (find mentors, sessions, goals).
+                    'active' => ['mentorship.dashboard', 'mentorship.mentors.*'],
                 ],
                 [
                     'route' => 'library.index',
@@ -515,6 +533,22 @@
                     'label' => 'Jobs',
                     'icon' => 'fa-briefcase',
                     'permissions' => [],
+                ],
+                // Help & Support: instructors raise and track IT / help requests like all staff.
+                [
+                    'route' => 'staff.support.index',
+                    'label' => 'Help & Support',
+                    'icon' => 'fa-life-ring',
+                    'permissions' => [],
+                    'active' => ['staff.support.*'],
+                ],
+                [
+                    'route' => 'it-support.tickets.index',
+                    'label' => 'IT Support Queue',
+                    'icon' => 'fa-headset',
+                    'permissions' => [],
+                    'roles' => \App\Services\ItSupportTicketService::SUPPORT_ROLES,
+                    'active' => ['it-support.tickets.*'],
                 ],
             ],
         ];

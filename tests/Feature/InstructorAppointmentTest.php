@@ -333,4 +333,56 @@ class InstructorAppointmentTest extends TestCase
 
         $this->assertSame(0, UserNotification::where('user_id', $this->instructor->id)->count());
     }
+
+    public function test_approved_appointment_becomes_an_instructor_task_on_its_date(): void
+    {
+        $appointment = $this->book();
+        $this->assertDatabaseMissing('tasks', ['instructor_appointment_id' => $appointment->id]);
+
+        $this->actingAs($this->instructor)
+            ->post(route('instructor.appointments.approve', $appointment), ['meeting_url' => 'https://meet.example.test/abc'])
+            ->assertSessionHasNoErrors();
+
+        $task = \App\Models\Task::where('instructor_appointment_id', $appointment->id)->sole();
+        $this->assertSame($this->instructor->id, (int) $task->assigned_to);
+        $this->assertSame('2026-10-08', $task->due_date->toDateString());
+        $this->assertSame('not_started', $task->status);
+        $this->assertStringContainsString('Help with assignment 2', $task->title);
+        $this->assertStringContainsString('https://meet.example.test/abc', (string) $task->description);
+
+        // It shows in the instructor's My Tasks for that week.
+        $this->actingAs($this->instructor)
+            ->get(route('staff.tasks.index', ['view' => 'week', 'week' => '2026-10-05']))
+            ->assertOk()->assertSee('Help with assignment 2');
+    }
+
+    public function test_accepted_proposal_creates_task_on_the_new_date_and_cancel_removes_it(): void
+    {
+        $appointment = $this->book();
+
+        $this->actingAs($this->instructor)
+            ->post(route('instructor.appointments.propose', $appointment), ['proposed_date' => '2026-10-09', 'proposed_time' => '14:00', 'note' => 'Friday works better'])
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseMissing('tasks', ['instructor_appointment_id' => $appointment->id]);
+
+        $this->actingAs($this->participant)->post(route('appointments.accept', $appointment))->assertSessionHasNoErrors();
+        $task = \App\Models\Task::where('instructor_appointment_id', $appointment->id)->sole();
+        $this->assertSame('2026-10-09', $task->due_date->toDateString());
+
+        $this->actingAs($this->participant)->post(route('appointments.cancel', $appointment))->assertSessionHasNoErrors();
+        $this->assertDatabaseMissing('tasks', ['instructor_appointment_id' => $appointment->id]);
+    }
+
+    public function test_completing_the_appointment_completes_its_task(): void
+    {
+        $appointment = $this->book();
+        $this->actingAs($this->instructor)->post(route('instructor.appointments.approve', $appointment))->assertSessionHasNoErrors();
+
+        Carbon::setTestNow(Carbon::parse('2026-10-08 11:00:00', config('app.timezone')));
+        $this->actingAs($this->instructor)->post(route('instructor.appointments.complete', $appointment))->assertSessionHasNoErrors();
+
+        $task = \App\Models\Task::where('instructor_appointment_id', $appointment->id)->sole();
+        $this->assertSame('completed', $task->status);
+        $this->assertNotNull($task->completed_at);
+    }
 }

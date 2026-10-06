@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Course;
 use App\Models\InstructorAppointment as Appointment;
+use App\Models\Task;
 use App\Models\User;
 use App\Support\NotificationPreferences;
 use Carbon\Carbon;
@@ -143,6 +144,8 @@ class AppointmentService
                 'decided_at' => now(),
             ]);
 
+            $this->syncInstructorTask($appointment);
+
             $this->notify($appointment->participant, 'appointment_approved', 'Appointment approved',
                 "{$instructor->name} approved your appointment on {$this->when($appointment->starts_at)}.",
                 $appointment, false);
@@ -212,6 +215,8 @@ class AppointmentService
                 'decided_at' => now(),
             ]);
 
+            $this->syncInstructorTask($appointment);
+
             $this->notify($appointment->instructor, 'appointment_proposal_accepted', 'Proposed time accepted',
                 "{$participant->name} accepted your proposed time of {$this->when($start)}. The appointment is confirmed.",
                 $appointment, true);
@@ -262,6 +267,8 @@ class AppointmentService
             'decision_reason' => $reason ?: $appointment->decision_reason,
         ]);
 
+        $this->syncInstructorTask($appointment);
+
         $recipient = $byParticipant ? $appointment->instructor : $appointment->participant;
         $this->notify($recipient, 'appointment_cancelled', 'Appointment cancelled',
             "{$actor->name} cancelled the appointment on {$this->when($appointment->starts_at)}".($reason ? ". Reason: {$reason}" : '.'),
@@ -281,6 +288,8 @@ class AppointmentService
         }
 
         $appointment->update(['status' => Appointment::COMPLETED, 'completed_at' => now()]);
+
+        $this->syncInstructorTask($appointment);
 
         return $appointment;
     }
@@ -373,6 +382,58 @@ class AppointmentService
     {
         if (! $time || $time->lte(now())) {
             throw ValidationException::withMessages(['appointment' => $message]);
+        }
+    }
+
+    /**
+     * Keep the instructor's daily task in step with the appointment: an
+     * approved appointment becomes a task on its date (My Tasks), a
+     * completed one completes it, and a cancelled one removes it unless the
+     * task was already done.
+     */
+    private function syncInstructorTask(Appointment $appointment): void
+    {
+        $task = Task::where('instructor_appointment_id', $appointment->id)->first();
+
+        if ($appointment->status === Appointment::APPROVED) {
+            $appointment->loadMissing(['participant:id,name', 'course:id,title']);
+            $start = $appointment->starts_at->copy()->setTimezone(config('app.timezone'));
+            $end = $appointment->ends_at?->copy()->setTimezone(config('app.timezone'));
+
+            $details = array_filter([
+                'Time: '.$start->format('D j M Y, H:i').($end ? '–'.$end->format('H:i') : ''),
+                'Participant: '.($appointment->participant?->name ?? '—'),
+                $appointment->course ? 'Course: '.$appointment->course->title : null,
+                'Mode: '.($appointment->mode === 'in_person' ? 'In person' : 'Online'),
+                $appointment->location ? 'Venue: '.$appointment->location : null,
+                $appointment->meeting_url ? 'Meeting link: '.$appointment->meeting_url : null,
+                $appointment->details ? PHP_EOL.$appointment->details : null,
+            ]);
+
+            Task::updateOrCreate(
+                ['instructor_appointment_id' => $appointment->id],
+                [
+                    'title' => mb_strimwidth('Appointment: '.$appointment->topic.' — '.($appointment->participant?->name ?? 'participant'), 0, 255, '…'),
+                    'description' => implode(PHP_EOL, $details),
+                    'assigned_to' => $appointment->instructor_user_id,
+                    'created_by' => $appointment->instructor_user_id,
+                    'start_date' => $start->toDateString(),
+                    'due_date' => $start->toDateString(),
+                    'priority' => 'high',
+                ] + ($task ? [] : ['status' => 'not_started', 'progress_percent' => 0])
+            );
+
+            return;
+        }
+
+        if (! $task) {
+            return;
+        }
+
+        if ($appointment->status === Appointment::COMPLETED) {
+            $task->update(['status' => 'completed', 'completed_at' => $appointment->completed_at ?? now(), 'progress_percent' => 100]);
+        } elseif ($task->status !== 'completed') {
+            $task->delete();
         }
     }
 

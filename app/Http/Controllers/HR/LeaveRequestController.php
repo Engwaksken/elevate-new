@@ -46,7 +46,7 @@ class LeaveRequestController extends Controller
                 ->groupBy('leave_type_id')->pluck('days','leave_type_id');
             $balances=$leaveTypes->mapWithKeys(fn($type)=>[$type->id=>$recorded->has($type->id)
                 ? (float)$recorded[$type->id]->remaining
-                : max(0,(float)$type->default_days-(float)($taken[$type->id] ?? 0))]);
+                : ($type->default_days === null ? null : max(0,(float)$type->default_days-(float)($taken[$type->id] ?? 0)))]);
         }
 
         return view('hr.leave',[

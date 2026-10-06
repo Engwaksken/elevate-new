@@ -542,19 +542,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/learning/submissions/files/{file}',[LearningFileController::class,'submissionFile'])
         ->name('learning.submissions.files.show');
 
-    Route::get('/mentorship',[MentorshipDashboardController::class,'index'])->middleware('user_type:participant,mentor')->name('mentorship.dashboard');
-    Route::get('/mentorship/mentors',[ParticipantMentorController::class,'index'])->middleware('user_type:participant')->name('mentorship.mentors.index');
-    Route::post('/mentorship/mentors',[ParticipantMentorController::class,'store'])->middleware('user_type:participant')->name('mentorship.mentors.store');
-    Route::delete('/mentorship/matches/{match}',[ParticipantMentorController::class,'destroy'])->middleware('user_type:participant')->name('mentorship.matches.destroy');
+    Route::get('/mentorship',[MentorshipDashboardController::class,'index'])->middleware('user_type:mentee,mentor')->name('mentorship.dashboard');
+    Route::get('/mentorship/mentors',[ParticipantMentorController::class,'index'])->middleware('user_type:mentee')->name('mentorship.mentors.index');
+    Route::post('/mentorship/mentors',[ParticipantMentorController::class,'store'])->middleware('user_type:mentee')->name('mentorship.mentors.store');
+    Route::delete('/mentorship/matches/{match}',[ParticipantMentorController::class,'destroy'])->middleware('user_type:mentee')->name('mentorship.matches.destroy');
     Route::post('/mentorship/assistant',[MentorshipAssistantController::class,'message'])
-        ->middleware('throttle:20,1')->middleware('user_type:participant,mentor')->name('mentorship.assistant.message');
+        ->middleware('throttle:20,1')->middleware('user_type:mentee,mentor')->name('mentorship.assistant.message');
     Route::get('/mentorship/mentor-profile',[MentorProfileController::class,'edit'])->middleware('user_type:mentor')->name('mentorship.mentor-profile.edit');
     Route::put('/mentorship/mentor-profile',[MentorProfileController::class,'update'])->middleware('user_type:mentor')->name('mentorship.mentor-profile.update');
-    Route::post('/mentorship/matches/{match}/sessions',[MentorshipSessionController::class,'store'])->middleware('user_type:participant,mentor')->name('mentorship.sessions.store');
-    Route::put('/mentorship/sessions/{session}/complete',[MentorshipSessionController::class,'complete'])->middleware('user_type:participant,mentor')->name('mentorship.sessions.complete');
-    Route::post('/mentorship/sessions/{session}/reports',[MentorshipSessionReportController::class,'store'])->middleware('user_type:participant,mentor')->name('mentorship.sessions.reports.store');
+    Route::post('/mentorship/matches/{match}/sessions',[MentorshipSessionController::class,'store'])->middleware('user_type:mentee,mentor')->name('mentorship.sessions.store');
+    Route::put('/mentorship/sessions/{session}/complete',[MentorshipSessionController::class,'complete'])->middleware('user_type:mentee,mentor')->name('mentorship.sessions.complete');
+    Route::post('/mentorship/sessions/{session}/reports',[MentorshipSessionReportController::class,'store'])->middleware('user_type:mentee,mentor')->name('mentorship.sessions.reports.store');
     Route::post('/mentorship/goals/{goal}/review',[MentorshipParticipantGoalController::class,'review'])
-        ->whereNumber('goal')->middleware('user_type:participant,mentor')->name('mentorship.participant-goals.review');
+        ->whereNumber('goal')->middleware('user_type:mentee,mentor')->name('mentorship.participant-goals.review');
 
     Route::post('/profile/goals',[ParticipantGoalController::class,'store'])->name('profile.goals.store');
     Route::put('/profile/goals/{goal}',[ParticipantGoalController::class,'update'])->name('profile.goals.update');
@@ -641,8 +641,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/my-job-applications',[JobApplicationController::class,'index'])->name('jobs.applications');
     Route::post('/job-applications/{application}/withdraw',[JobApplicationController::class,'withdraw'])->name('jobs.withdraw');
 
-    Route::post('/mentorship/matches/{match}/goals',[MentorshipGoalController::class,'store'])->middleware('user_type:participant,mentor')->name('mentorship.goals.store');
-    Route::put('/mentorship/goals/{goal}',[MentorshipGoalController::class,'update'])->middleware('user_type:participant,mentor')->name('mentorship.goals.update');
+    Route::post('/mentorship/matches/{match}/goals',[MentorshipGoalController::class,'store'])->middleware('user_type:mentee,mentor')->name('mentorship.goals.store');
+    Route::put('/mentorship/goals/{goal}',[MentorshipGoalController::class,'update'])->middleware('user_type:mentee,mentor')->name('mentorship.goals.update');
 
     Route::get('/employer/profile',[EmployerProfileController::class,'edit'])->middleware('user_type:employer')->name('employer.profile.edit');
     Route::put('/employer/profile',[EmployerProfileController::class,'update'])->middleware('user_type:employer')->name('employer.profile.update');

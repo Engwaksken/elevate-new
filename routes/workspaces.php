@@ -108,3 +108,12 @@ Route::middleware(['auth', 'staff'])
         Route::post('/{purchaseRequest}/submit', [\App\Http\Controllers\Staff\StaffPurchaseRequestController::class, 'submit'])->name('submit');
         Route::delete('/{purchaseRequest}', [\App\Http\Controllers\Staff\StaffPurchaseRequestController::class, 'destroy'])->name('destroy');
     });
+
+// Staff Help & Support: every staff member raises IT / general help requests and tracks their own.
+Route::middleware(['auth', 'staff'])
+    ->prefix('staff/support')
+    ->name('staff.support.')
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\Staff\StaffSupportController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Staff\StaffSupportController::class, 'store'])->middleware('throttle:10,1')->name('store');
+    });

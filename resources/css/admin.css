@@ -61,3 +61,10 @@
         place-items: center;
     }
 }
+/* Page header actions (export buttons, primary action): keep each button on one
+   line and let the group wrap as a whole instead of squeezing labels. */
+.admin-page-header>div:first-child{flex:1 1 320px;min-width:0}
+.admin-page-actions{flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;max-width:100%}
+.admin-page-actions .btn,.admin-page-actions>a{white-space:nowrap}
+.admin-page-actions .eh-export-buttons{flex-wrap:nowrap!important}
+@media(max-width:720px){.admin-page-header{flex-wrap:wrap}.admin-page-actions{justify-content:flex-start}}

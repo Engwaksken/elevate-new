@@ -11,7 +11,7 @@ class IndexItSupportTicketsRequest extends FormRequest
         return [
             'status' => ['sometimes', 'in:open,in_progress,awaiting_requester,resolved'],
             'priority' => ['sometimes', 'in:low,normal,high,urgent'],
-            'category' => ['sometimes', 'in:general,access,learning,procurement,other'],
+            'category' => ['sometimes', \Illuminate\Validation\Rule::in(array_keys(\App\Models\ItSupportTicket::CATEGORIES))],
             'assignee_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'page' => ['sometimes', 'integer', 'min:1'],
         ];

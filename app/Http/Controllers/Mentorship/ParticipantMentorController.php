@@ -41,7 +41,9 @@ class ParticipantMentorController extends Controller
 
         $admission = app(\App\Services\AdmissionService::class);
 
-        if ($admission->requiredForMentorship() && $admission->pending(auth()->user())) {
+        // The entry assessment gates participants only; staff (instructors /
+        // trainers using mentorship as mentees) are never held back by it.
+        if (! auth()->user()->isStaff() && $admission->requiredForMentorship() && $admission->pending(auth()->user())) {
             throw ValidationException::withMessages([
                 'mentor_user_id' => 'Pass the entry assessment before selecting a mentor.',
             ]);

@@ -337,7 +337,7 @@ class NotificationCoverageTest extends TestCase
         $hr->roles()->attach($hrRole->id);
 
         Employee::create(['user_id' => $employeeUser->id, 'employee_number' => 'EMP-9', 'supervisor_user_id' => $supervisor->id]);
-        $type = LeaveType::create(['name' => 'Annual Leave', 'code' => 'AL', 'default_days' => 21, 'is_active' => true]);
+        $type = LeaveType::firstOrCreate(['name' => 'Annual Leave'], ['code' => 'AL', 'default_days' => 21, 'is_active' => true]);
 
         $this->actingAs($employeeUser)->post('/hr/leave', [
             'leave_type_id' => $type->id,

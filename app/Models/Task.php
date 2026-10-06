@@ -16,6 +16,7 @@ class Task extends Model
         'milestone_id',
         'appraisal_kpi_id',
         'staff_kpi_id',
+        'instructor_appointment_id',
         'title',
         'description',
         'assigned_to',
@@ -58,6 +59,11 @@ class Task extends Model
     public function kpi()
     {
         return $this->belongsTo(AppraisalKpi::class,'appraisal_kpi_id');
+    }
+
+    public function appointment()
+    {
+        return $this->belongsTo(InstructorAppointment::class, 'instructor_appointment_id');
     }
 
     public function staffKpi()

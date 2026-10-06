@@ -13,7 +13,7 @@
 </div>
 <div class="admin-page-actions">
     @if($employee)<x-export-buttons />@endif
-    @if($employee && $leaveTypes->isNotEmpty())<button type="button" class="btn btn-primary" data-modal-open="leave-new"><i class="fas fa-plus"></i> Request leave</button>@endif
+    @if($employee)<button type="button" class="btn btn-primary" data-modal-open="leave-new"><i class="fas fa-plus"></i> Request leave</button>@endif
 </div>
 </div>
 
@@ -59,7 +59,7 @@
 <aside class="admin-panel">
     <div class="lv-head"><h2>Days left in {{ now()->year }}</h2></div>
     @forelse($leaveTypes as $type)
-        <div class="lv-balance"><span>{{ $type->name }}</span><strong>{{ rtrim(rtrim(number_format($balances[$type->id] ?? 0, 1), '0'), '.') }}</strong></div>
+        <div class="lv-balance"><span>{{ $type->name }}</span><strong>{{ ($balances[$type->id] ?? null) === null ? 'No set limit' : rtrim(rtrim(number_format($balances[$type->id], 1), '0'), '.') }}</strong></div>
     @empty
         <p class="lv-muted">No leave types have been set up yet. Please contact HR.</p>
     @endforelse
@@ -78,10 +78,11 @@
     </div>
     <div class="eh-modal-body">
         @if($errors->any())<div class="icm-notice" role="alert"><span><i class="fas fa-triangle-exclamation"></i> {{ $errors->first() }}</span></div>@endif
+        @if($leaveTypes->isEmpty())<div class="icm-notice" role="alert"><span><i class="fas fa-circle-info"></i> No leave types have been set up yet, so leave can't be requested. Please ask HR to add them.</span></div>@endif
         <div class="modal-grid">
             <div class="form-group full"><label for="leave-type">Leave type *</label>
                 <select id="leave-type" name="leave_type_id" required>
-                    @foreach($leaveTypes as $type)<option value="{{ $type->id }}" @selected((int) old('leave_type_id') === $type->id)>{{ $type->name }} ({{ rtrim(rtrim(number_format($balances[$type->id] ?? 0, 1), '0'), '.') }} days left)</option>@endforeach
+                    @foreach($leaveTypes as $type)<option value="{{ $type->id }}" @selected((int) old('leave_type_id') === $type->id)>{{ $type->name }} ({{ ($balances[$type->id] ?? null) === null ? 'no set limit' : rtrim(rtrim(number_format($balances[$type->id], 1), '0'), '.').' days left' }})</option>@endforeach
                 </select>
             </div>
             <div class="form-group"><label for="leave-start">First day *</label><input id="leave-start" type="date" name="start_date" value="{{ old('start_date') }}" min="{{ today()->toDateString() }}" required></div>
@@ -92,7 +93,7 @@
     </div>
     <div class="eh-modal-footer">
         <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
-        <button class="btn btn-primary"><i class="fas fa-paper-plane"></i> Submit request</button>
+        <button class="btn btn-primary" @disabled($leaveTypes->isEmpty())><i class="fas fa-paper-plane"></i> Submit request</button>
     </div>
 </form>
 </div>

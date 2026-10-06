@@ -151,7 +151,8 @@
                     </a>
                 @endif
 
-                @if(Route::has('admin.settings.index'))
+                {{-- System settings: only for people who can manage them (the page itself requires settings.manage). --}}
+                @if(Route::has('admin.settings.index') && $topbarUser && ($topbarUser->isSuperAdmin() || $topbarUser->hasPermission('settings.manage')))
                     <a href="{{ route('admin.settings.index') }}">
                         <i class="fas fa-gears"></i>
                         <span>Account Settings</span>

@@ -13,6 +13,7 @@ use App\Models\ItSupportTicket;
 use App\Models\User;
 use App\Services\UserNotificationService;
 use App\Services\AuditService;
+use App\Services\ItSupportTicketService;
 use Illuminate\Support\Facades\Gate;
 
 class ItSupportTicketController extends Controller
@@ -35,21 +36,9 @@ class ItSupportTicketController extends Controller
         return ItSupportTicketResource::collection($query->paginate(15)->withQueryString());
     }
 
-    public function store(StoreItSupportTicketRequest $request, UserNotificationService $notifications, AuditService $audit)
+    public function store(StoreItSupportTicketRequest $request, ItSupportTicketService $tickets)
     {
-        $ticket = ItSupportTicket::create([
-            ...$request->validated(),
-            'requester_id' => $request->user()->id,
-            'status' => 'open',
-        ]);
-        $audit->log('it_support_ticket', 'created', $ticket, [], $ticket->only(['subject', 'category', 'priority', 'status']), $request);
-
-        $supportUsers = User::query()
-            ->where('status', 'active')
-            ->whereHas('roles', fn ($query) => $query->whereIn('slug', ['it-lead', 'it-assistant'])->orWhereIn('name', ['IT Lead', 'IT Assistant']))
-            ->pluck('id');
-        $notifications->sendToMany($supportUsers, 'it_support_ticket', 'New IT support ticket',
-            'A new IT support request has been submitted.', null, ['ticket_id' => $ticket->id]);
+        $ticket = $tickets->submit($request->user(), $request->validated(), $request);
 
         return (new ItSupportTicketResource($ticket))->response()->setStatusCode(201);
     }

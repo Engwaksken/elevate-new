@@ -64,7 +64,7 @@ class OperationsExportsTest extends TestCase
 
     public function test_my_leave_export_only_contains_own_requests(): void
     {
-        $type = LeaveType::create(['name' => 'Annual Leave', 'code' => 'AL', 'default_days' => 21, 'is_active' => true]);
+        $type = LeaveType::firstOrCreate(['name' => 'Annual Leave'], ['code' => 'AL', 'default_days' => 21, 'is_active' => true]);
 
         $me = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
         $mine = Employee::create(['user_id' => $me->id, 'employee_number' => 'EMP-ME']);

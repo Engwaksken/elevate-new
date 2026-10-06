@@ -17,7 +17,7 @@ class StoreItSupportTicketRequest extends FormRequest
         return [
             'subject' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
-            'category' => ['sometimes', 'in:general,access,learning,procurement,other'],
+            'category' => ['sometimes', \Illuminate\Validation\Rule::in(array_keys(\App\Models\ItSupportTicket::CATEGORIES))],
             'priority' => ['sometimes', 'in:low,normal,high,urgent'],
         ];
     }

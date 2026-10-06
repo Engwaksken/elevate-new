@@ -99,7 +99,7 @@ class StaffSelfServiceTest extends TestCase
 
     public function test_staff_with_employee_record_can_request_leave(): void
     {
-        $type = LeaveType::create(['name' => 'Annual Leave', 'code' => 'AL', 'default_days' => 21, 'is_active' => true]);
+        $type = LeaveType::firstOrCreate(['name' => 'Annual Leave'], ['code' => 'AL', 'default_days' => 21, 'is_active' => true]);
         $me = $this->staff();
         $employee = Employee::create(['user_id' => $me->id, 'employee_number' => 'EMP-1']);
 

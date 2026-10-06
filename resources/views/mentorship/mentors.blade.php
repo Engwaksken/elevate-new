@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends(auth()->user()?->isStaff() ? 'layouts.admin' : 'layouts.app')
 @section('title','Find a Mentor | ElevateHer360')
 @section('content')
 <style>
@@ -70,9 +70,13 @@
                 <form method="POST" action="{{ route('mentorship.mentors.store') }}" style="margin-top:auto">
                     @csrf
                     <input type="hidden" name="mentor_user_id" value="{{ $mentor->user_id }}">
-                    <button class="btn btn-primary" @disabled($matches->count() >= $maxMentors)>
-                        <i class="fas fa-user-plus"></i> Select mentor
-                    </button>
+                    @if($matches->contains('mentor_user_id', $mentor->user_id))
+                        <button type="button" class="btn btn-outline" disabled><i class="fas fa-check"></i> Your mentor</button>
+                    @else
+                        <button class="btn btn-primary" @disabled($matches->count() >= $maxMentors)>
+                            <i class="fas fa-user-plus"></i> Select mentor
+                        </button>
+                    @endif
                 </form>
             </div>
         @endforeach

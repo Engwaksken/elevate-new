@@ -11,7 +11,11 @@ use Symfony\Component\HttpFoundation\Response;
  * (participant, mentor, employer). A user also qualifies when they
  * hold a role of the same name, matching PartnerAuthController's check.
  *
+ * The virtual type "mentee" admits anyone who can be mentored
+ * (participants and staff instructors / trainers).
+ *
  * Usage: ->middleware('user_type:mentor,participant')
+ *        ->middleware('user_type:mentee,mentor')
  */
 class EnsureUserType
 {
@@ -25,9 +29,17 @@ class EnsureUserType
             return $next($request);
         }
 
+        // "mentee" is a virtual type: participants plus staff instructors /
+        // trainers, who may also need mentors (see User::canBeMentee()).
+        if (in_array('mentee', $types, true) && $user->canBeMentee()) {
+            return $next($request);
+        }
+
+        $types = array_values(array_diff($types, ['mentee']));
+
         abort_unless(
-            in_array($user->user_type, $types, true)
-                || $user->hasAnyRole($types, array_map('ucfirst', $types)),
+            $types !== [] && (in_array($user->user_type, $types, true)
+                || $user->hasAnyRole($types, array_map('ucfirst', $types))),
             403,
             'This area is not available for your account type.'
         );

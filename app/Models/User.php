@@ -127,4 +127,23 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isMentor(): bool { return $this->user_type === 'mentor'; }
     public function isPartner(): bool { return in_array($this->user_type, ['employer', 'mentor'], true); }
     public function isActive(): bool { return $this->status === 'active'; }
+
+    /** Staff member holding the instructor / trainer role. */
+    public function isStaffInstructor(): bool
+    {
+        return $this->isStaff() && $this->hasAnyRole(['instructor', 'trainer']);
+    }
+
+    /**
+     * Whether the user can take part in mentorship as a mentee (find and
+     * request mentors, track sessions and goals). Participants always can;
+     * staff instructors / trainers can too, as can super admins.
+     */
+    public function canBeMentee(): bool
+    {
+        return $this->isParticipant()
+            || $this->hasAnyRole(['participant', 'Participant'])
+            || $this->isStaffInstructor()
+            || $this->isSuperAdmin();
+    }
 }

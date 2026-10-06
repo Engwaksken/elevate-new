@@ -44,12 +44,14 @@
 }
 </style>
 <style>.eh-track-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 22px}.eh-track-card{background:#fff;border:1px solid #eadede;border-left:4px solid #800000;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px}.eh-track-card i{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:#fff7da;color:#800000}.eh-track-card small{display:block;color:#667085;font-weight:700}.eh-track-card strong{font-size:1.3rem;color:#101828}@media(max-width:900px){.eh-track-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.eh-track-grid{grid-template-columns:1fr}}</style>
-<div class="page-header"><div><span class="eh-kicker">Mentorship</span><h1>My Mentorship</h1><p>Track mentors, sessions and your growth goals.</p></div>@if(auth()->user()?->isParticipant() && Route::has('mentorship.mentors.index'))<a href="{{ route('mentorship.mentors.index') }}" class="btn btn-primary" style="margin-right:8px"><i class="fas fa-user-plus"></i> Find a Mentor</a>@endif
+<div class="page-header"><div><span class="eh-kicker">Mentorship</span><h1>My Mentorship</h1><p>Track mentors, sessions and your growth goals.</p></div><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">@if(auth()->user()?->canBeMentee() && Route::has('mentorship.mentors.index'))<a href="{{ route('mentorship.mentors.index') }}" class="btn btn-primary"><i class="fas fa-user-plus"></i> Find a Mentor</a>@endif
 @if(auth()->user()?->hasAnyRole(['mentor','Mentor']) && Route::has('mentorship.mentor-profile.edit'))
 <a href="{{ route('mentorship.mentor-profile.edit') }}" class="btn btn-outline"><i class="fas fa-user-pen"></i> Mentor Profile</a>
+@elseif(auth()->user()?->isStaff() && Route::has('admin.profile.edit'))
+<a href="{{ route('admin.profile.edit') }}" class="btn btn-outline"><i class="fas fa-user-pen"></i> My Profile</a>
 @elseif(Route::has('profile.edit'))
 <a href="{{ route('profile.edit') }}" class="btn btn-outline"><i class="fas fa-user-pen"></i> My Profile</a>
-@endif</div>
+@endif</div></div>
 <div class="eh-track-grid"><div class="eh-track-card"><i class="fas fa-user-tie"></i><div><small>Assigned Mentors</small><strong>{{ number_format($stats['mentors']??0) }}</strong></div></div><div class="eh-track-card"><i class="fas fa-calendar-days"></i><div><small>Total Sessions</small><strong>{{ number_format($stats['sessions']??0) }}</strong></div></div><div class="eh-track-card"><i class="fas fa-circle-check"></i><div><small>Completed Sessions</small><strong>{{ number_format($stats['completed_sessions']??0) }}</strong></div></div><div class="eh-track-card"><i class="fas fa-clock"></i><div><small>Upcoming Sessions</small><strong>{{ number_format($stats['upcoming_sessions']??0) }}</strong></div></div></div>
 
 <div class="eh-tabs" data-eh-tabs>
