@@ -41,6 +41,11 @@ class CourseCatalogueController extends Controller
         $entrySurvey = $course->entrySurvey;
         $entryAssessmentPending = ! $enrolled && $participant && $course->entryRequirementPendingFor(auth()->id());
 
-        return view('learning.courses.show', compact('course', 'enrolled', 'entryAssessment', 'entrySurvey', 'entryAssessmentPending'));
+        // The entry assessment refuses access once every attempt is used, so
+        // don't offer the button then.
+        $entryAttemptsExhausted = $entryAssessmentPending && $entryAssessment && (int) $entryAssessment->max_attempts > 0
+            && \App\Models\AssessmentAttempt::where('assessment_id', $entryAssessment->id)->where('user_id', auth()->id())->count() >= (int) $entryAssessment->max_attempts;
+
+        return view('learning.courses.show', compact('course', 'enrolled', 'entryAssessment', 'entrySurvey', 'entryAssessmentPending', 'entryAttemptsExhausted'));
     }
 }

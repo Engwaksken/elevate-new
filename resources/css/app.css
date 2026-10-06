@@ -289,6 +289,42 @@ p {
     color: rgba(255, 255, 255, .9);
 }
 
+/* Title on the left, actions (e.g. CSV / PDF export) on the right, both
+   above the decorative circle; outline buttons are maroon by default, which
+   vanishes on this maroon banner, so give them a light treatment. */
+.eh-page-hero:has(> .page-actions) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px 24px;
+}
+
+.eh-page-hero > * {
+    position: relative;
+    z-index: 1;
+}
+
+.eh-page-hero .page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+}
+
+.eh-page-hero .btn-outline {
+    border-color: rgba(255, 255, 255, .7);
+    background: rgba(255, 255, 255, .08);
+    color: #ffffff;
+}
+
+.eh-page-hero .btn-outline:hover,
+.eh-page-hero .btn-outline:focus-visible {
+    border-color: #ffffff;
+    background: #ffffff;
+    color: var(--primary);
+}
+
 .site-main-home {
     width: 100%;
     max-width: none;

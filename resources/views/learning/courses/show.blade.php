@@ -11,6 +11,8 @@
 @elseif(auth()->check() && auth()->user()->isParticipant() && auth()->user()->isActive() && $course->self_enrolment_enabled)
 @if(($entryAssessmentPending ?? false) && ($entrySurvey ?? null))
 <a class="btn btn-primary" href="{{ route('participant.surveys.show', $entrySurvey) }}"><i class="fas fa-clipboard-check"></i> Take the entry survey</a>
+@elseif(($entryAssessmentPending ?? false) && ($entryAssessment ?? null) && ($entryAttemptsExhausted ?? false))
+<span class="btn btn-outline" aria-disabled="true" style="cursor:default"><i class="fas fa-circle-info"></i> Entry assessment attempts used. Please contact the programme team.</span>
 @elseif(($entryAssessmentPending ?? false) && ($entryAssessment ?? null))
 <a class="btn btn-primary" href="{{ route('learning.assessment.show', $entryAssessment) }}"><i class="fas fa-clipboard-check"></i> Take the entry assessment</a>
 @else
