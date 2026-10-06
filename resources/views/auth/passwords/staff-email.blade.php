@@ -25,6 +25,7 @@
 
     <section class="eh-staff-login-form-side">
         <div class="eh-staff-login-card">
+            <x-back-to-website class="eh-back-home--card" />
             <div class="eh-staff-login-heading">
                 <span class="eh-staff-authorised-badge"><i class="fas fa-shield-halved"></i> Authorised staff only</span>
                 <h2>Forgot Password</h2>

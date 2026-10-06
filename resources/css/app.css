@@ -527,6 +527,43 @@ p {
     }
 }
 
+/* "Back to website" link on sign-in, sign-up and password pages. */
+.eh-auth-back {
+    margin: 0 0 16px;
+}
+
+.eh-back-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--primary);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+    transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.eh-back-home:hover,
+.eh-back-home:focus-visible {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #ffffff;
+}
+
+.eh-back-home i {
+    font-size: 0.8em;
+}
+
+.eh-back-home--card {
+    margin-bottom: 18px;
+}
+
 /* Partners menu (mentor / employer sign in & sign up) beside the guest auth buttons. */
 .partner-menu {
     position: relative;

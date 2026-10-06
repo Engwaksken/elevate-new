@@ -94,6 +94,9 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 </header>
 
 <main id="main-content" class="{{ request()->routeIs('home')?'site-main site-main-home':'site-main page-shell' }}">
+@if(request()->routeIs('login', 'register', 'partners.*', 'public.partners.*', 'password.*', 'verification.*'))
+<div class="eh-auth-back"><x-back-to-website /></div>
+@endif
 @unless($inlineAuthFeedback)
 @if(session('success'))<div class="{{ request()->routeIs('home')?'container global-messages':'global-messages' }}"><div class="flash-message success-box" data-auto-dismiss><i class="fas fa-circle-check"></i><span>{{ session('success') }}</span></div></div>@endif
 @if(session('error'))<div class="{{ request()->routeIs('home')?'container global-messages':'global-messages' }}"><div class="flash-message error-box" data-auto-dismiss><i class="fas fa-circle-exclamation"></i><span>{{ session('error') }}</span></div></div>@endif
