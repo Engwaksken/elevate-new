@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import '../core/learning_file.dart';
 import '../core/network/app_exception.dart';
 import '../core/theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../services/download_service.dart';
 import '../services/secure_screen.dart';
 import '../widgets/feedback.dart';
 import '../widgets/state_views.dart';
@@ -23,22 +25,33 @@ import '../widgets/state_views.dart';
 /// "open in another app" action. On Android the screen is marked
 /// FLAG_SECURE while open, which blocks screenshots and screen recording.
 class FileViewerScreen extends StatefulWidget {
-  const FileViewerScreen({super.key, required this.file, this.websiteUrl});
+  const FileViewerScreen({
+    super.key,
+    required this.file,
+    this.websiteUrl,
+    this.offlineCacheKey,
+  });
 
   final LearningFileInfo file;
 
   /// Page on the ElevateHer360 website that shows the file (lesson or
   /// assignment page), offered for types the app can't display.
   final String? websiteUrl;
+  final String? offlineCacheKey;
 
   static Future<void> open(
     BuildContext context,
     LearningFileInfo file, {
     String? websiteUrl,
+    String? offlineCacheKey,
   }) =>
       Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => FileViewerScreen(file: file, websiteUrl: websiteUrl),
+          builder: (_) => FileViewerScreen(
+            file: file,
+            websiteUrl: websiteUrl,
+            offlineCacheKey: offlineCacheKey,
+          ),
         ),
       );
 
@@ -85,6 +98,20 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
       _progress = null;
     });
     try {
+      final cacheKey = widget.offlineCacheKey;
+      if (cacheKey != null) {
+        String? local;
+        try {
+          local = await DownloadService.instance.localPath(cacheKey);
+        } catch (_) {
+          // Fall through to the network if the cache index is unavailable.
+        }
+        if (local != null) {
+          final bytes = await File(local).readAsBytes();
+          if (mounted) setState(() => _bytes = FileBytes(bytes));
+          return;
+        }
+      }
       final bytes = await ApiService.instance.fetchFileBytes(
         path: path,
         cancelToken: _cancel,
@@ -122,7 +149,10 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
       case FileViewKind.video:
       case FileViewKind.audio:
         return _MediaPlayer(
-            file: widget.file, audioOnly: _kind == FileViewKind.audio);
+          file: widget.file,
+          audioOnly: _kind == FileViewKind.audio,
+          offlineCacheKey: widget.offlineCacheKey,
+        );
       case FileViewKind.other:
         return _UnsupportedView(
             file: widget.file, websiteUrl: widget.websiteUrl);
@@ -286,13 +316,14 @@ class _UnsupportedView extends StatelessWidget {
   }
 }
 
-/// Streams audio or video with the signed-in client (`inline=1`, HTTP
-/// range requests); the media is never stored as a file on the device.
+/// Streams audio/video online, or plays its app-private cached copy offline.
 class _MediaPlayer extends StatefulWidget {
-  const _MediaPlayer({required this.file, required this.audioOnly});
+  const _MediaPlayer(
+      {required this.file, required this.audioOnly, this.offlineCacheKey});
 
   final LearningFileInfo file;
   final bool audioOnly;
+  final String? offlineCacheKey;
 
   @override
   State<_MediaPlayer> createState() => _MediaPlayerState();
@@ -315,6 +346,44 @@ class _MediaPlayerState extends State<_MediaPlayer> {
   }
 
   Future<void> _start() async {
+    final cacheKey = widget.offlineCacheKey;
+    String? cachedPath;
+    try {
+      if (cacheKey != null) {
+        cachedPath = await DownloadService.instance.localPath(cacheKey);
+      }
+    } catch (_) {
+      // A missing cache index should not prevent online playback.
+    }
+    if (cachedPath != null) {
+      final old = _controller;
+      setState(() {
+        _controller = null;
+        _error = null;
+      });
+      await old?.dispose();
+      final cachedController = VideoPlayerController.file(File(cachedPath));
+      try {
+        await cachedController.initialize();
+        if (!mounted) {
+          await cachedController.dispose();
+          return;
+        }
+        cachedController.addListener(_onTick);
+        setState(() => _controller = cachedController);
+        await cachedController.play();
+      } catch (_) {
+        await cachedController.dispose();
+        if (mounted) {
+          setState(() => _error = const AppException(
+                AppErrorKind.unknown,
+                "This saved media couldn't be played.",
+              ));
+        }
+      }
+      return;
+    }
+
     final uri =
         ApiService.instance.inlineFileUri(widget.file.downloadPath ?? '');
     if (uri == null) {

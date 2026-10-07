@@ -399,6 +399,10 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
                       key: ValueKey('lesson-file-$index-${file.id}'),
                       file: file,
                       downloadKey: lesson.fileDownloadKey(file, index),
+                      offlineCacheKey: _id == null
+                          ? null
+                          : DownloadService.lessonCacheKey(
+                              _id!, file.id ?? index),
                       websiteUrl: _websiteUrl,
                     ),
                     const SizedBox(height: AppSpacing.md),

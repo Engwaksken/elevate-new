@@ -28,7 +28,10 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
     try {
       // Course files that are view-only now never stay on the device.
       await DownloadService.instance.purgeViewOnlyCopies();
-      final rows = await LocalDatabase.instance.downloads();
+      final rows = (await LocalDatabase.instance.downloads())
+          .where((row) => !DownloadService.isAutomaticCacheKey(
+              row['download_key']?.toString() ?? ''))
+          .toList();
       if (mounted) {
         setState(() {
           _items = rows.map(Map<String, dynamic>.from).toList();

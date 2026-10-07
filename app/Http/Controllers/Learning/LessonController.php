@@ -9,9 +9,37 @@ use App\Models\LessonProgress;
 use App\Services\CertificateService;
 use App\Services\CourseProgressService;
 use App\Services\Learning\ModuleAccessService;
+use App\Services\Participant\ParticipantLessonService;
+use Illuminate\Http\Request;
 
 class LessonController extends Controller
 {
+    public function recordReadingTime(
+        Request $request,
+        Lesson $lesson,
+        ParticipantLessonService $progress,
+        ModuleAccessService $accessService
+    ) {
+        $data = $request->validate(['seconds' => ['required', 'integer', 'min:1', 'max:300']]);
+        $lesson->load('module.course');
+        $course = $lesson->module->course;
+
+        abort_unless(
+            $lesson->is_published && $lesson->module->is_published && $course->status === 'published',
+            404
+        );
+        abort_unless(Enrolment::where('course_id', $course->id)->where('user_id', auth()->id())->exists(), 403);
+        abort_unless($accessService->canAccess($lesson->module, auth()->user()), 403, 'This module is locked.');
+
+        $result = $progress->saveProgress(auth()->user(), $lesson, null, (int) $data['seconds']);
+
+        return response()->json([
+            'lesson_id' => $lesson->id,
+            'time_spent_seconds' => $result['time_spent_seconds'],
+            'time_spent_seconds_added' => $result['time_spent_seconds_added'],
+        ]);
+    }
+
     public function show(Lesson $lesson, ModuleAccessService $accessService)
     {
         $lesson->load('module.course');

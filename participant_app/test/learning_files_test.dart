@@ -3,6 +3,7 @@ import 'package:elevateher360_participant/core/lesson_info.dart';
 import 'package:elevateher360_participant/core/network/app_exception.dart';
 import 'package:elevateher360_participant/core/theme/app_theme.dart';
 import 'package:elevateher360_participant/screens/assignments_screen.dart';
+import 'package:elevateher360_participant/services/download_service.dart';
 import 'package:elevateher360_participant/widgets/learning_file_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,14 @@ Widget _app(Widget child) => MaterialApp(
 
 void main() {
   group('download policy', () {
+    test('automatic offline cache keys are separated from user downloads', () {
+      final key = DownloadService.lessonCacheKey(7, 12);
+      expect(DownloadService.isAutomaticCacheKey(key), isTrue);
+      expect(DownloadService.isAutomaticCacheKey('lesson_7_file_12'), isFalse);
+      expect(DownloadService.assignmentCacheKey(8, 3),
+          'offline_cache_assignment_8_file_3');
+    });
+
     test('only spreadsheets, CSV and ZIP are downloadable by extension', () {
       for (final name in ['a.xlsx', 'B.XLS', 'c.csv', 'd.zip']) {
         expect(isDownloadableFileName(name), isTrue, reason: name);

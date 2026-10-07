@@ -9,6 +9,7 @@ import '../core/network/app_exception.dart';
 import 'api_service.dart';
 import 'local_database.dart';
 import 'notification_service.dart';
+import 'offline_content_service.dart';
 import 'participant_data_service.dart';
 import 'reading_time_service.dart';
 
@@ -178,7 +179,8 @@ class SyncService {
             text: payload['submission_text']?.toString(),
             localFilePath: payload['local_file_path']?.toString(),
             localFilePaths: [
-              for (final path in payload['local_file_paths'] as List? ?? const [])
+              for (final path
+                  in payload['local_file_paths'] as List? ?? const [])
                 path.toString(),
             ],
             clientSubmissionId: clientId,
@@ -398,6 +400,10 @@ class SyncService {
       // Profile, progress, mentorship attendance and assignment deadlines
       // (v2 fields). Each step tolerates an older backend.
       await ParticipantDataService.instance.refreshAll();
+
+      // Rich reading files are fetched only on Wi-Fi; small account and
+      // progress changes above can still sync on mobile data.
+      await OfflineContentService.instance.syncOnWifi();
 
       // Send any remaining reading-time batches (over an hour unsent).
       await ReadingTimeService.instance.flush();

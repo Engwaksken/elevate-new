@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../services/api_service.dart';
+import '../services/download_service.dart';
+import '../services/local_database.dart';
 import '../widgets/feedback.dart';
 import '../widgets/career_ai_dialog.dart';
 import 'career_upload_review_screen.dart';
@@ -30,8 +32,30 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
   }
 
   Future<void> _load() async {
+    Map<String, dynamic>? cached;
+    try {
+      cached = await LocalDatabase.instance
+          .readItem('offline_documents', 'career');
+    } catch (_) {
+      // Storage may be unavailable in widget tests or on a damaged cache.
+    }
+    if (cached != null && mounted) {
+      setState(() {
+        _data = cached;
+        _error = null;
+      });
+    }
     try {
       final data = await ApiService.instance.careerDocuments();
+      try {
+        await LocalDatabase.instance.cacheItem(
+          collection: 'offline_documents',
+          itemId: 'career',
+          payload: data,
+        );
+      } catch (_) {
+        // Keep the screen usable when local storage is temporarily unavailable.
+      }
       if (mounted) {
         setState(() {
           _data = data;
@@ -147,12 +171,17 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
                 box == null ? null : box.localToGlobal(Offset.zero) & box.size);
       } else {
         final directory = await getTemporaryDirectory();
-        final file = File(
+        final kind = resume ? 'resume' : 'cover_letter';
+        final cachedPath = await DownloadService.instance
+            .localPath('${DownloadService.offlineCachePrefix}${kind}_$id');
+        final file = File(cachedPath ??
             '${directory.path}/career-${resume ? 'resume' : 'letter'}-$id.pdf');
-        await api.downloadApiFile(
-            path:
-                '/career/${resume ? 'resumes' : 'cover-letters'}/$id/download',
-            savePath: file.path);
+        if (cachedPath == null) {
+          await api.downloadApiFile(
+              path:
+                  '/career/${resume ? 'resumes' : 'cover-letters'}/$id/download',
+              savePath: file.path);
+        }
         final result = await OpenFilex.open(file.path);
         if (result.type != ResultType.done && mounted) {
           showAppSnackBar(context, result.message);
@@ -181,7 +210,7 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             Text(
-                'Your documents are shared with the Laravel career centre. Internet access is required.',
+                'Saved resumes and cover letters stay available offline. Edits and AI tools need an internet connection.',
                 style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 12),
             FilledButton.icon(

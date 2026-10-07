@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../core/formatters.dart';
 import '../services/api_service.dart';
 import '../services/download_service.dart';
+import '../services/local_database.dart';
 import '../widgets/feedback.dart';
 import '../widgets/state_views.dart';
 
@@ -35,6 +36,18 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
+      if (!next) {
+        List<Map<String, dynamic>> cached = [];
+        try {
+          cached = await LocalDatabase.instance
+              .readCollection('offline_certificates');
+        } catch (_) {
+          // The server fetch still works if the local cache is unavailable.
+        }
+        if (cached.isNotEmpty && mounted) {
+          setState(() => _items = cached);
+        }
+      }
       final page = next ? _page + 1 : 1;
       final data = await ApiService.instance
           .certificates(page: page, courseId: widget.courseId);
@@ -58,13 +71,18 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
   }
 
   Future<String> _file(Map<String, dynamic> item) async {
-    final key = 'certificate_${item['type']}_${item['id']}';
+    final id = _certificateId(item);
+    final key = 'certificate_${item['type']}_$id';
     final downloads = DownloadService.instance;
+    final cached =
+        await downloads.localPath('${DownloadService.offlineCachePrefix}$key');
+    if (cached != null) return cached;
     final existing = await downloads.localPath(key);
     if (existing != null) return existing;
     return downloads.download(
         key: key,
-        apiPath: item['download_path'].toString(),
+        apiPath: item['download_path']?.toString() ??
+            '/certificates/${item['type']}/$id/download',
         title: item['title'].toString(),
         fileName: 'certificate-${item['number']}.pdf');
   }
@@ -75,7 +93,7 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
     try {
       if (action == 'link') {
         final link = await ApiService.instance.shareCertificate(
-            type: item['type'].toString(), id: (item['id'] as num).toInt());
+            type: item['type'].toString(), id: _certificateId(item));
         if (!mounted) return;
         final box = context.findRenderObject() as RenderBox?;
         await Share.share(
@@ -107,6 +125,9 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
       if (mounted) setState(() => _busy = false);
     }
   }
+
+  int _certificateId(Map<String, dynamic> item) =>
+      int.parse((item['_certificate_cache_id'] ?? item['id']).toString());
 
   @override
   Widget build(BuildContext context) => Scaffold(

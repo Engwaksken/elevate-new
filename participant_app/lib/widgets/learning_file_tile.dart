@@ -18,6 +18,7 @@ class LearningFileTile extends StatefulWidget {
     super.key,
     required this.file,
     this.downloadKey,
+    this.offlineCacheKey,
     this.websiteUrl,
     this.compact = false,
   });
@@ -26,6 +27,9 @@ class LearningFileTile extends StatefulWidget {
 
   /// Offline downloads key; required for downloadable files.
   final String? downloadKey;
+
+  /// App-private automatic copy kept for offline reading.
+  final String? offlineCacheKey;
 
   /// Website page that shows the file, for types the app can't display.
   final String? websiteUrl;
@@ -39,6 +43,7 @@ class LearningFileTile extends StatefulWidget {
 
 class _LearningFileTileState extends State<LearningFileTile> {
   bool _available = false;
+  String? _availableKey;
   bool _downloading = false;
   double? _progress;
   CancelToken? _cancel;
@@ -57,6 +62,7 @@ class _LearningFileTileState extends State<LearningFileTile> {
   void didUpdateWidget(LearningFileTile oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.downloadKey != widget.downloadKey ||
+        oldWidget.offlineCacheKey != widget.offlineCacheKey ||
         oldWidget.file.downloadable != widget.file.downloadable) {
       _check();
     }
@@ -70,17 +76,50 @@ class _LearningFileTileState extends State<LearningFileTile> {
 
   Future<void> _check() async {
     final key = widget.downloadKey;
-    // View-only files never have an offline copy (old ones are purged by
-    // DownloadService.purgeViewOnlyCopies when the screen loads).
-    if (key == null || !_file.downloadable) {
+    final cacheKey = widget.offlineCacheKey;
+    if (!_file.downloadable) {
+      final cached = cacheKey == null ? null : await _localPath(cacheKey);
+      if (mounted) {
+        setState(() {
+          _available = cached != null;
+          _availableKey = cached == null ? null : cacheKey;
+        });
+      }
+      return;
+    }
+    if (key == null) {
       if (_available && mounted) setState(() => _available = false);
       return;
     }
-    final path = await DownloadService.instance.localPath(key);
-    if (mounted) setState(() => _available = path != null);
+    final manualPath = await _localPath(key);
+    final automaticPath = manualPath == null && cacheKey != null
+        ? await _localPath(cacheKey)
+        : null;
+    if (mounted) {
+      setState(() {
+        _available = manualPath != null || automaticPath != null;
+        _availableKey = manualPath != null
+            ? key
+            : (automaticPath == null ? null : cacheKey);
+      });
+    }
   }
 
-  Future<void> _view() => FileViewerScreen.open(context, _file, websiteUrl: widget.websiteUrl);
+  Future<String?> _localPath(String key) async {
+    try {
+      return await DownloadService.instance.localPath(key);
+    } catch (_) {
+      // A missing/unavailable offline database should never block online use.
+      return null;
+    }
+  }
+
+  Future<void> _view() => FileViewerScreen.open(
+        context,
+        _file,
+        websiteUrl: widget.websiteUrl,
+        offlineCacheKey: widget.offlineCacheKey,
+      );
 
   Future<void> _download() async {
     final key = widget.downloadKey;
@@ -106,8 +145,12 @@ class _LearningFileTileState extends State<LearningFileTile> {
         },
       );
       if (!mounted) return;
-      setState(() => _available = true);
-      showAppSnackBar(context, 'Saved for offline use.', actionLabel: 'Open', onAction: _open);
+      setState(() {
+        _available = true;
+        _availableKey = key;
+      });
+      showAppSnackBar(context, 'Saved for offline use.',
+          actionLabel: 'Open', onAction: _open);
     } catch (error) {
       if (!mounted || (_cancel?.isCancelled ?? false)) return;
       showErrorSnackBar(context, error, onRetry: _download);
@@ -117,7 +160,7 @@ class _LearningFileTileState extends State<LearningFileTile> {
   }
 
   Future<void> _open() async {
-    final key = widget.downloadKey;
+    final key = _availableKey ?? widget.downloadKey;
     if (key == null) return;
     try {
       await DownloadService.instance.open(key);
@@ -129,12 +172,13 @@ class _LearningFileTileState extends State<LearningFileTile> {
   }
 
   Future<void> _remove() async {
-    final key = widget.downloadKey;
+    final key = _availableKey ?? widget.downloadKey;
     if (key == null) return;
     final ok = await confirmDialog(
       context,
       title: 'Remove offline copy?',
-      message: 'The file will be deleted from this device. You can download it again later.',
+      message:
+          'The file will be deleted from this device. You can download it again later.',
       confirmLabel: 'Remove',
       destructive: true,
     );
@@ -186,7 +230,9 @@ class _LearningFileTileState extends State<LearningFileTile> {
       final percent = _progress == null ? null : (_progress! * 100).round();
       return [
         Semantics(
-          label: percent == null ? 'Downloading $name' : 'Downloading $name, $percent percent',
+          label: percent == null
+              ? 'Downloading $name'
+              : 'Downloading $name, $percent percent',
           child: SizedBox(
             width: compact ? 120 : 200,
             child: ClipRRect(
@@ -261,12 +307,15 @@ class _LearningFileTileState extends State<LearningFileTile> {
             children: [
               Text(
                 _file.name,
-                style: widget.compact ? theme.textTheme.bodyMedium : theme.textTheme.titleMedium,
+                style: widget.compact
+                    ? theme.textTheme.bodyMedium
+                    : theme.textTheme.titleMedium,
               ),
               if (details.isNotEmpty)
                 Text(
                   details,
-                  style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: scheme.onSurfaceVariant),
                 ),
             ],
           ),
@@ -306,7 +355,9 @@ class _LearningFileTileState extends State<LearningFileTile> {
             header,
             if (!_canDownload) ...[
               const SizedBox(height: AppSpacing.sm),
-              const InfoChip(label: 'View only · stays in the app', icon: Icons.lock_outline),
+              const InfoChip(
+                  label: 'View only · stays in the app',
+                  icon: Icons.lock_outline),
             ],
             const SizedBox(height: AppSpacing.md),
             actions,

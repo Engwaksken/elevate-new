@@ -337,6 +337,9 @@ class AssignmentCard extends StatelessWidget {
                       key: ValueKey('attachment-${a.attachmentDownloadKey(file)}'),
                       file: file,
                       downloadKey: a.attachmentDownloadKey(file),
+                      offlineCacheKey: a.id == null
+                          ? null
+                          : DownloadService.assignmentCacheKey(a.id!, file.id),
                       websiteUrl: a.id == null
                           ? null
                           : '${AppConfig.siteUrl}/learning/assessments/${a.id}',

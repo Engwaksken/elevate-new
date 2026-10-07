@@ -403,6 +403,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     )->name('learning.lesson.show');
 
     Route::post(
+        '/learning/lessons/{lesson}/reading-time',
+        [LearningLessonController::class, 'recordReadingTime']
+    )->name('learning.lesson.reading-time');
+
+    Route::post(
         '/learning/lessons/{lesson}/complete',
         [LearningLessonController::class, 'complete']
     )->name('learning.lesson.complete');

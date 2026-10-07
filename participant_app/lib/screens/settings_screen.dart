@@ -82,7 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     SwitchListTile(
                       secondary: const Icon(Icons.wifi),
                       title: const Text('Wi-Fi only downloads'),
-                      subtitle: const Text('Save mobile data by downloading lesson files only on Wi-Fi.'),
+                      subtitle: const Text('Automatically cache reading files on Wi-Fi. Turn off to allow manual downloads on mobile data.'),
                       value: _wifiOnly,
                       onChanged: (value) async {
                         await DownloadService.instance.setWifiOnly(value);

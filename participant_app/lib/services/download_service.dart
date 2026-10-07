@@ -13,11 +13,9 @@ import '../core/network/app_exception.dart';
 import 'api_service.dart';
 import 'local_database.dart';
 
-/// Saves lesson files and assessment attachments for offline use.
-///
-/// Only files the download policy allows (spreadsheets, CSV and ZIP, plus
-/// her own submissions and certificates) are ever saved here. View-only
-/// files are shown by the in-app viewer from memory instead.
+/// Saves user-requested downloads and app-private automatic reading caches.
+/// Manual downloads respect the server's participant policy; automatic
+/// course-file copies are available only to in-app readers.
 class DownloadService {
   DownloadService._();
 
@@ -28,6 +26,17 @@ class DownloadService {
   static String lessonKey(int lessonId) => 'lesson_$lessonId';
   static String assessmentKey(String id) => 'assessment_$id';
   static String submissionFileKey(dynamic fileId) => 'submission_file_$fileId';
+
+  static const String offlineCachePrefix = 'offline_cache_';
+
+  static bool isAutomaticCacheKey(String key) =>
+      key.startsWith(offlineCachePrefix);
+
+  static String lessonCacheKey(int lessonId, dynamic fileId) =>
+      '${offlineCachePrefix}lesson_${lessonId}_file_${fileId ?? 'primary'}';
+
+  static String assignmentCacheKey(int assessmentId, dynamic fileId) =>
+      '${offlineCachePrefix}assignment_${assessmentId}_file_${fileId ?? 'primary'}';
 
   static const String viewOnlyMessage =
       "This file is view-only, so it can't be saved on your device. Tap View to read it in the app.";
@@ -40,7 +49,7 @@ class DownloadService {
 
   Future<bool> wifiOnly() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('wifi_only_downloads') ?? false;
+    return prefs.getBool('wifi_only_downloads') ?? true;
   }
 
   Future<void> setWifiOnly(bool value) async {
@@ -86,11 +95,17 @@ class DownloadService {
     required String title,
     String? fileName,
     bool downloadable = true,
+    bool offlineCache = false,
     void Function(double? progress)? onProgress,
     CancelToken? cancelToken,
   }) async {
-    if (!downloadable) {
-      throw const AppException(AppErrorKind.forbidden, viewOnlyMessage, statusCode: 403);
+    if (!downloadable && !offlineCache) {
+      throw const AppException(AppErrorKind.forbidden, viewOnlyMessage,
+          statusCode: 403);
+    }
+    if (offlineCache && !isAutomaticCacheKey(key)) {
+      throw const AppException(
+          AppErrorKind.forbidden, 'Invalid automatic offline cache key.');
     }
     await _checkConnectionPolicy();
 
@@ -114,7 +129,8 @@ class DownloadService {
       final safeBase = title
           .replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_')
           .replaceAll(RegExp(r'_+'), '_');
-      final trimmed = safeBase.length > 80 ? safeBase.substring(0, 80) : safeBase;
+      final trimmed =
+          safeBase.length > 80 ? safeBase.substring(0, 80) : safeBase;
       final savedName = '${key}_$trimmed$extension';
       final finalPath = p.join(dir.path, savedName);
 
@@ -126,7 +142,9 @@ class DownloadService {
         downloadKey: key,
         localPath: finalPath,
         sourceUrl: apiPath,
-        fileName: fileName?.trim().isNotEmpty == true ? fileName!.trim() : '$title$extension',
+        fileName: fileName?.trim().isNotEmpty == true
+            ? fileName!.trim()
+            : '$title$extension',
       );
 
       return finalPath;
@@ -136,7 +154,8 @@ class DownloadService {
       final mapped = AppException.from(error);
       // The server refuses to hand out view-only files as downloads.
       if (mapped.statusCode == 403 && isCourseMaterialKey(key)) {
-        throw const AppException(AppErrorKind.forbidden, viewOnlyMessage, statusCode: 403);
+        throw const AppException(AppErrorKind.forbidden, viewOnlyMessage,
+            statusCode: 403);
       }
       throw mapped;
     }
@@ -146,7 +165,8 @@ class DownloadService {
   /// key in [viewOnlyKeys] (from the server's flags) and any lesson or
   /// assignment file whose type isn't downloadable (copies saved before
   /// the policy existed). Returns how many copies were removed.
-  Future<int> purgeViewOnlyCopies({Iterable<String> viewOnlyKeys = const []}) async {
+  Future<int> purgeViewOnlyCopies(
+      {Iterable<String> viewOnlyKeys = const []}) async {
     final flagged = viewOnlyKeys.toSet();
     var removed = 0;
     try {
@@ -155,7 +175,8 @@ class DownloadService {
         if (!isCourseMaterialKey(key)) continue;
         final name = row['file_name']?.toString();
         final path = row['local_path']?.toString();
-        final allowed = isDownloadableFileName(name) || isDownloadableFileName(path);
+        final allowed =
+            isDownloadableFileName(name) || isDownloadableFileName(path);
         if (flagged.contains(key) || !allowed) {
           await remove(key);
           removed++;
@@ -169,17 +190,17 @@ class DownloadService {
 
   String _extensionFor(Response<dynamic> response, String? fileName) {
     final fromName = p.extension(fileName ?? '');
-    if (fromName.isNotEmpty && fromName.length <= 6) return fromName.toLowerCase();
+    if (fromName.isNotEmpty && fromName.length <= 6)
+      return fromName.toLowerCase();
 
     final disposition = response.headers.value('content-disposition') ?? '';
-    final nameMatch =
-        RegExp(r'''filename\*?=(?:UTF-8'')?"?([^";]+)"?''', caseSensitive: false)
-            .firstMatch(disposition);
+    final nameMatch = RegExp(r'''filename\*?=(?:UTF-8'')?"?([^";]+)"?''',
+            caseSensitive: false)
+        .firstMatch(disposition);
     if (nameMatch != null) {
       final ext = p.extension(Uri.decodeComponent(nameMatch.group(1)!));
       if (ext.isNotEmpty) return ext.toLowerCase();
     }
-
 
     final type = (response.headers.value('content-type') ?? '').toLowerCase();
     const byType = {

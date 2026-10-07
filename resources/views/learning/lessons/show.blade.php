@@ -75,3 +75,62 @@
     </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(() => {
+    const token = document.querySelector('input[name="_token"]')?.value;
+    if (!token) return;
+
+    const endpoint = @json(route('learning.lesson.reading-time', $lesson));
+    let lastTick = Date.now();
+    let lastActivity = lastTick;
+    let pendingMs = 0;
+    let sending = false;
+
+    const interact = () => { lastActivity = Date.now(); };
+    ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach((event) => {
+        document.addEventListener(event, interact, {passive: true});
+    });
+
+    const flush = (keepalive = false) => {
+        const seconds = Math.floor(pendingMs / 1000);
+        if (seconds < 1 || sending) return;
+        const batch = Math.min(seconds, 300);
+        pendingMs -= batch * 1000;
+        sending = true;
+
+        fetch(endpoint, {
+            method: 'POST',
+            credentials: 'same-origin',
+            keepalive,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': token,
+            },
+            body: JSON.stringify({seconds: batch}),
+        }).catch(() => {
+            pendingMs += batch * 1000;
+        }).finally(() => { sending = false; });
+    };
+
+    setInterval(() => {
+        const now = Date.now();
+        const elapsed = Math.min(now - lastTick, 10000);
+        lastTick = now;
+        if (!document.hidden && now - lastActivity < 5 * 60 * 1000) {
+            pendingMs += elapsed;
+            if (pendingMs >= 30000) flush();
+        }
+    }, 1000);
+
+    document.addEventListener('visibilitychange', () => {
+        lastTick = Date.now();
+        if (document.hidden) flush(true);
+        else interact();
+    });
+    window.addEventListener('pagehide', () => flush(true));
+})();
+</script>
+@endpush
