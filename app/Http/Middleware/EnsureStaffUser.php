@@ -16,6 +16,14 @@ class EnsureStaffUser
         abort_unless($user->isActive(), 403, 'Your account is not active.');
         abort_unless($user->isStaff() || $user->isSuperAdmin(), 403, 'Staff access only.');
 
+        if (! $user->hasVerifiedEmail()) {
+            if ($request->expectsJson()) {
+                abort(403, 'Verify your email address before accessing the staff portal.');
+            }
+
+            return redirect()->guest(route('verification.notice'));
+        }
+
         return $next($request);
     }
 }

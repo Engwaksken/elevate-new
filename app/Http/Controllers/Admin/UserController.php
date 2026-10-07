@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
+use App\Mail\SystemMail;
 use App\Models\Branch;
 use App\Models\Cohort;
 use App\Models\Course;
@@ -12,6 +13,8 @@ use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -150,20 +153,58 @@ class UserController extends Controller
             'user_type' => $data['user_type'],
             'status' => $data['status'],
             'password' => Hash::make($data['password']),
-            'email_verified_at' => now(),
+            'email_verified_at' => $data['user_type'] === 'staff' ? null : now(),
         ]);
 
         $user->roles()->sync($roleIds);
         $this->syncAssignments($user, $data, $request->boolean('sync_assignments'));
 
-        app(\App\Services\NotificationDispatcher::class)->notify(
-            $user,
-            'account',
-            'Welcome to '.config('app.name', 'ElevateHer360'),
-            'Your account has been created. Sign in with your email address and the password provided to you.',
-            $user->isStaff() ? '/admin/login' : '/login',
-            ['user_id' => $user->id]
-        );
+        if ($user->isStaff()) {
+            $verificationUrl = URL::temporarySignedRoute(
+                'verification.verify',
+                now()->addMinutes((int) config('auth.verification.expire', 60)),
+                [
+                    'id' => $user->getKey(),
+                    'hash' => sha1($user->getEmailForVerification()),
+                ]
+            );
+
+            app(\App\Services\NotificationDispatcher::class)->notify(
+                $user,
+                'account',
+                'Your staff account is ready',
+                'Your staff login email is '.$user->email.'. Verify your email before signing in to the staff portal.',
+                '/admin/login',
+                ['user_id' => $user->id],
+                false
+            );
+
+            try {
+                Mail::to($user->email)->send(new SystemMail(
+                    subjectLine: 'Your '.config('app.name', 'ElevateHer360').' staff login details',
+                    heading: 'Welcome to '.config('app.name', 'ElevateHer360'),
+                    lines: [
+                        'Your staff login email is: '.$user->email,
+                        'Your password is: '.$data['password'],
+                        'After verifying your email, sign in at '.route('admin.login').'.',
+                    ],
+                    actionUrl: $verificationUrl,
+                    actionLabel: 'Verify your email',
+                    greeting: 'Hello '.strtok((string) $user->name, ' '),
+                ));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        } else {
+            app(\App\Services\NotificationDispatcher::class)->notify(
+                $user,
+                'account',
+                'Welcome to '.config('app.name', 'ElevateHer360'),
+                'Your account has been created. Sign in with your email address and the password provided to you.',
+                '/login',
+                ['user_id' => $user->id]
+            );
+        }
 
         $audit->log(
             'users',

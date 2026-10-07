@@ -57,6 +57,13 @@ class StaffAuthController extends Controller
             ]);
         }
 
+        if (! $user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice')->with(
+                'warning',
+                'Verify your email address using the link we sent before accessing the staff portal.'
+            );
+        }
+
         try {
             $user->forceFill(['last_login_at' => now()])->save();
         } catch (\Throwable $e) {
