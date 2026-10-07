@@ -14,6 +14,9 @@ class RolePermissionSeeder extends Seeder {
         foreach (['cms.manage', 'timetable.manage'] as $slug) Permission::firstOrCreate(['slug' => $slug], ['name' => ucwords(str_replace('.', ' ', $slug)), 'module' => explode('.', $slug)[0]]);
         $super=Role::where('slug','super-administrator')->firstOrFail();
         $super->permissions()->sync(Permission::pluck('id'));
+        Role::where('slug','administrator')->first()?->permissions()->syncWithoutDetaching(
+            Permission::whereIn('slug',['roles.manage','permissions.manage'])->pluck('id')
+        );
         $viewer=Role::where('slug','viewer')->firstOrFail();
         $viewer->permissions()->sync(Permission::where('slug','like','%.view')->pluck('id'));
         $itSupportPermissions=Permission::whereIn('slug',['it_support_tickets.view','it_support_tickets.manage'])->pluck('id');

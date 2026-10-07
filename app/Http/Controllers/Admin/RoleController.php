@@ -8,6 +8,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class RoleController extends Controller
@@ -61,6 +62,46 @@ class RoleController extends Controller
         return redirect()
             ->route('admin.roles.index')
             ->with('open_role_modal','edit-'.$role->id);
+    }
+
+    public function store(Request $request, AuditService $audit)
+    {
+        $data = $request->validate([
+            'name' => ['required','string','max:100','unique:roles,name'],
+            'slug' => ['nullable','string','max:100','regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/','unique:roles,slug'],
+            'description' => ['nullable','string','max:2000'],
+            'permissions' => ['nullable','array'],
+            'permissions.*' => ['integer','distinct','exists:permissions,id'],
+        ]);
+
+        $role = Role::create([
+            'name' => $data['name'],
+            'slug' => $data['slug'] ?: Str::slug($data['name']),
+            'description' => $data['description'] ?? null,
+            'is_system' => false,
+        ]);
+        $role->permissions()->sync($data['permissions'] ?? []);
+        $audit->log('roles', 'created', $role, [], $role->fresh('permissions')->toArray());
+
+        return redirect()->route('admin.roles.index')->with('success', 'Role created.');
+    }
+
+    public function storePermission(Request $request, AuditService $audit)
+    {
+        $data = $request->validate([
+            'name' => ['required','string','max:100','unique:permissions,name'],
+            'slug' => ['required','string','max:120','regex:/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/','unique:permissions,slug'],
+            'module' => ['required','string','max:80'],
+            'description' => ['nullable','string','max:2000'],
+        ]);
+
+        $permission = Permission::create($data);
+        Role::whereIn('slug', ['super-administrator', 'super-admin'])
+            ->get()
+            ->each(fn (Role $role) => $role->permissions()->syncWithoutDetaching([$permission->id]));
+        $audit->log('roles', 'permission_created', $permission, [], $permission->toArray());
+
+        return redirect()->route('admin.roles.index')->with('success', 'Permission created.');
     }
 
     public function update(Request $request, Role $role, AuditService $audit)

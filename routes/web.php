@@ -295,6 +295,10 @@ Route::prefix('admin')
 
         Route::get('/roles', [RoleController::class, 'index'])
             ->middleware('permission:roles.manage')->name('roles.index');
+        Route::post('/roles', [RoleController::class, 'store'])
+            ->middleware('permission:roles.manage')->name('roles.store');
+        Route::post('/permissions', [RoleController::class, 'storePermission'])
+            ->middleware('permission:permissions.manage')->name('permissions.store');
         Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])
             ->middleware('permission:roles.manage')->name('roles.edit');
         Route::put('/roles/{role}', [RoleController::class, 'update'])
