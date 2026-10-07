@@ -9,6 +9,7 @@
         body{margin:0;background:#f7f7f7;color:#1f2937;font-family:Arial,Helvetica,sans-serif}
         .eh-friendly-error{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
         .eh-friendly-error__card{width:min(100%,620px);background:#fff;border:1px solid #e5e7eb;border-top:4px solid #800000;border-radius:16px;padding:34px;box-shadow:0 18px 50px rgba(0,0,0,.08);text-align:center}
+        .eh-friendly-error__logo{display:block;width:auto;height:auto;max-width:min(220px,70%);max-height:96px;object-fit:contain;margin:0 auto 22px}
         .eh-friendly-error__icon{width:64px;height:64px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff7da;color:#800000;font-size:25px}
         .eh-friendly-error h1{margin:0 0 10px;color:#800000;font-size:1.7rem}
         .eh-friendly-error p{margin:0 auto 24px;max-width:500px;color:#667085;line-height:1.65}
@@ -32,10 +33,24 @@
     }
 
     $homeRoute = \Illuminate\Support\Facades\Route::has('home') ? route('home') : url('/');
+
+    $errorLogoUrl = null;
+    try {
+        $logoPath = app(\App\Services\SettingsService::class)->get('branding.logo_path');
+        if ($logoPath && \Illuminate\Support\Facades\Route::has('branding.asset')) {
+            $errorLogoUrl = route('branding.asset', ['type' => 'logo', 'v' => md5((string) $logoPath)]);
+        }
+    } catch (\Throwable) {
+        // Keep the error page usable even if the settings store is unavailable.
+    }
 @endphp
 <main class="eh-friendly-error">
     <section class="eh-friendly-error__card">
-        <div class="eh-friendly-error__icon"><i class="fas {{ $icon ?? 'fa-circle-info' }}"></i></div>
+        @if($errorLogoUrl)
+            <img class="eh-friendly-error__logo" src="{{ $errorLogoUrl }}" alt="ElevateHer360 logo">
+        @else
+            <div class="eh-friendly-error__icon"><i class="fas {{ $icon ?? 'fa-circle-info' }}"></i></div>
+        @endif
         <h1>{{ $title ?? 'We could not complete that request' }}</h1>
         <p>{{ $message ?? 'Please return to a page you can access and try again.' }}</p>
         <div class="eh-friendly-error__actions">
