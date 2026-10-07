@@ -6,10 +6,11 @@
 <div>
     <span class="admin-eyebrow">System Administration</span>
     <h1>Notification History</h1>
-    <p>Review notifications generated for participants and staff.</p>
+    <p>Review sent notifications or send a message to selected users and roles.</p>
 </div>
-<div class="admin-page-actions"><x-export-buttons /></div>
+<div class="admin-page-actions"><x-export-buttons />@if($canSend)<button type="button" class="btn btn-primary" data-modal-open="sendTargetedNotification"><i class="fas fa-paper-plane"></i> Send Notification</button>@endif</div>
 </div>
+@include('admin.shared.feedback')
 
 <div class="admin-stats-grid compact">
 @foreach([
@@ -51,6 +52,35 @@
     <button class="btn btn-primary btn-sm">Apply</button>
     <a href="{{ route('admin.notifications.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
+
+@if($canSend)
+<div class="eh-modal" id="sendTargetedNotification" aria-hidden="true">
+<div class="eh-modal-dialog eh-modal-lg">
+    <div class="eh-modal-header"><div><h2>Send targeted notification</h2><p>Only the users and role members selected here will receive it.</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+    <form method="POST" action="{{ route('admin.notifications.send') }}">@csrf
+        <div class="eh-modal-body">
+            <div class="modal-grid">
+                <div class="form-group full"><label>Title *</label><input name="title" value="{{ old('title') }}" maxlength="190" required></div>
+                <div class="form-group full"><label>Message *</label><textarea name="message" rows="4" maxlength="5000" required>{{ old('message') }}</textarea></div>
+                <div class="form-group full"><label>Action link (optional)</label><input type="url" name="action_url" value="{{ old('action_url') }}" maxlength="2048" placeholder="https://..."></div>
+                <div class="form-group"><label>Selected users</label><select name="user_ids[]" multiple size="8" style="height:auto;min-height:180px">
+                    @foreach($recipientUsers as $recipient)
+                        <option value="{{ $recipient->id }}" @selected(in_array((string)$recipient->id, array_map('strval', old('user_ids', [])), true))>{{ $recipient->name }} — {{ $recipient->email }} ({{ ucfirst($recipient->user_type) }})</option>
+                    @endforeach
+                </select><small class="form-hint">Use Ctrl/Command to select multiple individual users.</small></div>
+                <div class="form-group"><label>Selected roles</label><div style="display:grid;gap:8px;max-height:180px;overflow:auto;padding:10px;border:1px solid var(--border-color,#d0d5dd);border-radius:8px">
+                    @foreach($recipientRoles as $recipientRole)
+                        <label style="display:flex;align-items:center;gap:8px;font-weight:400"><input type="checkbox" name="role_ids[]" value="{{ $recipientRole->id }}" @checked(in_array((string)$recipientRole->id, array_map('strval', old('role_ids', [])), true))>{{ $recipientRole->name }}</label>
+                    @endforeach
+                </div><small class="form-hint">Role members are resolved at send time; overlapping selections are deduplicated.</small></div>
+            </div>
+            @error('recipients')<p class="form-error">{{ $message }}</p>@enderror
+        </div>
+        <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send to selected recipients</button></div>
+    </form>
+</div>
+</div>
+@endif
 
 <div class="admin-table-wrap">
 <table class="admin-table">

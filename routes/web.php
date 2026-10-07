@@ -239,7 +239,13 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
         $request->fulfill();
-        $destination = $request->user()->isStaff() ? 'admin.dashboard' : 'dashboard';
+        $user = $request->user();
+        $destination = match (true) {
+            $user->isStaff() => 'admin.dashboard',
+            $user->isMentor() || $user->hasRole('mentor') => 'mentorship.dashboard',
+            $user->isEmployer() || $user->hasRole('employer') => 'employer.jobs.index',
+            default => 'dashboard',
+        };
         return redirect()->route($destination)->with('success', 'Email verified.');
     })->middleware('signed')->name('verification.verify');
 
@@ -996,6 +1002,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 
     Route::get('/notifications',[NotificationAdminController::class,'index'])
         ->middleware('permission:reports.view')->name('notifications.index');
+    Route::post('/notifications',[NotificationAdminController::class,'send'])
+        ->middleware('permission:notifications.send')->name('notifications.send');
 });
 
 Route::get('/events',[EventPortalController::class,'index'])->name('events.index');
