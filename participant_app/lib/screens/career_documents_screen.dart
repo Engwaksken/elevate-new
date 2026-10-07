@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../services/api_service.dart';
@@ -182,9 +183,14 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
                   '/career/${resume ? 'resumes' : 'cover-letters'}/$id/download',
               savePath: file.path);
         }
-        final result = await OpenFilex.open(file.path);
-        if (result.type != ResultType.done && mounted) {
-          showAppSnackBar(context, result.message);
+        if (mounted) {
+          await Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => CareerDocumentPreviewScreen(
+              path: file.path,
+              title: document['title']?.toString() ??
+                  (resume ? 'Resume' : 'Cover letter'),
+            ),
+          ));
         }
       }
     } catch (error) {
@@ -262,7 +268,7 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
                                       : () => _action(resume, item, 'download'),
                                   icon:
                                       const Icon(Icons.picture_as_pdf_outlined),
-                                  label: const Text('PDF')),
+                                   label: const Text('View PDF')),
                               TextButton.icon(
                                   onPressed: _busy
                                       ? null
@@ -341,6 +347,31 @@ class _CareerDocumentsScreenState extends State<CareerDocumentsScreen> {
                     child: TabBarView(children: [_list(true), _list(false)])),
               ]),
       ));
+}
+
+class CareerDocumentPreviewScreen extends StatelessWidget {
+  const CareerDocumentPreviewScreen({
+    super.key,
+    required this.path,
+    required this.title,
+  });
+
+  final String path;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: Text(title)),
+        body: PdfPreview(
+          build: (_) => File(path).readAsBytes(),
+          useActions: false,
+          allowPrinting: false,
+          allowSharing: false,
+          canChangePageFormat: false,
+          canChangeOrientation: false,
+          canDebug: false,
+        ),
+      );
 }
 
 class _DocumentEditor extends StatefulWidget {

@@ -13,6 +13,7 @@ import 'screens/verify_email_screen.dart';
 import 'services/api_service.dart';
 import 'services/auth_flow.dart';
 import 'services/notification_service.dart';
+import 'widgets/biometric_gate.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -93,7 +94,10 @@ class _ElevateHer360AppState extends State<ElevateHer360App> {
       themeMode: ThemeMode.system,
       home: widget.signedIn
           ? (widget.emailVerified
-              ? const HomeScreen()
+              ? BiometricGate(
+                  child: const HomeScreen(),
+                  loginBuilder: (_) => const LoginScreen(),
+                )
               : const VerifyEmailScreen())
           : const LoginScreen(),
     );

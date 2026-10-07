@@ -7,6 +7,7 @@ import '../core/network/app_exception.dart';
 import '../core/profile_fields.dart';
 import '../core/theme/app_theme.dart';
 import '../services/participant_data_service.dart';
+import '../services/biometric_auth_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/decorations.dart';
 import '../widgets/feedback.dart';
@@ -32,6 +33,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _loading = true;
   bool _online = true;
   bool _photoBusy = false;
+  bool _biometricEnabled = false;
+  bool _biometricBusy = false;
   Object? _error;
 
   static const _maxPhotoBytes = 5 * 1024 * 1024;
@@ -41,6 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     ParticipantDataService.instance.profileVersion.addListener(_readCache);
+    _loadBiometricPreference();
     _load();
   }
 
@@ -55,7 +59,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return p is Map ? Map<String, dynamic>.from(p) : const {};
   }
 
-  List<ProfileField> get _fields => parseEditableFields(_data?['editable_fields']);
+  List<ProfileField> get _fields =>
+      parseEditableFields(_data?['editable_fields']);
 
   Future<void> _readCache() async {
     final cached = await ParticipantDataService.instance.cachedProfile();
@@ -64,6 +69,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (cached != null) _data = cached;
       _loading = false;
     });
+  }
+
+  Future<void> _loadBiometricPreference() async {
+    final enabled = await BiometricAuthService.instance.isEnabled;
+    if (mounted) setState(() => _biometricEnabled = enabled);
+  }
+
+  Future<void> _setBiometric(bool enabled) async {
+    if (_biometricBusy) return;
+    setState(() => _biometricBusy = true);
+    try {
+      if (enabled) {
+        if (!await BiometricAuthService.instance.canEnable) {
+          if (mounted) {
+            showAppSnackBar(
+              context,
+              'Set up fingerprint or face unlock in your device settings first.',
+              error: true,
+            );
+          }
+          return;
+        }
+        final enabledNow = await BiometricAuthService.instance.enable();
+        if (!enabledNow) {
+          if (mounted) {
+            showAppSnackBar(context, 'Biometric verification was cancelled.');
+          }
+          return;
+        }
+      } else {
+        await BiometricAuthService.instance.disable();
+      }
+      if (mounted) {
+        setState(() => _biometricEnabled = enabled);
+        showAppSnackBar(
+          context,
+          enabled
+              ? 'Biometric unlock is enabled on this device.'
+              : 'Biometric unlock is turned off.',
+        );
+      }
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error);
+    } finally {
+      if (mounted) setState(() => _biometricBusy = false);
+    }
   }
 
   Future<void> _load() async {
@@ -81,7 +132,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _loading = false;
         });
       } else if (!quiet && mounted) {
-        showAppSnackBar(context, "You're offline. Showing the profile saved on this device.");
+        showAppSnackBar(context,
+            "You're offline. Showing the profile saved on this device.");
       }
       return;
     }
@@ -153,13 +205,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final ext = (file.extension ?? path.split('.').last).toLowerCase();
     if (!_photoExtensions.contains(ext)) {
-      showAppSnackBar(context, 'Please choose a JPG, PNG or WebP photo.', error: true);
+      showAppSnackBar(context, 'Please choose a JPG, PNG or WebP photo.',
+          error: true);
       return;
     }
     final size = file.size > 0 ? file.size : await File(path).length();
     if (size > _maxPhotoBytes) {
       if (!mounted) return;
-      showAppSnackBar(context, 'That photo is larger than 5 MB. Please choose a smaller one.',
+      showAppSnackBar(context,
+          'That photo is larger than 5 MB. Please choose a smaller one.',
           error: true);
       return;
     }
@@ -186,7 +240,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final ok = await confirmDialog(
       context,
       title: 'Remove your photo?',
-      message: 'Your initials will be shown instead. You can add a new photo any time.',
+      message:
+          'Your initials will be shown instead. You can add a new photo any time.',
       confirmLabel: 'Remove',
       destructive: true,
     );
@@ -243,9 +298,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final hasPhoto = profile['has_photo'] == true ||
         (profile['photo_url']?.toString().isNotEmpty ?? false);
     final name = profile['name']?.toString();
-    final branch = profile['branch'] is Map ? profile['branch']['name']?.toString() : null;
+    final branch =
+        profile['branch'] is Map ? profile['branch']['name']?.toString() : null;
 
-    final general = fields.where((f) => !f.sensitive && f.name != 'name').toList();
+    final general =
+        fields.where((f) => !f.sensitive && f.name != 'name').toList();
     final private = fields.where((f) => f.sensitive).toList();
 
     return RefreshIndicator(
@@ -281,7 +338,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Text(
                   (name ?? '').isEmpty ? 'Your profile' : name!,
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.titleLarge?.copyWith(color: brand.onHeader),
+                  style: theme.textTheme.titleLarge
+                      ?.copyWith(color: brand.onHeader),
                 ),
                 if ((profile['email']?.toString() ?? '').isNotEmpty)
                   Text(
@@ -296,7 +354,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.only(top: AppSpacing.xs),
                     child: Text(
                       '$branch branch',
-                      style: theme.textTheme.bodySmall?.copyWith(color: brand.onHeader),
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: brand.onHeader),
                     ),
                   ),
                 const SizedBox(height: AppSpacing.md),
@@ -312,7 +371,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     if (hasPhoto)
                       TextButton.icon(
-                        style: TextButton.styleFrom(foregroundColor: brand.onHeader),
+                        style: TextButton.styleFrom(
+                            foregroundColor: brand.onHeader),
                         onPressed: _photoBusy ? null : _removePhoto,
                         icon: const Icon(Icons.delete_outline),
                         label: const Text('Remove photo'),
@@ -339,7 +399,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             value: percent / 100,
                             size: 56,
                             strokeWidth: 7,
-                            center: Text('$percent%', style: theme.textTheme.labelLarge),
+                            center: Text('$percent%',
+                                style: theme.textTheme.labelLarge),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.md),
@@ -390,7 +451,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               children: [
                 for (var i = 0; i < general.length; i++) ...[
-                  if (i > 0) const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
+                  if (i > 0)
+                    const Divider(
+                        indent: AppSpacing.lg, endIndent: AppSpacing.lg),
                   _DetailTile(field: general[i], profile: profile),
                 ],
                 if (general.isEmpty)
@@ -405,15 +468,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   ListTile(
                     leading: Icon(Icons.lock_outline, color: scheme.secondary),
-                    title: const Text('Only you and the programme team can see this'),
+                    title: const Text(
+                        'Only you and the programme team can see this'),
                     subtitle: const Text(
                       'Sharing it is entirely your choice. It helps us offer the right support.',
                     ),
                   ),
                   for (final f in private)
-                    if (f.name != 'disability_types' && f.name != 'disability_other' ||
+                    if (f.name != 'disability_types' &&
+                            f.name != 'disability_other' ||
                         profile['is_pwd'] == true) ...[
-                      const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
+                      const Divider(
+                          indent: AppSpacing.lg, endIndent: AppSpacing.lg),
                       _DetailTile(
                         field: f,
                         profile: profile,
@@ -451,6 +517,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _changePassword,
                 ),
+                const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
+                SwitchListTile(
+                  secondary: const Icon(Icons.fingerprint),
+                  title: const Text('Biometric unlock'),
+                  subtitle: const Text(
+                    'Use fingerprint or face recognition to unlock this device.',
+                  ),
+                  value: _biometricEnabled,
+                  onChanged: _biometricBusy ? null : _setBiometric,
+                ),
               ],
             ),
           ),
@@ -476,7 +552,8 @@ class _DetailTile extends StatelessWidget {
     if (n.contains('phone')) return Icons.phone_outlined;
     if (n.contains('gender')) return Icons.face_3_outlined;
     if (n.contains('birth')) return Icons.cake_outlined;
-    if (n == 'country' || n == 'district' || n == 'location') return Icons.place_outlined;
+    if (n == 'country' || n == 'district' || n == 'location')
+      return Icons.place_outlined;
     if (n.contains('education')) return Icons.school_outlined;
     if (n.contains('employment')) return Icons.work_outline_rounded;
     if (n.contains('interest')) return Icons.favorite_outline;
@@ -489,16 +566,18 @@ class _DetailTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final value = displayProfileValue(field, profile);
-    final shown = field.type == ProfileFieldType.boolean && profile[field.name] == null
-        ? ''
-        : value;
+    final shown =
+        field.type == ProfileFieldType.boolean && profile[field.name] == null
+            ? ''
+            : value;
     return ListTile(
       leading: Icon(_icon(field)),
       title: Text(field.label),
       subtitle: Text(
         shown.isEmpty ? emptyText : shown,
         style: shown.isEmpty
-            ? TextStyle(color: scheme.onSurfaceVariant, fontStyle: FontStyle.italic)
+            ? TextStyle(
+                color: scheme.onSurfaceVariant, fontStyle: FontStyle.italic)
             : null,
       ),
     );

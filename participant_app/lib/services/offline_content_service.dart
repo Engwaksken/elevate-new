@@ -11,6 +11,8 @@ import 'local_database.dart';
 /// Keeps participant reading material available locally after a Wi-Fi sync.
 /// Automatic copies use private app storage and are opened only by app readers.
 class OfflineContentService {
+  static const _courseCacheVersion = '2';
+
   OfflineContentService._();
 
   static final OfflineContentService instance = OfflineContentService._();
@@ -25,7 +27,15 @@ class OfflineContentService {
         results.contains(ConnectivityResult.ethernet);
   }
 
-  Future<void> syncOnWifi() async {
+  /// Older app versions cached lesson text without attachment metadata.
+  /// Refresh each course tree once on Wi-Fi after this cache format ships.
+  Future<bool> get shouldRefreshCourseTrees async {
+    if (!await _onWifi) return false;
+    return await _db.getMeta('offline_course_cache_version') !=
+        _courseCacheVersion;
+  }
+
+  Future<void> syncOnWifi({bool courseTreesRefreshed = false}) async {
     try {
       if (!await _onWifi) return;
     } catch (error) {
@@ -39,6 +49,9 @@ class OfflineContentService {
       await _cacheLearningFiles();
       await _db.setMeta('offline_content_synced_at',
           DateTime.now().toUtc().toIso8601String());
+      if (courseTreesRefreshed) {
+        await _db.setMeta('offline_course_cache_version', _courseCacheVersion);
+      }
     } catch (error) {
       appLog('Wi-Fi learning content cache sync failed', error);
     }

@@ -295,9 +295,9 @@ class SyncService {
   }
 
   /// /sync returns courses without modules or lessons, so fetch the lesson
-  /// tree for changed courses and any course not cached yet. This keeps
-  /// lessons readable offline before a course has ever been opened.
-  Future<void> _prefetchCourseTrees(dynamic changedCourses) async {
+  /// tree for changed courses and any course not cached yet. The Wi-Fi cache
+  /// format upgrade also refreshes old trees once to recover their file links.
+  Future<bool> _prefetchCourseTrees(dynamic changedCourses) async {
     final changed = <int>{
       if (changedCourses is List)
         for (final c in changedCourses.whereType<Map>())
@@ -305,17 +305,29 @@ class SyncService {
             int.parse(c['id'].toString()),
     };
 
+    var refreshAllCachedTrees = false;
+    try {
+      refreshAllCachedTrees =
+          await OfflineContentService.instance.shouldRefreshCourseTrees;
+    } catch (error) {
+      appLog(
+          'Could not check whether cached lesson trees need refreshing', error);
+    }
+
     final ids = <int>{...changed};
     for (final course in await _db.readCollection('courses')) {
       final id = int.tryParse(course['id']?.toString() ?? '');
       if (id == null) continue;
-      if (await _db.readItem('course_details', 'course_$id') == null)
+      if (refreshAllCachedTrees ||
+          await _db.readItem('course_details', 'course_$id') == null) {
         ids.add(id);
+      }
     }
 
     // A few at a time: far quicker than one by one on slow mobile links,
     // without flooding a weak connection.
-    final queue = ids.take(30).toList();
+    final queue = ids.toList();
+    var allSucceeded = true;
     Future<void> worker() async {
       while (queue.isNotEmpty) {
         final id = queue.removeLast();
@@ -330,12 +342,14 @@ class SyncService {
             );
           }
         } catch (error) {
+          allSucceeded = false;
           appLog('Prefetch of course $id failed', error);
         }
       }
     }
 
     await Future.wait([for (var i = 0; i < 3; i++) worker()]);
+    return allSucceeded;
   }
 
   /// Runs a full sync. Concurrent calls share the same run.
@@ -395,7 +409,8 @@ class SyncService {
       // show them now instead of after the slower extras below.
       dataVersion.value++;
 
-      await _prefetchCourseTrees(data['courses']);
+      final courseTreesRefreshed =
+          await _prefetchCourseTrees(data['courses']);
 
       // Profile, progress, mentorship attendance and assignment deadlines
       // (v2 fields). Each step tolerates an older backend.
@@ -403,7 +418,8 @@ class SyncService {
 
       // Rich reading files are fetched only on Wi-Fi; small account and
       // progress changes above can still sync on mobile data.
-      await OfflineContentService.instance.syncOnWifi();
+      await OfflineContentService.instance
+          .syncOnWifi(courseTreesRefreshed: courseTreesRefreshed);
 
       // Send any remaining reading-time batches (over an hour unsent).
       await ReadingTimeService.instance.flush();

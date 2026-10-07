@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/network/app_exception.dart';
 import '../core/theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../widgets/biometric_gate.dart';
 import '../services/auth_flow.dart';
 import '../widgets/feedback.dart';
 import 'home_screen.dart';
@@ -59,7 +60,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         await AuthFlow.afterSignIn();
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(
+              builder: (_) => BiometricGate(
+                child: const HomeScreen(),
+                loginBuilder: (_) => const LoginScreen(),
+              )),
         );
       } else {
         showAppSnackBar(

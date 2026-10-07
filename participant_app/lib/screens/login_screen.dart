@@ -8,6 +8,7 @@ import '../core/theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/auth_flow.dart';
 import '../widgets/decorations.dart';
+import '../widgets/biometric_gate.dart';
 import 'about_screen.dart';
 import 'home_screen.dart';
 import 'verify_email_screen.dart';
@@ -75,7 +76,12 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) =>
-              verified ? const HomeScreen() : const VerifyEmailScreen(),
+              verified
+                  ? BiometricGate(
+                      child: const HomeScreen(),
+                      loginBuilder: (_) => const LoginScreen(),
+                    )
+                  : const VerifyEmailScreen(),
         ),
       );
     } catch (error) {

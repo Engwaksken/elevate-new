@@ -39,6 +39,8 @@
 	<string>ElevateHer360 only opens your music library if you choose an audio file from it to attach to an assignment submission.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>ElevateHer360 uses the camera only when you choose to take a photo to attach to an assignment submission.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Use Face ID to unlock your ElevateHer360 participant account on this device.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>ElevateHer360 needs access to your photos so you can choose images or videos to attach to your assignment submissions.</string>
 	<key>UIBackgroundModes</key>
