@@ -25,7 +25,7 @@ class CohortController extends Controller
 
     public function index(Request $request)
     {
-        $query=Cohort::with(['programme','project','branch']);
+        $query=Cohort::with(['programme','project','branch','branches']);
 
         if($search=trim((string)$request->get('search'))){
             $query->where(fn($q)=>$q->where('name','like',"%{$search}%")
@@ -34,7 +34,10 @@ class CohortController extends Controller
 
         if($status=$request->get('status')) $query->where('status',$status);
         if($programme=$request->get('programme_id')) $query->where('programme_id',$programme);
-        if($branch=$request->get('branch_id')) $query->where('branch_id',$branch);
+        if($branch=$request->get('branch_id')) {
+            $query->where(fn ($q) => $q->where('branch_id', $branch)
+                ->orWhereHas('branches', fn ($branches) => $branches->whereKey($branch)));
+        }
 
         if($format=$this->exportFormat($request)){
             return $this->exportTable($format,'Cohorts',$query->latest(),[
@@ -42,7 +45,7 @@ class CohortController extends Controller
                 'Code'=>'code',
                 'Programme'=>'programme.name',
                 'Project'=>'project.name',
-                'Branch'=>'branch.name',
+                'Branches'=>fn($c)=>$c->branches->pluck('name')->join(', ') ?: $c->branch?->name,
                 'Start date'=>'start_date',
                 'End date'=>'end_date',
                 'Status'=>fn($c)=>ucfirst((string)$c->status),
@@ -56,7 +59,7 @@ class CohortController extends Controller
             'cohorts'=>$query->latest()->paginate($perPage)->withQueryString(),
             'programmes'=>Programme::orderBy('name')->get(),
             'projects'=>Project::orderBy('name')->get(),
-            'branches'=>Branch::where('is_active',true)->orderBy('name')->get(),
+            'branches'=>Branch::orderBy('name')->get(),
             'stats'=>[
                 'total'=>Cohort::count(),
                 'active'=>Cohort::where('status','active')->count(),
@@ -70,7 +73,13 @@ class CohortController extends Controller
 
     public function store(Request $request, AuditService $audit)
     {
-        $cohort=Cohort::create($this->validated($request));
+        $data=$this->validated($request);
+        $branchIds=$data['branch_ids'] ?? [];
+        unset($data['branch_ids']);
+        $data['branch_id']=$branchIds[0] ?? null;
+        $cohort=Cohort::create($data);
+        $cohort->branches()->sync($branchIds);
+        $cohort->load('branches');
         $audit->log('cohorts','created',$cohort,[],$cohort->toArray());
         return redirect()->route('admin.cohorts.index')->with('success','Cohort created.');
     }
@@ -80,7 +89,12 @@ class CohortController extends Controller
     public function update(Request $request, Cohort $cohort, AuditService $audit)
     {
         $old=$cohort->toArray();
-        $cohort->update($this->validated($request,$cohort->id));
+        $data=$this->validated($request,$cohort->id);
+        $branchIds=$data['branch_ids'] ?? [];
+        unset($data['branch_ids']);
+        $data['branch_id']=$branchIds[0] ?? null;
+        $cohort->update($data);
+        $cohort->branches()->sync($branchIds);
         $audit->log('cohorts','updated',$cohort,$old,$cohort->fresh()->toArray());
         return redirect()->route('admin.cohorts.index')->with('success','Cohort updated.');
     }
@@ -99,10 +113,16 @@ class CohortController extends Controller
 
     private function validated(Request $request,?int $id=null): array
     {
+        if (!$request->has('branch_ids') && $request->filled('branch_id')) {
+            $request->merge(['branch_ids' => [$request->input('branch_id')]]);
+        }
+
         return $request->validate([
             'programme_id'=>['nullable','exists:programmes,id'],
             'project_id'=>['nullable','exists:projects,id'],
             'branch_id'=>['nullable','exists:branches,id'],
+            'branch_ids'=>['nullable','array'],
+            'branch_ids.*'=>['integer','distinct','exists:branches,id'],
             'name'=>['required','string','max:190'],
             'code'=>['nullable','string','max:50','unique:cohorts,code,'.($id ?? 'NULL')],
             'start_date'=>['nullable','date'],
