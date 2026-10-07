@@ -10,10 +10,13 @@ use App\Models\LearningFile;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use App\Models\User;
+use App\Services\Files\FilePreviewService;
 use App\Services\Learning\LearningFileService;
 use App\Services\Learning\ModuleAccessService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -25,8 +28,7 @@ class ParticipantLessonService
     public function __construct(
         private readonly ModuleAccessService $moduleAccess,
         private readonly LearningFileService $files
-    ) {
-    }
+    ) {}
 
     /**
      * Abort with a JSON-friendly HTTP error unless the participant may open the lesson.
@@ -223,15 +225,32 @@ class ParticipantLessonService
      */
     public function fileResponse(string $disk, string $path, string $name, ?string $mime, bool $inline, bool $downloadable = true, bool $forceDownload = false): Response
     {
-        abort_unless(\Illuminate\Support\Facades\Storage::disk($disk)->exists($path), 404, 'The file for this lesson is not available.');
+        abort_unless(Storage::disk($disk)->exists($path), 404, 'The file for this lesson is not available.');
         abort_if(! $downloadable && $forceDownload, 403, LearningFileService::VIEW_ONLY_MESSAGE);
 
         return $this->files->stream($disk, $path, $name, $mime, $inline || ! $downloadable, $downloadable);
     }
 
     /** Stream a material/submission file model through fileResponse(). */
-    public function streamFile(LearningFile|AssessmentAttemptFile $file, \Illuminate\Http\Request $request, ?bool $downloadable = null): Response
+    public function streamFile(LearningFile|AssessmentAttemptFile $file, Request $request, ?bool $downloadable = null): Response
     {
+        // The mobile reader consumes office documents as a PDF so participants
+        // can read them in-app without relying on another installed app.
+        if ($request->query('format') === 'pdf'
+            && in_array(strtolower(pathinfo($file->displayName(), PATHINFO_EXTENSION)), ['docx', 'odt', 'rtf'], true)) {
+            abort_unless($file->existsOnDisk(), 404, 'The file is not available.');
+            $storage = Storage::disk($file->diskName());
+            $absolute = $storage->path($file->path);
+            $pdf = app(FilePreviewService::class)->wordToPdf($absolute, $file->displayName());
+
+            return response()->file($pdf, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="'.addslashes(pathinfo($file->displayName(), PATHINFO_FILENAME).'.pdf').'"',
+                'Cache-Control' => 'private, no-store, max-age=0',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        }
+
         return $this->fileResponse(
             $file->diskName(),
             (string) $file->path,

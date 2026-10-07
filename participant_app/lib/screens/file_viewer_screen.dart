@@ -56,7 +56,9 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
   FileViewKind get _kind => widget.file.viewKind;
 
   bool get _needsBytes =>
-      _kind == FileViewKind.pdf || _kind == FileViewKind.image || _kind == FileViewKind.text;
+      _kind == FileViewKind.pdf ||
+      _kind == FileViewKind.image ||
+      _kind == FileViewKind.text;
 
   @override
   void initState() {
@@ -75,7 +77,7 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
   }
 
   Future<void> _load() async {
-    final path = widget.file.downloadPath;
+    final path = widget.file.readerPath;
     if (path == null) return;
     setState(() {
       _loading = true;
@@ -87,7 +89,9 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
         path: path,
         cancelToken: _cancel,
         onProgress: (received, total) {
-          if (mounted && total > 0) setState(() => _progress = received / total);
+          if (mounted && total > 0) {
+            setState(() => _progress = received / total);
+          }
         },
       );
       if (mounted) setState(() => _bytes = bytes);
@@ -110,15 +114,18 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
 
   Widget _body(BuildContext context) {
     if (_error != null) {
-      return ErrorState(error: _error!, title: "Couldn't open this file", onRetry: _load);
+      return ErrorState(
+          error: _error!, title: "Couldn't open this file", onRetry: _load);
     }
 
     switch (_kind) {
       case FileViewKind.video:
       case FileViewKind.audio:
-        return _MediaPlayer(file: widget.file, audioOnly: _kind == FileViewKind.audio);
+        return _MediaPlayer(
+            file: widget.file, audioOnly: _kind == FileViewKind.audio);
       case FileViewKind.other:
-        return _UnsupportedView(file: widget.file, websiteUrl: widget.websiteUrl);
+        return _UnsupportedView(
+            file: widget.file, websiteUrl: widget.websiteUrl);
       case FileViewKind.pdf:
       case FileViewKind.image:
       case FileViewKind.text:
@@ -194,7 +201,9 @@ class _LoadingView extends StatelessWidget {
         padding: AppSpacing.pagePadding,
         child: Semantics(
           liveRegion: true,
-          label: percent == null ? 'Opening file' : 'Opening file, $percent percent',
+          label: percent == null
+              ? 'Opening file'
+              : 'Opening file, $percent percent',
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -229,7 +238,9 @@ class _MessageView extends StatelessWidget {
             children: [
               Icon(icon, size: 56, color: theme.colorScheme.primary),
               const SizedBox(height: AppSpacing.lg),
-              Text(message, textAlign: TextAlign.center, style: theme.textTheme.bodyLarge),
+              Text(message,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyLarge),
               if (action != null) ...[
                 const SizedBox(height: AppSpacing.lg),
                 action!,
@@ -251,7 +262,8 @@ class _UnsupportedView extends StatelessWidget {
 
   Future<void> _openWebsite(BuildContext context) async {
     final uri = Uri.tryParse(websiteUrl ?? '');
-    final ok = uri != null && await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final ok = uri != null &&
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
       showAppSnackBar(context, "The website couldn't be opened.", error: true);
     }
@@ -261,7 +273,8 @@ class _UnsupportedView extends StatelessWidget {
   Widget build(BuildContext context) {
     return _MessageView(
       icon: Icons.visibility_outlined,
-      message: 'This file is view-only. Open it on the ElevateHer360 website to view it.',
+      message:
+          'This file is view-only. Open it on the ElevateHer360 website to view it.',
       action: websiteUrl == null
           ? null
           : FilledButton.icon(
@@ -302,7 +315,8 @@ class _MediaPlayerState extends State<_MediaPlayer> {
   }
 
   Future<void> _start() async {
-    final uri = ApiService.instance.inlineFileUri(widget.file.downloadPath ?? '');
+    final uri =
+        ApiService.instance.inlineFileUri(widget.file.downloadPath ?? '');
     if (uri == null) {
       setState(() => _error = const AppException(
             AppErrorKind.notFound,
@@ -348,13 +362,16 @@ class _MediaPlayerState extends State<_MediaPlayer> {
   static String _time(Duration d) {
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return d.inHours > 0 ? '${d.inHours}:$minutes:$seconds' : '$minutes:$seconds';
+    return d.inHours > 0
+        ? '${d.inHours}:$minutes:$seconds'
+        : '$minutes:$seconds';
   }
 
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
-      return ErrorState(error: _error!, title: "Couldn't play this file", onRetry: _start);
+      return ErrorState(
+          error: _error!, title: "Couldn't play this file", onRetry: _start);
     }
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized) {
@@ -386,18 +403,21 @@ class _MediaPlayerState extends State<_MediaPlayer> {
               const Spacer(),
               IconButton(
                 tooltip: 'Back 10 seconds',
-                onPressed: () => controller.seekTo(value.position - const Duration(seconds: 10)),
+                onPressed: () => controller
+                    .seekTo(value.position - const Duration(seconds: 10)),
                 icon: const Icon(Icons.replay_10),
               ),
               IconButton.filled(
                 tooltip: playing ? 'Pause' : 'Play',
                 iconSize: 32,
-                onPressed: () => playing ? controller.pause() : controller.play(),
+                onPressed: () =>
+                    playing ? controller.pause() : controller.play(),
                 icon: Icon(playing ? Icons.pause : Icons.play_arrow),
               ),
               IconButton(
                 tooltip: 'Forward 10 seconds',
-                onPressed: () => controller.seekTo(value.position + const Duration(seconds: 10)),
+                onPressed: () => controller
+                    .seekTo(value.position + const Duration(seconds: 10)),
                 icon: const Icon(Icons.forward_10),
               ),
               const Spacer(),
@@ -415,10 +435,12 @@ class _MediaPlayerState extends State<_MediaPlayer> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.headphones_outlined, size: 72, color: theme.colorScheme.primary),
+              Icon(Icons.headphones_outlined,
+                  size: 72, color: theme.colorScheme.primary),
               const SizedBox(height: AppSpacing.md),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.page),
                 child: Text(
                   widget.file.name,
                   textAlign: TextAlign.center,
@@ -439,7 +461,8 @@ class _MediaPlayerState extends State<_MediaPlayer> {
             color: Colors.black,
             child: Center(
               child: AspectRatio(
-                aspectRatio: value.aspectRatio == 0 ? 16 / 9 : value.aspectRatio,
+                aspectRatio:
+                    value.aspectRatio == 0 ? 16 / 9 : value.aspectRatio,
                 child: Semantics(
                   label: 'Video: ${widget.file.name}',
                   child: VideoPlayer(controller),

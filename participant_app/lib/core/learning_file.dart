@@ -60,7 +60,8 @@ class LearningFileInfo {
   dynamic get id => raw['id'];
 
   String get name {
-    final value = (raw['name'] ?? raw['original_name'])?.toString().trim() ?? '';
+    final value =
+        (raw['name'] ?? raw['original_name'])?.toString().trim() ?? '';
     return value.isEmpty ? 'Attachment' : value;
   }
 
@@ -75,7 +76,8 @@ class LearningFileInfo {
 
   /// Authenticated API path. Legacy public /storage/ URLs are never used.
   String? get downloadPath {
-    final path = (raw['download_path'] ?? raw['download_url'])?.toString().trim() ?? '';
+    final path =
+        (raw['download_path'] ?? raw['download_url'])?.toString().trim() ?? '';
     if (path.isEmpty || path.contains('/storage/')) return null;
     return path;
   }
@@ -91,7 +93,21 @@ class LearningFileInfo {
 
   bool get viewOnly => !downloadable;
 
-  FileViewKind get viewKind => fileViewKindFor(name, mimeType);
+  FileViewKind get viewKind => const {'docx', 'odt', 'rtf'}.contains(extension)
+      ? FileViewKind.pdf
+      : fileViewKindFor(name, mimeType);
+
+  /// Authenticated API path that asks Laravel to convert supported Word
+  /// documents into a PDF for the native in-app reader.
+  String? get readerPath {
+    final path = downloadPath;
+    if (path == null || !const {'docx', 'odt', 'rtf'}.contains(extension)) {
+      return path;
+    }
+    final uri = Uri.tryParse(path);
+    return uri?.replace(
+        queryParameters: {...uri.queryParameters, 'format': 'pdf'}).toString();
+  }
 }
 
 /// "1.4 MB" / "320 KB"; null for unknown sizes.
