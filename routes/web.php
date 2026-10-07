@@ -240,13 +240,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
         $request->fulfill();
         $user = $request->user();
-        $destination = match (true) {
-            $user->isStaff() => 'admin.dashboard',
-            $user->isMentor() || $user->hasRole('mentor') => 'mentorship.dashboard',
-            $user->isEmployer() || $user->hasRole('employer') => 'employer.jobs.index',
-            default => 'dashboard',
+        $loginRoute = match (true) {
+            $user->isStaff() => 'admin.login',
+            $user->isMentor() || $user->hasRole('mentor') => 'partners.mentor.login',
+            $user->isEmployer() || $user->hasRole('employer') => 'partners.employer.login',
+            default => 'login',
         };
-        return redirect()->route($destination)->with('success', 'Email verified.');
+
+        \Illuminate\Support\Facades\Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route($loginRoute)->with('success', 'Email verified. You can now sign in.');
     })->middleware('signed')->name('verification.verify');
 
     Route::post('/email/verification-notification', function (Request $request) {
