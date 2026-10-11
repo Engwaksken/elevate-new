@@ -149,8 +149,8 @@
 .eh-admin-sidebar__group h3{
     margin:0 0 5px;
     padding:0 8px;
-    color:rgba(255,255,255,.60);
-    font-size:.60rem;
+    color:rgba(255,255,255,.82);
+    font-size:.75rem;
     font-weight:900;
     letter-spacing:.08em;
     text-transform:uppercase;
@@ -158,8 +158,8 @@
 
 .eh-admin-sidebar__group-toggle{
     display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;
-    border:0;background:transparent;color:rgba(255,255,255,.60);padding:0 8px;
-    font:inherit;font-size:.60rem;font-weight:900;letter-spacing:.08em;text-align:left;text-transform:uppercase;cursor:pointer;
+    border:0;background:transparent;color:rgba(255,255,255,.82);padding:0 8px;
+    font:inherit;font-size:.75rem;font-weight:900;letter-spacing:.08em;text-align:left;text-transform:uppercase;cursor:pointer;
 }
 .eh-admin-sidebar__group-toggle:hover,.eh-admin-sidebar__group-toggle:focus-visible{color:#fff}
 .eh-admin-sidebar__group-toggle:focus-visible{outline:2px solid #F4C542;outline-offset:2px;border-radius:4px}
