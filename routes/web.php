@@ -1152,6 +1152,10 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
     });
 
     Route::middleware('permission:course_calls.manage')->group(function () {
+        Route::middleware('role:administrator,super-administrator,super-admin')->group(function () {
+            Route::get('/course-calls/{courseCall}/import-template', [\App\Http\Controllers\Admin\CourseCallImportController::class, 'template'])->name('course-calls.import-template');
+            Route::post('/course-calls/{courseCall}/import-applications', [\App\Http\Controllers\Admin\CourseCallImportController::class, 'store'])->name('course-calls.import-applications');
+        });
         Route::post('/course-calls',[CourseCallController::class,'store'])->name('course-calls.store');
         Route::put('/course-calls/{courseCall}',[CourseCallController::class,'update'])->name('course-calls.update');
         Route::delete('/course-calls/{courseCall}',[CourseCallController::class,'destroy'])->name('course-calls.destroy');

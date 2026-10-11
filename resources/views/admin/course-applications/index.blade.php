@@ -10,6 +10,8 @@
     <div class="admin-page-actions"><x-export-buttons /><a href="{{ route('admin.course-calls.index') }}" class="btn btn-outline">Back</a></div>
 </div>
 
+@include('admin.course-calls._import')
+
 <div class="admin-panel">
 <div class="admin-table-wrap">
 <table class="admin-table">

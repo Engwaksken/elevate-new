@@ -69,6 +69,8 @@
     </div>
 </div>
 
+@include('admin.course-calls._import')
+
 <div class="eh-detail-tabs" data-course-call-tabs>
     <button type="button" class="eh-detail-tab active" data-tab-target="courses">
         <i class="fas fa-graduation-cap"></i>
