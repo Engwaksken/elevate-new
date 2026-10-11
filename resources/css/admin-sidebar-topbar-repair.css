@@ -96,7 +96,7 @@ body.eh-admin-canonical-layout .eh-admin-sidebar__avatar{
     border-radius:50%!important;
     background:var(--eh-gold)!important;
     color:#650000!important;
-    font-size:.82rem!important;
+    font-size:1rem!important;
     font-weight:900!important;
 }
 
@@ -152,7 +152,7 @@ body.eh-admin-canonical-layout .eh-admin-sidebar__group h3{
     margin:0 0 5px!important;
     padding:0 8px!important;
     color:rgba(255,255,255,.84)!important;
-    font-size:.82rem!important;
+    font-size:1rem!important;
     font-weight:900!important;
     line-height:1.2!important;
     letter-spacing:.08em!important;

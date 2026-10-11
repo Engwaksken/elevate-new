@@ -59,6 +59,7 @@ class CourseCallImportTest extends TestCase
             ->get(route('admin.import-centre.index'))
             ->assertOk()
             ->assertSee('Application call bulk imports')
+            ->assertSee('<details class="admin-panel"', false)
             ->assertSee($call->title)
             ->assertSee(route('admin.course-calls.import-template', $call), false)
             ->assertSee(route('admin.course-calls.import-applications', $call), false);

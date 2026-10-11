@@ -12,8 +12,14 @@
 </div>
 
 @if($applicationCalls->isNotEmpty())
-    <div class="admin-panel" style="margin-bottom:16px">
-        <h2 style="margin:0 0 12px;font-size:1rem">Application call bulk imports</h2>
+    <details class="admin-panel" style="margin-bottom:16px">
+        <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <span>
+                <strong style="display:block;font-size:1rem">Application call bulk imports</strong>
+                <small>Click to show call-specific templates and upload forms.</small>
+            </span>
+            <i class="fas fa-chevron-down" aria-hidden="true"></i>
+        </summary>
         <p>Download a template for a specific application call, then upload the completed response CSV for review.</p>
         <div style="display:grid;gap:16px">
             @foreach($applicationCalls as $courseCall)
@@ -23,7 +29,7 @@
                 </div>
             @endforeach
         </div>
-    </div>
+    </details>
 @endif
 
 <div class="admin-panel" style="margin-bottom:16px">
