@@ -15,9 +15,15 @@
 // Participants, mentors and employers share one role-aware app shell
 // (sidebar + role badge); staff keep layouts/admin and guests the public site.
 $roleShell=\App\Support\RoleShell::roleFor(auth()->user());
-// The public home page stays in the public site shell even for signed-in
-// participants, mentors and employers. Their dashboard routes retain the role shell.
-$participantShell=$roleShell !== null && ! request()->routeIs('home');
+// Public-facing pages stay in the public site shell for signed-in users too.
+// Role-specific workspaces (including dashboards) retain the role shell.
+$publicSiteShell = request()->routeIs(
+    'home', 'legal.*', 'public.*', 'learning.index', 'learning.course.show',
+    'jobs.index', 'jobs.show', 'library.*', 'events.index', 'events.show',
+    'certificates.verify', 'career.documents.shared', 'career.portfolio.shared',
+    'certificates.shared', 'events.certificates.verify'
+);
+$participantShell=$roleShell !== null && ! $publicSiteShell;
 $inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.login') || request()->routeIs('register') || request()->routeIs('partners.*') || request()->routeIs('public.partners.*');
 $brandLogoPath = app(\App\Services\SettingsService::class)->get('branding.logo_path');
 $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('branding.asset')
