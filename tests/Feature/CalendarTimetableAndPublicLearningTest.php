@@ -117,6 +117,25 @@ class CalendarTimetableAndPublicLearningTest extends TestCase
         $this->get(route('admin.events.calendar',['month'=>'2026-10']))->assertOk()->assertSee('Published timetable')->assertSee('Draft timetable');
     }
 
+    public function test_calendar_and_agenda_are_switchable_tabs(): void
+    {
+        $staff = User::factory()->create(['user_type'=>'staff','status'=>'active']);
+
+        $this->actingAs($staff)
+            ->get(route('calendar.index'))
+            ->assertOk()
+            ->assertSee('Calendar agenda')
+            ->assertSee('data-calendar-panel="agenda"', false)
+            ->assertSee('hidden', false)
+            ->assertSee('aria-selected="true"', false);
+
+        $this->get(route('calendar.index', ['view' => 'agenda']))
+            ->assertOk()
+            ->assertSee('data-calendar-panel="calendar"', false)
+            ->assertSee('hidden', false)
+            ->assertSee('data-calendar-panel="agenda"', false);
+    }
+
     public function test_calendar_reads_live_updates_and_excludes_stale_mirrored_timetables(): void
     {
         $course = Course::create(['title'=>'Course','status'=>'published']);
