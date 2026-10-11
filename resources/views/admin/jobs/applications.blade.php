@@ -51,18 +51,18 @@
 @forelse($applications as $application)
 <tr>
     <td>
-        <strong>{{ $application->user?->name ?? '—' }}</strong>
+        <strong>{{ $application->user?->name ?? '-' }}</strong>
         <small class="admin-cell-hint">{{ $application->user?->email }}</small>
     </td>
-    <td>{{ $application->job?->title ?? '—' }}</td>
-    <td>{{ $application->job?->employer?->company_name ?? '—' }}</td>
+    <td>{{ $application->job?->title ?? '-' }}</td>
+    <td>{{ $application->job?->employer?->company_name ?? '-' }}</td>
     <td><span class="status-chip {{ $application->status }}">{{ ucfirst(str_replace('_',' ',$application->status)) }}</span></td>
-    <td>{{ optional($application->applied_at)->format('d M Y') ?: '—' }}</td>
+    <td>{{ optional($application->applied_at)->format('d M Y') ?: '-' }}</td>
     <td>
         @if($application->statusHistory->isNotEmpty())
             <span class="admin-cell-hint">{{ $application->statusHistory->pluck('status')->map(fn ($s) => ucfirst(str_replace('_', ' ', $s)))->join(' → ') }}</span>
         @else
-            <span class="admin-cell-hint">—</span>
+            <span class="admin-cell-hint">-</span>
         @endif
     </td>
 </tr>

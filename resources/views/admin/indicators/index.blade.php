@@ -54,7 +54,7 @@ $bulkTableId = 'indicatorsTable';
 <details><summary><strong>Pending result verification</strong></summary>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Period</th><th>Actual</th><th>Source</th><th>Status</th><th>Action</th></tr></thead><tbody>
 @foreach($indicator->results->where('verification_status','submitted') as $result)
-<tr><td>{{ $result->reporting_period }}</td><td>{{ $result->actual_numeric ?? $result->actual_text ?? '—' }}</td><td>{{ $result->data_source ?: '—' }}</td><td>{{ ucfirst($result->verification_status) }}</td><td><button type="button" class="btn btn-outline btn-sm" data-modal-open="verifyResult{{ $result->id }}">Verify</button></td></tr>
+<tr><td>{{ $result->reporting_period }}</td><td>{{ $result->actual_numeric ?? $result->actual_text ?? '-' }}</td><td>{{ $result->data_source ?: '-' }}</td><td>{{ ucfirst($result->verification_status) }}</td><td><button type="button" class="btn btn-outline btn-sm" data-modal-open="verifyResult{{ $result->id }}">Verify</button></td></tr>
 @endforeach
 </tbody></table></div>
 </details>

@@ -24,8 +24,8 @@
 @forelse($requests as $pr)
 <tr>
 <td><strong>{{ $pr->request_number }}</strong><small class="admin-cell-hint">{{ $pr->funding_source ?: 'No funding source' }}</small></td>
-<td>{{ $pr->department ?: '—' }}</td>
-<td>{{ optional($pr->required_date)->format('d M Y') ?: '—' }}</td>
+<td>{{ $pr->department ?: '-' }}</td>
+<td>{{ optional($pr->required_date)->format('d M Y') ?: '-' }}</td>
 <td>{{ $pr->items->count() }}</td>
 <td>{{ $pr->currency ?: 'UGX' }} {{ number_format((float)$pr->estimated_total,2) }}</td>
 <td><span class="status-chip {{ $pr->status }}">{{ ucfirst(str_replace('_',' ',$pr->status)) }}</span></td>
@@ -39,7 +39,7 @@
 <tr><td colspan="7"><details><summary><strong>View request items</strong></summary>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Item</th><th>Specification</th><th>Qty</th><th>Unit</th><th>Estimated Unit Cost</th><th>Total</th><th>Asset?</th></tr></thead><tbody>
 @foreach($pr->items as $item)
-<tr><td>{{ $item->item_name }}</td><td>{{ $item->specification ?: '—' }}</td><td>{{ $item->quantity }}</td><td>{{ $item->unit ?: '—' }}</td><td>{{ number_format((float)$item->estimated_unit_cost,2) }}</td><td>{{ number_format((float)$item->estimated_total,2) }}</td><td>{{ $item->is_asset ? 'Yes' : 'No' }}</td></tr>
+<tr><td>{{ $item->item_name }}</td><td>{{ $item->specification ?: '-' }}</td><td>{{ $item->quantity }}</td><td>{{ $item->unit ?: '-' }}</td><td>{{ number_format((float)$item->estimated_unit_cost,2) }}</td><td>{{ number_format((float)$item->estimated_total,2) }}</td><td>{{ $item->is_asset ? 'Yes' : 'No' }}</td></tr>
 @endforeach
 </tbody></table></div>
 </details></td></tr>

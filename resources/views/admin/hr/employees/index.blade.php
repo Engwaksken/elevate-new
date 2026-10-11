@@ -26,11 +26,11 @@ $bulkTableId = 'employeesTable';
 @forelse($employees as $employee)
 <tr>
 <td><input type="checkbox" data-row-select value="{{ $employee->id }}" aria-label="Select {{ data_get($employee,'user.name','Employee') }}"></td>
-<td><strong>{{ data_get($employee,'user.name','—') }}</strong><small class="admin-cell-hint">{{ data_get($employee,'user.email','') }}</small></td>
+<td><strong>{{ data_get($employee,'user.name','-') }}</strong><small class="admin-cell-hint">{{ data_get($employee,'user.email','') }}</small></td>
 <td>{{ $employee->employee_number }}</td>
-<td>{{ $employee->employment_type ?: '—' }}</td>
-<td>{{ $employee->work_location ?: '—' }}</td>
-<td>{{ optional($employee->start_date)->format('d M Y') ?: '—' }}</td>
+<td>{{ $employee->employment_type ?: '-' }}</td>
+<td>{{ $employee->work_location ?: '-' }}</td>
+<td>{{ optional($employee->start_date)->format('d M Y') ?: '-' }}</td>
 <td><span class="status-chip {{ $employee->status }}">{{ ucfirst(str_replace('_',' ',$employee->status)) }}</span></td>
 <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-modal-open="contract{{ $employee->id }}"><i class="fas fa-file-signature"></i> Add Contract</button></td>
 </tr>
@@ -52,7 +52,7 @@ $employeeFormTabs = [
 <div class="eh-modal-body">
 <x-form-tabs id="employee-create" label="Employee details" :tabs="$employeeFormTabs">
 <x-form-tab name="employee"><div class="modal-grid">
-<div class="form-group"><label>Staff User *</label><select name="user_id" required><option value="">Select staff user</option>@foreach($users as $u)<option value="{{ $u->id }}">{{ $u->name }} — {{ $u->email }}</option>@endforeach</select></div>
+<div class="form-group"><label>Staff User *</label><select name="user_id" required><option value="">Select staff user</option>@foreach($users as $u)<option value="{{ $u->id }}">{{ $u->name }} - {{ $u->email }}</option>@endforeach</select></div>
 <div class="form-group"><label>Employee Number *</label><input name="employee_number" required></div>
 <div class="form-group"><label>Employment Type</label><input name="employment_type" placeholder="Permanent, Contract, Consultant..."></div>
 <div class="form-group"><label>Status *</label><select name="status">@foreach(['active','probation','on_leave','suspended'] as $s)<option value="{{ $s }}">{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select></div>

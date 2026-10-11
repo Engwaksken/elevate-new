@@ -14,7 +14,7 @@
         @if($department->exists)<small class="form-hint">Renaming also updates purchase requests that use the old name.</small>@endif</div>
     <div class="form-group"><label for="{{ $id }}-code">Code</label><input id="{{ $id }}-code" name="code" value="{{ $value('code') }}" maxlength="50" placeholder="e.g. PROG"><small class="form-hint">Optional short unique code.</small></div>
     <div class="form-group"><label for="{{ $id }}-head">Head of department</label><select id="{{ $id }}-head" name="head_user_id"><option value="">None</option>@foreach($staff as $u)<option value="{{ $u->id }}" @selected((int) $value('head_user_id') === $u->id)>{{ $u->name }}</option>@endforeach</select></div>
-    <div class="form-group full"><label class="modal-check"><input type="checkbox" name="is_active" value="1" @checked($isActive)><span>Active — show in forms</span></label><small class="form-hint">Inactive departments stay on existing records but can't be chosen for new ones.</small></div>
+    <div class="form-group full"><label class="modal-check"><input type="checkbox" name="is_active" value="1" @checked($isActive)><span>Active - show in forms</span></label><small class="form-hint">Inactive departments stay on existing records but can't be chosen for new ones.</small></div>
 </div></div>
 <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">{{ $method === 'POST' ? 'Add Department' : 'Save Changes' }}</button></div>
 </form></div></div>

@@ -67,10 +67,10 @@ $bulkTableId = 'learningFilesTable';
 <tr>
     <td><input type="checkbox" data-row-select value="{{ $file->id }}" aria-label="Select {{ $file->original_name }}"></td>
     <td><strong>{{ $file->original_name }}</strong></td>
-    <td>{{ $courses->firstWhere('id',$file->course_id)?->title ?: '—' }}</td>
+    <td>{{ $courses->firstWhere('id',$file->course_id)?->title ?: '-' }}</td>
     <td>{{ \App\Http\Controllers\Admin\Elearning\LearningFileAdminController::attachedTo($file) }}</td>
     <td>@if(app(\App\Services\Learning\LearningFileService::class)->isDownloadable($file))<span class="status-chip active">Downloadable</span>@else<span class="status-chip inactive">View only</span>@endif</td>
-    <td>{{ $file->mime_type ?: '—' }}</td>
+    <td>{{ $file->mime_type ?: '-' }}</td>
     <td>{{ number_format(($file->size_bytes ?? 0)/1024,1) }} KB</td>
     <td>{{ optional($file->created_at)->format('d M Y') }}</td>
     <td class="table-actions">

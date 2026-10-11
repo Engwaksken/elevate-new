@@ -154,7 +154,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                         child: FilledButton.tonalIcon(
                           onPressed: _busy ? null : _checkAgain,
                           icon: const Icon(Icons.refresh),
-                          label: const Text("I've verified — continue"),
+                          label: const Text("I've verified - continue"),
                         ),
                       ),
                       const SizedBox(height: AppSpacing.sm),

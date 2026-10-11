@@ -2,7 +2,7 @@
 @section('title','Gradebook | ElevateHer360 Administration')
 @section('content')
 <div class="admin-page-header">
-<div><span class="admin-eyebrow">Programme Delivery</span><h1>Gradebook — {{ $course->title }}</h1><p>Review assessment attempts and grade submitted learner work.</p></div>
+<div><span class="admin-eyebrow">Programme Delivery</span><h1>Gradebook - {{ $course->title }}</h1><p>Review assessment attempts and grade submitted learner work.</p></div>
 <div class="admin-page-actions"><x-export-buttons /><a href="{{ route('admin.elearning.assessments.index',$course) }}" class="btn btn-outline"><i class="fas fa-clipboard-question"></i> Assessments</a></div>
 </div>
 
@@ -30,12 +30,12 @@
 <tbody>
 @forelse($attempts as $attempt)
 <tr>
-<td><strong>{{ data_get($attempt,'user.name','—') }}</strong><small class="admin-cell-hint">{{ data_get($attempt,'user.email','') }}</small></td>
-<td>{{ data_get($attempt,'assessment.title','—') }}</td>
+<td><strong>{{ data_get($attempt,'user.name','-') }}</strong><small class="admin-cell-hint">{{ data_get($attempt,'user.email','') }}</small></td>
+<td>{{ data_get($attempt,'assessment.title','-') }}</td>
 <td>#{{ $attempt->attempt_number }}</td>
-<td>{{ optional($attempt->submitted_at)->format('d M Y H:i') ?: '—' }}</td>
-<td>{{ $attempt->score !== null ? number_format((float)$attempt->score,1) : '—' }}</td>
-<td>{{ $attempt->percentage !== null ? number_format((float)$attempt->percentage,1).'%' : '—' }}</td>
+<td>{{ optional($attempt->submitted_at)->format('d M Y H:i') ?: '-' }}</td>
+<td>{{ $attempt->score !== null ? number_format((float)$attempt->score,1) : '-' }}</td>
+<td>{{ $attempt->percentage !== null ? number_format((float)$attempt->percentage,1).'%' : '-' }}</td>
 <td><span class="status-chip {{ $attempt->status }}">{{ ucfirst(str_replace('_',' ',$attempt->status)) }}</span></td>
 <td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('admin.elearning.gradebook.edit',$attempt) }}"><i class="fas fa-pen-to-square"></i> Grade</a></td>
 </tr>

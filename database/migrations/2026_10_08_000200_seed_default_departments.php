@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
  * There was no screen to add departments, so the list was empty and staff
  * typed department names by hand. Only when the departments table is still
  * empty: create one department per distinct name already typed on purchase
- * requests, or — if there are none — a small default set.
+ * requests, or - if there are none - a small default set.
  */
 return new class extends Migration
 {

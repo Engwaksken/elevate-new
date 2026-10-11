@@ -34,11 +34,11 @@ $bulkTableId = 'enrolmentsTable';
 @forelse($enrolments as $enrolment)
 <tr>
 <td><input type="checkbox" data-row-select value="{{ $enrolment->id }}" aria-label="Select {{ $enrolment->user?->name ?: 'enrolment' }}"></td>
-<td><strong>{{ $enrolment->user?->name ?: '—' }}</strong><small class="admin-cell-hint">{{ $enrolment->user?->email }}</small><small class="admin-cell-hint">Participant ID: {{ $enrolment->enrolment_code }}</small></td>
-<td>{{ $enrolment->course?->title ?: '—' }}</td>
-<td>{{ $enrolment->cohort?->name ?: '—' }}</td>
+<td><strong>{{ $enrolment->user?->name ?: '-' }}</strong><small class="admin-cell-hint">{{ $enrolment->user?->email }}</small><small class="admin-cell-hint">Participant ID: {{ $enrolment->enrolment_code }}</small></td>
+<td>{{ $enrolment->course?->title ?: '-' }}</td>
+<td>{{ $enrolment->cohort?->name ?: '-' }}</td>
 <td><span class="status-chip {{ in_array($enrolment->status,['completed','enrolled','in_progress']) ? 'active':'inactive' }}">{{ ucwords(str_replace('_',' ',$enrolment->status)) }}</span></td>
-<td>{{ optional($enrolment->enrolled_at)->format('d M Y') ?: '—' }}</td>
+<td>{{ optional($enrolment->enrolled_at)->format('d M Y') ?: '-' }}</td>
 <td class="table-actions"><div class="action-group">
 <button type="button" class="btn-icon" data-modal-open="editEnrolment{{ $enrolment->id }}"><i class="fas fa-pen"></i></button>
 <button type="button" class="btn-icon danger" data-modal-open="deleteEnrolment{{ $enrolment->id }}"><i class="fas fa-trash"></i></button>

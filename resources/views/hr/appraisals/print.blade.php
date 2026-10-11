@@ -25,13 +25,13 @@ th{background:#eee}
 
 <div class="meta">
 <div><strong>Employee</strong><br>{{ $appraisal->employee?->user?->name }}</div>
-<div><strong>Manager</strong><br>{{ $appraisal->manager?->name ?: '—' }}</div>
+<div><strong>Manager</strong><br>{{ $appraisal->manager?->name ?: '-' }}</div>
 <div><strong>Status</strong><br>{{ ucwords(str_replace('_',' ',$appraisal->status)) }}</div>
 </div>
 
 <div class="summary">
 <div><strong>Workflow Completion</strong><br>{{ number_format((float)$appraisal->completion_percent,1) }}%</div>
-<div><strong>Performance</strong><br>{{ $appraisal->performance_percent !== null ? number_format((float)$appraisal->performance_percent,1).'%' : '—' }}</div>
+<div><strong>Performance</strong><br>{{ $appraisal->performance_percent !== null ? number_format((float)$appraisal->performance_percent,1).'%' : '-' }}</div>
 </div>
 
 <table>
@@ -44,9 +44,9 @@ th{background:#eee}
 @php($score=$scores->get($item->id))
 <tr>
 <td><strong>{{ $item->title }}</strong><div class="small">{{ $item->section }}</div></td>
-<td>{{ $item->item_type==='okr' ? ($score?->okr_percent !== null ? number_format((float)$score->okr_percent,1).'%' : '—') : ($score?->employee_rating ?? '—') }}</td>
-<td>{{ $score?->manager_rating ?? '—' }}</td>
-<td>{{ $score?->agreed_rating ?? '—' }}</td>
+<td>{{ $item->item_type==='okr' ? ($score?->okr_percent !== null ? number_format((float)$score->okr_percent,1).'%' : '-') : ($score?->employee_rating ?? '-') }}</td>
+<td>{{ $score?->manager_rating ?? '-' }}</td>
+<td>{{ $score?->agreed_rating ?? '-' }}</td>
 <td>
 @if($score?->employee_comment)<strong>Employee:</strong> {{ $score->employee_comment }}<br>@endif
 @if($score?->manager_comment)<strong>Manager:</strong> {{ $score->manager_comment }}@endif
@@ -58,13 +58,13 @@ th{background:#eee}
 </table>
 
 <h2>Overall Comments</h2>
-<p><strong>Employee:</strong> {{ $appraisal->employee_comments ?: '—' }}</p>
-<p><strong>Manager:</strong> {{ $appraisal->manager_comments ?: '—' }}</p>
-<p><strong>Development Plan:</strong> {{ $appraisal->development_plan ?: '—' }}</p>
+<p><strong>Employee:</strong> {{ $appraisal->employee_comments ?: '-' }}</p>
+<p><strong>Manager:</strong> {{ $appraisal->manager_comments ?: '-' }}</p>
+<p><strong>Development Plan:</strong> {{ $appraisal->development_plan ?: '-' }}</p>
 
 <h2>Acknowledgements</h2>
-<p>Employee: {{ $appraisal->employee_acknowledgement_name ?: '—' }} {{ $appraisal->employee_acknowledged_at ? '('.$appraisal->employee_acknowledged_at->format('d M Y H:i').')' : '' }}</p>
-<p>Manager: {{ $appraisal->manager_acknowledgement_name ?: '—' }} {{ $appraisal->manager_acknowledged_at ? '('.$appraisal->manager_acknowledged_at->format('d M Y H:i').')' : '' }}</p>
-<p>HR: {{ $appraisal->finalisedBy?->name ?: '—' }} {{ $appraisal->hr_finalised_at ? '('.$appraisal->hr_finalised_at->format('d M Y H:i').')' : '' }}</p>
+<p>Employee: {{ $appraisal->employee_acknowledgement_name ?: '-' }} {{ $appraisal->employee_acknowledged_at ? '('.$appraisal->employee_acknowledged_at->format('d M Y H:i').')' : '' }}</p>
+<p>Manager: {{ $appraisal->manager_acknowledgement_name ?: '-' }} {{ $appraisal->manager_acknowledged_at ? '('.$appraisal->manager_acknowledged_at->format('d M Y H:i').')' : '' }}</p>
+<p>HR: {{ $appraisal->finalisedBy?->name ?: '-' }} {{ $appraisal->hr_finalised_at ? '('.$appraisal->hr_finalised_at->format('d M Y H:i').')' : '' }}</p>
 </body>
 </html>

@@ -83,11 +83,11 @@ $bulkTableId = 'assetsTable';
         <small class="admin-cell-hint">{{ $asset->description }}</small>
     </td>
     <td>
-        {{ $asset->asset_tag ?: '—' }}
+        {{ $asset->asset_tag ?: '-' }}
         <small class="admin-cell-hint">{{ $asset->serial_number ?: 'No serial number' }}</small>
     </td>
-    <td>{{ $asset->location ?: '—' }}</td>
-    <td>{{ $asset->condition ?: '—' }}</td>
+    <td>{{ $asset->location ?: '-' }}</td>
+    <td>{{ $asset->condition ?: '-' }}</td>
     <td>{{ $asset->currency ?: 'UGX' }} {{ number_format((float)$asset->purchase_price,2) }}</td>
     <td><span class="status-chip {{ $asset->status }}">{{ ucfirst(str_replace('_',' ',$asset->status)) }}</span></td>
     <td class="table-actions">
@@ -148,9 +148,9 @@ $bulkTableId = 'assetsTable';
 @forelse($asset->assignments as $assignment)
 <tr>
 <td>{{ optional($users->firstWhere('id',$assignment->assigned_to_user_id))->name ?: ('User #'.$assignment->assigned_to_user_id) }}</td>
-<td>{{ optional($assignment->assigned_date)->format('d M Y') ?: '—' }}</td>
-<td>{{ optional($assignment->expected_return_date)->format('d M Y') ?: '—' }}</td>
-<td>{{ optional($assignment->returned_date)->format('d M Y') ?: '—' }}</td>
+<td>{{ optional($assignment->assigned_date)->format('d M Y') ?: '-' }}</td>
+<td>{{ optional($assignment->expected_return_date)->format('d M Y') ?: '-' }}</td>
+<td>{{ optional($assignment->returned_date)->format('d M Y') ?: '-' }}</td>
 <td>{{ ucfirst($assignment->status) }}</td>
 </tr>
 @empty<tr><td colspan="5">No assignment history.</td></tr>@endforelse
@@ -166,8 +166,8 @@ $bulkTableId = 'assetsTable';
 <tbody>
 @forelse($asset->maintenance as $maintenance)
 <tr>
-<td>{{ optional($maintenance->reported_date)->format('d M Y') ?: '—' }}</td>
-<td>{{ $maintenance->maintenance_type ?: '—' }}</td>
+<td>{{ optional($maintenance->reported_date)->format('d M Y') ?: '-' }}</td>
+<td>{{ $maintenance->maintenance_type ?: '-' }}</td>
 <td>{{ Str::limit($maintenance->issue_description,80) }}</td>
 <td>{{ $maintenance->currency ?: 'UGX' }} {{ number_format((float)$maintenance->cost,2) }}</td>
 <td>{{ ucfirst($maintenance->status ?: 'open') }}</td>
@@ -189,8 +189,8 @@ $bulkTableId = 'assetsTable';
 <table class="admin-table">
 <thead><tr><th>Requested</th><th>Method</th><th>Value</th><th>Status</th><th>Reason</th></tr></thead>
 <tbody><tr>
-<td>{{ optional($asset->disposal->requested_date)->format('d M Y') ?: '—' }}</td>
-<td>{{ $asset->disposal->disposal_method ?: '—' }}</td>
+<td>{{ optional($asset->disposal->requested_date)->format('d M Y') ?: '-' }}</td>
+<td>{{ $asset->disposal->disposal_method ?: '-' }}</td>
 <td>{{ $asset->disposal->currency ?: 'UGX' }} {{ number_format((float)$asset->disposal->disposal_value,2) }}</td>
 <td>{{ ucfirst($asset->disposal->status) }}</td>
 <td>{{ $asset->disposal->reason }}</td>
@@ -248,10 +248,10 @@ $bulkTableId = 'assetsTable';
 @if(in_array($asset->status,['available','in_use'],true))
 <div class="eh-modal" id="assignAsset{{ $asset->id }}" aria-hidden="true">
 <div class="eh-modal-dialog">
-<div class="eh-modal-header"><div><h2>Assign Asset</h2><p>{{ $asset->asset_code }} — {{ $asset->description }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
+<div class="eh-modal-header"><div><h2>Assign Asset</h2><p>{{ $asset->asset_code }} - {{ $asset->description }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
 <form method="POST" action="{{ route('admin.assets.assign',$asset) }}">@csrf
 <div class="eh-modal-body"><div class="modal-grid">
-<div class="form-group full"><label>Assign To *</label><select name="assigned_to_user_id" required><option value="">Select staff user</option>@foreach($users as $u)<option value="{{ $u->id }}">{{ $u->name }} — {{ $u->email }}</option>@endforeach</select></div>
+<div class="form-group full"><label>Assign To *</label><select name="assigned_to_user_id" required><option value="">Select staff user</option>@foreach($users as $u)<option value="{{ $u->id }}">{{ $u->name }} - {{ $u->email }}</option>@endforeach</select></div>
 <div class="form-group"><label>Assigned Date *</label><input type="date" name="assigned_date" value="{{ now()->format('Y-m-d') }}" required></div>
 <div class="form-group"><label>Expected Return Date</label><input type="date" name="expected_return_date"></div>
 <div class="form-group full"><label>Assignment Notes</label><textarea name="assignment_notes"></textarea></div>

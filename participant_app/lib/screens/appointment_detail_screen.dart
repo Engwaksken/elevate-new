@@ -385,7 +385,7 @@ class _MetaRow extends StatelessWidget {
               style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ),
-          Expanded(child: SelectableText(value ?? '—', style: theme.textTheme.bodyMedium)),
+          Expanded(child: SelectableText(value ?? '-', style: theme.textTheme.bodyMedium)),
         ],
       ),
     );

@@ -63,7 +63,7 @@ main.page-shell > .eh-learning-hero{border-radius:0;padding:56px max(var(--eh-gu
 <section class="eh-learning-hero">
     <span class="eh-kicker">Learning</span>
     <h1>{{ app(\App\Services\CmsContentService::class)->text('learning', 'title', 'Courses') }}</h1>
-    <p>{{ app(\App\Services\CmsContentService::class)->text('learning', 'summary', 'Explore courses across digital skills, entrepreneurship, leadership and career readiness — and start learning at your own pace.') }}</p>
+    <p>{{ app(\App\Services\CmsContentService::class)->text('learning', 'summary', 'Explore courses across digital skills, entrepreneurship, leadership and career readiness - and start learning at your own pace.') }}</p>
     <form method="GET" class="eh-learning-search" role="search">
         <div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search courses by title or keyword…" aria-label="Search courses"></div>
         <select name="delivery_mode" aria-label="Delivery mode">

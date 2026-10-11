@@ -2,7 +2,7 @@
 @section('title','Cohort Module Access | ElevateHer360')
 @section('content')
 <div class="admin-page-header">
-<div><span class="admin-eyebrow">Instructor Controls</span><h1>Module Access — {{ $course->title }}</h1><p>Require participants to complete each module before the next opens, with cohort-level instructor locks.</p></div>
+<div><span class="admin-eyebrow">Instructor Controls</span><h1>Module Access - {{ $course->title }}</h1><p>Require participants to complete each module before the next opens, with cohort-level instructor locks.</p></div>
 </div>
 
 @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif

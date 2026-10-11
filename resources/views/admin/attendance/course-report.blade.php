@@ -29,11 +29,11 @@
 <tbody>
 @forelse($records as $record)
 <tr>
-<td>{{ optional($record->session?->session_date)->format('d M Y') ?: '—' }}</td>
-<td><strong>{{ $record->session?->title ?: 'Session' }}</strong><small class="admin-cell-hint">Course #{{ $record->session?->course_id }} · Cohort #{{ $record->session?->cohort_id ?: '—' }}</small></td>
-<td><strong>{{ $record->user?->name ?: '—' }}</strong><small class="admin-cell-hint">{{ $record->user?->email }}</small></td>
+<td>{{ optional($record->session?->session_date)->format('d M Y') ?: '-' }}</td>
+<td><strong>{{ $record->session?->title ?: 'Session' }}</strong><small class="admin-cell-hint">Course #{{ $record->session?->course_id }} · Cohort #{{ $record->session?->cohort_id ?: '-' }}</small></td>
+<td><strong>{{ $record->user?->name ?: '-' }}</strong><small class="admin-cell-hint">{{ $record->user?->email }}</small></td>
 <td><span class="status-chip {{ in_array($record->status,['present','late']) ? 'active':'inactive' }}">{{ ucfirst($record->status) }}</span></td>
-<td>{{ $record->remarks ?: '—' }}</td>
+<td>{{ $record->remarks ?: '-' }}</td>
 </tr>
 @empty<tr><td colspan="5"><div class="admin-empty">No attendance records found for the selected filters.</div></td></tr>@endforelse
 </tbody>

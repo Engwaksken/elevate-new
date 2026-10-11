@@ -12,7 +12,7 @@
 @php($answer=$answers->get($question->id))
 <article class="grading-card">
 <div class="grading-head"><strong>{{ $loop->iteration }}. {{ $question->question_text }}</strong><span>{{ number_format((float)$question->marks,1) }} mark(s)</span></div>
-<div class="grading-answer"><small>Learner answer</small><div>{{ is_array($answer?->answer) ? json_encode($answer?->answer) : ($answer?->answer ?? data_get($answer,'answer_text','—')) }}</div></div>
+<div class="grading-answer"><small>Learner answer</small><div>{{ is_array($answer?->answer) ? json_encode($answer?->answer) : ($answer?->answer ?? data_get($answer,'answer_text','-')) }}</div></div>
 <div class="modal-grid">
 <div class="form-group"><label>Awarded Marks</label><input type="number" step=".1" min="0" max="{{ $question->marks }}" name="marks[{{ $question->id }}]" value="{{ $answer?->awarded_marks ?? 0 }}"></div>
 <div class="form-group full"><label>Feedback</label><textarea name="feedback[{{ $question->id }}]" rows="3">{{ $answer?->grader_feedback }}</textarea></div>

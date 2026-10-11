@@ -21,7 +21,7 @@
 <div>
     <span class="admin-eyebrow">Self-service</span>
     <h1>Help &amp; Support</h1>
-    <p>Get help from the IT team — laptops, network, email, software, printers — or ask for general help, then track every request here.</p>
+    <p>Get help from the IT team - laptops, network, email, software, printers - or ask for general help, then track every request here.</p>
 </div>
 <div class="admin-page-actions">
     <x-export-buttons />
@@ -70,7 +70,7 @@
                     <div><dt>Priority</dt><dd>{{ $priorities[$ticket->priority] ?? ucfirst((string) $ticket->priority) }}</dd></div>
                     <div><dt>Assigned to</dt><dd>{{ $ticket->assignee?->name ?: 'Not yet assigned' }}</dd></div>
                     <div><dt>Submitted</dt><dd>{{ $ticket->created_at?->format('d M Y, H:i') }}</dd></div>
-                    <div><dt>Last status change</dt><dd>{{ $ticket->status_updated_at?->format('d M Y, H:i') ?: '—' }}</dd></div>
+                    <div><dt>Last status change</dt><dd>{{ $ticket->status_updated_at?->format('d M Y, H:i') ?: '-' }}</dd></div>
                 </dl>
                 <p class="ss-description">{!! nl2br(e($ticket->description)) !!}</p>
             </div>

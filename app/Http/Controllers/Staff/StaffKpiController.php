@@ -80,7 +80,7 @@ class StaffKpiController extends Controller
         // Changing a submitted or approved KPI sends it back to draft so the supervisor sees the change.
         $kpi->update($this->validated($request) + ($kpi->isEditableByOwner() ? [] : ['status' => 'draft']));
 
-        return $this->back($kpi->contract, $kpi->wasChanged('status') ? 'KPI updated and moved back to draft — submit it again for approval.' : 'KPI updated.');
+        return $this->back($kpi->contract, $kpi->wasChanged('status') ? 'KPI updated and moved back to draft - submit it again for approval.' : 'KPI updated.');
     }
 
     public function destroy(Request $request, StaffKpi $kpi): RedirectResponse

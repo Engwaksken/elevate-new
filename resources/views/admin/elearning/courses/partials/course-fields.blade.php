@@ -40,7 +40,7 @@ $formTabsConfig = [
     <div class="form-group full">
         <label>Entry assessment (required before self-enrolment)</label>
         <select name="entry_assessment_id">
-            <option value="">None — enrol immediately</option>
+            <option value="">None - enrol immediately</option>
             @foreach(($assessments ?? collect()) as $assessment)
                 <option value="{{ $assessment->id }}" @selected((string)old('entry_assessment_id',$editing ? $course->entry_assessment_id : '')===(string)$assessment->id)>{{ $assessment->title }}</option>
             @endforeach
@@ -50,7 +50,7 @@ $formTabsConfig = [
     <div class="form-group full">
         <label>Entry survey (scored survey required before self-enrolment)</label>
         <select name="entry_survey_id">
-            <option value="">None — use the assessment above or enrol immediately</option>
+            <option value="">None - use the assessment above or enrol immediately</option>
             @foreach(($surveys ?? collect()) as $survey)
                 <option value="{{ $survey->id }}" @selected((string)old('entry_survey_id',$editing ? $course->entry_survey_id : '')===(string)$survey->id)>{{ $survey->title }}</option>
             @endforeach

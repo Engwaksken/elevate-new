@@ -2,7 +2,7 @@
 <div class="ph-details">
     <h4><i class="fas fa-clock-rotate-left"></i> Participation history</h4>
     @if(empty($history['returning']))
-        <p class="ph-muted">No previous courses or certificates — this is their first course with us.</p>
+        <p class="ph-muted">No previous courses or certificates - this is their first course with us.</p>
     @else
         <p class="ph-muted">{{ $history['summary'] }}</p>
         <ul class="ph-course-list">

@@ -33,9 +33,9 @@ $bulkTableId = 'deliverablesTable';
 @forelse($deliverables as $deliverable)
 <tr>
 <td><input type="checkbox" data-row-select value="{{ $deliverable->id }}" aria-label="Select {{ $deliverable->title }}"></td><td><strong>{{ $deliverable->title }}</strong><small class="admin-cell-hint">{{ Str::limit($deliverable->description,90) }}</small></td>
-<td>{{ data_get($deliverable,'activity.title','—') }}</td>
-<td>{{ data_get($deliverable,'owner.name','—') }}</td>
-<td>{{ optional($deliverable->due_date)->format('d M Y') ?: '—' }}</td>
+<td>{{ data_get($deliverable,'activity.title','-') }}</td>
+<td>{{ data_get($deliverable,'owner.name','-') }}</td>
+<td>{{ optional($deliverable->due_date)->format('d M Y') ?: '-' }}</td>
 <td><strong>{{ number_format((float)$deliverable->progress_percent,0) }}%</strong><div style="height:5px;background:#eee;border-radius:5px;margin-top:5px;overflow:hidden"><div style="height:100%;width:{{ min(100,(float)$deliverable->progress_percent) }}%;background:#800000"></div></div></td>
 <td><span class="status-chip {{ $deliverable->status }}">{{ ucfirst(str_replace('_',' ',$deliverable->status)) }}</span></td>
 <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-modal-open="updateDeliverable{{ $deliverable->id }}"><i class="fas fa-pen"></i> Update</button></td>

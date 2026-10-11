@@ -31,9 +31,9 @@
 <tbody>
 @forelse($records as $department)
 <tr>
-    <td>@if($department->usage_count > 0)<input type="checkbox" disabled aria-label="{{ $department->name }} is in use and cannot be deleted" title="In use — cannot be deleted">@else<input type="checkbox" data-row-select value="{{ $department->id }}" aria-label="Select {{ $department->name }}">@endif</td>
+    <td>@if($department->usage_count > 0)<input type="checkbox" disabled aria-label="{{ $department->name }} is in use and cannot be deleted" title="In use - cannot be deleted">@else<input type="checkbox" data-row-select value="{{ $department->id }}" aria-label="Select {{ $department->name }}">@endif</td>
     <td><strong>{{ $department->name }}</strong><small class="admin-cell-hint">{{ $department->code ?: 'No code' }}</small></td>
-    <td>{{ $department->head?->name ?: '—' }}</td>
+    <td>{{ $department->head?->name ?: '-' }}</td>
     <td>{{ $department->usage_count ? number_format($department->usage_count).' record(s)' : 'Not used yet' }}</td>
     <td><span class="status-chip {{ $department->is_active ? 'active' : 'inactive' }}">{{ $department->is_active ? 'Active' : 'Inactive' }}</span></td>
     <td class="table-actions"><div class="action-group">
@@ -42,7 +42,7 @@
             <button class="btn-icon" type="submit" aria-label="{{ $department->is_active ? 'Deactivate' : 'Activate' }} {{ $department->name }}" title="{{ $department->is_active ? 'Deactivate' : 'Activate' }}"><i class="fas {{ $department->is_active ? 'fa-circle-pause' : 'fa-circle-play' }}"></i></button>
         </form>
         @if($department->usage_count > 0)
-        <button class="btn-icon danger" type="button" disabled aria-label="{{ $department->name }} is in use and cannot be deleted" title="In use — deactivate instead"><i class="fas fa-trash"></i></button>
+        <button class="btn-icon danger" type="button" disabled aria-label="{{ $department->name }} is in use and cannot be deleted" title="In use - deactivate instead"><i class="fas fa-trash"></i></button>
         @else
         <button class="btn-icon danger" type="button" data-modal-open="departmentDelete{{ $department->id }}" aria-label="Delete {{ $department->name }}" title="Delete"><i class="fas fa-trash"></i></button>
         @endif

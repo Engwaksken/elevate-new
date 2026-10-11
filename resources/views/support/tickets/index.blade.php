@@ -78,7 +78,7 @@
                 <div class="itq-foot">
                     <span><i class="fas fa-user"></i> {{ $ticket->requester?->name ?? 'Unknown' }}</span>
                     <span><i class="fas fa-user-gear"></i> {{ $ticket->assignee?->name ?? 'Unassigned' }}</span>
-                    <span><i class="fas fa-clock"></i> {{ $ticket->created_at?->diffForHumans() ?? '—' }}</span>
+                    <span><i class="fas fa-clock"></i> {{ $ticket->created_at?->diffForHumans() ?? '-' }}</span>
                 </div>
             </a>
         @empty

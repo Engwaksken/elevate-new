@@ -16,7 +16,7 @@
             <span class="admin-stat-icon"><i class="fas {{ $stat['icon'] }}"></i></span>
             <div>
                 <small>{{ $stat['label'] }}</small>
-                <strong>{{ $stat['value'] === null ? '—' : number_format($stat['value']) }}</strong>
+                <strong>{{ $stat['value'] === null ? '-' : number_format($stat['value']) }}</strong>
             </div>
         </div>
     @endforeach

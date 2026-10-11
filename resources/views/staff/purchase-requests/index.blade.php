@@ -69,7 +69,7 @@
             <summary>View {{ $pr->items->count() }} {{ \Illuminate\Support\Str::plural('item', $pr->items->count()) }}</summary>
             <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Item</th><th>Specification</th><th>Qty</th><th>Unit cost</th><th>Total</th></tr></thead><tbody>
             @foreach($pr->items as $item)
-                <tr><td>{{ $item->item_name }}@if($item->is_asset) <span class="status-chip">Asset</span>@endif</td><td>{{ $item->specification ?: '—' }}</td><td>{{ rtrim(rtrim(number_format((float)$item->quantity,2),'0'),'.') }} {{ $item->unit }}</td><td>{{ number_format((float)$item->estimated_unit_cost,2) }}</td><td>{{ number_format((float)$item->estimated_total,2) }}</td></tr>
+                <tr><td>{{ $item->item_name }}@if($item->is_asset) <span class="status-chip">Asset</span>@endif</td><td>{{ $item->specification ?: '-' }}</td><td>{{ rtrim(rtrim(number_format((float)$item->quantity,2),'0'),'.') }} {{ $item->unit }}</td><td>{{ number_format((float)$item->estimated_unit_cost,2) }}</td><td>{{ number_format((float)$item->estimated_total,2) }}</td></tr>
             @endforeach
             </tbody></table></div>
             @if($pr->justification)<p class="spr-justification"><strong>Justification:</strong> {{ $pr->justification }}</p>@endif

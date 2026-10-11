@@ -66,7 +66,7 @@
     @else
         <div class="kpi-weight {{ abs($totalWeight - 100) < 0.01 ? 'is-ok' : 'is-off' }}">
             <i class="fas {{ abs($totalWeight - 100) < 0.01 ? 'fa-circle-check' : 'fa-scale-unbalanced' }}"></i>
-            Total weight {{ rtrim(rtrim(number_format($totalWeight, 2), '0'), '.') }}%{{ abs($totalWeight - 100) < 0.01 ? '' : ' — weights should add up to 100%' }}
+            Total weight {{ rtrim(rtrim(number_format($totalWeight, 2), '0'), '.') }}%{{ abs($totalWeight - 100) < 0.01 ? '' : ' - weights should add up to 100%' }}
         </div>
         @foreach($kpis->groupBy('kra') as $kra => $kraKpis)
             <div class="kpi-kra">
@@ -214,7 +214,7 @@
                         <td><input type="checkbox" name="kpi_ids[]" value="{{ $kpi->id }}" checked data-row-select aria-label="Select {{ $kpi->title }}"></td>
                         <td>{{ $kpi->kra }}</td>
                         <td><strong>{{ $kpi->title }}</strong>@if($kpi->measurement_method)<small class="admin-cell-hint">{{ $kpi->measurement_method }}</small>@endif</td>
-                        <td>{{ $kpi->target ?: '—' }} {{ $kpi->unit }}</td>
+                        <td>{{ $kpi->target ?: '-' }} {{ $kpi->unit }}</td>
                         <td>{{ (float) $kpi->weight }}%</td>
                     </tr>
                 @endforeach

@@ -72,18 +72,18 @@
 <tbody>
 @forelse($logs as $log)
 <tr>
-    <td>{{ optional($log->occurred_at)->format('d M Y H:i:s') ?: '—' }}</td>
+    <td>{{ optional($log->occurred_at)->format('d M Y H:i:s') ?: '-' }}</td>
     <td>
         <strong>{{ data_get($log,'user.name','System') }}</strong>
         <small class="admin-cell-hint">{{ data_get($log,'user.email','') }}</small>
     </td>
-    <td>{{ $log->module ?: '—' }}</td>
+    <td>{{ $log->module ?: '-' }}</td>
     <td>{{ ucfirst(str_replace('_',' ',$log->action)) }}</td>
     <td>
-        {{ $log->auditable_type ? class_basename($log->auditable_type) : '—' }}
+        {{ $log->auditable_type ? class_basename($log->auditable_type) : '-' }}
         @if($log->auditable_id)<small class="admin-cell-hint">#{{ $log->auditable_id }}</small>@endif
     </td>
-    <td>{{ $log->ip_address ?: '—' }}</td>
+    <td>{{ $log->ip_address ?: '-' }}</td>
     <td class="table-actions">
         <button type="button" class="btn btn-outline btn-sm" data-modal-open="audit{{ $log->id }}">
             <i class="fas fa-eye"></i> View
@@ -111,9 +111,9 @@
 <div class="eh-modal-body">
 <dl class="audit-meta">
     <div><dt>User</dt><dd>{{ data_get($log,'user.name','System') }}@if(data_get($log,'user.email'))<small>{{ data_get($log,'user.email') }}</small>@endif</dd></div>
-    <div><dt>Occurred At</dt><dd>{{ optional($log->occurred_at)->format('d M Y H:i:s') ?: '—' }}</dd></div>
-    <div><dt>Record</dt><dd>{{ $log->auditable_type ? class_basename($log->auditable_type).' #'.$log->auditable_id : '—' }}</dd></div>
-    <div><dt>IP Address</dt><dd>{{ $log->ip_address ?: '—' }}</dd></div>
+    <div><dt>Occurred At</dt><dd>{{ optional($log->occurred_at)->format('d M Y H:i:s') ?: '-' }}</dd></div>
+    <div><dt>Record</dt><dd>{{ $log->auditable_type ? class_basename($log->auditable_type).' #'.$log->auditable_id : '-' }}</dd></div>
+    <div><dt>IP Address</dt><dd>{{ $log->ip_address ?: '-' }}</dd></div>
 </dl>
 
 <h3 class="audit-section-title">Changes</h3>
@@ -184,8 +184,8 @@
                 @foreach($valueRows as $row)
                     <tr>
                         <td><strong>{{ $row['field'] }}</strong></td>
-                        @if($log->action !== 'created')<td class="audit-old">{{ $row['old'] ?? '—' }}</td>@endif
-                        @if($log->action !== 'deleted')<td class="audit-new">{{ $row['new'] ?? '—' }}</td>@endif
+                        @if($log->action !== 'created')<td class="audit-old">{{ $row['old'] ?? '-' }}</td>@endif
+                        @if($log->action !== 'deleted')<td class="audit-new">{{ $row['new'] ?? '-' }}</td>@endif
                     </tr>
                 @endforeach
             </tbody>
@@ -195,7 +195,7 @@
 
 <details class="audit-agent">
     <summary>Browser / device details</summary>
-    <div class="admin-readonly">{{ $log->user_agent ?: '—' }}</div>
+    <div class="admin-readonly">{{ $log->user_agent ?: '-' }}</div>
 </details>
 </div>
 

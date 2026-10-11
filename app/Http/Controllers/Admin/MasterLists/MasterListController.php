@@ -153,7 +153,7 @@ abstract class MasterListController extends Controller implements HasMiddleware
         $record->update(['is_active' => ! $record->is_active]);
         $audit->log($record->getTable(), 'updated', $record, $old, $record->fresh()->toArray());
 
-        return back()->with('success', "{$this->label()} \"{$record->name}\" ".($record->is_active ? 'activated.' : 'deactivated — it no longer appears in forms.'));
+        return back()->with('success', "{$this->label()} \"{$record->name}\" ".($record->is_active ? 'activated.' : 'deactivated - it no longer appears in forms.'));
     }
 
     public function destroy(Request $request, AuditService $audit)

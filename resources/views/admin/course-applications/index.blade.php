@@ -21,11 +21,11 @@
 <tr>
     <td>
         <strong>{{ $application->user?->name }}</strong>
-        <small class="admin-cell-hint">{{ $application->user?->participant_code ?? '—' }} · {{ $application->user?->email }}</small>
+        <small class="admin-cell-hint">{{ $application->user?->participant_code ?? '-' }} · {{ $application->user?->email }}</small>
     </td>
     <td>@include('partials.participant-history-badge', ['history' => $history[$application->user_id] ?? null, 'duplicates' => $duplicates[$application->user_id] ?? null])</td>
     <td><span class="status-chip {{ $application->status === 'approved' ? 'active' : ($application->status === 'rejected' ? 'inactive' : 'draft') }}">{{ ucfirst($application->status) }}</span></td>
-    <td>{{ $application->assessmentAttempt?->percentage ?? $application->entry_assessment_score ?? '—' }}</td>
+    <td>{{ $application->assessmentAttempt?->percentage ?? $application->entry_assessment_score ?? '-' }}</td>
     <td>{{ $application->submitted_at?->format('d M Y H:i') ?? 'Draft' }}</td>
     <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-modal-open="application-{{ $application->id }}"><i class="fas fa-gavel"></i> Review</button></td>
 </tr>

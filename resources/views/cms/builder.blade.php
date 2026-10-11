@@ -13,7 +13,7 @@
             @include('cms.builder-block', ['index' => $i, 'section' => $section])
         @endforeach
     </div>
-    <div class="cms-builder__empty" data-cms-empty @if(count($sections)) hidden @endif>No sections yet — add a block above, or use the Markdown content box below.</div>
+    <div class="cms-builder__empty" data-cms-empty @if(count($sections)) hidden @endif>No sections yet - add a block above, or use the Markdown content box below.</div>
 </div>
 
 <template data-block-template="hero">@include('cms.builder-block', ['index' => '__INDEX__', 'section' => ['type' => 'hero']])</template>
@@ -187,7 +187,7 @@
         </div>
         <input type="hidden" value="divider" data-widget-type-field>
         <div class="cms-widget__body">
-            <p class="cms-widget__note">Horizontal rule — no settings.</p>
+            <p class="cms-widget__note">Horizontal rule - no settings.</p>
         </div>
     </div>
 </template>

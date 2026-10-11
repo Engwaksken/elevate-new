@@ -139,7 +139,7 @@
                 <p>Preview isn't available for this file type.</p>
                 <a class="btn" href="{{ $downloadUrl }}">Download</a>
             @else
-                <p><strong>Preview not available in the browser — this file is view-only.</strong></p>
+                <p><strong>Preview not available in the browser - this file is view-only.</strong></p>
                 <p style="color:var(--muted)">Files of this type can't be shown here and can't be downloaded. Please ask your instructor if you need access to it.</p>
             @endif
         </div>

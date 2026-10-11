@@ -18,7 +18,7 @@ class LessonController extends Controller
     }
 
     /**
-     * GET /lessons/{lesson} — full lesson detail (text body, file/video links, progress).
+     * GET /lessons/{lesson} - full lesson detail (text body, file/video links, progress).
      */
     public function show(Request $request, Lesson $lesson)
     {
@@ -33,7 +33,7 @@ class LessonController extends Controller
     }
 
     /**
-     * GET /lessons/{lesson}/download — stream the lesson's primary file.
+     * GET /lessons/{lesson}/download - stream the lesson's primary file.
      * ?inline=1 sets Content-Disposition: inline (for in-app viewers / video players).
      * View-only files (anything but xlsx/xls/csv/zip) are always inline; ?download=1 → 403.
      */
@@ -51,7 +51,7 @@ class LessonController extends Controller
     }
 
     /**
-     * GET /lessons/{lesson}/files/{file}/download — stream a specific learning file attached to the lesson.
+     * GET /lessons/{lesson}/files/{file}/download - stream a specific learning file attached to the lesson.
      */
     public function downloadFile(Request $request, Lesson $lesson, LearningFile $file)
     {
@@ -62,7 +62,7 @@ class LessonController extends Controller
     }
 
     /**
-     * PUT /lessons/{lesson}/progress — save progress / completion and/or add reading time.
+     * PUT /lessons/{lesson}/progress - save progress / completion and/or add reading time.
      * "completed" is optional (omitted = unchanged); "time_spent_seconds_delta" (0..3600, clamped)
      * is added to the stored total. "client_operation_id" makes the call idempotent.
      */
@@ -120,7 +120,7 @@ class LessonController extends Controller
     }
 
     /**
-     * GET /assignments/{assessment}/attachment — stream an assessment's first instructor attachment.
+     * GET /assignments/{assessment}/attachment - stream an assessment's first instructor attachment.
      */
     public function assessmentAttachment(Request $request, Assessment $assessment)
     {
@@ -133,7 +133,7 @@ class LessonController extends Controller
     }
 
     /**
-     * GET /assignments/{assessment}/attachments/{file} — stream one of an assessment's attachments.
+     * GET /assignments/{assessment}/attachments/{file} - stream one of an assessment's attachments.
      */
     public function assessmentAttachmentFile(Request $request, Assessment $assessment, LearningFile $file)
     {
@@ -144,7 +144,7 @@ class LessonController extends Controller
     }
 
     /**
-     * GET /submissions/files/{file} — a participant's own submitted file (always downloadable).
+     * GET /submissions/files/{file} - a participant's own submitted file (always downloadable).
      */
     public function submissionFile(Request $request, AssessmentAttemptFile $file)
     {

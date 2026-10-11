@@ -287,7 +287,7 @@
                         </td>
                         <td><strong>{{ $participant->name }}</strong></td>
                         <td>{{ $participant->email }}</td>
-                        <td>{{ $participant->participant_code ?? '—' }}</td>
+                        <td>{{ $participant->participant_code ?? '-' }}</td>
                         <td>{{ ucfirst($participant->status) }}</td>
                     </tr>
                 @empty

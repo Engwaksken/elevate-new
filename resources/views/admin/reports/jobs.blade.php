@@ -29,11 +29,11 @@
                 @forelse($events as $e)
                     <tr>
                         <td>{{ $userNames[$e->user_id] ?? 'User #'.$e->user_id }}</td>
-                        <td>{{ $e->job_id ? ($jobTitles[$e->job_id] ?? 'Job #'.$e->job_id) : '—' }}</td>
+                        <td>{{ $e->job_id ? ($jobTitles[$e->job_id] ?? 'Job #'.$e->job_id) : '-' }}</td>
                         <td><span class="status-chip {{ $e->event_type }}">{{ ucwords(str_replace('_', ' ', $e->event_type)) }}</span></td>
-                        <td>{{ $e->employer ?: '—' }}</td>
-                        <td>{{ $e->position ?: '—' }}</td>
-                        <td>{{ $e->event_date ? \Illuminate\Support\Carbon::parse($e->event_date)->format('d M Y') : '—' }}</td>
+                        <td>{{ $e->employer ?: '-' }}</td>
+                        <td>{{ $e->position ?: '-' }}</td>
+                        <td>{{ $e->event_date ? \Illuminate\Support\Carbon::parse($e->event_date)->format('d M Y') : '-' }}</td>
                     </tr>
                 @empty
                     <tr><td colspan="6"><div class="admin-empty">No tracking events recorded yet.</div></td></tr>

@@ -31,9 +31,9 @@
 <tbody>
 @forelse($records as $source)
 <tr>
-    <td>@if($source->usage_count > 0)<input type="checkbox" disabled aria-label="{{ $source->name }} is in use and cannot be deleted" title="In use — cannot be deleted">@else<input type="checkbox" data-row-select value="{{ $source->id }}" aria-label="Select {{ $source->name }}">@endif</td>
+    <td>@if($source->usage_count > 0)<input type="checkbox" disabled aria-label="{{ $source->name }} is in use and cannot be deleted" title="In use - cannot be deleted">@else<input type="checkbox" data-row-select value="{{ $source->id }}" aria-label="Select {{ $source->name }}">@endif</td>
     <td><strong>{{ $source->name }}</strong><small class="admin-cell-hint">{{ $source->code ?: 'No code' }}</small></td>
-    <td>{{ $source->description ? \Illuminate\Support\Str::limit($source->description, 90) : '—' }}</td>
+    <td>{{ $source->description ? \Illuminate\Support\Str::limit($source->description, 90) : '-' }}</td>
     <td>{{ $source->usage_count ? number_format($source->usage_count).' record(s)' : 'Not used yet' }}</td>
     <td><span class="status-chip {{ $source->is_active ? 'active' : 'inactive' }}">{{ $source->is_active ? 'Active' : 'Inactive' }}</span></td>
     <td class="table-actions"><div class="action-group">
@@ -42,7 +42,7 @@
             <button class="btn-icon" type="submit" aria-label="{{ $source->is_active ? 'Deactivate' : 'Activate' }} {{ $source->name }}" title="{{ $source->is_active ? 'Deactivate' : 'Activate' }}"><i class="fas {{ $source->is_active ? 'fa-circle-pause' : 'fa-circle-play' }}"></i></button>
         </form>
         @if($source->usage_count > 0)
-        <button class="btn-icon danger" type="button" disabled aria-label="{{ $source->name }} is in use and cannot be deleted" title="In use — deactivate instead"><i class="fas fa-trash"></i></button>
+        <button class="btn-icon danger" type="button" disabled aria-label="{{ $source->name }} is in use and cannot be deleted" title="In use - deactivate instead"><i class="fas fa-trash"></i></button>
         @else
         <button class="btn-icon danger" type="button" data-modal-open="fundingSourceDelete{{ $source->id }}" aria-label="Delete {{ $source->name }}" title="Delete"><i class="fas fa-trash"></i></button>
         @endif

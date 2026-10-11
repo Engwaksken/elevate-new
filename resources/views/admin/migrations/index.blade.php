@@ -80,7 +80,7 @@
 <tr>
     <td><strong>{{ $batch->batch_name }}</strong><small class="admin-cell-hint">#{{ $batch->id }}</small></td>
     <td>{{ ucfirst($batch->source_system) }}</td>
-    <td>{{ $batch->source_file ?: '—' }}</td>
+    <td>{{ $batch->source_file ?: '-' }}</td>
     <td>{{ number_format($batch->total_rows) }}</td>
     <td>{{ number_format($batch->successful_rows) }}</td>
     <td>{{ number_format($batch->failed_rows) }}</td>

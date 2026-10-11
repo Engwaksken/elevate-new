@@ -2,7 +2,7 @@
 @section('title','Quotations | ElevateHer360 Administration')
 @section('content')
 <div class="admin-page-header">
-<div><span class="admin-eyebrow">Procurement</span><h1>Quotations — {{ $purchaseRequest->request_number }}</h1><p>Record supplier quotations and evaluation scores.</p></div>
+<div><span class="admin-eyebrow">Procurement</span><h1>Quotations - {{ $purchaseRequest->request_number }}</h1><p>Record supplier quotations and evaluation scores.</p></div>
 <div class="admin-page-actions"><x-export-buttons /><a href="{{ route('admin.procurement.requests.index') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Requests</a><button type="button" class="btn btn-primary" data-modal-open="addQuotationModal"><i class="fas fa-plus"></i> Add Quotation</button></div>
 </div>
 
@@ -19,10 +19,10 @@
 <tbody>
 @forelse($purchaseRequest->quotations as $quotation)
 <tr>
-<td><strong>{{ data_get($quotation,'supplier.name','—') }}</strong></td>
-<td>{{ $quotation->quotation_number ?: '—' }}</td>
-<td>{{ optional($quotation->quotation_date)->format('d M Y') ?: '—' }}</td>
-<td>{{ optional($quotation->valid_until)->format('d M Y') ?: '—' }}</td>
+<td><strong>{{ data_get($quotation,'supplier.name','-') }}</strong></td>
+<td>{{ $quotation->quotation_number ?: '-' }}</td>
+<td>{{ optional($quotation->quotation_date)->format('d M Y') ?: '-' }}</td>
+<td>{{ optional($quotation->valid_until)->format('d M Y') ?: '-' }}</td>
 <td>{{ $quotation->currency }} {{ number_format((float)$quotation->total_amount,2) }}</td>
 <td><span class="status-chip {{ $quotation->status }}">{{ ucfirst(str_replace('_',' ',$quotation->status)) }}</span></td>
 <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-modal-open="evaluateQuotation{{ $quotation->id }}"><i class="fas fa-star"></i> Evaluate</button></td>

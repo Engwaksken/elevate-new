@@ -35,7 +35,7 @@
 <tr>
 <td>{{$r->user?->name ?? 'Anonymous'}}<small class="admin-cell-hint">{{$r->user?->email}}</small></td>
 <td>{{ucfirst($r->status)}}</td>
-<td>{{$r->submitted_at?->format('d M Y H:i') ?? '—'}}</td>
+<td>{{$r->submitted_at?->format('d M Y H:i') ?? '-'}}</td>
 <td>
 @foreach($r->answers as $a)
 <div class="eh-response-answer"><strong>{{$a->question?->question_text}}</strong><span>{{$a->answer_text ?? implode(', ',$a->answer_json??[])}}</span></div>

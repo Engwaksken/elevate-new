@@ -192,7 +192,7 @@ class AuditLog extends Model
     private function formatValue(mixed $value): string
     {
         if ($value === null || $value === '') {
-            return '—';
+            return '-';
         }
 
         if (is_bool($value)) {
@@ -208,7 +208,7 @@ class AuditLog extends Model
 
         if (is_array($value)) {
             if ($value === []) {
-                return '—';
+                return '-';
             }
 
             return collect($value)

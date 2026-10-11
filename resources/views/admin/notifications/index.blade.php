@@ -65,7 +65,7 @@
                 <div class="form-group full"><label>Action link (optional)</label><input type="url" name="action_url" value="{{ old('action_url') }}" maxlength="2048" placeholder="https://..."></div>
                 <div class="form-group"><label>Selected users</label><select name="user_ids[]" multiple size="8" style="height:auto;min-height:180px">
                     @foreach($recipientUsers as $recipient)
-                        <option value="{{ $recipient->id }}" @selected(in_array((string)$recipient->id, array_map('strval', old('user_ids', [])), true))>{{ $recipient->name }} — {{ $recipient->email }} ({{ ucfirst($recipient->user_type) }})</option>
+                        <option value="{{ $recipient->id }}" @selected(in_array((string)$recipient->id, array_map('strval', old('user_ids', [])), true))>{{ $recipient->name }} - {{ $recipient->email }} ({{ ucfirst($recipient->user_type) }})</option>
                     @endforeach
                 </select><small class="form-hint">Use Ctrl/Command to select multiple individual users.</small></div>
                 <div class="form-group"><label>Selected roles</label><div style="display:grid;gap:8px;max-height:180px;overflow:auto;padding:10px;border:1px solid var(--border-color,#d0d5dd);border-radius:8px">
@@ -88,7 +88,7 @@
 <tbody>
 @forelse($notifications as $notification)
 <tr>
-    <td><strong>{{ data_get($notification,'user.name','—') }}</strong><small class="admin-cell-hint">{{ data_get($notification,'user.email','') }}</small></td>
+    <td><strong>{{ data_get($notification,'user.name','-') }}</strong><small class="admin-cell-hint">{{ data_get($notification,'user.email','') }}</small></td>
     <td>{{ ucfirst(str_replace('_',' ',$notification->type)) }}</td>
     <td><strong>{{ $notification->title }}</strong><small class="admin-cell-hint">{{ Str::limit($notification->message,100) }}</small></td>
     <td>{{ optional($notification->created_at)->format('d M Y H:i') }}</td>
@@ -119,10 +119,10 @@
     </div>
     <div class="eh-modal-body">
         <dl class="audit-meta" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-            <div><dt>Recipient</dt><dd>{{ data_get($notification,'user.name','—') }}@if(data_get($notification,'user.email'))<small>{{ data_get($notification,'user.email') }}</small>@endif</dd></div>
+            <div><dt>Recipient</dt><dd>{{ data_get($notification,'user.name','-') }}@if(data_get($notification,'user.email'))<small>{{ data_get($notification,'user.email') }}</small>@endif</dd></div>
             <div><dt>Status</dt><dd><span class="status-chip {{ $notification->read_at ? 'active' : 'pending' }}">{{ $notification->read_at ? 'Read' : 'Unread' }}</span>@if($notification->read_at)<small>{{ $notification->read_at->format('d M Y H:i') }}</small>@endif</dd></div>
             <div><dt>Created</dt><dd>{{ optional($notification->created_at)->format('d M Y H:i') }}</dd></div>
-            <div><dt>Linked page</dt><dd>@if($notification->action_url)<a href="{{ $notification->action_url }}" target="_blank" rel="noopener">{{ \Illuminate\Support\Str::limit($notification->action_url, 60) }}</a>@else — @endif</dd></div>
+            <div><dt>Linked page</dt><dd>@if($notification->action_url)<a href="{{ $notification->action_url }}" target="_blank" rel="noopener">{{ \Illuminate\Support\Str::limit($notification->action_url, 60) }}</a>@else - @endif</dd></div>
         </dl>
         <p class="notification-detail-message">{{ $notification->message ?: 'No message body.' }}</p>
     </div>

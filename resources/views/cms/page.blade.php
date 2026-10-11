@@ -5,7 +5,7 @@
 @php($cms = app(\App\Services\CmsContentService::class))
 @php($sections = $cms->sections($content))
 <div class="container" style="padding:0 16px 48px">
-@if($preview ?? false)<div class="warning-box">Draft preview — this content is not necessarily published.</div>@endif
+@if($preview ?? false)<div class="warning-box">Draft preview - this content is not necessarily published.</div>@endif
 @php($showRoleChooser = request()->routeIs('home') && !($preview ?? false))
 @php($leadHero = !empty($sections) && (($sections[0]['type'] ?? null) === 'hero'))
 @if($showRoleChooser && !$leadHero)<x-role-chooser />@endif

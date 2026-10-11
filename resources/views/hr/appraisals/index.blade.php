@@ -88,7 +88,7 @@
                             <strong>{{ data_get($appraisal, 'cycle.name') ?? 'Appraisal' }}</strong>
                         </td>
 
-                        <td>{{ data_get($appraisal, 'kpiTemplate.name') ?? '—' }}</td>
+                        <td>{{ data_get($appraisal, 'kpiTemplate.name') ?? '-' }}</td>
 
                         <td>
                             <span class="status-badge">
@@ -103,7 +103,7 @@
                         <td>
                             {{ $appraisal->performance_percent !== null
                                 ? number_format((float)$appraisal->performance_percent,1).'%'
-                                : '—' }}
+                                : '-' }}
                         </td>
 
                         <td class="text-end">

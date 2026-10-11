@@ -140,7 +140,7 @@
                         @forelse($recentTasks as $task)
                             <tr>
                                 <td><strong>{{ $task->title }}</strong></td>
-                                <td>{{ optional($task->due_date)->format('d M Y') ?: '—' }}</td>
+                                <td>{{ optional($task->due_date)->format('d M Y') ?: '-' }}</td>
                                 <td><span class="status-chip {{ $task->status }}">{{ ucfirst(str_replace('_', ' ', $task->status)) }}</span></td>
                                 <td>{{ number_format((float) $task->progress_percent, 0) }}%</td>
                             </tr>

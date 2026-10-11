@@ -2,7 +2,7 @@
 @section('title','Assessments | ElevateHer360 Administration')
 @section('content')
 <div class="admin-page-header">
-<div><span class="admin-eyebrow">Programme Delivery</span><h1>Assessments — {{ $course->title }}</h1><p>Build quizzes, assignments and exams for this course.</p></div>
+<div><span class="admin-eyebrow">Programme Delivery</span><h1>Assessments - {{ $course->title }}</h1><p>Build quizzes, assignments and exams for this course.</p></div>
 <div class="admin-page-actions"><x-export-buttons />
 <a href="{{ route('admin.elearning.courses.index') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Courses</a>
 @if(Route::has('admin.elearning.gradebook.index'))<a href="{{ route('admin.elearning.gradebook.index',$course) }}" class="btn btn-outline"><i class="fas fa-table-list"></i> Gradebook</a>@endif
@@ -40,7 +40,7 @@
 <td>{{ $assessment->questions_count }}</td>
 <td>{{ number_format((float)$assessment->pass_mark,0) }}%</td>
 <td>{{ $assessment->max_attempts }}</td>
-<td>{{ optional($assessment->opens_at)->format('d M Y') ?: '—' }} — {{ optional($assessment->due_at)->format('d M Y') ?: '—' }}</td>
+<td>{{ optional($assessment->opens_at)->format('d M Y') ?: '-' }} - {{ optional($assessment->due_at)->format('d M Y') ?: '-' }}</td>
 <td><span class="status-chip {{ $assessment->is_published ? 'published' : 'draft' }}">{{ $assessment->is_published ? 'Published' : 'Draft' }}</span></td>
 <td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('admin.elearning.assessments.edit',[$course,$assessment]) }}"><i class="fas fa-list-ol"></i> Questions</a></td>
 </tr>

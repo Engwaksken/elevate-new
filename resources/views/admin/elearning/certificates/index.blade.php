@@ -104,11 +104,11 @@ $bulkTableId = 'certificatesTable';
                         <td><input type="checkbox" data-row-select value="{{ $certificate->id }}" aria-label="Select {{ $certificate->certificate_number }}"></td>
                         <td><strong>{{ $certificate->certificate_number }}</strong></td>
                         <td>
-                            <strong>{{ data_get($certificate,'user.name','—') }}</strong>
+                            <strong>{{ data_get($certificate,'user.name','-') }}</strong>
                             <small class="admin-cell-hint">{{ data_get($certificate,'user.email') }}</small>
                         </td>
-                        <td>{{ data_get($certificate,'course.title','—') }}</td>
-                        <td>{{ optional($certificate->issued_on)->format('d M Y') ?: '—' }}</td>
+                        <td>{{ data_get($certificate,'course.title','-') }}</td>
+                        <td>{{ optional($certificate->issued_on)->format('d M Y') ?: '-' }}</td>
                         <td>
                             <span class="status-chip {{ $certificate->pdf_path ? 'active' : 'pending' }}">
                                 {{ $certificate->pdf_path ? 'Generated' : 'Pending' }}

@@ -16,7 +16,7 @@
 
 <div class="admin-stats-grid compact">
     <div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-chart-line"></i></span><div><small>Overall Progress</small><strong>{{ number_format((float)$enrolment->progress_percent, 1) }}%</strong></div></div>
-    <div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-star"></i></span><div><small>Final Score</small><strong>{{ $enrolment->final_score !== null ? number_format((float)$enrolment->final_score, 1).'%' : '—' }}</strong></div></div>
+    <div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-star"></i></span><div><small>Final Score</small><strong>{{ $enrolment->final_score !== null ? number_format((float)$enrolment->final_score, 1).'%' : '-' }}</strong></div></div>
     <div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-user-check"></i></span><div><small>Status</small><strong>{{ ucfirst(str_replace('_', ' ', $enrolment->status)) }}</strong></div></div>
     <div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-certificate"></i></span><div><small>Certificate</small><strong>{{ $certificate ? 'Issued' : 'Not issued' }}</strong></div></div>
 </div>
@@ -38,10 +38,10 @@
                 <tr>
                     <td>{{ $lesson->module_title }}</td>
                     <td>{{ $lesson->title }}</td>
-                    <td>{{ $lesson->first_opened_at ? \Illuminate\Support\Carbon::parse($lesson->first_opened_at)->format('d M Y H:i') : '—' }}</td>
+                    <td>{{ $lesson->first_opened_at ? \Illuminate\Support\Carbon::parse($lesson->first_opened_at)->format('d M Y H:i') : '-' }}</td>
                     <td>{{ $lesson->completed_at ? \Illuminate\Support\Carbon::parse($lesson->completed_at)->format('d M Y H:i') : 'Incomplete' }}</td>
                     <td>{{ gmdate('H:i:s', (int)($lesson->time_spent_seconds ?? 0)) }}</td>
-                    <td>{{ $lesson->last_opened_at ? \Illuminate\Support\Carbon::parse($lesson->last_opened_at)->format('d M Y H:i') : '—' }}</td>
+                    <td>{{ $lesson->last_opened_at ? \Illuminate\Support\Carbon::parse($lesson->last_opened_at)->format('d M Y H:i') : '-' }}</td>
                 </tr>
             @empty
                 <tr><td colspan="6">No lesson activity recorded.</td></tr>
@@ -65,9 +65,9 @@
                     <td>{{ ucfirst($attempt->assessment?->type ?? '') }}</td>
                     <td>{{ $attempt->attempt_number }}</td>
                     <td>{{ ucfirst($attempt->status) }}</td>
-                    <td>{{ $attempt->percentage !== null ? number_format((float)$attempt->percentage, 1).'%' : '—' }}</td>
-                    <td>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '—' }}</td>
-                    <td>{{ $attempt->instructor_feedback ?: '—' }}</td>
+                    <td>{{ $attempt->percentage !== null ? number_format((float)$attempt->percentage, 1).'%' : '-' }}</td>
+                    <td>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '-' }}</td>
+                    <td>{{ $attempt->instructor_feedback ?: '-' }}</td>
                 </tr>
             @empty
                 <tr><td colspan="7">No assessment attempts recorded.</td></tr>
@@ -89,9 +89,9 @@
                 <tr>
                     <td>{{ $record->title }}</td>
                     <td>{{ \Illuminate\Support\Carbon::parse($record->session_date)->format('d M Y') }}</td>
-                    <td>{{ $record->venue ?: '—' }}</td>
+                    <td>{{ $record->venue ?: '-' }}</td>
                     <td>{{ $record->status ? ucfirst($record->status) : 'Not recorded' }}</td>
-                    <td>{{ $record->remarks ?: '—' }}</td>
+                    <td>{{ $record->remarks ?: '-' }}</td>
                 </tr>
             @empty
                 <tr><td colspan="5">No attendance sessions recorded.</td></tr>

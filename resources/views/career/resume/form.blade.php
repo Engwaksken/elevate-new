@@ -105,7 +105,7 @@
                 <div class="career-form-panel">@include('career.resume.extras-form', ['item'=>null])</div>
             @endforeach
             <h2>Portfolio files</h2>
-            @foreach($resume->portfolioFiles as $file)<div class="eh-data-row"><a href="{{ route('career.portfolio.download', [$resume, $file]) }}">{{ $file->label }} — {{ $file->original_name }}</a><form method="POST" action="{{ route('career.portfolio.destroy', [$resume, $file]) }}">@csrf @method('DELETE')<button class="btn btn-outline btn-sm">Remove file</button></form></div>@endforeach
+            @foreach($resume->portfolioFiles as $file)<div class="eh-data-row"><a href="{{ route('career.portfolio.download', [$resume, $file]) }}">{{ $file->label }} - {{ $file->original_name }}</a><form method="POST" action="{{ route('career.portfolio.destroy', [$resume, $file]) }}">@csrf @method('DELETE')<button class="btn btn-outline btn-sm">Remove file</button></form></div>@endforeach
             <form method="POST" enctype="multipart/form-data" action="{{ route('career.portfolio.store', $resume) }}">@csrf<div class="form-group"><label>File label / project name</label><input name="label" maxlength="190"></div><div class="form-group"><label>Portfolio file (up to 10 MB)</label><input type="file" name="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.zip,.txt" required></div><button class="btn btn-primary">Upload portfolio file</button></form>
         </div></section>
         <section class="eh-tab-pane" data-eh-pane="experience">

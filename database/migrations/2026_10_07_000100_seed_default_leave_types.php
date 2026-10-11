@@ -5,8 +5,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Staff couldn't request leave because no leave types existed (there is no
- * seeder or HR screen for them). Adds a standard set — Uganda Employment
- * Act defaults — only when the table is empty, so types HR already set up
+ * seeder or HR screen for them). Adds a standard set - Uganda Employment
+ * Act defaults - only when the table is empty, so types HR already set up
  * are never changed.
  */
 return new class extends Migration

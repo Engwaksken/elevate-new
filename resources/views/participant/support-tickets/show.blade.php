@@ -3,7 +3,7 @@
 
 @section('content')
 <div class="page-header">
-    <div><span class="eh-kicker">Support request #{{ $ticket->id }}</span><h1>{{ $ticket->subject }}</h1><p>Submitted {{ $ticket->created_at?->format('d M Y, H:i') ?: '—' }}</p></div>
+    <div><span class="eh-kicker">Support request #{{ $ticket->id }}</span><h1>{{ $ticket->subject }}</h1><p>Submitted {{ $ticket->created_at?->format('d M Y, H:i') ?: '-' }}</p></div>
     <div class="page-actions"><a href="{{ route('participant.support-tickets.index') }}" class="btn btn-outline">Back to my requests</a></div>
 </div>
 
@@ -17,8 +17,8 @@
 <section class="sp-card" aria-labelledby="sp-details-title">
     <h2 id="sp-details-title">Request details</h2>
     <dl class="sp-dl">
-        <div><dt>Category</dt><dd>{{ $ticket->category ?: '—' }}</dd></div>
-        <div><dt>Priority</dt><dd>{{ $ticket->priority ? ucfirst($ticket->priority) : '—' }}</dd></div>
+        <div><dt>Category</dt><dd>{{ $ticket->category ?: '-' }}</dd></div>
+        <div><dt>Priority</dt><dd>{{ $ticket->priority ? ucfirst($ticket->priority) : '-' }}</dd></div>
         <div class="sp-dl-full"><dt>Description</dt><dd>{!! nl2br(e($ticket->description)) !!}</dd></div>
     </dl>
 </section>

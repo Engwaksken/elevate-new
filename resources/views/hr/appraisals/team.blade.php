@@ -63,7 +63,7 @@
                         <td>
                             <strong>{{ data_get($appraisal,'employee.user.name') ?? 'Staff Member' }}</strong>
                         </td>
-                        <td>{{ data_get($appraisal,'cycle.name') ?? '—' }}</td>
+                        <td>{{ data_get($appraisal,'cycle.name') ?? '-' }}</td>
                         <td>{{ ucwords(str_replace('_',' ',(string)$appraisal->status)) }}</td>
                         <td>{{ number_format((float)($appraisal->completion_percent ?? 0),1) }}%</td>
                         <td class="text-end">

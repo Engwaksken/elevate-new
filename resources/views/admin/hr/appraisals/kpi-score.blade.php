@@ -173,7 +173,7 @@
         <span class="admin-stat-icon"><i class="fas fa-chart-line"></i></span>
         <div>
             <small>Performance</small>
-            <strong>{{ $overallPercent !== null ? number_format($overallPercent, 1).'%' : '—' }}</strong>
+            <strong>{{ $overallPercent !== null ? number_format($overallPercent, 1).'%' : '-' }}</strong>
         </div>
     </div>
 
@@ -361,8 +361,8 @@
 
                                                     <tr>
                                                         <td><strong>Week {{ $weekNumber }}</strong></td>
-                                                        <td>{{ data_get($weekRecord, 'actual_target') ?: '—' }}</td>
-                                                        <td>{{ data_get($weekRecord, 'comment') ?: '—' }}</td>
+                                                        <td>{{ data_get($weekRecord, 'actual_target') ?: '-' }}</td>
+                                                        <td>{{ data_get($weekRecord, 'comment') ?: '-' }}</td>
                                                     </tr>
                                                 @endforeach
                                             </tbody>
@@ -375,7 +375,7 @@
                                         <label>Employee Rating</label>
                                         <input
                                             type="text"
-                                            value="{{ data_get($scoreRecord, 'employee_rating') ?? '—' }}"
+                                            value="{{ data_get($scoreRecord, 'employee_rating') ?? '-' }}"
                                             placeholder="Employee rating"
                                             readonly
                                         >
@@ -513,7 +513,7 @@
                                     <label>Employee Rating</label>
                                     <input
                                         type="text"
-                                        value="{{ data_get($scoreRecord, 'employee_rating') ?? '—' }}"
+                                        value="{{ data_get($scoreRecord, 'employee_rating') ?? '-' }}"
                                         placeholder="Employee rating"
                                         readonly
                                     >

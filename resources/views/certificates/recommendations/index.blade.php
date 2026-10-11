@@ -92,12 +92,12 @@
         <input type="checkbox" value="{{ $recommendation->id }}" data-row-select aria-label="Select {{ $recommendation->user?->name }} for delete">
     </td>
     @endif
-    <td><strong>{{ $recommendation->user?->name }}</strong><small class="admin-cell-hint">{{ $recommendation->user?->participant_code ?? '—' }} · {{ $recommendation->user?->email }}</small></td>
+    <td><strong>{{ $recommendation->user?->name }}</strong><small class="admin-cell-hint">{{ $recommendation->user?->participant_code ?? '-' }} · {{ $recommendation->user?->email }}</small></td>
     <td>
         <span class="cert-context"><i class="fas {{ $recommendation->context_type === 'event' ? 'fa-calendar-days' : 'fa-graduation-cap' }}"></i> {{ $recommendation->context_type === 'event' ? 'Event' : 'Course' }}</span>
         <strong>{{ $recommendation->contextTitle() }}</strong>
     </td>
-    <td>{{ $recommendation->recommender?->name ?? '—' }}<small class="admin-cell-hint">{{ $recommendation->created_at?->format('d M Y') }}</small></td>
+    <td>{{ $recommendation->recommender?->name ?? '-' }}<small class="admin-cell-hint">{{ $recommendation->created_at?->format('d M Y') }}</small></td>
     <td>
         @include('certificates.recommendations._status', ['status' => $recommendation->status])
         @if($recommendation->reviewed_at)<small class="admin-cell-hint">{{ $recommendation->reviewer?->name }} · {{ $recommendation->reviewed_at->format('d M Y') }}</small>@endif
@@ -155,10 +155,10 @@
     <div class="eh-modal-body">
         <dl class="audit-meta" style="grid-template-columns:repeat(2,minmax(0,1fr))">
             <div><dt>Status</dt><dd>@include('certificates.recommendations._status', ['status' => $recommendation->status])</dd></div>
-            <div><dt>Recommended</dt><dd>{{ $recommendation->recommender?->name ?? '—' }}<small>{{ $recommendation->created_at?->format('d M Y H:i') }}</small></dd></div>
+            <div><dt>Recommended</dt><dd>{{ $recommendation->recommender?->name ?? '-' }}<small>{{ $recommendation->created_at?->format('d M Y H:i') }}</small></dd></div>
             @if($recommendation->reviewed_at)
-                <div><dt>Reviewed by</dt><dd>{{ $recommendation->reviewer?->name ?? '—' }}<small>{{ $recommendation->reviewed_at->format('d M Y H:i') }}</small></dd></div>
-                <div><dt>Certificate</dt><dd>{{ $recommendation->certificate?->certificate_number ?? ($recommendation->event_certificate_id ? 'Event certificate issued' : '—') }}</dd></div>
+                <div><dt>Reviewed by</dt><dd>{{ $recommendation->reviewer?->name ?? '-' }}<small>{{ $recommendation->reviewed_at->format('d M Y H:i') }}</small></dd></div>
+                <div><dt>Certificate</dt><dd>{{ $recommendation->certificate?->certificate_number ?? ($recommendation->event_certificate_id ? 'Event certificate issued' : '-') }}</dd></div>
             @endif
         </dl>
         <div class="cert-note"><strong>Reason for recommendation</strong><p>{{ $recommendation->reason ?: 'No reason given.' }}</p></div>

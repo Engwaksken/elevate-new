@@ -9,7 +9,7 @@
 </div>
 <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Participant</th><th>Overall</th><th>Relevance</th><th>Facilitation</th><th>Organisation</th><th>Recommend</th><th>Key Learning</th></tr></thead><tbody>
 @forelse($responses as $response)
-<tr><td><strong>{{ $response->user?->name ?: 'Participant' }}</strong><small class="admin-cell-hint">{{ $response->user?->email }}</small></td><td>{{ $response->overall_rating }}/5</td><td>{{ $response->relevance_rating }}/5</td><td>{{ $response->facilitation_rating }}/5</td><td>{{ $response->organisation_rating }}/5</td><td>{{ $response->recommend_rating }}/5</td><td>{{ Str::limit($response->key_learning,80) ?: '—' }}</td></tr>
+<tr><td><strong>{{ $response->user?->name ?: 'Participant' }}</strong><small class="admin-cell-hint">{{ $response->user?->email }}</small></td><td>{{ $response->overall_rating }}/5</td><td>{{ $response->relevance_rating }}/5</td><td>{{ $response->facilitation_rating }}/5</td><td>{{ $response->organisation_rating }}/5</td><td>{{ $response->recommend_rating }}/5</td><td>{{ Str::limit($response->key_learning,80) ?: '-' }}</td></tr>
 @empty<tr><td colspan="7"><div class="admin-empty">No feedback submitted yet.</div></td></tr>@endforelse
 </tbody></table></div><div class="admin-pagination">{{ $responses->links() }}</div></div>
 @endsection

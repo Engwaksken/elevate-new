@@ -35,11 +35,11 @@ $bulkTableId = 'mentorsTable';
 @forelse($mentors as $mentor)
 <tr>
 <td><input type="checkbox" data-row-select value="{{ $mentor->id }}" aria-label="Select {{ data_get($mentor,'user.name','Mentor') }}"></td>
-<td><strong>{{ data_get($mentor,'user.name','—') }}</strong><small class="admin-cell-hint">{{ data_get($mentor,'user.email','') }}</small></td>
-<td>{{ $mentor->organisation ?: '—' }}</td>
-<td>{{ $mentor->job_title ?: '—' }}</td>
+<td><strong>{{ data_get($mentor,'user.name','-') }}</strong><small class="admin-cell-hint">{{ data_get($mentor,'user.email','') }}</small></td>
+<td>{{ $mentor->organisation ?: '-' }}</td>
+<td>{{ $mentor->job_title ?: '-' }}</td>
 <td><span class="status-chip {{ $mentor->status }}">{{ ucfirst($mentor->status) }}</span></td>
-<td>{{ optional($mentor->created_at)->format('d M Y') ?: '—' }}</td>
+<td>{{ optional($mentor->created_at)->format('d M Y') ?: '-' }}</td>
 <td class="table-actions"><div class="action-group">
 <button type="button" class="btn-icon" title="Edit mentor" data-modal-open="editMentor{{ $mentor->id }}"><i class="fas fa-pen"></i></button>
 @if($mentor->status==='pending')

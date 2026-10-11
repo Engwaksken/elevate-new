@@ -78,10 +78,10 @@
 <tbody>
 @forelse($records as $record)
 <tr>
-    <td>{{ $record->source_record_id ?: '—' }}</td>
-    <td>{{ data_get($record->source_payload,'name') ?: data_get($record->source_payload,'full_name') ?: '—' }}</td>
-    <td>{{ data_get($record->source_payload,'email') ?: '—' }}</td>
-    <td>{{ data_get($record->source_payload,'phone') ?: data_get($record->source_payload,'contact') ?: '—' }}</td>
+    <td>{{ $record->source_record_id ?: '-' }}</td>
+    <td>{{ data_get($record->source_payload,'name') ?: data_get($record->source_payload,'full_name') ?: '-' }}</td>
+    <td>{{ data_get($record->source_payload,'email') ?: '-' }}</td>
+    <td>{{ data_get($record->source_payload,'phone') ?: data_get($record->source_payload,'contact') ?: '-' }}</td>
     <td>
         <span class="status-chip {{ $record->match_status ?: 'pending' }}">
             {{ ucfirst($record->match_status ?: 'Pending') }}
@@ -92,7 +92,7 @@
             <strong>{{ $record->matchedUser->name }}</strong>
             <small class="admin-cell-hint">{{ $record->matchedUser->email }}</small>
         @else
-            —
+            -
         @endif
     </td>
     <td class="table-actions">

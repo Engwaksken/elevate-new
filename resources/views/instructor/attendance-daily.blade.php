@@ -2,7 +2,7 @@
 @section('title','Daily Attendance | ElevateHer360')
 @section('content')
 <div class="admin-page-header">
-<div><span class="admin-eyebrow">Course Attendance</span><h1>Daily Attendance — {{ $course->title }}</h1><p>Track attendance by participant and training day.</p></div>
+<div><span class="admin-eyebrow">Course Attendance</span><h1>Daily Attendance - {{ $course->title }}</h1><p>Track attendance by participant and training day.</p></div>
 <div class="admin-page-actions">
 <a href="{{ route('instructor.attendance.create',$course) }}" class="btn btn-primary"><i class="fas fa-plus"></i> Record Attendance</a>
 </div>
@@ -29,7 +29,7 @@
 <td><strong>{{ $row['user']?->name }}</strong><small class="admin-cell-hint">{{ $row['user']?->email }}</small></td>
 @foreach($sessions as $session)
 @php($status=$row['days'][$session->session_date->format('Y-m-d')] ?? null)
-<td><span class="attendance-dot {{ $status ?: 'none' }}" title="{{ $status ?: 'No record' }}">{{ $status ? strtoupper(substr($status,0,1)) : '—' }}</span></td>
+<td><span class="attendance-dot {{ $status ?: 'none' }}" title="{{ $status ?: 'No record' }}">{{ $status ? strtoupper(substr($status,0,1)) : '-' }}</span></td>
 @endforeach
 <td>{{ $row['present'] }}</td><td>{{ $row['absent'] }}</td><td>{{ $row['late'] }}</td><td>{{ $row['excused'] }}</td>
 </tr>

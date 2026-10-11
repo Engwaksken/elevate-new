@@ -29,9 +29,9 @@ $bulkTableId = 'matchesTable';
 @forelse($matches as $match)
 <tr>
 <td><input type="checkbox" data-row-select value="{{ $match->id }}" aria-label="Select match {{ $match->id }}"></td>
-<td>{{ data_get($match,'mentor.user.name',data_get($match,'mentor.name','—')) }}</td>
-<td>{{ data_get($match,'mentee.user.name',data_get($match,'mentee.name','—')) }}</td>
-<td>{{ optional($match->start_date)->format('d M Y') ?: '—' }} — {{ optional($match->end_date)->format('d M Y') ?: '—' }}</td>
+<td>{{ data_get($match,'mentor.user.name',data_get($match,'mentor.name','-')) }}</td>
+<td>{{ data_get($match,'mentee.user.name',data_get($match,'mentee.name','-')) }}</td>
+<td>{{ optional($match->start_date)->format('d M Y') ?: '-' }} - {{ optional($match->end_date)->format('d M Y') ?: '-' }}</td>
 <td><span class="status-chip {{ $match->status }}">{{ ucfirst($match->status) }}</span></td>
 <td class="table-actions"><div class="action-group"><button type="button" class="btn-icon" data-modal-open="editMatch{{ $match->id }}"><i class="fas fa-pen"></i></button><button type="button" class="btn-icon danger" data-modal-open="deleteMatch{{ $match->id }}"><i class="fas fa-trash"></i></button></div></td>
 </tr>

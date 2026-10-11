@@ -56,7 +56,7 @@
         <span class="admin-stat-icon"><i class="fas fa-users"></i></span>
         <div>
             <small>Available Slots</small>
-            <strong>{{ $courseCall->available_slots ?? '—' }}</strong>
+            <strong>{{ $courseCall->available_slots ?? '-' }}</strong>
         </div>
     </div>
 
@@ -138,32 +138,32 @@
     <div class="eh-details-grid">
         <div>
             <small>Programme</small>
-            <strong>{{ $courseCall->programme?->name ?? '—' }}</strong>
+            <strong>{{ $courseCall->programme?->name ?? '-' }}</strong>
         </div>
 
         <div>
             <small>Project</small>
-            <strong>{{ $courseCall->project?->name ?? '—' }}</strong>
+            <strong>{{ $courseCall->project?->name ?? '-' }}</strong>
         </div>
 
         <div>
             <small>Cohort</small>
-            <strong>{{ $courseCall->cohort?->name ?? '—' }}</strong>
+            <strong>{{ $courseCall->cohort?->name ?? '-' }}</strong>
         </div>
 
         <div>
             <small>Opens</small>
-            <strong>{{ $courseCall->opens_at?->format('d M Y H:i') ?? '—' }}</strong>
+            <strong>{{ $courseCall->opens_at?->format('d M Y H:i') ?? '-' }}</strong>
         </div>
 
         <div>
             <small>Closes</small>
-            <strong>{{ $courseCall->closes_at?->format('d M Y H:i') ?? '—' }}</strong>
+            <strong>{{ $courseCall->closes_at?->format('d M Y H:i') ?? '-' }}</strong>
         </div>
 
         <div>
             <small>Available Slots</small>
-            <strong>{{ $courseCall->available_slots ?? '—' }}</strong>
+            <strong>{{ $courseCall->available_slots ?? '-' }}</strong>
         </div>
 
         <div>

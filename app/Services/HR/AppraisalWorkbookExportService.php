@@ -169,10 +169,10 @@ class AppraisalWorkbookExportService
         $sheet->setCellValue(
             'E14',
             sprintf(
-                'Performance: %s%% — %s',
+                'Performance: %s%% - %s',
                 $appraisal->performance_percent !== null
                     ? number_format((float)$appraisal->performance_percent,1)
-                    : '—',
+                    : '-',
                 $this->ratingLabel(
                     $appraisal->performance_percent !== null
                         ? (float)$appraisal->performance_percent

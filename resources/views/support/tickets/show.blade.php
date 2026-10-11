@@ -12,7 +12,7 @@
     <div>
         <span class="admin-eyebrow">IT support · Ticket #{{ $ticket->id }}</span>
         <h1>{{ $ticket->subject }}</h1>
-        <p>From {{ $ticket->requester?->name ?? 'Unknown requester' }} · {{ $ticket->created_at?->format('d M Y, H:i') ?: '—' }}</p>
+        <p>From {{ $ticket->requester?->name ?? 'Unknown requester' }} · {{ $ticket->created_at?->format('d M Y, H:i') ?: '-' }}</p>
     </div>
     <div class="admin-page-actions"><a href="{{ route('it-support.tickets.index') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Back to queue</a></div>
 </div>
@@ -21,9 +21,9 @@
     <section class="admin-panel">
         <p style="margin:0 0 14px"><span class="itq-chip itq-chip--{{ $ticket->status }}">{{ $statusLabel($ticket->status) }}</span></p>
         <dl class="itq-dl">
-            <div><dt>Category</dt><dd>{{ ItSupportTicket::categoryLabel($ticket->category) ?: '—' }}</dd></div>
-            <div><dt>Priority</dt><dd>{{ $ticket->priority ? (ItSupportTicket::PRIORITIES[$ticket->priority] ?? ucfirst($ticket->priority)) : '—' }}</dd></div>
-            <div><dt>Requester</dt><dd>{{ $ticket->requester?->name ?? '—' }}@if($ticket->requester?->email)<small class="admin-cell-hint">{{ $ticket->requester->email }}</small>@endif</dd></div>
+            <div><dt>Category</dt><dd>{{ ItSupportTicket::categoryLabel($ticket->category) ?: '-' }}</dd></div>
+            <div><dt>Priority</dt><dd>{{ $ticket->priority ? (ItSupportTicket::PRIORITIES[$ticket->priority] ?? ucfirst($ticket->priority)) : '-' }}</dd></div>
+            <div><dt>Requester</dt><dd>{{ $ticket->requester?->name ?? '-' }}@if($ticket->requester?->email)<small class="admin-cell-hint">{{ $ticket->requester->email }}</small>@endif</dd></div>
             <div><dt>Assigned to</dt><dd>{{ $ticket->assignee?->name ?? 'Unassigned' }}</dd></div>
             @if($ticket->status_updated_at)<div><dt>Last status change</dt><dd>{{ $ticket->status_updated_at->format('d M Y, H:i') }}</dd></div>@endif
         </dl>
@@ -33,7 +33,7 @@
         @if(isset($ticket->responses) && $ticket->responses->isNotEmpty())
             <h2 style="margin:18px 0 8px;font-size:1rem">Responses</h2>
             @foreach($ticket->responses as $response)
-                <div class="itq-body" style="margin-bottom:8px"><small class="admin-cell-hint" style="margin:0 0 4px">{{ $response->user?->name ?? 'Support' }} · {{ $response->created_at?->format('d M Y, H:i') ?: '—' }}</small>{!! nl2br(e($response->message ?? $response->body ?? '')) !!}</div>
+                <div class="itq-body" style="margin-bottom:8px"><small class="admin-cell-hint" style="margin:0 0 4px">{{ $response->user?->name ?? 'Support' }} · {{ $response->created_at?->format('d M Y, H:i') ?: '-' }}</small>{!! nl2br(e($response->message ?? $response->body ?? '')) !!}</div>
             @endforeach
         @endif
     </section>

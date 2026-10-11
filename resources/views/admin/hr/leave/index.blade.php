@@ -17,10 +17,10 @@
 <div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr>@if($isHr)<th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th>@endif<th>Employee</th><th>Leave Type</th><th>Dates</th><th>Days</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($requests as $leave)
 <tr>@if($isHr)<td><input type="checkbox" data-row-select value="{{ $leave->id }}" aria-label="Select {{ data_get($leave,'employee.user.name','leave request') }}"></td>@endif
-<td><strong>{{ data_get($leave,'employee.user.name','—') }}</strong><small class="admin-cell-hint">{{ data_get($leave,'employee.user.email','') }}@if($isHr && $leave->employee?->supervisor) · Supervisor: {{ $leave->employee->supervisor->name }}@endif</small></td>
-<td>{{ data_get($leave,'leaveType.name','—') }}@if($leave->reason)<small class="admin-cell-hint">{{ \Illuminate\Support\Str::limit($leave->reason, 70) }}</small>@endif</td>
-<td>{{ optional($leave->start_date)->format('d M Y') ?: '—' }} — {{ optional($leave->end_date)->format('d M Y') ?: '—' }}</td>
-<td>{{ rtrim(rtrim(number_format((float) $leave->days_requested, 1), '0'), '.') ?: '—' }}</td>
+<td><strong>{{ data_get($leave,'employee.user.name','-') }}</strong><small class="admin-cell-hint">{{ data_get($leave,'employee.user.email','') }}@if($isHr && $leave->employee?->supervisor) · Supervisor: {{ $leave->employee->supervisor->name }}@endif</small></td>
+<td>{{ data_get($leave,'leaveType.name','-') }}@if($leave->reason)<small class="admin-cell-hint">{{ \Illuminate\Support\Str::limit($leave->reason, 70) }}</small>@endif</td>
+<td>{{ optional($leave->start_date)->format('d M Y') ?: '-' }} - {{ optional($leave->end_date)->format('d M Y') ?: '-' }}</td>
+<td>{{ rtrim(rtrim(number_format((float) $leave->days_requested, 1), '0'), '.') ?: '-' }}</td>
 <td><span class="status-chip {{ $chip[$leave->status] ?? $leave->status }}">{{ Leave::statusLabel($leave->status) }}</span>@if($leave->decision_notes)<small class="admin-cell-hint">{{ \Illuminate\Support\Str::limit($leave->decision_notes, 60) }}</small>@endif</td>
 <td class="table-actions"><div class="action-group">
 @if(Access::canSupervisorApprove($me, $leave))<button type="button" class="btn-icon" data-modal-open="supervisor{{ $leave->id }}" title="Supervisor approve" aria-label="Supervisor approve"><i class="fas fa-user-check"></i></button>@endif

@@ -386,7 +386,7 @@
                     <td>{{ $attempt->user?->name }}<br><small>{{ $attempt->user?->email }}</small></td>
                     <td>{{ $attempt->assessment?->title }}<br><small>{{ ucfirst($attempt->assessment?->type ?? '') }}</small></td>
                     <td>{{ ucfirst($attempt->status) }}</td>
-                    <td>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '—' }}</td>
+                    <td>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '-' }}</td>
                     <td>
                         @if($attempt->files->isNotEmpty())
                             <small>{{ $attempt->files->count() }} file(s)</small>
@@ -422,10 +422,10 @@
                             <div class="icm-notice" role="alert"><span><i class="fas fa-triangle-exclamation"></i> {{ $errors->first() }}</span></div>
                         @endif
                         <dl class="audit-meta">
-                            <div><dt>Type</dt><dd>{{ ucfirst($attempt->assessment?->type ?? '—') }}</dd></div>
-                            <div><dt>Submitted</dt><dd>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '—' }}</dd></div>
-                            <div><dt>Total marks</dt><dd>{{ $attempt->assessment?->total_marks ?? '—' }}</dd></div>
-                            <div><dt>Pass mark</dt><dd>{{ $attempt->assessment?->pass_mark ?? '—' }}</dd></div>
+                            <div><dt>Type</dt><dd>{{ ucfirst($attempt->assessment?->type ?? '-') }}</dd></div>
+                            <div><dt>Submitted</dt><dd>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '-' }}</dd></div>
+                            <div><dt>Total marks</dt><dd>{{ $attempt->assessment?->total_marks ?? '-' }}</dd></div>
+                            <div><dt>Pass mark</dt><dd>{{ $attempt->assessment?->pass_mark ?? '-' }}</dd></div>
                         </dl>
                         @if($attempt->submission_text)
                             <div class="form-group full" style="margin-bottom:16px">
@@ -494,9 +494,9 @@
                 <tr>
                     <td>{{ $extension->user?->name }}<br><small>{{ $extension->user?->email }}</small></td>
                     <td>{{ $extension->assessment?->title }}<br><small>{{ ucfirst($extension->assessment?->type ?? '') }}</small></td>
-                    <td>{{ $extension->assessment?->due_at?->format('d M Y H:i') ?? '—' }}</td>
+                    <td>{{ $extension->assessment?->due_at?->format('d M Y H:i') ?? '-' }}</td>
                     <td style="max-width:320px;white-space:pre-line">{{ $extension->reason }}</td>
-                    <td>{{ $extension->requested_due_at?->format('d M Y H:i') ?? '—' }}<br><small class="icm-muted">Sent {{ $extension->created_at?->format('d M Y H:i') }}</small></td>
+                    <td>{{ $extension->requested_due_at?->format('d M Y H:i') ?? '-' }}<br><small class="icm-muted">Sent {{ $extension->created_at?->format('d M Y H:i') }}</small></td>
                     <td>
                         <span class="icm-chip icm-status-{{ $extension->status }}">{{ ucfirst($extension->status) }}</span>
                         @if(! $extension->isPending())
@@ -527,7 +527,7 @@
                                 </form>
                             </details>
                         @else
-                            —
+                            -
                         @endif
                     </td>
                 </tr>
@@ -560,11 +560,11 @@
             <tbody>
             @forelse($participants as $enrolment)
             <tr>
-                <td>{{ $enrolment->user?->name }}<br><small>{{ $enrolment->user?->participant_code ?? '—' }} · {{ $enrolment->user?->email }}</small><br>@include('partials.participant-history-badge', ['history' => $participantHistory[$enrolment->user_id] ?? null])</td>
-                <td>{{ $enrolment->cohort?->name ?? '—' }}</td>
+                <td>{{ $enrolment->user?->name }}<br><small>{{ $enrolment->user?->participant_code ?? '-' }} · {{ $enrolment->user?->email }}</small><br>@include('partials.participant-history-badge', ['history' => $participantHistory[$enrolment->user_id] ?? null])</td>
+                <td>{{ $enrolment->cohort?->name ?? '-' }}</td>
                 <td>{{ ucfirst(str_replace('_',' ',$enrolment->status)) }}</td>
                 <td>{{ number_format((float)$enrolment->progress_percent,1) }}%</td>
-                <td>{{ $enrolment->final_score !== null ? number_format((float)$enrolment->final_score,1).'%' : '—' }}</td>
+                <td>{{ $enrolment->final_score !== null ? number_format((float)$enrolment->final_score,1).'%' : '-' }}</td>
                 <td>
                     <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.participants.progress',[$course,$enrolment]) }}">View Progress</a>
                     <details class="icm-details">
@@ -615,7 +615,7 @@
                     <td>{{ $row['assignment_progress'] }}</td>
                     <td>{{ $row['quiz_progress'] }}</td>
                     <td>{{ $row['exam_progress'] }}</td>
-                    <td>{{ $row['average_score'] !== null ? number_format($row['average_score'],1).'%' : '—' }}</td>
+                    <td>{{ $row['average_score'] !== null ? number_format($row['average_score'],1).'%' : '-' }}</td>
                     <td>{{ $row['attendance'] }}</td>
                     <td>
                         <div class="icm-progress"><span style="width:{{ min(100,max(0,$row['overall_progress'])) }}%"></span></div>

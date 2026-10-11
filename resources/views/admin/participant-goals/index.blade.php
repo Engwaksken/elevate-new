@@ -84,13 +84,13 @@ $bulkTableId = 'participantGoalsTable';
     <div style="height:6px;background:#eee;border-radius:6px;margin-top:5px;overflow:hidden"><div style="height:100%;width:{{ max(0,min(100,(float)$goal->progress_percent)) }}%;background:#800000"></div></div>
 </td>
 <td><span class="status-chip {{ $goal->status }}">{{ ucfirst(str_replace('_',' ',$goal->status)) }}</span></td>
-<td>{{ optional($goal->target_date)->format('d M Y') ?: '—' }}</td>
+<td>{{ optional($goal->target_date)->format('d M Y') ?: '-' }}</td>
 <td>
     @if($goal->mentor_comment)
         {{ \Illuminate\Support\Str::limit($goal->mentor_comment, 90) }}
         <small class="admin-cell-hint">{{ $goal->mentorReviewer?->name }}{{ $goal->mentor_reviewed_at ? ' · '.$goal->mentor_reviewed_at->format('d M Y') : '' }}</small>
     @else
-        <span style="color:#98a2b3">—</span>
+        <span style="color:#98a2b3">-</span>
     @endif
 </td>
 </tr>

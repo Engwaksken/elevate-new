@@ -27,9 +27,9 @@
 @forelse($orders as $po)
 <tr>
 <td><strong>{{ $po->po_number }}</strong></td>
-<td>{{ data_get($po,'supplier.name','—') }}</td>
-<td>{{ optional($po->order_date)->format('d M Y') ?: '—' }}</td>
-<td>{{ optional($po->expected_delivery_date)->format('d M Y') ?: '—' }}</td>
+<td>{{ data_get($po,'supplier.name','-') }}</td>
+<td>{{ optional($po->order_date)->format('d M Y') ?: '-' }}</td>
+<td>{{ optional($po->expected_delivery_date)->format('d M Y') ?: '-' }}</td>
 <td>{{ $po->currency }} {{ number_format((float)$po->total_amount,2) }}</td>
 <td><span class="status-chip {{ $po->status }}">{{ ucfirst(str_replace('_',' ',$po->status)) }}</span></td>
 <td class="table-actions">@if($po->status==='issued')<button type="button" class="btn btn-outline btn-sm" data-modal-open="receivePO{{ $po->id }}"><i class="fas fa-box-open"></i> Receive</button>@endif</td>
@@ -38,7 +38,7 @@
 <tr><td colspan="7"><details><summary><strong>View PO items</strong></summary>
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Item</th><th>Specification</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Asset?</th></tr></thead><tbody>
 @foreach($po->items as $item)
-<tr><td>{{ $item->item_name }}</td><td>{{ $item->specification ?: '—' }}</td><td>{{ $item->quantity }}</td><td>{{ number_format((float)$item->unit_price,2) }}</td><td>{{ number_format((float)$item->line_total,2) }}</td><td>{{ $item->is_asset ? 'Yes' : 'No' }}</td></tr>
+<tr><td>{{ $item->item_name }}</td><td>{{ $item->specification ?: '-' }}</td><td>{{ $item->quantity }}</td><td>{{ number_format((float)$item->unit_price,2) }}</td><td>{{ number_format((float)$item->line_total,2) }}</td><td>{{ $item->is_asset ? 'Yes' : 'No' }}</td></tr>
 @endforeach
 </tbody></table></div>
 </details></td></tr>
@@ -52,7 +52,7 @@
 <div class="eh-modal-header"><div><h2>New Purchase Order</h2><p>Create a PO from an approved procurement request.</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
 <form method="POST" action="{{ route('admin.procurement.purchase-orders.store') }}">@csrf
 <div class="eh-modal-body"><div class="modal-grid">
-<div class="form-group full"><label>Purchase Request *</label><select name="purchase_request_id" required><option value="">Select approved request</option>@foreach($requests as $pr)<option value="{{ $pr->id }}">{{ $pr->request_number }} — {{ $pr->currency }} {{ number_format((float)$pr->estimated_total,0) }}</option>@endforeach</select></div>
+<div class="form-group full"><label>Purchase Request *</label><select name="purchase_request_id" required><option value="">Select approved request</option>@foreach($requests as $pr)<option value="{{ $pr->id }}">{{ $pr->request_number }} - {{ $pr->currency }} {{ number_format((float)$pr->estimated_total,0) }}</option>@endforeach</select></div>
 <div class="form-group full"><label>Supplier *</label><select name="supplier_id" required><option value="">Select supplier</option>@foreach($suppliers as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach</select></div>
 <div class="form-group"><label>Order Date *</label><input type="date" name="order_date" value="{{ now()->format('Y-m-d') }}" required></div>
 <div class="form-group"><label>Expected Delivery</label><input type="date" name="expected_delivery_date"></div>

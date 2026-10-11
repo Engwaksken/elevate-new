@@ -95,7 +95,7 @@ $bulkTableId = 'courseCallsTable';
                             @forelse($call->courses as $course)
                                 <span class="admin-chip">{{ $course->title }}</span>
                             @empty
-                                <span>—</span>
+                                <span>-</span>
                             @endforelse
                         </td>
 
@@ -104,7 +104,7 @@ $bulkTableId = 'courseCallsTable';
                         <td>{{ number_format($call->applications_count) }}</td>
 
                         <td>
-                            {{ $call->closes_at?->format('d M Y H:i') ?? '—' }}
+                            {{ $call->closes_at?->format('d M Y H:i') ?? '-' }}
                         </td>
 
                         <td>

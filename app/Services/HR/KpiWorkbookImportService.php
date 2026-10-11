@@ -107,7 +107,7 @@ class KpiWorkbookImportService
 
             if($objective==='' && $activity==='' && $keyResult==='') continue;
 
-            $combined=trim(implode(' — ',array_filter([$objective,$activity,$keyResult])));
+            $combined=trim(implode(' - ',array_filter([$objective,$activity,$keyResult])));
             $lower=Str::lower($combined);
 
             if(

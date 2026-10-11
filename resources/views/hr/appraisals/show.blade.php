@@ -20,7 +20,7 @@
     $managerName = data_get($appraisal, 'manager.name')
         ?? data_get($appraisal, 'manager.user.name')
         ?? data_get($appraisal, 'employee.supervisor.name')
-        ?? '—';
+        ?? '-';
 
     $cycleName = data_get($appraisal, 'cycle.name')
         ?? data_get($appraisal, 'appraisalCycle.name')

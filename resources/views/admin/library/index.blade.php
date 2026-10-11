@@ -99,7 +99,7 @@ $bulkTableId = 'libraryTable';
 <strong>{{ $resource->title }}</strong>
 <small class="admin-cell-hint">{{ $resource->author ?: 'No author' }}</small>
 </td>
-<td>{{ $resource->category?->name ?: '—' }}</td>
+<td>{{ $resource->category?->name ?: '-' }}</td>
 <td>{{ $resource->language }}</td>
 <td>{{ ucfirst($resource->access_level) }}</td>
 <td>{{ number_format($resource->views_count) }}</td>

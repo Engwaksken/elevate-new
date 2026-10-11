@@ -50,7 +50,7 @@
 <tr>
 <td><strong>{{ $workplan->title }}</strong><small class="admin-cell-hint">{{ $workplan->financial_year ?: 'No financial year' }}</small></td>
 <td>{{ ucfirst($workplan->period_type) }}</td>
-<td>{{ optional($workplan->start_date)->format('d M Y') ?: '—' }} — {{ optional($workplan->end_date)->format('d M Y') ?: '—' }}</td>
+<td>{{ optional($workplan->start_date)->format('d M Y') ?: '-' }} - {{ optional($workplan->end_date)->format('d M Y') ?: '-' }}</td>
 <td><strong>{{ number_format((float)$workplan->progress_percent,0) }}%</strong><div style="height:5px;background:#eee;border-radius:5px;margin-top:5px;overflow:hidden"><div style="height:100%;width:{{ min(100,(float)$workplan->progress_percent) }}%;background:#800000"></div></div></td>
 <td>{{ $workplan->milestones_count }}</td>
 <td>{{ $workplan->activities_count }}</td>
@@ -76,14 +76,14 @@
 <div class="admin-tab-pane active" data-admin-pane="m{{ $workplan->id }}">
 <table class="admin-table"><thead><tr><th>Milestone</th><th>Due</th><th>Progress</th><th>Status</th><th>Action</th></tr></thead><tbody>
 @forelse($workplan->milestones as $m)
-<tr><td>{{ $m->title }}</td><td>{{ optional($m->due_date)->format('d M Y') ?: '—' }}</td><td>{{ number_format((float)$m->progress_percent,0) }}%</td><td>{{ ucfirst(str_replace('_',' ',$m->status)) }}</td><td><button type="button" class="btn btn-outline btn-sm" data-modal-open="milestoneProgress{{ $m->id }}">Update</button></td></tr>
+<tr><td>{{ $m->title }}</td><td>{{ optional($m->due_date)->format('d M Y') ?: '-' }}</td><td>{{ number_format((float)$m->progress_percent,0) }}%</td><td>{{ ucfirst(str_replace('_',' ',$m->status)) }}</td><td><button type="button" class="btn btn-outline btn-sm" data-modal-open="milestoneProgress{{ $m->id }}">Update</button></td></tr>
 @empty<tr><td colspan="5">No milestones.</td></tr>@endforelse
 </tbody></table>
 </div>
 <div class="admin-tab-pane" data-admin-pane="a{{ $workplan->id }}">
 <table class="admin-table"><thead><tr><th>Activity</th><th>Dates</th><th>Budget</th><th>Progress</th><th>Status</th><th>Action</th></tr></thead><tbody>
 @forelse($workplan->activities as $a)
-<tr><td>{{ $a->title }}</td><td>{{ optional($a->start_date)->format('d M Y') ?: '—' }} — {{ optional($a->end_date)->format('d M Y') ?: '—' }}</td><td>{{ $a->currency ?: 'UGX' }} {{ number_format((float)$a->budget,0) }}</td><td>{{ number_format((float)$a->progress_percent,0) }}%</td><td>{{ ucfirst(str_replace('_',' ',$a->status)) }}</td><td><button type="button" class="btn btn-outline btn-sm" data-modal-open="activityProgress{{ $a->id }}">Update</button></td></tr>
+<tr><td>{{ $a->title }}</td><td>{{ optional($a->start_date)->format('d M Y') ?: '-' }} - {{ optional($a->end_date)->format('d M Y') ?: '-' }}</td><td>{{ $a->currency ?: 'UGX' }} {{ number_format((float)$a->budget,0) }}</td><td>{{ number_format((float)$a->progress_percent,0) }}%</td><td>{{ ucfirst(str_replace('_',' ',$a->status)) }}</td><td><button type="button" class="btn btn-outline btn-sm" data-modal-open="activityProgress{{ $a->id }}">Update</button></td></tr>
 @empty<tr><td colspan="6">No activities.</td></tr>@endforelse
 </tbody></table>
 </div>
@@ -99,9 +99,9 @@
 @foreach($workplan->approvals as $approval)
 <tr>
 <td><span class="status-chip {{ $approval->action==='approved' ? 'approved' : ($approval->action==='rejected' ? 'cancelled' : 'draft') }}">{{ ucfirst($approval->action) }}</span></td>
-<td>{{ $approval->user?->name ?? '—' }}</td>
-<td>{{ optional($approval->acted_at)->format('d M Y H:i') ?: '—' }}</td>
-<td>{{ $approval->comments ?: '—' }}</td>
+<td>{{ $approval->user?->name ?? '-' }}</td>
+<td>{{ optional($approval->acted_at)->format('d M Y H:i') ?: '-' }}</td>
+<td>{{ $approval->comments ?: '-' }}</td>
 </tr>
 @endforeach
 </tbody></table>

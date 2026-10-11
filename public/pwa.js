@@ -153,7 +153,7 @@
         if (navigator.onLine) {
             syncPending();
         } else {
-            setStatus('Offline — changes queued', 'offline');
+            setStatus('Offline - changes queued', 'offline');
         }
 
         return operation.client_operation_id;
@@ -198,7 +198,7 @@
             setStatus('Online', 'online');
         } catch (error) {
             console.warn('ElevateHer360 sync failed', error);
-            setStatus('Sync failed — Retry', 'error');
+            setStatus('Sync failed - Retry', 'error');
         } finally {
             syncing = false;
         }
@@ -244,7 +244,7 @@
             // Non-participant pages may legitimately have no API session: no
             // status element is rendered there, so this is a no-op for them.
             console.warn('ElevateHer360 sync failed', error);
-            setStatus('Sync failed — Retry', 'error');
+            setStatus('Sync failed - Retry', 'error');
             return false;
         }
     }

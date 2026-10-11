@@ -129,7 +129,7 @@
     <td>{{ $backup->created_at?->format('d M Y H:i') }}</td>
     <td>{{ ucfirst($backup->destination) }}</td>
     <td>{{ $backup->filename }}</td>
-    <td>{{ $backup->size_bytes ? number_format($backup->size_bytes/1024/1024,2).' MB' : '—' }}</td>
+    <td>{{ $backup->size_bytes ? number_format($backup->size_bytes/1024/1024,2).' MB' : '-' }}</td>
     <td>{{ ucfirst($backup->status) }}</td>
 </tr>
 @empty
@@ -175,7 +175,7 @@
     </datalist>
 </div>
 <div class="full"><label>API endpoint <span data-ai-endpoint-label></span></label><input type="url" name="endpoint" data-ai-endpoint value="{{ old('endpoint', $aiConfig->endpoint) }}" maxlength="255" placeholder="https://..."></div>
-<div class="full"><label>API key {{ $aiConfig->apiKey() ? '(configured — leave blank to retain)' : '(not configured)' }}</label><input type="password" name="api_key" value="" autocomplete="new-password" maxlength="1000"></div>
+<div class="full"><label>API key {{ $aiConfig->apiKey() ? '(configured - leave blank to retain)' : '(not configured)' }}</label><input type="password" name="api_key" value="" autocomplete="new-password" maxlength="1000"></div>
 <div><label>Daily system request limit</label><input type="number" min="1" max="100000" name="daily_limit" value="{{ old('daily_limit', data_get($aiConfig->settings, 'daily_limit', 1000)) }}"></div>
 <div><label>Daily request limit per user</label><input type="number" min="1" max="1000" name="user_daily_limit" value="{{ old('user_daily_limit', data_get($aiConfig->settings, 'user_daily_limit', 20)) }}"></div>
 <div><label>Temperature (optional, if supported by the model)</label><input type="number" min="0" max="2" step="0.1" name="temperature" value="{{ old('temperature', data_get($aiConfig->settings, 'temperature')) }}"></div>
@@ -193,7 +193,7 @@
     <div class="full">
         <label>Entry assessment</label>
         <select name="entry_assessment_id">
-            <option value="">None — mentorship and jobs are open</option>
+            <option value="">None - mentorship and jobs are open</option>
             @foreach($assessments as $assessment)
                 <option value="{{ $assessment->id }}" @selected((int) old('entry_assessment_id', $entryAssessmentId) === (int) $assessment->id)>{{ $assessment->title }}</option>
             @endforeach

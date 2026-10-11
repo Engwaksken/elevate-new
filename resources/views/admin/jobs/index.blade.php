@@ -45,9 +45,9 @@ $bulkTableId = 'jobsTable';
 <tr>
 <td><input type="checkbox" data-row-select value="{{ $job->id }}" aria-label="Select {{ $job->title }}"></td>
 <td><strong>{{ $job->title }}</strong><small class="admin-cell-hint">{{ ucfirst(str_replace('_',' ',$job->employment_type)) }}</small></td>
-<td>{{ $job->employer?->company_name ?: '—' }}</td>
-<td>{{ trim(($job->location ?: '').($job->country ? ', '.$job->country : '')) ?: '—' }}</td>
-<td>{{ optional($job->application_deadline)->format('d M Y') ?: '—' }}</td>
+<td>{{ $job->employer?->company_name ?: '-' }}</td>
+<td>{{ trim(($job->location ?: '').($job->country ? ', '.$job->country : '')) ?: '-' }}</td>
+<td>{{ optional($job->application_deadline)->format('d M Y') ?: '-' }}</td>
 <td><span class="status-chip {{ $job->status }}">{{ ucfirst($job->status) }}</span></td>
 <td class="table-actions"><div class="action-group">
 <button type="button" class="btn-icon" data-modal-open="editJob{{ $job->id }}" title="Edit"><i class="fas fa-pen"></i></button>

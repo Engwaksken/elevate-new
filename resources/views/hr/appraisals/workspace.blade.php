@@ -51,8 +51,8 @@
                     <tbody>
                         @forelse($appraisals as $appraisal)
                             <tr>
-                                <td><strong>{{ $isTeam ? ($appraisal->employee?->user?->name ?: '—') : ($appraisal->cycle?->name ?: 'Appraisal') }}</strong></td>
-                                <td>{{ $isTeam ? ($appraisal->cycle?->name ?: '—') : ($appraisal->manager?->name ?: 'Not assigned') }}</td>
+                                <td><strong>{{ $isTeam ? ($appraisal->employee?->user?->name ?: '-') : ($appraisal->cycle?->name ?: 'Appraisal') }}</strong></td>
+                                <td>{{ $isTeam ? ($appraisal->cycle?->name ?: '-') : ($appraisal->manager?->name ?: 'Not assigned') }}</td>
                                 <td>
                                     <span class="status-chip {{ $appraisal->status }}">{{ ucwords(str_replace('_', ' ', $appraisal->status)) }}</span>
                                     @if(in_array($appraisal->status, $actionStatuses, true) && ! $appraisal->locked_at)
@@ -68,7 +68,7 @@
                                         <div class="progress-track"><i style="width:{{ min(100, (float) $appraisal->completion_percent) }}%"></i></div>
                                     </div>
                                 </td>
-                                <td><strong>{{ $appraisal->performance_percent !== null ? number_format((float) $appraisal->performance_percent, 1).'%' : '—' }}</strong></td>
+                                <td><strong>{{ $appraisal->performance_percent !== null ? number_format((float) $appraisal->performance_percent, 1).'%' : '-' }}</strong></td>
                                 <td class="table-actions">
                                     <a class="btn {{ $isTeam ? 'btn-outline' : 'btn-primary' }} btn-sm" href="{{ route('staff.performance.show', $appraisal) }}">{{ $isTeam ? 'Review' : 'Open' }}</a>
                                 </td>

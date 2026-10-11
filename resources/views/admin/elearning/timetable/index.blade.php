@@ -13,7 +13,7 @@
 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Course / branches</th><th>Session</th><th>Date & time</th><th>Added by</th><th>Status</th><th>Actions</th></tr></thead><tbody>
 @forelse($slots as $slot)
 @php($session = app(\App\Services\CourseTimetableService::class)->present($slot))
-<tr><td>{{ $slot->course?->title }}<small>{{ $slot->course?->branches->pluck('name')->join(', ') }}</small></td><td><strong>{{ $slot->title }}</strong><small>{{ $slot->venue }}</small>@if($slot->notes)<p>{{ $slot->notes }}</p>@endif</td><td>{{ $session['date_label'] }}<br>{{ $session['time_label'] }}<small>{{ $slot->timezone }}</small></td><td>{{ $slot->creator?->name ?: '—' }}</td><td>{{ ucfirst($slot->status) }}</td><td>@if($slot->course && app(\App\Services\TimetableAccessService::class)->canManage(auth()->user(), $slot->course))<a href="{{ route('admin.elearning.timetable.manage', $slot->course) }}">Manage</a>@endif</td></tr>
+<tr><td>{{ $slot->course?->title }}<small>{{ $slot->course?->branches->pluck('name')->join(', ') }}</small></td><td><strong>{{ $slot->title }}</strong><small>{{ $slot->venue }}</small>@if($slot->notes)<p>{{ $slot->notes }}</p>@endif</td><td>{{ $session['date_label'] }}<br>{{ $session['time_label'] }}<small>{{ $slot->timezone }}</small></td><td>{{ $slot->creator?->name ?: '-' }}</td><td>{{ ucfirst($slot->status) }}</td><td>@if($slot->course && app(\App\Services\TimetableAccessService::class)->canManage(auth()->user(), $slot->course))<a href="{{ route('admin.elearning.timetable.manage', $slot->course) }}">Manage</a>@endif</td></tr>
 @empty<tr><td colspan="6">No sessions found.</td></tr>@endforelse
 </tbody></table></div>{{ $slots->links() }}
 </div>

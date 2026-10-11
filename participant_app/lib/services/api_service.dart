@@ -242,7 +242,7 @@ class ApiService {
     return user?['email_verified'] != false;
   }
 
-  /// POST /email/verification-notification — resend the verification email.
+  /// POST /email/verification-notification - resend the verification email.
   Future<Map<String, dynamic>> resendVerificationEmail() => _guard(() async {
         final response = await dio.post('/email/verification-notification');
         return _mapResponse(response.data);

@@ -121,7 +121,7 @@ class LearningFilesPolicyTest extends TestCase
         // PowerPoint cannot be rendered by the browser: a view-only notice instead of a download.
         $pptx = $this->lessonFile('slides.pptx');
         $response = $this->actingAs($this->participant)->get(route('learning.files.download', $pptx));
-        $response->assertOk()->assertSee('Preview not available in the browser — this file is view-only.');
+        $response->assertOk()->assertSee('Preview not available in the browser - this file is view-only.');
         $this->assertStringNotContainsString('attachment', (string) $response->headers->get('Content-Disposition'));
     }
 

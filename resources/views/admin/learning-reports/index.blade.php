@@ -24,7 +24,7 @@
         <thead><tr><th>Course</th><th>Programme</th><th>Branch</th><th>Enrolments</th><th>Completed</th><th>In progress</th><th>Completion rate</th><th>Average progress</th></tr></thead>
         <tbody>
         @forelse($rows as $row)
-            <tr><td><strong>{{ $row['course'] }}</strong></td><td>{{ $row['programme_id'] ?: '—' }}</td><td>{{ $row['branch_id'] ?: '—' }}</td><td>{{ number_format($row['enrolments']) }}</td><td>{{ number_format($row['completed']) }}</td><td>{{ number_format($row['in_progress']) }}</td><td>{{ number_format((float)$row['completion_rate_percent'], 2) }}%</td><td>{{ number_format((float)$row['average_progress_percent'], 2) }}%</td></tr>
+            <tr><td><strong>{{ $row['course'] }}</strong></td><td>{{ $row['programme_id'] ?: '-' }}</td><td>{{ $row['branch_id'] ?: '-' }}</td><td>{{ number_format($row['enrolments']) }}</td><td>{{ number_format($row['completed']) }}</td><td>{{ number_format($row['in_progress']) }}</td><td>{{ number_format((float)$row['completion_rate_percent'], 2) }}%</td><td>{{ number_format((float)$row['average_progress_percent'], 2) }}%</td></tr>
         @empty
             <tr><td colspan="8"><div class="admin-empty">No learning records match these filters.</div></td></tr>
         @endforelse

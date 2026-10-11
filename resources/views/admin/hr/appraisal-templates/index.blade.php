@@ -52,14 +52,14 @@
 
     <td>{{ ucwords(str_replace('_',' ',$template->template_type)) }}</td>
 
-    <td>{{ $template->quarter ?: '—' }}</td>
+    <td>{{ $template->quarter ?: '-' }}</td>
 
-    <td>{{ $template->year ?: '—' }}</td>
+    <td>{{ $template->year ?: '-' }}</td>
 
     <td>{{ $template->items_count }}</td>
 
     <td>
-        <span>{{ $template->source_file ?: '—' }}</span>
+        <span>{{ $template->source_file ?: '-' }}</span>
         @if($template->source_sheet)
             <small class="admin-cell-hint">{{ $template->source_sheet }}</small>
         @endif

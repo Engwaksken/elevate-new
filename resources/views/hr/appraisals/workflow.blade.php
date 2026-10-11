@@ -246,8 +246,8 @@
                                                 <td><input class="form-control" name="kras[{{ $kraIndex }}][kpis][{{ $kpiIndex }}][actual_achievement]" value="{{ $kpi->actual_achievement }}"></td>
                                                 <td><input type="number" min="0" max="100" step="0.01" class="form-control" name="kras[{{ $kraIndex }}][kpis][{{ $kpiIndex }}][weight]" value="{{ $kpi->weight }}" required></td>
                                                 <td><input type="number" min="1" max="5" step="0.1" class="form-control" name="kras[{{ $kraIndex }}][kpis][{{ $kpiIndex }}][employee_score]" value="{{ $kpi->employee_score }}"></td>
-                                                <td>{{ $kpi->supervisor_score ?? '—' }}</td>
-                                                <td><strong>{{ $kpi->agreed_score ?? '—' }}</strong></td>
+                                                <td>{{ $kpi->supervisor_score ?? '-' }}</td>
+                                                <td><strong>{{ $kpi->agreed_score ?? '-' }}</strong></td>
                                                 <td><button type="button" class="btn btn-sm btn-outline-danger remove-kpi"><i class="fas fa-times"></i></button></td>
                                             </tr>
                                         @endforeach
@@ -295,7 +295,7 @@
                                         <td><input type="number" min="0" max="100" step="0.01" class="form-control competency-weight" name="competencies[{{ $competencyIndex }}][weight]" value="{{ $competency->weight }}" required></td>
                                         <td><input type="number" min="1" max="5" step="0.1" class="form-control competency-rating" name="competencies[{{ $competencyIndex }}][employee_rating]" value="{{ $competency->employee_rating }}"></td>
                                         <td><input class="form-control competency-comment" name="competencies[{{ $competencyIndex }}][employee_comment]" value="{{ $competency->employee_comment }}"></td>
-                                        <td><strong>{{ $competency->agreed_rating ?? '—' }}</strong></td>
+                                        <td><strong>{{ $competency->agreed_rating ?? '-' }}</strong></td>
                                         <td><button type="button" class="btn btn-sm btn-outline-danger remove-competency"><i class="fas fa-times"></i></button></td>
                                     </tr>
                                 @endforeach
@@ -342,7 +342,7 @@
                             <div class="row g-2 align-items-end mb-3">
                                 <div class="col-md-3">
                                     <label class="form-label">Employee Rating</label>
-                                    <input class="form-control" value="{{ $kra->employee_rating ?? '—' }}" disabled>
+                                    <input class="form-control" value="{{ $kra->employee_rating ?? '-' }}" disabled>
                                 </div>
 
                                 <div class="col-md-3">
@@ -372,7 +372,7 @@
                                 <div class="row g-2 border-top py-2 align-items-end">
                                     <div class="col-md-5">
                                         <strong>{{ $kpi->title }}</strong>
-                                        <div class="small text-muted">Self score: {{ $kpi->employee_score ?? '—' }}</div>
+                                        <div class="small text-muted">Self score: {{ $kpi->employee_score ?? '-' }}</div>
                                         @include('hr.appraisals._kpi-task-evidence', ['tasks' => $kpiTasks->get($kpi->id, collect())])
                                     </div>
 
@@ -410,7 +410,7 @@
                                 <div class="row g-2 border-top py-2 align-items-end">
                                     <div class="col-md-5">
                                         <strong>{{ $competency->name }}</strong>
-                                        <div class="small text-muted">Weight {{ $competency->weight }}% · Self rating: {{ $competency->employee_rating ?? '—' }}</div>
+                                        <div class="small text-muted">Weight {{ $competency->weight }}% · Self rating: {{ $competency->employee_rating ?? '-' }}</div>
                                         @if($competency->employee_comment)
                                             <div class="small text-muted">{{ $competency->employee_comment }}</div>
                                         @endif
@@ -495,8 +495,8 @@
                                 <div class="col-md-4">
                                     <strong>{{ $kra->title }}</strong>
                                 </div>
-                                <div class="col-md-2">Self: {{ $kra->employee_rating ?? '—' }}</div>
-                                <div class="col-md-2">Supervisor: {{ $kra->supervisor_rating ?? '—' }}</div>
+                                <div class="col-md-2">Self: {{ $kra->employee_rating ?? '-' }}</div>
+                                <div class="col-md-2">Supervisor: {{ $kra->supervisor_rating ?? '-' }}</div>
                                 <div class="col-md-4">
                                     <label class="form-label">Agreed Rating</label>
                                     <input
@@ -517,8 +517,8 @@
                                         <strong>{{ $kpi->title }}</strong>
                                         @include('hr.appraisals._kpi-task-evidence', ['tasks' => $kpiTasks->get($kpi->id, collect())])
                                     </div>
-                                    <div class="col-md-2">Self: {{ $kpi->employee_score ?? '—' }}</div>
-                                    <div class="col-md-2">Supervisor: {{ $kpi->supervisor_score ?? '—' }}</div>
+                                    <div class="col-md-2">Self: {{ $kpi->employee_score ?? '-' }}</div>
+                                    <div class="col-md-2">Supervisor: {{ $kpi->supervisor_score ?? '-' }}</div>
                                     <div class="col-md-3">
                                         <label class="form-label">Agreed Score</label>
                                         <input
@@ -543,8 +543,8 @@
                             @foreach($appraisal->competencies as $competency)
                                 <div class="row g-2 border-top mt-2 pt-2 align-items-end">
                                     <div class="col-md-5">{{ $competency->name }}</div>
-                                    <div class="col-md-2">Self: {{ $competency->employee_rating ?? '—' }}</div>
-                                    <div class="col-md-2">Supervisor: {{ $competency->supervisor_rating ?? '—' }}</div>
+                                    <div class="col-md-2">Self: {{ $competency->employee_rating ?? '-' }}</div>
+                                    <div class="col-md-2">Supervisor: {{ $competency->supervisor_rating ?? '-' }}</div>
                                     <div class="col-md-3">
                                         <label class="form-label">Agreed Rating</label>
                                         <input
@@ -612,9 +612,9 @@
             @elseif($appraisal->meeting)
                 <div class="row g-3">
                     <div class="col-md-6"><strong>Meeting:</strong> {{ optional($appraisal->meeting->meeting_at)->format('d M Y H:i') }}</div>
-                    <div class="col-md-6"><strong>Venue:</strong> {{ $appraisal->meeting->venue ?: '—' }}</div>
-                    <div class="col-12"><strong>Discussion:</strong><br>{{ $appraisal->meeting->discussion_notes ?: '—' }}</div>
-                    <div class="col-12"><strong>Agreed actions:</strong><br>{{ $appraisal->meeting->agreed_actions ?: '—' }}</div>
+                    <div class="col-md-6"><strong>Venue:</strong> {{ $appraisal->meeting->venue ?: '-' }}</div>
+                    <div class="col-12"><strong>Discussion:</strong><br>{{ $appraisal->meeting->discussion_notes ?: '-' }}</div>
+                    <div class="col-12"><strong>Agreed actions:</strong><br>{{ $appraisal->meeting->agreed_actions ?: '-' }}</div>
                 </div>
             @else
                 <div class="text-muted">The meeting becomes available after the supervisor completes the review.</div>
@@ -764,7 +764,7 @@
             <td><input type="number" min="0" max="100" step="0.01" class="form-control competency-weight" required></td>
             <td><input type="number" min="1" max="5" step="0.1" class="form-control competency-rating"></td>
             <td><input class="form-control competency-comment"></td>
-            <td>—</td>
+            <td>-</td>
             <td><button type="button" class="btn btn-sm btn-outline-danger remove-competency"><i class="fas fa-times"></i></button></td>
         </tr>
     </template>

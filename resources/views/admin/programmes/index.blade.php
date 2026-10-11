@@ -30,7 +30,7 @@ $bulkTableId = 'programmesTable';
 <tr>
 <td><input type="checkbox" data-row-select value="{{ $programme->id }}" aria-label="Select {{ $programme->name }}"></td>
 <td><strong>{{ $programme->name }}</strong><small class="admin-cell-hint">{{ $programme->code ?: 'No code' }}</small></td>
-<td>{{ optional($programme->start_date)->format('d M Y') ?: '—' }} — {{ optional($programme->end_date)->format('d M Y') ?: '—' }}</td>
+<td>{{ optional($programme->start_date)->format('d M Y') ?: '-' }} - {{ optional($programme->end_date)->format('d M Y') ?: '-' }}</td>
 <td style="min-width:170px">
     <strong>{{ number_format((float)$programme->progress_percent,0) }}%</strong>
     <div style="height:6px;background:#eee;border-radius:6px;margin-top:5px;overflow:hidden"><div style="height:100%;width:{{ max(0,min(100,(float)$programme->progress_percent)) }}%;background:#800000"></div></div>

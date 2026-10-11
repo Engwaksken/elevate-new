@@ -90,7 +90,7 @@ $bulkTableId = 'coursesTable';
     <td><input type="checkbox" data-row-select value="{{ $course->id }}" aria-label="Select {{ $course->title }}"></td>
     <td><strong>{{ $course->title }}</strong><small class="admin-cell-hint">{{ $course->code ?: 'No course code' }}</small><small class="admin-cell-hint">{{ $course->branches->pluck('name')->join(', ') }}</small></td>
     <td>{{ ucfirst(str_replace('_',' ',$course->delivery_mode)) }}</td>
-    <td>{{ optional($course->start_date)->format('d M Y') ?: '—' }} — {{ optional($course->end_date)->format('d M Y') ?: '—' }}</td>
+    <td>{{ optional($course->start_date)->format('d M Y') ?: '-' }} - {{ optional($course->end_date)->format('d M Y') ?: '-' }}</td>
     <td>{{ $course->modules_count }}</td>
     <td>{{ $course->enrolments_count }}</td>
     <td>{{ $course->assessments_count }}</td>

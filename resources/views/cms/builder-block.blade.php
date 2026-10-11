@@ -146,7 +146,7 @@
                                         @elseif($wtype === 'spacer')
                                             <label>Height (px)</label><input type="number" name="{{ $wpath }}[height]" value="{{ $widget['height'] ?? '' }}" data-widget-field="height" placeholder="e.g. 40" min="0">
                                         @elseif($wtype === 'divider')
-                                            <p class="cms-widget__note">Horizontal rule — no settings.</p>
+                                            <p class="cms-widget__note">Horizontal rule - no settings.</p>
                                         @elseif($wtype === 'video')
                                             <label>Embed URL (YouTube / Vimeo)</label><input name="{{ $wpath }}[embed_url]" value="{{ $widget['embed_url'] ?? '' }}" data-widget-field="embed_url" placeholder="https://www.youtube.com/embed/...">
                                         @elseif($wtype === 'html')

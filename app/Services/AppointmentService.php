@@ -402,7 +402,7 @@ class AppointmentService
 
             $details = array_filter([
                 'Time: '.$start->format('D j M Y, H:i').($end ? '–'.$end->format('H:i') : ''),
-                'Participant: '.($appointment->participant?->name ?? '—'),
+                'Participant: '.($appointment->participant?->name ?? '-'),
                 $appointment->course ? 'Course: '.$appointment->course->title : null,
                 'Mode: '.($appointment->mode === 'in_person' ? 'In person' : 'Online'),
                 $appointment->location ? 'Venue: '.$appointment->location : null,
@@ -413,7 +413,7 @@ class AppointmentService
             Task::updateOrCreate(
                 ['instructor_appointment_id' => $appointment->id],
                 [
-                    'title' => mb_strimwidth('Appointment: '.$appointment->topic.' — '.($appointment->participant?->name ?? 'participant'), 0, 255, '…'),
+                    'title' => mb_strimwidth('Appointment: '.$appointment->topic.' - '.($appointment->participant?->name ?? 'participant'), 0, 255, '…'),
                     'description' => implode(PHP_EOL, $details),
                     'assigned_to' => $appointment->instructor_user_id,
                     'created_by' => $appointment->instructor_user_id,

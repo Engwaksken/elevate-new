@@ -78,12 +78,12 @@ $bulkTableId = 'appraisalsTable';
 <tr>
 <td><input type="checkbox" data-row-select value="{{ $appraisal->id }}" aria-label="Select {{ $appraisal->employee?->user?->name ?: 'appraisal' }}"></td>
 <td>
-<strong>{{ $appraisal->employee?->user?->name ?: '—' }}</strong>
+<strong>{{ $appraisal->employee?->user?->name ?: '-' }}</strong>
 <small class="admin-cell-hint">{{ $appraisal->employee?->employee_number ?: '' }}</small>
 </td>
 
 <td>
-{{ $appraisal->cycle?->name ?: '—' }}
+{{ $appraisal->cycle?->name ?: '-' }}
 <small class="admin-cell-hint">{{ $appraisal->kpiTemplate?->name ?: 'No template assigned' }}</small>
 </td>
 
@@ -100,7 +100,7 @@ $bulkTableId = 'appraisalsTable';
 </td>
 
 <td>
-<strong>{{ $appraisal->performance_percent !== null ? number_format((float)$appraisal->performance_percent,1).'%' : '—' }}</strong>
+<strong>{{ $appraisal->performance_percent !== null ? number_format((float)$appraisal->performance_percent,1).'%' : '-' }}</strong>
 </td>
 
 <td class="table-actions">

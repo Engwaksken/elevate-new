@@ -29,7 +29,7 @@ class TimetableReminderService
                     $time = $slot->starts_at->setTimezone($slot->timezone)->format('H:i');
                     $url = $user->isStaff() ? route('admin.elearning.timetable.index', ['course_id' => $course->id]) : route('learning.course.dashboard', $course);
                     app(UserNotificationService::class)->send($user, 'course_timetable_reminder', 'Upcoming course session',
-                        $course->title.' — '.$slot->title.' starts at '.$time.' ('.$slot->timezone.') in about '.max(1, (int) ceil($now->diffInSeconds($slot->starts_at) / 60)).' minutes.'.($slot->venue ? ' Venue: '.$slot->venue : ''),
+                        $course->title.' - '.$slot->title.' starts at '.$time.' ('.$slot->timezone.') in about '.max(1, (int) ceil($now->diffInSeconds($slot->starts_at) / 60)).' minutes.'.($slot->venue ? ' Venue: '.$slot->venue : ''),
                         $url, ['course_id' => $course->id, 'slot_id' => $slot->id, 'starts_at' => $slot->starts_at->toIso8601String(), 'destination' => 'learning']);
                     $count++;
                 }

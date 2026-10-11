@@ -137,7 +137,7 @@
         @if($user->participant_code)<span class="participant-code">{{ $user->participant_code }}</span>@endif
         <small class="admin-cell-hint">{{ $user->email }}</small>
     </td>
-    <td>{{ $user->phone ?: '—' }}</td>
+    <td>{{ $user->phone ?: '-' }}</td>
     <td>{{ ucfirst($user->user_type) }}</td>
     <td><span class="status-chip {{ $user->status }}">{{ ucfirst($user->status) }}</span></td>
     <td>
@@ -154,17 +154,17 @@
                 <small class="admin-cell-hint" title="{{ $user->instructedCourses->pluck('title')->join(', ') }}">{{ $user->instructedCourses->count() }} {{ \Illuminate\Support\Str::plural('course', $user->instructedCourses->count()) }}</small>
             @endif
         @else
-            <span class="admin-cell-hint">—</span>
+            <span class="admin-cell-hint">-</span>
         @endif
     </td>
-    <td>{{ optional($user->last_login_at)->format('d M Y H:i') ?: '—' }}</td>
+    <td>{{ optional($user->last_login_at)->format('d M Y H:i') ?: '-' }}</td>
     <td class="table-actions">
         @if($canEditUsers)
             <button type="button" class="btn btn-outline btn-sm" data-modal-open="editUser{{ $user->id }}">
                 <i class="fas fa-pen"></i> Edit
             </button>
         @else
-            <span class="admin-cell-hint">—</span>
+            <span class="admin-cell-hint">-</span>
         @endif
     </td>
 </tr>

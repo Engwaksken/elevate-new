@@ -175,7 +175,7 @@ class _MetaRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(value ?? '—', style: theme.textTheme.bodyMedium),
+            child: Text(value ?? '-', style: theme.textTheme.bodyMedium),
           ),
         ],
       ),

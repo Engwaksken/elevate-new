@@ -73,7 +73,7 @@ $bulkTableId = 'frameworksTable';
 <form method="POST" action="{{ route('admin.results-framework.results.store',$framework) }}">@csrf
 <div class="eh-modal-body"><div class="modal-grid">
 <div class="form-group"><label>Result Level *</label><select name="result_level">@foreach(['impact','outcome','output'] as $x)<option value="{{ $x }}">{{ ucfirst($x) }}</option>@endforeach</select></div>
-<div class="form-group"><label>Parent Result</label><select name="parent_id"><option value="">None</option>@foreach($framework->results as $x)<option value="{{ $x->id }}">{{ ucfirst($x->result_level) }} — {{ $x->title }}</option>@endforeach</select></div>
+<div class="form-group"><label>Parent Result</label><select name="parent_id"><option value="">None</option>@foreach($framework->results as $x)<option value="{{ $x->id }}">{{ ucfirst($x->result_level) }} - {{ $x->title }}</option>@endforeach</select></div>
 <div class="form-group full"><label>Title *</label><input name="title" required></div>
 <div class="form-group full"><label>Description</label><textarea name="description"></textarea></div>
 </div></div>

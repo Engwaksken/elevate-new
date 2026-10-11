@@ -15,7 +15,7 @@
         <a class="eh-data-row" href="{{ route('participant.support-tickets.show', $ticket) }}">
             <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-life-ring"></i></span><div class="eh-data-row-copy">
                 <strong>{{ $ticket->subject }}</strong>
-                <span>Ticket #{{ $ticket->id }} · Submitted {{ $ticket->created_at?->format('d M Y') ?: '—' }}</span>
+                <span>Ticket #{{ $ticket->id }} · Submitted {{ $ticket->created_at?->format('d M Y') ?: '-' }}</span>
             </div></div>
             <span class="status-chip {{ $ticket->status }}">{{ ucfirst(str_replace('_', ' ', $ticket->status)) }}</span>
         </a>

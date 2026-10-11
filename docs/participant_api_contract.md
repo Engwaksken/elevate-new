@@ -221,14 +221,14 @@ Streams the instructor attachment. 403 if not enrolled; 404 if the assessment is
 
 | Method | Path | Query/body | 200 response |
 |---|---|---|---|
-| GET | `/mentorship` | — | `{"matches":[...],"sessions":[...],"goals":[...]}` |
+| GET | `/mentorship` | - | `{"matches":[...],"sessions":[...],"goals":[...]}` |
 | GET | `/jobs` | `page`, `search`, `updated_since` | paginator; each item has `is_saved` (0/1) and `company_name` |
-| POST | `/jobs/{job}/save` | — | `{"message":"Job saved."}` · 404 `{"message":"Job not found or no longer open."}` |
-| DELETE | `/jobs/{job}/save` | — | `{"message":"Job removed from saved jobs."}` |
+| POST | `/jobs/{job}/save` | - | `{"message":"Job saved."}` · 404 `{"message":"Job not found or no longer open."}` |
+| DELETE | `/jobs/{job}/save` | - | `{"message":"Job removed from saved jobs."}` |
 | GET | `/events` | `page`, `updated_since` | paginator |
 | GET | `/announcements` | `page`, `updated_since` | paginator (each item has `course`) |
 | GET | `/notifications` | `page`, `unread_only` (bool), `updated_since` | paginator (30 per page) |
-| PUT | `/notifications/{notification}/read` | — | `{"message":"Notification marked as read."}` · 404 `{"message":"Notification not found."}` |
+| PUT | `/notifications/{notification}/read` | - | `{"message":"Notification marked as read."}` · 404 `{"message":"Notification not found."}` |
 
 Each notification has `id`, `type`, `title`, `message`, `action_url` (a web URL, may be null), `data` (JSON string or null), `read_at`, `created_at`, `updated_at`. `type` values sent to participants, with the ids found in `data`:
 

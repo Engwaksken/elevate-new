@@ -1081,11 +1081,11 @@ class CourseManagementController extends Controller
                     : null,
                 'attendance' => $attendanceTotal > 0
                     ? $attendancePresent.'/'.$attendanceTotal
-                    : '—',
+                    : '-',
                 'overall_progress' => round((float) ($enrolment->progress_percent ?? 0), 1),
                 'last_activity' => $lastActivity
                     ? \Illuminate\Support\Carbon::parse($lastActivity)->format('d M Y H:i')
-                    : '—',
+                    : '-',
             ];
         });
     }

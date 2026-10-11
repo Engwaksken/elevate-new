@@ -41,7 +41,7 @@ class CareerAiService {
                 'anthropic' => $this->anthropic($config, $provider, 'You are a concise assistant.', 'Reply with exactly: OK'),
                 default => $this->openAi($config, $provider, 'You are a concise assistant.', 'Reply with exactly: OK'),
             };
-            return ['ok' => true, 'message' => 'Connected to '.$provider['label'].' — '.$config->model.' responded successfully.'];
+            return ['ok' => true, 'message' => 'Connected to '.$provider['label'].' - '.$config->model.' responded successfully.'];
         } catch (\Throwable $e) {
             return ['ok' => false, 'message' => 'Connection failed: '.$this->errorMessage($e)];
         }

@@ -5,7 +5,7 @@
 <div class="admin-page-header">
 <div>
     <span class="admin-eyebrow">Instructor</span>
-    <h1>Attendance — {{ $course->title }}</h1>
+    <h1>Attendance - {{ $course->title }}</h1>
     <p>Create a session and record attendance for enrolled participants.</p>
 </div>
 @if(Route::has('instructor.dashboard'))
@@ -108,8 +108,8 @@
 <tr>
 <td><strong>{{ $session->title }}</strong></td>
 <td>{{ optional($session->session_date)->format('d M Y') }}</td>
-<td>{{ $session->starts_at ?: '—' }}{{ $session->ends_at ? ' – '.$session->ends_at : '' }}</td>
-<td>{{ $session->venue ?: '—' }}</td>
+<td>{{ $session->starts_at ?: '-' }}{{ $session->ends_at ? ' – '.$session->ends_at : '' }}</td>
+<td>{{ $session->venue ?: '-' }}</td>
 <td>{{ $session->records_count }}</td>
 </tr>
 @empty

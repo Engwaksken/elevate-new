@@ -84,7 +84,7 @@
                     @forelse($rows as $status => $count)
                         @php($color = $palette[$loop->index % count($palette)])
                         <div class="mt-bar-row">
-                            <div class="lbl"><span>{{ ucwords(str_replace('_', ' ', (string) $status)) ?: '—' }}</span><strong>{{ number_format($count) }}</strong></div>
+                            <div class="lbl"><span>{{ ucwords(str_replace('_', ' ', (string) $status)) ?: '-' }}</span><strong>{{ number_format($count) }}</strong></div>
                             <div class="mt-bar-track"><div class="mt-bar-fill" style="width:{{ max(3, round($count / $max * 100)) }}%;background:{{ $color }}"></div></div>
                         </div>
                     @empty
