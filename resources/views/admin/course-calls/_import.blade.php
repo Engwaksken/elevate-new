@@ -2,8 +2,8 @@
 <section class="admin-panel">
     <div class="admin-panel-head">
         <div>
-            <h2>Import Outlook / Microsoft Forms applicants</h2>
-            <p>Download this call’s template, copy responses from your Forms export, and save as CSV UTF-8. Maximum 1,000 applicants (5 MB) per upload.</p>
+            <h2>Import application responses</h2>
+            <p>Download this call’s template and copy responses from Microsoft Forms, Google Forms, KoboToolbox, or another survey export into the matching columns. Save as CSV UTF-8 before uploading. Maximum 1,000 applicants (5 MB) per upload.</p>
         </div>
         <a href="{{ route('admin.course-calls.import-template', $courseCall) }}" class="btn btn-outline"><i class="fas fa-download"></i> Download application template</a>
     </div>
