@@ -569,11 +569,38 @@ body.eh-admin-canonical-layout .eh-admin-content .content-wrapper{
 
     body.eh-admin-canonical-layout .eh-admin-topbar{
         left:0!important;
+        grid-template-columns:auto minmax(0,1fr) auto!important;
     }
 
     body.eh-admin-canonical-layout .eh-admin-topbar__mobile-menu{
         display:flex!important;
         align-items:center!important;
         justify-content:center!important;
+    }
+}
+
+@media(max-width:600px){
+    body.eh-admin-canonical-layout .eh-admin-topbar{
+        gap:6px!important;
+        padding:0 8px!important;
+    }
+
+    body.eh-admin-canonical-layout .eh-admin-topbar__left,
+    body.eh-admin-canonical-layout .eh-admin-topbar__right{
+        gap:6px!important;
+    }
+
+    body.eh-admin-canonical-layout .eh-admin-topbar__context{
+        display:none!important;
+    }
+
+    body.eh-admin-canonical-layout .eh-admin-profile__trigger{
+        gap:0!important;
+        padding:4px!important;
+    }
+
+    body.eh-admin-canonical-layout .eh-admin-topbar__search > i{
+        width:30px!important;
+        flex-basis:30px!important;
     }
 }
