@@ -12,7 +12,7 @@
         <ul>
             @foreach($courseCall->questions as $question)
                 <li><code>question_{{ $question->id }}</code>: {{ $question->question_text }}{{ $question->is_required ? ' (required)' : '' }}
-                    @if($question->options) — Options: {{ implode(' | ', $question->options) }}.@endif
+                    @if($question->options) Options: {{ implode(' | ', $question->options) }}.@endif
                     @if($question->question_type === 'multiple_choice') Separate selected options with |.@endif
                     @if($question->question_type === 'yes_no') Use Yes or No.@endif
                     @if($question->question_type === 'date') Use YYYY-MM-DD.@endif
