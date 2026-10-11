@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\Role;
 use App\Services\NotificationDispatcher;
 use App\Services\UserNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -63,6 +64,27 @@ class NotificationPreferencesTest extends TestCase
 
         $disabled = $user->fresh()->notification_preferences['disabled'];
 
+        $this->assertNotContains('learning', $disabled);
+        $this->assertNotContains('account', $disabled);
+        $this->assertContains('jobs', $disabled);
+        $this->assertContains('mentorship', $disabled);
+    }
+
+    public function test_staff_profile_can_manage_notification_preferences(): void
+    {
+        $staff = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
+        $staff->roles()->attach(Role::firstOrCreate(['slug' => 'administrator'], ['name' => 'Administrator']));
+
+        $this->actingAs($staff)
+            ->get(route('admin.profile.edit'))
+            ->assertOk()
+            ->assertSee('Notification Preferences');
+
+        $this->put(route('admin.profile.notifications'), [
+            'notifications' => ['learning', 'account'],
+        ])->assertSessionHasNoErrors();
+
+        $disabled = $staff->fresh()->notification_preferences['disabled'];
         $this->assertNotContains('learning', $disabled);
         $this->assertNotContains('account', $disabled);
         $this->assertContains('jobs', $disabled);

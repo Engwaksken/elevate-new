@@ -50,6 +50,20 @@ class CourseCallImportTest extends TestCase
             ->assertOk()->assertSee('Download application template');
     }
 
+    public function test_import_centre_includes_bulk_import_controls_for_application_calls(): void
+    {
+        $call = $this->applicationCall();
+        $call->questions()->create(['question_text' => 'Why apply?', 'is_required' => true]);
+
+        $this->actingAs($this->administrator())
+            ->get(route('admin.import-centre.index'))
+            ->assertOk()
+            ->assertSee('Application call bulk imports')
+            ->assertSee($call->title)
+            ->assertSee(route('admin.course-calls.import-template', $call), false)
+            ->assertSee(route('admin.course-calls.import-applications', $call), false);
+    }
+
     public function test_import_creates_submitted_applications_and_answers_without_enrolling(): void
     {
         $call = $this->applicationCall();

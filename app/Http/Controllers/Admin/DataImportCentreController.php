@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
+use App\Models\CourseCall;
 use App\Models\DataImport;
 use App\Services\Import\CsvTemplateService;
 use Illuminate\Http\Request;
@@ -31,6 +32,10 @@ class DataImportCentreController extends Controller
         return view('admin.imports.index', [
             'imports' => DataImport::latest()->paginate(30),
             'modules' => self::MODULES,
+            'applicationCalls' => auth()->user()->isSuperAdmin()
+                && auth()->user()->hasPermission('course_calls.manage')
+                    ? CourseCall::with('questions')->latest()->get()
+                    : collect(),
         ]);
     }
 

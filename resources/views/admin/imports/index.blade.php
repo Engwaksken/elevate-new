@@ -11,6 +11,21 @@
     <div class="admin-page-actions"><x-export-buttons /></div>
 </div>
 
+@if($applicationCalls->isNotEmpty())
+    <div class="admin-panel" style="margin-bottom:16px">
+        <h2 style="margin:0 0 12px;font-size:1rem">Application call bulk imports</h2>
+        <p>Download a template for a specific application call, then upload the completed response CSV for review.</p>
+        <div style="display:grid;gap:16px">
+            @foreach($applicationCalls as $courseCall)
+                <div>
+                    <h3 style="margin:0 0 8px">{{ $courseCall->title }}</h3>
+                    @include('admin.course-calls._import', ['courseCall' => $courseCall])
+                </div>
+            @endforeach
+        </div>
+    </div>
+@endif
+
 <div class="admin-panel" style="margin-bottom:16px">
     <h2 style="margin:0 0 12px;font-size:1rem">1. Download a template</h2>
     <div style="display:flex;flex-wrap:wrap;gap:8px">

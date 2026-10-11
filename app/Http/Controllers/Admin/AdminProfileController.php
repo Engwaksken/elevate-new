@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Support\NotificationPreferences;
 
 class AdminProfileController extends Controller
 {
@@ -32,6 +33,25 @@ class AdminProfileController extends Controller
         $user->update($data);
 
         return back()->with('success','Profile updated.');
+    }
+
+    public function notifications(Request $request)
+    {
+        $data = $request->validate([
+            'notifications' => ['nullable', 'array'],
+            'notifications.*' => ['string', Rule::in(array_keys(NotificationPreferences::CATEGORIES))],
+        ]);
+
+        $categories = array_keys(NotificationPreferences::CATEGORIES);
+        $enabled = array_values(array_intersect($categories, $data['notifications'] ?? []));
+
+        $request->user()->forceFill([
+            'notification_preferences' => [
+                'disabled' => array_values(array_diff($categories, $enabled)),
+            ],
+        ])->save();
+
+        return back()->with('success', 'Notification preferences updated.');
     }
 
     public function password(Request $request)

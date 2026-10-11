@@ -1094,6 +1094,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function(){
     Route::get('/profile',[AdminProfileController::class,'edit'])->name('profile.edit');
     Route::put('/profile',[AdminProfileController::class,'update'])->name('profile.update');
+    Route::put('/profile/notifications',[AdminProfileController::class,'notifications'])->name('profile.notifications');
     Route::put('/profile/password',[AdminProfileController::class,'password'])->name('profile.password');
 });
 

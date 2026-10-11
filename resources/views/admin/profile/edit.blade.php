@@ -6,7 +6,7 @@
     <div>
         <span class="admin-eyebrow">Account</span>
         <h1>My Profile</h1>
-        <p>Manage your account details and password.</p>
+        <p>Manage your account details, notification preferences and password.</p>
     </div>
 </div>
 
@@ -27,6 +27,9 @@
     </button>
     <button type="button" class="eh-profile-tab" id="profilePasswordTab" role="tab" aria-selected="false" aria-controls="profilePasswordPanel" data-profile-tab="password">
         <i class="fas fa-key"></i> Change Password
+    </button>
+    <button type="button" class="eh-profile-tab" id="profileNotificationsTab" role="tab" aria-selected="false" aria-controls="profileNotificationsPanel" data-profile-tab="notifications">
+        <i class="fas fa-bell"></i> Notifications
     </button>
 </div>
 
@@ -50,6 +53,35 @@
         </div>
         <div class="eh-form-actions">
             <button class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Save Profile</button>
+        </div>
+    </form>
+</section>
+
+<section class="admin-panel" id="profileNotificationsPanel" role="tabpanel" aria-labelledby="profileNotificationsTab" data-profile-panel="notifications" hidden>
+    <div class="admin-panel-head">
+        <div><h2>Notification Preferences</h2><p>Choose which updates you want to receive in-app and by email.</p></div>
+    </div>
+
+    @php
+        $notificationCategories = array_keys(\App\Support\NotificationPreferences::CATEGORIES);
+        $disabledNotifications = (array) ($user->notification_preferences['disabled'] ?? []);
+        $enabledNotifications = old('notifications', array_values(array_diff($notificationCategories, $disabledNotifications)));
+    @endphp
+    <form method="POST" action="{{ route('admin.profile.notifications') }}" data-profile-form="notifications">
+        @csrf
+        @method('PUT')
+        <div class="modal-grid">
+            <div class="form-group full">
+                @foreach(\App\Support\NotificationPreferences::labels() as $key => $label)
+                    <label class="permission-check" style="margin-bottom:10px">
+                        <input type="checkbox" name="notifications[]" value="{{ $key }}" @checked(in_array($key, (array) $enabledNotifications, true))>
+                        <span>{{ $label }}</span>
+                    </label>
+                @endforeach
+            </div>
+        </div>
+        <div class="eh-form-actions">
+            <button class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Save Notification Preferences</button>
         </div>
     </form>
 </section>
@@ -98,7 +130,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const tabs=[...document.querySelectorAll('[data-profile-tab]')];
     const panels=[...document.querySelectorAll('[data-profile-panel]')];
     const activate=(name)=>{
-        const active=name==='password'?'password':'details';
+        const active=tabs.some((tab)=>tab.dataset.profileTab===name)?name:'details';
         tabs.forEach((tab)=>{
             const selected=tab.dataset.profileTab===active;
             tab.classList.toggle('active',selected);
