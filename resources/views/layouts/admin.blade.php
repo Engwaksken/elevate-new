@@ -10,8 +10,7 @@
     @stack('head')
 @include('partials.dynamic-branding')
 <meta name="theme-color" content="#800000">
-<link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
-<link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
+<link rel="manifest" href="{{ route('manifest') }}">
 </head>
 <body class="admin-app-body eh-admin-canonical-layout">
 

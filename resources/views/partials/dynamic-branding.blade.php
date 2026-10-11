@@ -8,20 +8,24 @@
     $ehLogo = $ehSettings->get('branding.logo_path');
     $ehFavicon = $ehSettings->get('branding.favicon_path');
 
-    $ehLogoUrl = $ehLogo && \Illuminate\Support\Facades\Route::has('branding.asset')
-        ? route('branding.asset', ['type'=>'logo','v'=>md5((string)$ehLogo)])
-        : null;
+    $ehLogoUrl = \Illuminate\Support\Facades\Route::has('branding.asset')
+        ? route('branding.asset', is_string($ehLogo) && $ehLogo !== ''
+            ? ['type'=>'logo','v'=>md5($ehLogo)]
+            : ['type'=>'logo'])
+        : asset('icons/apple-touch-icon.png');
 
-    $ehFaviconUrl = $ehFavicon && \Illuminate\Support\Facades\Route::has('branding.asset')
-        ? route('branding.asset', ['type'=>'favicon','v'=>md5((string)$ehFavicon)])
-        : null;
+    $ehFaviconUrl = \Illuminate\Support\Facades\Route::has('branding.asset')
+        ? route('branding.asset', is_string($ehFavicon) && $ehFavicon !== ''
+            ? ['type'=>'favicon','v'=>md5($ehFavicon)]
+            : ['type'=>'favicon'])
+        : asset('icons/pwa-192.png');
 @endphp
 
 @if($ehFaviconUrl)
-<link rel="icon" href="{{ $ehFaviconUrl }}">
-<link rel="shortcut icon" href="{{ $ehFaviconUrl }}">
-<link rel="apple-touch-icon" href="{{ $ehFaviconUrl }}">
+<link rel="icon" href="{{ $ehFaviconUrl }}" data-fallback="{{ asset('icons/pwa-192.png') }}" onerror="this.onerror=null;this.href=this.dataset.fallback;">
+<link rel="shortcut icon" href="{{ $ehFaviconUrl }}" data-fallback="{{ asset('icons/pwa-192.png') }}" onerror="this.onerror=null;this.href=this.dataset.fallback;">
 @endif
+<link rel="apple-touch-icon" href="{{ $ehLogoUrl ?: asset('icons/apple-touch-icon.png') }}" data-fallback="{{ asset('icons/apple-touch-icon.png') }}" onerror="this.onerror=null;this.href=this.dataset.fallback;">
 
 <style>
 :root{

@@ -10,7 +10,6 @@
 @include('partials.dynamic-branding')
 <meta name="theme-color" content="#800000">
 <link rel="manifest" href="{{ route('manifest') }}">
-<link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
 </head>
 @php
 // Participants, mentors and employers share one role-aware app shell

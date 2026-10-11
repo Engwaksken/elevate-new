@@ -1,11 +1,10 @@
-const VERSION = 'eh360-v1-20260929';
+const VERSION = 'eh360-v1-20261011-2';
 const SHELL_CACHE = `${VERSION}-shell`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const DOWNLOAD_CACHE = `${VERSION}-downloads`;
 
 const SHELL = [
     '/offline',
-    '/manifest.webmanifest',
     '/pwa.js',
     '/icons/pwa-192.png',
     '/icons/pwa-512.png',
@@ -110,6 +109,18 @@ self.addEventListener('fetch', event => {
         return;
     }
 
+    // Keep the dynamic manifest fresh so updated branding is not pinned in cache.
+    if (url.pathname === '/app-manifest.webmanifest') {
+        event.respondWith(networkFirst(request, RUNTIME_CACHE));
+        return;
+    }
+
+    // Partial icon URLs may keep the same version when an upload is repaired.
+    if (url.pathname === '/brand-assets/logo' || url.pathname === '/brand-assets/favicon') {
+        event.respondWith(networkFirst(request, RUNTIME_CACHE, {cache: 'no-store'}));
+        return;
+    }
+
     if (
         request.destination === 'style'
         || request.destination === 'script'
@@ -143,9 +154,9 @@ async function cacheFirst(request, cacheName) {
     }
 }
 
-async function networkFirst(request, cacheName) {
+async function networkFirst(request, cacheName, fetchOptions = {}) {
     try {
-        const response = await fetch(request, {credentials: 'include'});
+        const response = await fetch(request, {credentials: 'include', ...fetchOptions});
         if (response.ok) {
             const cache = await caches.open(cacheName);
             await cache.put(request, response.clone());
@@ -207,7 +218,43 @@ self.addEventListener('push', event => {
         }
     };
 
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil((async () => {
+        const controller = new AbortController();
+        let timeout;
+        try {
+            const manifest = await Promise.race([
+                fetch('/app-manifest.webmanifest', {cache: 'no-store', signal: controller.signal})
+                    .then(response => response.ok ? response.json() : null),
+                new Promise((_, reject) => {
+                    timeout = setTimeout(() => {
+                        controller.abort();
+                        reject(new Error('Branding request timed out'));
+                    }, 3000);
+                })
+            ]);
+            if (manifest) {
+                const icons = Array.isArray(manifest.icons) ? manifest.icons : [];
+                for (const icon of icons) {
+                    if (typeof icon?.src !== 'string') continue;
+                    let logoUrl;
+                    try {
+                        logoUrl = new URL(icon.src, self.location.origin);
+                    } catch (_) {
+                        continue;
+                    }
+                    if (logoUrl.origin !== self.location.origin || logoUrl.pathname !== '/brand-assets/logo') continue;
+                    options.icon = logoUrl.href;
+                    options.badge = logoUrl.href;
+                    break;
+                }
+            }
+        } catch (_) {
+            // Use bundled branding when the dynamic manifest is unavailable.
+        } finally {
+            clearTimeout(timeout);
+        }
+        await self.registration.showNotification(title, options);
+    })());
 });
 
 self.addEventListener('notificationclick', event => {

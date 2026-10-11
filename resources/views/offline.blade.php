@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#800000">
     <title>Offline | ElevateHer360</title>
-    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="manifest" href="{{ route('manifest') }}">
     <style>
         body{font-family:Arial,sans-serif;margin:0;background:#f8fafc;color:#101828;display:grid;min-height:100vh;place-items:center;padding:24px}
         .card{max-width:560px;background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:28px;text-align:center;box-shadow:0 18px 45px rgba(16,24,40,.08)}

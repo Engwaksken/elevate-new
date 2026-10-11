@@ -136,9 +136,11 @@ use App\Http\Controllers\Admin\ProgrammeManagement\WorkplanController;
 
 Route::get('/brand-assets/{type}', [BrandAssetController::class, 'show'])
     ->whereIn('type', ['logo', 'favicon'])
+    ->middleware('throttle:60,1')
     ->name('branding.asset');
 
-Route::get('/manifest.webmanifest', [BrandAssetController::class, 'manifest'])
+Route::get('/app-manifest.webmanifest', [BrandAssetController::class, 'manifest'])
+    ->middleware('throttle:60,1')
     ->name('manifest');
 
 Route::get('/shared/career/portfolio/{file}', [\App\Http\Controllers\Career\ResumePortfolioController::class, 'shared'])->middleware(['signed', 'throttle:30,1'])->name('career.portfolio.shared');
