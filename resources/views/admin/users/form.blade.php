@@ -50,6 +50,12 @@
                     <option value="staff" @selected(old('user_type', $user->user_type) === 'staff')>
                         Staff
                     </option>
+                    <option value="mentor" @selected(old('user_type', $user->user_type) === 'mentor')>
+                        Mentor
+                    </option>
+                    <option value="employer" @selected(old('user_type', $user->user_type) === 'employer')>
+                        Employer
+                    </option>
                 </select>
                 <small class="form-hint">Choose whether this account belongs to a participant or staff member.</small>
             </div>

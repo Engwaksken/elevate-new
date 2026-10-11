@@ -13,7 +13,7 @@
 <div>
     <span class="admin-eyebrow">People & Access</span>
     <h1>{{ $isParticipantsView ? 'Participants' : 'Users' }}</h1>
-    <p>{{ $isParticipantsView ? 'All participant accounts and their status.' : 'Manage participant and staff accounts, access status and assigned roles.' }}</p>
+    <p>{{ $isParticipantsView ? 'All participant accounts and their status.' : 'Manage participant, staff, mentor and employer accounts, access status and assigned roles.' }}</p>
 </div>
 <div class="admin-page-actions">
     <x-export-buttons />
@@ -33,6 +33,8 @@
 ['total','Total Users','fa-users'],
 ['participants','Participants','fa-user-graduate'],
 ['staff','Staff','fa-user-tie'],
+['mentors','Mentors','fa-handshake-angle'],
+['employers','Employers','fa-building'],
 ['inactive','Inactive / Pending','fa-user-clock']
 ] as [$key,$label,$icon])
 <div class="admin-stat">
@@ -54,6 +56,8 @@
         <option value="">All user types</option>
         <option value="participant" @selected($activeType==='participant')>Participant</option>
         <option value="staff" @selected($activeType==='staff')>Staff</option>
+        <option value="mentor" @selected($activeType==='mentor')>Mentor</option>
+        <option value="employer" @selected($activeType==='employer')>Employer</option>
     </select>
     @endunless
 
@@ -209,6 +213,8 @@
         <select name="user_type" required>
             <option value="participant" @selected(old('user_type')==='participant')>Participant</option>
             <option value="staff" @selected(old('user_type')==='staff')>Staff</option>
+            <option value="mentor" @selected(old('user_type')==='mentor')>Mentor</option>
+            <option value="employer" @selected(old('user_type')==='employer')>Employer</option>
         </select>
     </div>
 
@@ -281,6 +287,8 @@
         <select name="user_type" required>
             <option value="participant" @selected($user->user_type==='participant')>Participant</option>
             <option value="staff" @selected($user->user_type==='staff')>Staff</option>
+            <option value="mentor" @selected($user->user_type==='mentor')>Mentor</option>
+            <option value="employer" @selected($user->user_type==='employer')>Employer</option>
         </select>
     </div>
 

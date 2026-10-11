@@ -99,6 +99,8 @@ class UserController extends Controller
                 'total' => User::count(),
                 'participants' => User::where('user_type','participant')->count(),
                 'staff' => User::where('user_type','staff')->count(),
+                'mentors' => User::where('user_type','mentor')->count(),
+                'employers' => User::where('user_type','employer')->count(),
                 'inactive' => User::whereIn('status',['inactive','suspended','pending'])->count(),
             ],
         ]);
@@ -297,7 +299,7 @@ class UserController extends Controller
                 Rule::unique('users','email')->ignore($user?->id),
             ],
             'phone' => ['nullable','string','max:30'],
-            'user_type' => ['required','in:participant,staff'],
+            'user_type' => ['required', Rule::in(['participant', 'staff', 'mentor', 'employer'])],
             'status' => ['required','in:active,inactive,suspended,pending'],
             'password' => [
                 $user ? 'nullable' : 'required',
@@ -364,15 +366,15 @@ class UserController extends Controller
                 true
             );
 
-            if ($userType === 'participant' && ! $isParticipantRole) {
+            if ($userType !== 'staff' && ! $isParticipantRole) {
                 throw ValidationException::withMessages([
-                    'roles' => "The role '{$role->name}' is a staff/system role and cannot be assigned to a participant account.",
+                    'roles' => "The role '{$role->name}' is a staff/system role and cannot be assigned to a {$userType} account.",
                 ]);
             }
 
             if ($userType === 'staff' && $isParticipantRole) {
                 throw ValidationException::withMessages([
-                    'roles' => "The role '{$role->name}' is a participant role and cannot be assigned to a staff account.",
+                    'roles' => "The role '{$role->name}' is a partner/participant role and cannot be assigned to a staff account.",
                 ]);
             }
         }
