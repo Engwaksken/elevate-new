@@ -40,6 +40,23 @@ class ParticipantLearningNavigationTest extends TestCase
             ->assertSee(route('learning.my-courses'));
     }
 
+    public function test_signed_in_participant_sees_public_shell_on_home_and_role_shell_on_dashboard(): void
+    {
+        $this->actingAs($this->participant());
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('class="site-header"', false)
+            ->assertDontSee('class="participant-app-shell"', false)
+            ->assertDontSee('role-shell-body', false);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('participant-app-shell', false)
+            ->assertSee('role-shell-body--participant', false)
+            ->assertDontSee('class="site-header"', false);
+    }
+
     public function test_guest_home_learning_card_points_to_the_catalogue(): void
     {
         $this->get(route('home'))
