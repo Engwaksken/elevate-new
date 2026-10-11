@@ -190,8 +190,9 @@ class DownloadService {
 
   String _extensionFor(Response<dynamic> response, String? fileName) {
     final fromName = p.extension(fileName ?? '');
-    if (fromName.isNotEmpty && fromName.length <= 6)
+    if (fromName.isNotEmpty && fromName.length <= 6) {
       return fromName.toLowerCase();
+    }
 
     final disposition = response.headers.value('content-disposition') ?? '';
     final nameMatch = RegExp(r'''filename\*?=(?:UTF-8'')?"?([^";]+)"?''',

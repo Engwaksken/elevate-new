@@ -9,8 +9,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const MaterialApp(
       home: BiometricGate(
-        child: Text('Participant home'),
         loginBuilder: _loginBuilder,
+        child: Text('Participant home'),
       ),
     ));
     await tester.pumpAndSettle();

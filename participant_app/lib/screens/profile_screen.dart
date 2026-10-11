@@ -552,8 +552,9 @@ class _DetailTile extends StatelessWidget {
     if (n.contains('phone')) return Icons.phone_outlined;
     if (n.contains('gender')) return Icons.face_3_outlined;
     if (n.contains('birth')) return Icons.cake_outlined;
-    if (n == 'country' || n == 'district' || n == 'location')
+    if (n == 'country' || n == 'district' || n == 'location') {
       return Icons.place_outlined;
+    }
     if (n.contains('education')) return Icons.school_outlined;
     if (n.contains('employment')) return Icons.work_outline_rounded;
     if (n.contains('interest')) return Icons.favorite_outline;

@@ -171,8 +171,9 @@ class ParticipantDataService {
         _evict(file);
         return;
       }
-      if (await _db.getMeta(_photoSourceMeta) == url && await file.exists())
+      if (await _db.getMeta(_photoSourceMeta) == url && await file.exists()) {
         return;
+      }
 
       final temp = File('${file.path}.download');
       await _api.downloadProfilePhoto(temp.path);

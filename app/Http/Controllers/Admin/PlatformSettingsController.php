@@ -62,7 +62,9 @@ class PlatformSettingsController extends Controller
             'font_family' => 'required|string|max:100',
             'font_size' => 'required|integer|min:12|max:22',
             'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp,gif|max:4096',
-            'favicon' => 'nullable|mimes:png,ico,jpg,jpeg,webp|max:2048',
+            // ICO is intentionally excluded until the public asset endpoint can
+            // safely identify and serve it. Keep accepted and delivered types aligned.
+            'favicon' => 'nullable|mimes:png,jpg,jpeg,webp|max:2048',
         ]);
 
         foreach ([
@@ -190,11 +192,25 @@ class PlatformSettingsController extends Controller
         $disk = Storage::disk('public');
         $oldPath = $settings->get($settingKey);
 
-        $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'bin');
-        $filename = $prefix.'-'.now()->format('YmdHis').'-'.bin2hex(random_bytes(4)).'.'.$extension;
-        $newPath = $file->storeAs('branding', $filename, 'public');
+        // Never use a client-controlled filename/extension for a file placed on
+        // the public disk. Derive the suffix from decoded image bytes instead.
+        $bytes = $file->get();
+        $image = @getimagesizefromstring($bytes);
+        $extension = match ($image[2] ?? null) {
+            IMAGETYPE_PNG => 'png',
+            IMAGETYPE_JPEG => 'jpg',
+            IMAGETYPE_WEBP => 'webp',
+            IMAGETYPE_GIF => 'gif',
+            default => null,
+        };
 
-        if (! $newPath) {
+        abort_if($extension === null, 422, 'Unsupported branding image content.');
+
+        $filename = $prefix.'-'.now()->format('YmdHis').'-'.bin2hex(random_bytes(4)).'.'.$extension;
+        $newPath = 'branding/'.$filename;
+        $stored = $disk->put($newPath, $bytes);
+
+        if (! $stored) {
             abort(500, 'Unable to store the uploaded branding file.');
         }
 

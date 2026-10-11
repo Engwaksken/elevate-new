@@ -5,11 +5,36 @@ namespace Tests\Feature;
 use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class BrandManifestTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_brand_upload_uses_detected_image_extension_not_client_extension(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['status' => 'active']);
+        $admin->roles()->attach(Role::firstOrCreate(['slug' => 'super-administrator'], ['name' => 'Super Administrator']));
+
+        $this->actingAs($admin)->put(route('admin.platform-settings.branding'), [
+            'system_name' => 'ElevateHer360',
+            'short_name' => 'EH360',
+            'primary_color' => '#800000',
+            'secondary_color' => '#ffffff',
+            'accent_color' => '#d4af37',
+            'font_family' => 'Rubik',
+            'font_size' => 16,
+            'logo' => UploadedFile::fake()->createWithContent('payload.jpg', file_get_contents(public_path('icons/pwa-192.png'))),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $path = app(SettingsService::class)->get('branding.logo_path');
+        $this->assertMatchesRegularExpression('/^branding\/logo-[0-9]{14}-[a-f0-9]+\.png$/', $path);
+        Storage::disk('public')->assertExists($path);
+    }
 
     public function test_manifest_uses_uploaded_public_logo_url_and_detected_mime_type(): void
     {

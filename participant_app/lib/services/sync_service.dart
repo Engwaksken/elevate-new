@@ -401,9 +401,10 @@ class SyncService {
         await NotificationService.instance.scheduleFromSync(reminders);
       }
       final timetable = data['timetable_reminders'];
-      if (timetable is List)
+      if (timetable is List) {
         await NotificationService.instance
             .scheduleTimetableReminders(timetable);
+      }
 
       // Courses, assignments, notifications etc. are saved: let open screens
       // show them now instead of after the slower extras below.
