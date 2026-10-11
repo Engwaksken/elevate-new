@@ -664,11 +664,15 @@
                     ->values();
             @endphp
 
+            @php
+                $groupActive = $visibleItems->contains(fn (array $item): bool => $isActiveItem($item));
+                $groupId = 'admin-sidebar-group-' . \Illuminate\Support\Str::slug($group['label']);
+            @endphp
             @if($visibleItems->isNotEmpty())
                 <section class="eh-admin-sidebar__group eh-admin-sidebar__group--{{ $group['colour'] }}">
-                    <h3>{{ $group['label'] }}</h3>
+                    <h3><button type="button" class="eh-admin-sidebar__group-toggle" aria-expanded="{{ $groupActive ? 'true' : 'false' }}" aria-controls="{{ $groupId }}" data-admin-sidebar-group-toggle>{{ $group['label'] }}<i class="fas fa-chevron-down" aria-hidden="true"></i></button></h3>
 
-                    <div class="eh-admin-sidebar__links">
+                    <div id="{{ $groupId }}" class="eh-admin-sidebar__links" @if(! $groupActive) hidden @endif>
                         @foreach($visibleItems as $item)
                             @php
                                 $href = $item['url'] ?? route($item['route']);

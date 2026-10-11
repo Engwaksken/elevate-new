@@ -64,6 +64,15 @@
         document.addEventListener('DOMContentLoaded', () => {
             const body = document.body;
 
+            document.querySelectorAll('[data-admin-sidebar-group-toggle]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const expanded = button.getAttribute('aria-expanded') === 'true';
+                    const panel = document.getElementById(button.getAttribute('aria-controls'));
+                    button.setAttribute('aria-expanded', String(!expanded));
+                    if (panel) panel.hidden = expanded;
+                });
+            });
+
             document.querySelectorAll('[data-admin-sidebar-toggle]').forEach((button) => {
                 button.addEventListener('click', () => {
                     body.classList.toggle('admin-sidebar-open');
