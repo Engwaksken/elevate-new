@@ -49,7 +49,7 @@
 <tbody>
 @forelse($workplans as $workplan)
 <tr>
-<td><strong>{{ $workplan->title }}</strong><small class="admin-cell-hint">{{ $workplan->financial_year ?: 'No financial year' }}</small></td>
+<td><strong>{{ $workplan->title }}</strong><small class="admin-cell-hint">{{ $workplan->financial_year ?: 'No financial year' }}</small>@if($workplan->source_file_path)<small class="admin-cell-hint"><a href="{{ route('admin.workplans.download-source', $workplan) }}">{{ $workplan->source_file_name ?: 'Download source file' }}</a></small>@endif</td>
 <td>{{ ucfirst($workplan->period_type) }}</td>
 <td>{{ optional($workplan->start_date)->format('d M Y') ?: '-' }} - {{ optional($workplan->end_date)->format('d M Y') ?: '-' }}</td>
 <td><strong>{{ number_format((float)$workplan->progress_percent,0) }}%</strong><div style="height:5px;background:#eee;border-radius:5px;margin-top:5px;overflow:hidden"><div style="height:100%;width:{{ min(100,(float)$workplan->progress_percent) }}%;background:#800000"></div></div></td>
@@ -130,7 +130,7 @@
 <div class="form-group"><label>Start Date</label><input type="date" name="start_date"></div>
 <div class="form-group"><label>End Date</label><input type="date" name="end_date"></div>
 <div class="form-group full"><label>Description</label><textarea name="description"></textarea></div>
-<div class="form-group full"><label>Existing workplan Excel (optional)</label><input type="file" name="workplan_file" accept=".xlsx,.xls,.csv"><small>Use the downloaded template. Maximum file size: 20 MB.</small></div>
+<div class="form-group full"><label for="workplan-file">Workplan template CSV attachment (optional)</label><input id="workplan-file" type="file" name="workplan_file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"><small>Attach a template CSV, Excel workbook (.xlsx or .xls), or CSV file (maximum 20 MB). The uploaded file is retained only as an attachment; its contents are not imported.</small></div>
 </div></div>
 <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Create Workplan</button></div>
 </form></div></div>

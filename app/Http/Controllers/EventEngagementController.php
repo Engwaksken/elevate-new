@@ -31,10 +31,19 @@ class EventEngagementController extends Controller
             ->orderBy('title')
             ->get();
 
-        $courseFeedbackIds = CourseFeedbackResponse::where('user_id', auth()->id())
-            ->whereIn('course_id', $courses->pluck('id'))->pluck('course_id')->all();
+        $courseFeedbackByCourseId = CourseFeedbackResponse::where('user_id', auth()->id())
+            ->whereIn('course_id', $courses->pluck('id'))
+            ->get()
+            ->keyBy('course_id');
+        $courseFeedbackIds = $courseFeedbackByCourseId->keys()->all();
+        $eventFeedbackByEventId = EventFeedbackResponse::where('user_id', auth()->id())
+            ->whereIn('event_id', $events->pluck('id'))
+            ->get()
+            ->keyBy('event_id');
 
-        return view('events.feedback-index', compact('events', 'courses', 'courseFeedbackIds'));
+        return view('events.feedback-index', compact(
+            'events', 'courses', 'courseFeedbackIds', 'courseFeedbackByCourseId', 'eventFeedbackByEventId'
+        ));
     }
 
     public function courseFeedback(Course $course)

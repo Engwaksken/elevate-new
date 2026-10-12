@@ -818,6 +818,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         ->middleware('permission:users.delete')->name('participant-goals.bulk-destroy');
 
     Route::get('/workplans',[WorkplanController::class,'index'])->middleware('permission:workplans.view')->name('workplans.index');
+    Route::get('/workplans/{workplan}/source',[WorkplanController::class,'downloadSource'])->middleware('permission:workplans.view')->name('workplans.download-source');
     Route::get('/workplans/template',[WorkplanController::class,'template'])->middleware('permission:workplans.create')->name('workplans.template');
     Route::post('/workplans',[WorkplanController::class,'store'])->middleware('permission:workplans.create')->name('workplans.store');
     Route::post('/workplans/{workplan}/submit',[WorkplanController::class,'submit'])->middleware('permission:workplans.edit')->name('workplans.submit');

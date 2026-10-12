@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\Workplan;
 use App\Services\WorkplanProgressService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class WorkplanController extends Controller
 {
@@ -117,6 +118,41 @@ class WorkplanController extends Controller
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename=workplan-template.csv',
         ]);
+    }
+
+    public function downloadSource(Workplan $workplan)
+    {
+        $user = request()->user();
+        abort_unless($user && $user->isStaff() && $user->hasPermission('workplans.view'), 403);
+        $isAdmin = $user && ($user->isSuperAdmin() || $user->hasAnyRole(['admin', 'administrator']));
+        $isOwner = $user && in_array($user->id, [$workplan->created_by, $workplan->responsible_user_id]);
+        $canOversee = $user && ($user->hasPermission('workplans.approve') || $user->hasAnyRole([
+            'programs-lead', 'operations-lead',
+        ]));
+        abort_unless($isAdmin || ($isOwner || ($canOversee && $workplan->status !== 'draft')), 403);
+
+        $path = $workplan->source_file_path;
+
+        // Stored uploads are relative to the local disk's workplans directory.
+        // Reject malformed values rather than allowing a persisted path to escape it.
+        if (! is_string($path)
+            || ! preg_match('#^workplans/[^/\\\\]+$#D', $path)
+            || str_contains($path, '..')) {
+            abort(404);
+        }
+
+        $disk = Storage::disk('local');
+        if (! $disk->exists($path)) {
+            abort(404);
+        }
+
+        $storedName = $workplan->source_file_name;
+        $safeName = is_string($storedName)
+            && ! preg_match('~[\x00-\x1F\x7F/\\\\]~', $storedName)
+            ? basename($storedName)
+            : '';
+
+        return response()->download($disk->path($path), $safeName !== '' ? $safeName : basename($path));
     }
 
     public function submit(Workplan $workplan)
