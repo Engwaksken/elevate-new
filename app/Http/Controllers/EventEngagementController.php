@@ -137,7 +137,7 @@ class EventEngagementController extends Controller
             ]
         );
 
-        return redirect()->route('events.show',$event)->with('success','Thank you. Your event feedback has been submitted.');
+        return redirect()->route('participant.feedback.index')->with('success','Thank you. Your event feedback has been submitted.');
     }
 
     public function certificate(Event $event)
