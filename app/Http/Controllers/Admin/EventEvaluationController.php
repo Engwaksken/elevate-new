@@ -9,6 +9,7 @@ use App\Models\EventCertificate;
 use App\Models\EventFeedbackResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Support\ParticipantFeedbackAccess;
 
 class EventEvaluationController extends Controller
 {
@@ -38,6 +39,8 @@ class EventEvaluationController extends Controller
 
     public function feedback(Request $request,Event $event)
     {
+        abort_unless(ParticipantFeedbackAccess::canView($request->user()), 403);
+
         if($format=$this->exportFormat($request)){
             return $this->exportTable($format,'Event Feedback: '.$event->title,
                 EventFeedbackResponse::with('user')->where('event_id',$event->id)->latest('submitted_at'),[

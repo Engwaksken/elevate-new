@@ -13,4 +13,7 @@ class CourseFeedbackResponse extends Model
     ];
 
     protected $casts = ['submitted_at' => 'datetime'];
+
+    public function course() { return $this->belongsTo(Course::class); }
+    public function user() { return $this->belongsTo(User::class); }
 }

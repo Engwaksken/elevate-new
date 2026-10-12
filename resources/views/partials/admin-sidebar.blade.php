@@ -331,6 +331,13 @@
                     'permissions' => ['calendar.manage'],
                 ],
                 [
+                    'route' => 'admin.participant-feedback.index',
+                    'label' => 'Participant Feedback',
+                    'icon' => 'fa-comment-dots',
+                    'permissions' => [],
+                    'roles' => \App\Support\ParticipantFeedbackAccess::ROLES,
+                ],
+                [
                     'route' => 'certificates.recommendations.index',
                     'label' => 'Certificates',
                     'icon' => 'fa-award',

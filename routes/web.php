@@ -1057,6 +1057,7 @@ Route::middleware(['auth', 'verified'])->group(function(){
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function(){
+    Route::get('/participant-feedback', [\App\Http\Controllers\Admin\ParticipantFeedbackController::class, 'index'])->name('participant-feedback.index');
     Route::post('/events/{event}/evaluation-settings',[EventEvaluationController::class,'settings'])->name('events.evaluation-settings');
     Route::get('/events/{event}/feedback',[EventEvaluationController::class,'feedback'])->name('events.feedback');
     Route::get('/events/{event}/reminder-logs',[EventEvaluationController::class,'reminderLogs'])->name('events.reminder-logs');
