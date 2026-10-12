@@ -5,7 +5,7 @@
 @section('content')
 <div class="container py-4">
     <h1>Course &amp; event feedback</h1>
-    <p>Share your experience of completed courses and events you attended. Your feedback helps us improve future activities.</p>
+    <p>Share your experience of courses you are enrolled in and events you have registered for. Your feedback helps us improve future activities.</p>
 
     @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 
@@ -21,7 +21,7 @@
                 @endif
             </div>
         @empty
-            <div class="list-group-item">No completed courses are awaiting feedback.</div>
+            <div class="list-group-item">No enrolled courses are available for feedback.</div>
         @endforelse
     </div>
 
@@ -33,7 +33,7 @@
                 <button class="btn btn-primary" type="button" data-modal-open="event-feedback-{{ $event->id }}">Add feedback</button>
             </div>
         @empty
-            <div class="list-group-item">There are no events awaiting your feedback.</div>
+            <div class="list-group-item">There are no registered, feedback-enabled events available.</div>
         @endforelse
     </div>
 </div>

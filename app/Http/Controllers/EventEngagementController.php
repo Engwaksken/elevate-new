@@ -22,14 +22,11 @@ class EventEngagementController extends Controller
             ->where('is_published', true)
             ->where('feedback_enabled', true)
             ->whereHas('registrations', fn ($query) => $query->where('user_id', auth()->id()))
-            ->whereHas('attendanceRecords', fn ($query) => $query->where('user_id', auth()->id())->whereIn('attendance_status', ['present', 'late']))
             ->latest('starts_at')
             ->get();
 
         $courses = Course::query()
-            ->whereHas('enrolments', fn ($query) => $query->where('user_id', auth()->id())->where(function ($q) {
-                $q->whereNotNull('completed_at')->orWhere('status', 'completed');
-            }))
+            ->whereHas('enrolments', fn ($query) => $query->where('user_id', auth()->id()))
             ->with(['enrolments' => fn ($query) => $query->where('user_id', auth()->id())])
             ->orderBy('title')
             ->get();
@@ -42,9 +39,7 @@ class EventEngagementController extends Controller
 
     public function courseFeedback(Course $course)
     {
-        $enrolment = Enrolment::where('course_id', $course->id)->where('user_id', auth()->id())
-            ->where(fn ($query) => $query->whereNotNull('completed_at')->orWhere('status', 'completed'))
-            ->firstOrFail();
+        $enrolment = Enrolment::where('course_id', $course->id)->where('user_id', auth()->id())->firstOrFail();
 
         return view('events.course-feedback', [
             'course' => $course,
@@ -54,9 +49,7 @@ class EventEngagementController extends Controller
 
     public function saveCourseFeedback(Request $request, Course $course)
     {
-        $enrolment = Enrolment::where('course_id', $course->id)->where('user_id', auth()->id())
-            ->where(fn ($query) => $query->whereNotNull('completed_at')->orWhere('status', 'completed'))
-            ->firstOrFail();
+        $enrolment = Enrolment::where('course_id', $course->id)->where('user_id', auth()->id())->firstOrFail();
 
         $data = $request->validate([
             'overall_rating' => ['required', 'integer', 'between:1,5'],
@@ -84,13 +77,6 @@ class EventEngagementController extends Controller
             ->where('user_id',auth()->id())
             ->firstOrFail();
 
-        $attendance=$event->attendanceRecords()
-            ->where('user_id',auth()->id())
-            ->whereIn('attendance_status',['present','late'])
-            ->first();
-
-        abort_unless($attendance,403,'Feedback is available after attendance has been recorded.');
-
         return view('events.feedback',[
             'event'=>$event,
             'response'=>EventFeedbackResponse::firstOrNew([
@@ -107,15 +93,6 @@ class EventEngagementController extends Controller
         $registration=$event->registrations()
             ->where('user_id',auth()->id())
             ->firstOrFail();
-
-        abort_unless(
-            $event->attendanceRecords()
-                ->where('user_id',auth()->id())
-                ->whereIn('attendance_status',['present','late'])
-                ->exists(),
-            403,
-            'Feedback is available after attendance has been recorded.'
-        );
 
         $data=$request->validate([
             'overall_rating'=>['required','integer','between:1,5'],
