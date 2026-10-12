@@ -10,7 +10,7 @@
     </div>
     <div class="admin-page-actions">
         <x-export-buttons />
-        <a href="{{ route('admin.workplans.template') }}" class="btn btn-outline"><i class="fas fa-download"></i> Download template</a>
+        <a href="{{ route('admin.workplans.template') }}" class="btn btn-outline"><i class="fas fa-download"></i> Download CSV template</a>
         <button type="button" class="btn btn-primary" data-modal-open="createWorkplanModal">
             <i class="fas fa-plus"></i> New Workplan
         </button>
@@ -130,7 +130,7 @@
 <div class="form-group"><label>Start Date</label><input type="date" name="start_date"></div>
 <div class="form-group"><label>End Date</label><input type="date" name="end_date"></div>
 <div class="form-group full"><label>Description</label><textarea name="description"></textarea></div>
-<div class="form-group full"><label for="workplan-file">Workplan template CSV attachment (optional)</label><input id="workplan-file" type="file" name="workplan_file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"><small>Attach a template CSV, Excel workbook (.xlsx or .xls), or CSV file (maximum 20 MB). The uploaded file is retained only as an attachment; its contents are not imported.</small></div>
+<div class="form-group full"><label for="workplan-file">Workplan file attachment (optional)</label><input id="workplan-file" type="file" name="workplan_file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"><small>The downloadable template is a CSV file. Uploads may be .xlsx, .xls, or CSV, up to 20 MB. Uploaded files are retained as attachments only; their contents are not parsed or imported.</small></div>
 </div></div>
 <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Create Workplan</button></div>
 </form></div></div>
