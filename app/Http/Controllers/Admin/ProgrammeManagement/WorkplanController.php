@@ -90,7 +90,14 @@ class WorkplanController extends Controller
             'end_date'=>['nullable','date','after_or_equal:start_date'],
             'responsible_user_id'=>['nullable','exists:users,id'],
             'description'=>['nullable','string'],
+            'workplan_file'=>['nullable','file','mimes:xlsx,xls,csv','max:20480'],
         ]);
+
+        $file = $request->file('workplan_file');
+        if ($file) {
+            $data['source_file_path'] = $file->store('workplans', 'local');
+            $data['source_file_name'] = $file->getClientOriginalName();
+        }
 
         Workplan::create($data+[
             'created_by'=>auth()->id(),
@@ -99,6 +106,17 @@ class WorkplanController extends Controller
         ]);
 
         return back()->with('success','Workplan created.');
+    }
+
+    public function template()
+    {
+        $content = "Workplan Title,Financial Year,Period Type,Programme,Project,Cohort,Responsible Staff,Start Date,End Date,Description\n";
+        $content .= "Example Workplan,2026/27,annual,,,,,2026-07-01,2027-06-30,Describe the workplan\n";
+
+        return response($content, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename=workplan-template.csv',
+        ]);
     }
 
     public function submit(Workplan $workplan)

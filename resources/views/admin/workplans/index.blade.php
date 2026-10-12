@@ -10,6 +10,7 @@
     </div>
     <div class="admin-page-actions">
         <x-export-buttons />
+        <a href="{{ route('admin.workplans.template') }}" class="btn btn-outline"><i class="fas fa-download"></i> Download template</a>
         <button type="button" class="btn btn-primary" data-modal-open="createWorkplanModal">
             <i class="fas fa-plus"></i> New Workplan
         </button>
@@ -117,7 +118,7 @@
 
 <div class="eh-modal" id="createWorkplanModal" aria-hidden="true"><div class="eh-modal-dialog eh-modal-lg">
 <div class="eh-modal-header"><div><h2>New Workplan</h2><p>Create a programme, project, department or staff workplan.</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
-<form method="POST" action="{{ route('admin.workplans.store') }}">@csrf
+<form method="POST" action="{{ route('admin.workplans.store') }}" enctype="multipart/form-data">@csrf
 <div class="eh-modal-body"><div class="modal-grid">
 <div class="form-group full"><label>Title *</label><input name="title" required></div>
 <div class="form-group"><label>Financial Year</label><input name="financial_year" placeholder="2026/27"></div>
@@ -129,6 +130,7 @@
 <div class="form-group"><label>Start Date</label><input type="date" name="start_date"></div>
 <div class="form-group"><label>End Date</label><input type="date" name="end_date"></div>
 <div class="form-group full"><label>Description</label><textarea name="description"></textarea></div>
+<div class="form-group full"><label>Existing workplan Excel (optional)</label><input type="file" name="workplan_file" accept=".xlsx,.xls,.csv"><small>Use the downloaded template. Maximum file size: 20 MB.</small></div>
 </div></div>
 <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Create Workplan</button></div>
 </form></div></div>

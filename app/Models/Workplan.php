@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Workplan extends Model
 {
-    protected $fillable=['programme_id','project_id','cohort_id','title','financial_year','period_type','start_date','end_date','responsible_user_id','description','status','progress_percent','created_by','approved_by','approved_at'];
+    protected $fillable=['programme_id','project_id','cohort_id','title','financial_year','period_type','start_date','end_date','responsible_user_id','description','source_file_path','source_file_name','status','progress_percent','created_by','approved_by','approved_at'];
     protected $casts=['start_date'=>'date','end_date'=>'date','approved_at'=>'datetime','progress_percent'=>'decimal:2'];
 
     public function milestones(): HasMany { return $this->hasMany(Milestone::class); }

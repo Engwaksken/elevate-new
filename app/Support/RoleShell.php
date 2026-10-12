@@ -142,6 +142,7 @@ class RoleShell
                     ['route' => 'library.index', 'label' => 'Library', 'icon' => 'fa-book-open', 'active' => ['library.*']],
                 ],
                 'Account' => [
+                    ['route' => 'participant.feedback.index', 'label' => 'Feedback', 'icon' => 'fa-comment-dots', 'active' => ['participant.feedback.*', 'events.feedback']],
                     ['route' => 'participant.help', 'label' => 'Help & Support', 'icon' => 'fa-circle-question', 'active' => ['participant.help']],
                     ['route' => 'profile.edit', 'label' => 'Profile', 'icon' => 'fa-user', 'active' => ['profile.*']],
                 ],

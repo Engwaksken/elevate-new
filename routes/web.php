@@ -818,6 +818,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         ->middleware('permission:users.delete')->name('participant-goals.bulk-destroy');
 
     Route::get('/workplans',[WorkplanController::class,'index'])->middleware('permission:workplans.view')->name('workplans.index');
+    Route::get('/workplans/template',[WorkplanController::class,'template'])->middleware('permission:workplans.create')->name('workplans.template');
     Route::post('/workplans',[WorkplanController::class,'store'])->middleware('permission:workplans.create')->name('workplans.store');
     Route::post('/workplans/{workplan}/submit',[WorkplanController::class,'submit'])->middleware('permission:workplans.edit')->name('workplans.submit');
     Route::post('/workplans/{workplan}/approve',[WorkplanController::class,'approve'])->middleware('permission:workplans.approve')->name('workplans.approve');
@@ -1031,6 +1032,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 Route::get('/events/{event}/calendar.ics',[EventCheckinController::class,'calendar'])->name('events.calendar');
 
 Route::middleware(['auth', 'verified'])->group(function(){
+    Route::get('/feedback',[EventEngagementController::class,'feedbackIndex'])->name('participant.feedback.index');
+    Route::get('/courses/{course}/feedback',[EventEngagementController::class,'courseFeedback'])->name('courses.feedback');
+    Route::post('/courses/{course}/feedback',[EventEngagementController::class,'saveCourseFeedback'])->name('courses.feedback.store');
     Route::get('/events/{event}/check-in/{token}',[EventCheckinController::class,'checkin'])->name('events.checkin');
 });
 
