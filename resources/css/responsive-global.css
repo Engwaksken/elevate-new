@@ -1,0 +1,384 @@
+/* ==========================================================================
+   ElevateHer360 Global Responsive Layer
+   Imported LAST so it settles every shell (public site, role/participant
+   shell, admin canonical shell) from small phones up to 27" QHD monitors,
+   4K TVs and beyond.
+
+   Strategy
+   - Phones/tablets: stop horizontal overflow, keep tables/media scrollable,
+     dynamic viewport units, safe-area insets, no iOS focus zoom.
+   - Large screens: scale the root font (all rem-based UI grows with it),
+     convert fixed shell sizes (sidebars, topbars) to rem, and widen the
+     centred content caps so 27"/TV screens are not a narrow strip.
+   The assistive-tools text scale (--eh-user-text-scale) still multiplies on top.
+   ========================================================================== */
+
+:root {
+    --eh-screen-scale: 1;
+    --eh-container: 1180px;
+    --eh-gutter: 16px;
+    --eh-shell-content-max: 120rem;
+}
+
+html {
+    font-size: calc(16px * var(--eh-user-text-scale, 1) * var(--eh-screen-scale));
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    overflow-x: clip;
+    overflow-wrap: break-word;
+}
+
+/* ---------- media never forces the page wider than the screen ---------- */
+
+img,
+video,
+canvas,
+iframe,
+embed,
+object {
+    max-width: 100%;
+}
+
+pre,
+code {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+/* flex/grid children may shrink instead of overflowing */
+:where(.eh-admin-content, .participant-site-main, .page-shell, .container) :where(.card, .admin-panel, [class*="-grid"] > *, [class*="-row"] > *) {
+    min-width: 0;
+}
+
+/* ==========================================================================
+   Wide containers (public site, auth pages)
+   ========================================================================== */
+
+@media (min-width: 1440px) {
+    :root {
+        --eh-container: 1280px;
+        --eh-gutter: 24px;
+    }
+}
+
+@media (min-width: 1680px) {
+    :root {
+        --eh-container: 1440px;
+    }
+}
+
+@media (min-width: 1440px) {
+    .container,
+    .page-shell,
+    .site-header .nav,
+    .site-main-home .full-width-section > .container,
+    .full-width-section > .container,
+    .auth-layout,
+    .eh-auth-shell {
+        width: min(var(--eh-container), calc(100% - var(--eh-gutter) * 2));
+    }
+
+    .eh-register-shell {
+        width: min(calc(var(--eh-container) + 40px), calc(100% - var(--eh-gutter) * 2));
+    }
+}
+
+/* ==========================================================================
+   Large desktops, 27" monitors, TVs
+   1920  - Full HD 24-27" monitors and most TVs (often report 1920 CSS px)
+   2400  - 27" QHD (2560) and ultrawide monitors
+   3200  - 4K monitors/TVs at 100% scaling
+   5000  - 5K/8K displays
+   ========================================================================== */
+
+@media (min-width: 1920px) {
+    :root {
+        --eh-screen-scale: 1.0625;
+        --eh-container: 88rem;
+        --eh-gutter: 32px;
+        --eh-admin-sidebar-width: 16.25rem;
+        --eh-admin-topbar-height: 4rem;
+        --psw: 17rem;
+    }
+}
+
+@media (min-width: 2400px) {
+    :root {
+        --eh-screen-scale: 1.1875;
+        --eh-container: 96rem;
+        --eh-gutter: 48px;
+    }
+}
+
+@media (min-width: 3200px) {
+    :root {
+        --eh-screen-scale: 1.5;
+        --eh-gutter: 64px;
+    }
+}
+
+@media (min-width: 5000px) {
+    :root {
+        --eh-screen-scale: 2;
+    }
+}
+
+@media (min-width: 1920px) {
+    /* --- admin shell: centre very wide content instead of stretching --- */
+    body.eh-admin-canonical-layout .eh-admin-content {
+        padding-left: max(24px, calc((100% - var(--eh-shell-content-max)) / 2)) !important;
+        padding-right: max(24px, calc((100% - var(--eh-shell-content-max)) / 2)) !important;
+        padding-top: calc(var(--eh-admin-topbar-height) + 1.5rem) !important;
+    }
+
+    body.eh-admin-canonical-layout .eh-admin-topbar {
+        padding: 0 1.5rem !important;
+    }
+
+    body.eh-admin-canonical-layout .eh-admin-topbar__search {
+        max-width: 40rem !important;
+        height: 2.5rem !important;
+    }
+
+    body.eh-admin-canonical-layout .eh-admin-topbar__search input {
+        height: 2.5rem !important;
+    }
+
+    body.eh-admin-canonical-layout .eh-admin-sidebar__logo {
+        width: 2.75rem !important;
+        min-width: 2.75rem !important;
+        max-width: 2.75rem !important;
+        height: 2.75rem !important;
+        flex-basis: 2.75rem !important;
+    }
+
+    body.eh-admin-canonical-layout .eh-admin-sidebar__links a {
+        min-height: 2.4rem !important;
+    }
+
+    /* --- participant / mentor / employer shell --- */
+    .participant-site-main {
+        padding-left: max(42px, calc((100% - var(--eh-shell-content-max)) / 2));
+        padding-right: max(42px, calc((100% - var(--eh-shell-content-max)) / 2));
+    }
+
+    .role-topbar {
+        padding-left: max(42px, calc((100% - var(--eh-shell-content-max)) / 2));
+        padding-right: max(42px, calc((100% - var(--eh-shell-content-max)) / 2));
+        min-height: 3.5rem;
+    }
+
+    /* --- modals grow with the type scale --- */
+    .eh-global-modal-dialog,
+    .eh-modal-dialog {
+        width: min(57.5rem, 100%) !important;
+    }
+
+    .eh-modal-dialog.eh-modal-sm {
+        width: min(32.5rem, 100%) !important;
+    }
+
+    .eh-modal-dialog.eh-modal-lg {
+        width: min(67.5rem, 100%) !important;
+    }
+}
+
+@media (min-width: 2400px) {
+    /* fixed-pixel controls would look tiny next to the scaled text */
+    :where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"]), select, .btn, button.btn) {
+        min-height: 2.5rem;
+    }
+
+    :where(input[type="checkbox"], input[type="radio"]) {
+        width: 1.15rem;
+        height: 1.15rem;
+    }
+
+    .eh-modal-close,
+    .eh-global-modal-close {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+}
+
+/* ==========================================================================
+   Laptops / small desktops (admin sidebar still docked)
+   ========================================================================== */
+
+@media (max-width: 1200px) {
+    body.eh-admin-canonical-layout .eh-admin-topbar {
+        grid-template-columns: auto minmax(0, 1fr) auto !important;
+    }
+}
+
+/* ==========================================================================
+   Tablets and phones
+   ========================================================================== */
+
+@supports (height: 100dvh) {
+    body.eh-admin-canonical-layout .eh-admin-sidebar,
+    .participant-sidebar {
+        height: 100dvh !important;
+    }
+}
+
+@media (max-width: 991px) {
+    /* tables without their own scroll wrapper scroll in place
+       instead of being clipped by the shell's overflow-x:hidden */
+    :where(.eh-admin-content, .participant-site-main, .page-shell) table:not(:is(.admin-table-wrap, .table-responsive, [class*="table-wrap"], [class*="table-scroll"], [style*="overflow"]) table) {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .admin-table-wrap,
+    .table-responsive,
+    [class*="table-wrap"] {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* modals use the real visible height on mobile browsers */
+    .eh-global-modal-dialog {
+        max-height: calc(100dvh - 24px);
+    }
+
+    /* respect notches/rounded corners */
+    .admin-mobile-header,
+    .participant-mobile-header,
+    .site-header .nav {
+        padding-left: max(14px, env(safe-area-inset-left));
+        padding-right: max(14px, env(safe-area-inset-right));
+    }
+
+    body.eh-admin-canonical-layout .eh-admin-topbar {
+        padding-left: max(12px, env(safe-area-inset-left)) !important;
+        padding-right: max(12px, env(safe-area-inset-right)) !important;
+    }
+}
+
+@media (max-width: 767px) {
+    /* iOS zooms into any focused field under 16px */
+    input:not([type="checkbox"], [type="radio"], [type="range"]),
+    select,
+    textarea {
+        font-size: max(16px, 1em);
+    }
+
+    /* comfortable touch targets */
+    .btn,
+    .ps-link,
+    .eh-admin-sidebar__links a {
+        min-height: 40px;
+    }
+
+    .eh-global-modal,
+    .eh-modal {
+        padding: 10px !important;
+    }
+
+    .eh-modal-dialog,
+    .eh-global-modal-dialog {
+        max-width: 100% !important;
+        max-height: calc(100dvh - 20px) !important;
+        border-radius: 12px;
+    }
+
+    .eh-modal-footer,
+    .eh-global-modal-footer {
+        flex-wrap: wrap;
+    }
+
+    .eh-modal-footer > .btn,
+    .eh-global-modal-footer > .btn {
+        flex: 1 1 auto;
+    }
+
+    /* filter bars wrap instead of forcing a sideways scroll */
+    .admin-content form[method="GET"]:not(.no-admin-filter),
+    .admin-toolbar,
+    .admin-filter-row,
+    .admin-filters,
+    .filter-bar {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
+
+    .admin-content form[method="GET"]:not(.no-admin-filter) > *,
+    .admin-toolbar > *,
+    .admin-filter-row > *,
+    .admin-filters > *,
+    .filter-bar > * {
+        flex: 1 1 160px;
+    }
+
+    .admin-content form[method="GET"]:not(.no-admin-filter) input,
+    .admin-content form[method="GET"]:not(.no-admin-filter) select,
+    .admin-toolbar input,
+    .admin-toolbar select,
+    .admin-toolbar .search-box,
+    .admin-content form[method="GET"]:not(.no-admin-filter) input[name="search"] {
+        min-width: 0;
+        max-width: none;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --eh-gutter: 12px;
+    }
+
+    .container,
+    .page-shell,
+    .site-header .nav,
+    .full-width-section > .container,
+    .auth-layout,
+    .eh-auth-shell,
+    .eh-register-shell {
+        width: calc(100% - var(--eh-gutter) * 2);
+    }
+
+    body.eh-admin-canonical-layout .eh-admin-content {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    .participant-site-main {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}
+
+/* very small phones (≤360px, e.g. Galaxy Fold folded) */
+@media (max-width: 360px) {
+    h1 {
+        font-size: clamp(1.4rem, 7vw, 1.75rem);
+    }
+
+    h2 {
+        font-size: clamp(1.2rem, 6vw, 1.5rem);
+    }
+}
+
+/* landscape phones: short viewports */
+@media (max-height: 500px) and (orientation: landscape) {
+    .eh-modal-dialog,
+    .eh-global-modal-dialog {
+        max-height: calc(100dvh - 12px) !important;
+    }
+
+    .auth-layout,
+    .eh-auth-shell,
+    .eh-register-shell {
+        min-height: 0;
+    }
+}
