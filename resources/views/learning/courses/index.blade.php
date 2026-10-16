@@ -10,16 +10,16 @@
 .eh-learning-hero > *{position:relative;z-index:1}
 .eh-learning-hero .eh-kicker{color:#f7e7a9}
 .eh-learning-hero h1{margin:8px 0 10px;color:#fff;font-size:2.2rem;line-height:1.2}
-.eh-learning-hero p{max-width:640px;margin:0 0 24px;color:rgba(255,255,255,.9)}
+.eh-learning-hero p{max-width:40rem;margin:0 0 24px;color:rgba(255,255,255,.9)}
 
 /* Guest page: main.page-shell has overflow-x:hidden, so a 100vw breakout gets clipped.
    Instead let this page's main span the viewport and re-constrain everything except the hero. */
 main.page-shell:has(> .eh-learning-hero){--eh-gutter:24px;width:100%;padding-top:0}
-main.page-shell:has(> .eh-learning-hero) > :not(.eh-learning-hero){width:min(1180px,calc(100% - 2 * var(--eh-gutter)));margin-inline:auto}
-main.page-shell > .eh-learning-hero{border-radius:0;padding:56px max(var(--eh-gutter,24px),calc(50% - 590px)) 60px}
+main.page-shell:has(> .eh-learning-hero) > :not(.eh-learning-hero){width:min(var(--eh-container,1180px),calc(100% - 2 * var(--eh-gutter)));margin-inline:auto}
+main.page-shell > .eh-learning-hero{border-radius:0;padding:56px max(var(--eh-gutter,24px),calc(50% - var(--eh-container,1180px) / 2)) 60px}
 
 /* Search row: input, format and button on one row, capped width, equal 48px heights. */
-.eh-learning-search{display:grid;grid-template-columns:minmax(0,1fr) 200px auto;gap:10px;align-items:stretch;width:100%;max-width:920px}
+.eh-learning-search{display:grid;grid-template-columns:minmax(0,1fr) 12.5rem auto;gap:10px;align-items:stretch;width:100%;max-width:57.5rem}
 .eh-learning-search .search-box{position:relative;min-width:0}
 .eh-learning-search .search-box > i{left:16px;color:#98a2b3}
 .eh-learning-search input,
@@ -45,6 +45,8 @@ main.page-shell > .eh-learning-hero{border-radius:0;padding:56px max(var(--eh-gu
 .eh-course-meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;color:#98a2b3;font-size:.75rem}
 .eh-course-meta span{display:inline-flex;align-items:center;gap:5px}
 .eh-course-meta i{color:#800000}
+/* --eh-container widens on large screens (responsive-global.css); add columns to match */
+@media(min-width:1920px){.eh-course-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:980px){.eh-course-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){
     main.page-shell:has(> .eh-learning-hero){--eh-gutter:16px}
