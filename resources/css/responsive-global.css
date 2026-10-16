@@ -7,21 +7,23 @@
    Strategy
    - Phones/tablets: stop horizontal overflow, keep tables/media scrollable,
      dynamic viewport units, safe-area insets, no iOS focus zoom.
-   - Large screens: scale the root font (all rem-based UI grows with it),
+   - Large screens: grow the root font fluidly (all rem-based UI follows),
      convert fixed shell sizes (sidebars, topbars) to rem, and widen the
      centred content caps so 27"/TV screens are not a narrow strip.
    The assistive-tools text scale (--eh-user-text-scale) still multiplies on top.
    ========================================================================== */
 
 :root {
-    --eh-screen-scale: 1;
     --eh-container: 1180px;
     --eh-gutter: 16px;
     --eh-shell-content-max: 120rem;
 }
 
 html {
-    font-size: calc(16px * var(--eh-user-text-scale, 1) * var(--eh-screen-scale));
+    /* grows ~0.5px per 100px of width above 1600px: 1920 = 17.6px,
+       2560 = 20.8px, 3840 = 27.2px, capped at +16px. Keep in sync with
+       partials/dynamic-branding.blade.php, whose inline style loads later. */
+    font-size: calc((var(--eh-base-font-size, 16px) + clamp(0px, (100vw - 1600px) * 0.005, 16px)) * var(--eh-user-text-scale, 1));
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
 }
@@ -71,19 +73,39 @@ code {
     }
 }
 
+/* :root prefixes: app.css's own rules are emitted after every @import,
+   so equal-specificity selectors here would lose to them. */
 @media (min-width: 1440px) {
-    .container,
-    .page-shell,
-    .site-header .nav,
-    .site-main-home .full-width-section > .container,
-    .full-width-section > .container,
-    .auth-layout,
-    .eh-auth-shell {
+    :root .container,
+    :root .page-shell,
+    :root .site-header .nav,
+    :root .site-main-home .full-width-section > .container,
+    :root .full-width-section > .container,
+    :root .auth-layout,
+    :root .eh-auth-shell {
         width: min(var(--eh-container), calc(100% - var(--eh-gutter) * 2));
     }
 
-    .eh-register-shell {
+    :root .eh-register-shell {
         width: min(calc(var(--eh-container) + 40px), calc(100% - var(--eh-gutter) * 2));
+    }
+
+    /* px text caps would squeeze the larger type into narrow columns */
+    :root .hero-copy {
+        max-width: 42.5rem;
+    }
+
+    :root .eh-login-side__inner {
+        max-width: 35rem;
+    }
+
+    :root .eh-login-side h1,
+    :root .eh-login-side__intro {
+        max-width: none !important;
+    }
+
+    :root .eh-staff-login-brand h1 {
+        max-width: 35.625rem;
     }
 }
 
@@ -92,12 +114,10 @@ code {
    1920  - Full HD 24-27" monitors and most TVs (often report 1920 CSS px)
    2400  - 27" QHD (2560) and ultrawide monitors
    3200  - 4K monitors/TVs at 100% scaling
-   5000  - 5K/8K displays
    ========================================================================== */
 
 @media (min-width: 1920px) {
     :root {
-        --eh-screen-scale: 1.0625;
         --eh-container: 88rem;
         --eh-gutter: 32px;
         --eh-admin-sidebar-width: 16.25rem;
@@ -108,7 +128,6 @@ code {
 
 @media (min-width: 2400px) {
     :root {
-        --eh-screen-scale: 1.1875;
         --eh-container: 96rem;
         --eh-gutter: 48px;
     }
@@ -116,14 +135,7 @@ code {
 
 @media (min-width: 3200px) {
     :root {
-        --eh-screen-scale: 1.5;
         --eh-gutter: 64px;
-    }
-}
-
-@media (min-width: 5000px) {
-    :root {
-        --eh-screen-scale: 2;
     }
 }
 
@@ -161,12 +173,12 @@ code {
     }
 
     /* --- participant / mentor / employer shell --- */
-    .participant-site-main {
+    :root .participant-site-main {
         padding-left: max(42px, calc((100% - var(--eh-shell-content-max)) / 2));
         padding-right: max(42px, calc((100% - var(--eh-shell-content-max)) / 2));
     }
 
-    .role-topbar {
+    :root .role-topbar {
         padding-left: max(42px, calc((100% - var(--eh-shell-content-max)) / 2));
         padding-right: max(42px, calc((100% - var(--eh-shell-content-max)) / 2));
         min-height: 3.5rem;
@@ -337,13 +349,14 @@ code {
         --eh-gutter: 12px;
     }
 
-    .container,
-    .page-shell,
-    .site-header .nav,
-    .full-width-section > .container,
-    .auth-layout,
-    .eh-auth-shell,
-    .eh-register-shell {
+    :root .container,
+    :root .page-shell,
+    :root .site-header .nav,
+    :root .site-main-home .full-width-section > .container,
+    :root .full-width-section > .container,
+    :root .auth-layout,
+    :root .eh-auth-shell,
+    :root .eh-register-shell {
         width: calc(100% - var(--eh-gutter) * 2);
     }
 
@@ -352,7 +365,7 @@ code {
         padding-right: 10px !important;
     }
 
-    .participant-site-main {
+    :root .participant-site-main {
         padding-left: 12px;
         padding-right: 12px;
     }

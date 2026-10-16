@@ -35,7 +35,7 @@
     --eh-base-font-size:{{ $ehFontSize }}px;
     --eh-font-family:"{{ $ehFontFamily }}",Arial,sans-serif;
 }
-html{font-size:var(--eh-base-font-size)}
+html{font-size:calc((var(--eh-base-font-size) + clamp(0px, (100vw - 1600px) * .005, 16px)) * var(--eh-user-text-scale, 1))}
 body{font-family:var(--eh-font-family)}
 .btn-primary{background:var(--eh-primary)!important;border-color:var(--eh-primary)!important}
 .admin-eyebrow,.text-accent{color:var(--eh-primary)!important}
