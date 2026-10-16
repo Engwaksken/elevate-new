@@ -1,8 +1,10 @@
 # ElevateHer360: Developer System Report and Role-Based User Manual
 
-**Report date:** 11 October 2026  
-**Organisation shown in the platform:** Women in Technology Uganda  
-**Repository baseline:** `5e1e053` on `main`  
+**Report date:** 12 October 2026
+
+**Organisation shown in the platform:** Women in Technology Uganda
+
+**Repository baseline:** `ffa36b9` on `main`
 **Platforms:** Laravel web application, participant PWA, and Flutter participant application  
 **Flutter application version:** `1.1.0+2`  
 **Audience:** project owners, developers, system administrators, programme teams, and end users
@@ -34,7 +36,7 @@ ElevateHer360 has developed into an integrated programme-delivery and organisati
 
 The platform connects a participant's journey from registration and assessment through learning, mentorship, career preparation, and opportunities. It also supports the staff operations behind that journey: programme structures, course administration, attendance, reporting, human resources, staff performance, procurement, assets, and support-ticket handling.
 
-Recent development has strengthened role separation, participant identity, multi-branch delivery, notification preferences, admissions workflows, file viewing, mobile offline content, and responsive navigation. The latest committed change connects uploaded website branding to the PWA manifest and notification icon/badge, without making the dynamic manifest a prerequisite for service-worker installation.
+Recent development has strengthened role separation, participant identity, multi-branch delivery, notification preferences, admissions workflows, file viewing, mobile offline content, and responsive navigation. Recent committed changes include the PWA branding work, feedback-modal validation recovery, and clearer workplan attachment guidance. The dynamic manifest is not a prerequisite for service-worker installation.
 
 ### 1.2 What this report does and does not establish
 
@@ -52,9 +54,13 @@ The reporting phases below organise the observed development sequence into a rea
 
 Git history reviewed spans 22 September–11 October 2026. Dates indicate recorded commit activity, not necessarily when implementation began, when users received it, or when production deployment occurred.
 
+### 1.5 Current repository verification (12 October 2026)
+
+The current branch is `main` at `ffa36b9`; the worktree was clean during this assessment. The full backend suite, web asset build, Flutter tests, and Flutter static analysis passed locally. The locked Composer audit found no advisories. The npm production-dependency audit found no vulnerabilities, but the full npm audit reports three vulnerabilities in development dependency paths (one high and two critical), including `shell-quote` and `source-map-js`; resolve and re-audit before release. These are repository-level checks only: no live production configuration, hosting infrastructure, stakeholder UAT, device/store release, or operational drills were inspected.
+
 ### 1.4 Overall readiness conclusion
 
-The codebase has substantial implemented functionality and passing local regression suites. Current uncommitted release-readiness follow-up fixes the branding extension handling, aligns favicon acceptance with supported delivery, and clears Flutter analysis. These results do **not** establish full production readiness. Public upload-host execution configuration, MySQL migration/scheduler checks, push/email delivery, role-based UAT, backup restoration, and Android/iOS builds, device and store verification remain unproven. Flutter checks used `--no-pub`, so fresh dependency resolution is also unvalidated. iOS source configuration must not be described as a completed App Store release.
+The codebase has substantial implemented functionality and passing local regression suites. The branding extension handling, favicon-format alignment, and Flutter analyzer cleanup described below are present in the repository history. The 12 October checks are recorded in Section 5. These results do **not** establish full production readiness. Public upload-host execution configuration, production MySQL migration/scheduler checks, push/email delivery, role-based UAT, backup restoration, and Android/iOS builds, device and store verification remain unproven. The latest Flutter checks used the current local dependency resolution and do not establish a clean-machine release build. iOS source configuration must not be described as a completed App Store release.
 
 ---
 
@@ -294,7 +300,7 @@ The PWA worker now refreshes the dynamic manifest at runtime, refreshes branding
 
 **11 October 2026 baseline:** ICO favicons conflicted with the raster-only delivery detector; public branding uploads retained the client filename extension, creating a deployment-dependent execution risk; and Flutter analysis had five informational lint findings. These were open findings at the repository baseline `5e1e053` and are preserved here as historical evidence, not represented as though they were already fixed.
 
-**Current uncommitted follow-up (verified in this session):** Branding upload storage now derives its extension from decoded image content rather than the client filename; favicon validation no longer accepts ICO until safe ICO delivery is supported; and all five Flutter lint findings have been corrected. The follow-up regression/analyzer results are recorded in Section 5. These local changes do not prove public-host execution configuration is safe or establish production readiness.
+**Follow-up now present in repository history:** Branding upload storage derives its extension from decoded image content rather than the client filename; favicon validation no longer accepts ICO until safe ICO delivery is supported; and all five Flutter lint findings have been corrected. Earlier regression/analyzer results are recorded in Section 5. These code changes do not prove public-host execution configuration is safe or establish production readiness.
 
 **Evidence:** `5bdf792`, `f3957ea`, `6b59350`, `072b4a6`, `5e1e053`; `BrandManifestTest` and executable worker tests.
 
@@ -342,6 +348,18 @@ The PWA worker now refreshes the dynamic manifest at runtime, refreshes branding
 | Independent PWA code review | Completed | Cache/timeout/test gaps corrected; ICO compatibility still disclosed. |
 | Independent PWA security review | No new actionable vulnerabilities found in reviewed change | Narrow change review, not certification of the entire platform; preexisting upload risk identified. |
 
+### 5.1.1 Additional checks completed on 12 October 2026
+
+| Check | Result | Limitation |
+| --- | --- | --- |
+| `php artisan test` | **551 passed; 3,457 assertions** | Local test environment only; does not exercise production MySQL or load. |
+| `npm run build` | **Passed; 74 modules transformed** | Local Vite production asset build, not a deployment smoke test. |
+| `flutter test` | **All 120 tests passed** | Unit/widget suite; no physical-device or store validation. |
+| `flutter analyze` | **No issues found** | Static analysis only. |
+| `composer audit --locked` | **No security vulnerability advisories found** | Dependency advisories only; not an application security assessment. |
+| `npm audit --omit=dev --audit-level=high` | **0 production dependency vulnerabilities** | Does not clear development-tooling advisories. |
+| `npm audit --audit-level=high` | **Failed: 3 vulnerabilities (1 high, 2 critical)** | Development dependency paths include `concurrently` → `shell-quote` and `source-map-js`. Review the lockfile update with `npm audit fix`, then rerun build and audit. |
+
 ### 5.2 Informational Flutter findings
 
 - `participant_app/lib/screens/profile_screen.dart:556`: braces around an `if` statement.
@@ -350,7 +368,7 @@ The PWA worker now refreshes the dynamic manifest at runtime, refreshes branding
 - `participant_app/lib/services/sync_service.dart:405`: braces around an `if` statement.
 - `participant_app/test/biometric_gate_test.dart:12`: widget `child` argument should be last.
 
-At the 11 October baseline these were style findings, not observed runtime failures. All five have since been corrected in the current uncommitted follow-up, and `flutter analyze --no-pub` is clean in this session. This does not validate fresh dependency resolution or device builds.
+At the 11 October baseline these were style findings, not observed runtime failures. All five have since been corrected in committed code; the current `flutter analyze` result is clean. This does not validate device builds.
 
 ### 5.3 Coverage strengths and remaining proof
 
@@ -406,7 +424,7 @@ These are proposed priorities. Owners, dates, budgets and scope require project 
 
 **Suggested owners:** Laravel/Flutter developers and QA lead.
 
-1. Preserve the clean Flutter analyzer result as a CI gate; the five baseline lint findings are corrected in the current follow-up.
+1. Preserve the clean Flutter analyzer result as a CI gate; the five baseline lint findings are corrected in committed code.
 2. Replace the generic Flutter README with actual installation, environment, signing, API and test instructions.
 3. Update the API contract, scheduler guidance and iOS checklist; clearly archive historical package instructions.
 4. Add CI jobs for PHP tests, worker tests, Flutter analysis/tests, dependency checks and clean migration installation.
