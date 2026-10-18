@@ -19,6 +19,10 @@ class ParticipantRegisterRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        if ($this->input('country') === 'Other' && $this->filled('country_other')) {
+            $this->merge(['country' => trim((string) $this->input('country_other'))]);
+        }
+
         if ($this->boolean('terms') && ! $this->filled('privacy_policy')) {
             $this->merge(['privacy_policy' => 1]);
         }
@@ -32,12 +36,15 @@ class ParticipantRegisterRequest extends FormRequest
             'other_name' => ['nullable', 'string', 'max:100'],
             'email' => ['required', 'email:rfc,dns', 'max:190', 'unique:users,email'],
             'phone' => ['required', 'string', 'min:7', 'max:30'],
-            'gender' => ['nullable', 'in:female,male,other,prefer_not_to_say'],
+            'gender' => ['nullable', 'in:female'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
-            'country' => ['nullable', 'string', 'max:100'],
+            'country' => ['nullable', 'string', 'max:100', 'not_in:Other'],
+            'country_other' => ['nullable', 'string', 'max:100'],
             'district' => ['nullable', 'string', 'max:100'],
             'location' => ['nullable', 'string', 'max:190'],
             'branch_id' => ['nullable', 'exists:branches,id'],
+            'cohort_id' => ['nullable', 'exists:cohorts,id'],
+            'course_id' => ['nullable', 'exists:courses,id'],
             'is_pwd' => ['nullable', 'boolean'],
             'education_level' => ['nullable', 'string', 'max:150'],
             'employment_status' => ['nullable', 'string', 'max:150'],

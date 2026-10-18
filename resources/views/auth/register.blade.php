@@ -335,44 +335,8 @@
                                 Gender
                             </label>
 
-                            <select
-                                id="gender"
-                                name="gender"
-                            >
-
-                                <option value="">
-                                    Select gender
-                                </option>
-
-                                <option
-                                    value="female"
-                                    @selected(old('gender') === 'female')
-                                >
-                                    Female
-                                </option>
-
-                                <option
-                                    value="male"
-                                    @selected(old('gender') === 'male')
-                                >
-                                    Male
-                                </option>
-
-                                <option
-                                    value="other"
-                                    @selected(old('gender') === 'other')
-                                >
-                                    Other
-                                </option>
-
-                                <option
-                                    value="prefer_not_to_say"
-                                    @selected(old('gender') === 'prefer_not_to_say')
-                                >
-                                    Prefer not to say
-                                </option>
-
-                            </select>
+                            <input type="text" value="Female" readonly aria-readonly="true">
+                            <input type="hidden" id="gender" name="gender" value="female">
 
                         </div>
 
@@ -412,13 +376,13 @@
                                 Country
                             </label>
 
-                            <input
-                                id="country"
-                                type="text"
-                                name="country"
-                                value="{{ old('country', 'Uganda') }}"
-                                placeholder="e.g. Uganda"
-                            >
+                            <select id="country" name="country">
+                                @foreach(['Burundi', 'Democratic Republic of the Congo', 'Kenya', 'Rwanda', 'Somalia', 'South Sudan', 'Tanzania', 'Uganda'] as $country)
+                                    <option value="{{ $country }}" @selected(old('country', 'Uganda') === $country)>{{ $country }}</option>
+                                @endforeach
+                                <option value="Other" @selected(old('country') === 'Other' || old('country_other'))>Other</option>
+                            </select>
+                            <input id="country_other" type="text" name="country_other" value="{{ old('country_other') }}" placeholder="Enter your country" @if(old('country') !== 'Other' && !old('country_other')) hidden @endif>
 
                         </div>
 
@@ -458,6 +422,40 @@
                                 Enter your town, city or community.
                             </small>
 
+                        </div>
+
+                        <div class="eh-register-field eh-register-field-full" data-learning-preferences>
+                            <p class="eh-register-hint">Learning preferences (optional). You can leave these blank; the team may assign you to a branch, cohort or course.</p>
+                        </div>
+
+                        <div class="eh-register-field" data-learning-preferences>
+                            <label for="branch_id">Preferred branch (optional)</label>
+                            <select id="branch_id" name="branch_id">
+                                <option value="">No preference</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}" @selected((string) old('branch_id') === (string) $branch->id)>{{ $branch->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="eh-register-field" data-learning-preferences>
+                            <label for="cohort_id">Preferred cohort (optional)</label>
+                            <select id="cohort_id" name="cohort_id">
+                                <option value="">No preference</option>
+                                @foreach($cohorts as $cohort)
+                                    <option value="{{ $cohort->id }}" @selected((string) old('cohort_id') === (string) $cohort->id)>{{ $cohort->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="eh-register-field eh-register-field-full" data-learning-preferences>
+                            <label for="course_id">Preferred course (optional)</label>
+                            <select id="course_id" name="course_id">
+                                <option value="">No preference</option>
+                                @foreach($courses as $course)
+                                    <option value="{{ $course->id }}" @selected((string) old('course_id') === (string) $course->id)>{{ $course->title }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                     </div>
@@ -1215,6 +1213,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
         syncAllBox();
     }
+
+    const learningChoices = document.querySelectorAll('[data-learning-preferences]');
+    const learningBox = document.querySelector('[data-interest-option][value="learning"]');
+    const allInterestsBox = document.querySelector('[data-interest-all]');
+    function syncLearningChoices() {
+        const enabled = !!learningBox?.checked || !!allInterestsBox?.checked;
+        learningChoices.forEach((field) => field.hidden = !enabled);
+    }
+    learningBox?.addEventListener('change', syncLearningChoices);
+    allInterestsBox?.addEventListener('change', syncLearningChoices);
+    syncLearningChoices();
+
+    const countrySelect = document.getElementById('country');
+    const countryOther = document.getElementById('country_other');
+    function syncOtherCountry() {
+        if (!countryOther) return;
+        countryOther.hidden = countrySelect?.value !== 'Other';
+        countryOther.required = countrySelect?.value === 'Other';
+    }
+    countrySelect?.addEventListener('change', syncOtherCountry);
+    syncOtherCountry();
 
 });
 </script>

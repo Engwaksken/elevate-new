@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\ParticipantRegisterRequest;
 use App\Models\Branch;
+use App\Models\Cohort;
+use App\Models\Course;
 use App\Models\Consent;
 use App\Models\Role;
 use App\Models\User;
@@ -28,6 +30,8 @@ class ParticipantAuthController extends Controller
             'branches' => Branch::where('is_active', true)
                 ->orderBy('name')
                 ->get(),
+            'cohorts' => Cohort::where('status', 'active')->orderBy('name')->get(),
+            'courses' => Course::where('status', 'published')->orderBy('title')->get(),
         ]);
     }
 
@@ -59,7 +63,7 @@ class ParticipantAuthController extends Controller
                 'surname' => $data['surname'],
                 'given_name' => $data['given_name'],
                 'other_name' => $data['other_name'] ?? null,
-                'gender' => $data['gender'] ?? null,
+                'gender' => 'female',
                 'date_of_birth' => $data['date_of_birth'] ?? null,
                 'country' => $data['country'] ?? null,
                 'district' => $data['district'] ?? null,
@@ -69,7 +73,15 @@ class ParticipantAuthController extends Controller
                 'employment_status' => $data['employment_status'] ?? null,
                 'career_interests' => $data['career_interests'] ?? null,
                 'preferred_language' => $data['preferred_language'] ?? 'English',
-                'metadata' => ['interests' => array_values($data['interests'] ?? [])],
+                'metadata' => [
+                    'interests' => array_values($data['interests'] ?? []),
+                    'learning_preferences' => in_array('learning', $data['interests'] ?? [], true)
+                        ? array_filter([
+                            'cohort_id' => $data['cohort_id'] ?? null,
+                            'course_id' => $data['course_id'] ?? null,
+                        ])
+                        : [],
+                ],
             ]);
 
             /*
