@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\URL;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -127,6 +128,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isMentor(): bool { return $this->user_type === 'mentor'; }
     public function isPartner(): bool { return in_array($this->user_type, ['employer', 'mentor'], true); }
     public function isActive(): bool { return $this->status === 'active'; }
+
+    /** Signed link that verifies this user's email; works without being signed in. */
+    public function emailVerificationUrl(): string
+    {
+        return URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes((int) config('auth.verification.expire', 60)),
+            ['id' => $this->getKey(), 'hash' => sha1($this->getEmailForVerification())]
+        );
+    }
 
     /** Staff member holding the instructor / trainer role. */
     public function isStaffInstructor(): bool

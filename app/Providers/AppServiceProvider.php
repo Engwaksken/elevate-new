@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Mail\SystemMail;
 use App\Models\Activity;
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
@@ -37,6 +38,7 @@ use App\Observers\AuditableObserver;
 use App\Observers\HrNotificationObserver;
 use App\Observers\LearningNotificationObserver;
 use App\Observers\OperationalNotificationObserver;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -51,6 +53,19 @@ class AppServiceProvider extends ServiceProvider
     {
         // Super administrators may perform every ability checked through Gates/Policies.
         Gate::before(fn ($user) => method_exists($user,'isSuperAdmin') && $user->isSuperAdmin() ? true : null);
+
+        // Resent verification emails use the branded template instead of Laravel's default.
+        VerifyEmail::toMailUsing(fn ($notifiable, string $url) => (new SystemMail(
+            subjectLine: 'Verify your '.config('app.name', 'ElevateHer360').' email address',
+            heading: 'Verify your email address',
+            lines: [
+                'Please verify your email address to activate your account and continue.',
+                'This link expires in '.(int) config('auth.verification.expire', 60).' minutes.',
+            ],
+            actionUrl: $url,
+            actionLabel: 'Verify email address',
+            greeting: 'Hello '.strtok((string) $notifiable->name, ' '),
+        ))->to($notifiable->getEmailForVerification()));
 
         $auditedModels=[
             Activity::class,

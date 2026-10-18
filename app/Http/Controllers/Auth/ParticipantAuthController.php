@@ -11,12 +11,13 @@ use App\Models\Course;
 use App\Models\Consent;
 use App\Models\Role;
 use App\Models\User;
+use App\Mail\SystemMail;
 use App\Services\AuditService;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class ParticipantAuthController extends Controller
@@ -112,8 +113,6 @@ class ParticipantAuthController extends Controller
             return $user;
         });
 
-        event(new Registered($user));
-
         Auth::login($user);
 
         $request->session()->regenerate();
@@ -136,19 +135,43 @@ class ParticipantAuthController extends Controller
 
     /**
      * Welcome the new participant and tell the registration team.
+     *
+     * The welcome email doubles as the verification email, so participants
+     * get one message with a button that verifies their address.
      */
     private function notifyRegistration(User $user): void
     {
+        $appName = config('app.name', 'ElevateHer360');
+
+        try {
+            Mail::to($user->email)->send(new SystemMail(
+                subjectLine: 'Welcome to '.$appName.' - verify your email',
+                heading: 'Welcome to '.$appName,
+                lines: [
+                    'Your participant account has been created.',
+                    'Please verify your email address to activate your account and continue. After verifying, sign in to complete your profile, explore courses and connect with a mentor.',
+                    'This link expires in '.(int) config('auth.verification.expire', 60).' minutes. If it expires, sign in and use "Resend verification email".',
+                ],
+                actionUrl: $user->emailVerificationUrl(),
+                actionLabel: 'Verify email address',
+                greeting: 'Hello '.strtok((string) $user->name, ' '),
+            ));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         try {
             $dispatcher = app(\App\Services\NotificationDispatcher::class);
 
+            // In-app only: the email above already welcomes them.
             $dispatcher->notify(
                 $user,
                 'account',
-                'Welcome to ElevateHer360',
+                'Welcome to '.$appName,
                 'Your participant account is ready. Complete your profile, explore courses and connect with a mentor.',
                 '/dashboard',
-                ['user_id' => $user->id]
+                ['user_id' => $user->id],
+                false
             );
 
             $staff = User::query()

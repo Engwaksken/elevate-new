@@ -40,7 +40,6 @@ use App\Http\Controllers\Career\CoverLetterController;
 use App\Http\Controllers\Career\CoverLetterUploadController;
 use App\Http\Controllers\Instructor\DailyAttendanceController;
 use App\Http\Controllers\Admin\ProgrammeManagement\DeliverableController;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Http\Controllers\Admin\HR\EmployeeController;
 use App\Http\Controllers\Admin\Jobs\EmployerAdminController;
 use App\Http\Controllers\Employer\EmployerJobController;
@@ -226,6 +225,35 @@ Route::post('/reset-password', [PasswordResetController::class, 'reset'])
     ->name('password.update');
 });
 
+// Email links must verify even when opened on a device that is not signed in;
+// the signed URL and hash check identify the user instead of the session.
+Route::get('/email/verify/{id}/{hash}', function (Request $request, string $id, string $hash) {
+    $user = \App\Models\User::findOrFail($id);
+    abort_unless(hash_equals(sha1($user->getEmailForVerification()), $hash), 403);
+
+    if (! $user->hasVerifiedEmail()) {
+        $user->markEmailAsVerified();
+        event(new \Illuminate\Auth\Events\Verified($user));
+    }
+
+    $loginPath = match (true) {
+        $user->isStaff() => '/admin/login',
+        $user->isMentor() || $user->hasRole('mentor') => '/mentors/login',
+        $user->isEmployer() || $user->hasRole('employer') => '/employers/login',
+        default => '/login',
+    };
+
+    if (\Illuminate\Support\Facades\Auth::check()) {
+        \Illuminate\Support\Facades\Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+    }
+
+    $siteUrl = rtrim((string) config('app.url', url('/')), '/');
+
+    return redirect()->to($siteUrl.$loginPath)->with('success', 'Email verified. You can now sign in.');
+})->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [ParticipantAuthController::class, 'logout'])->name('logout');
 
@@ -238,25 +266,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/email/verify', fn () => view('auth.verify-email'))
         ->name('verification.notice');
-
-    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-        $request->fulfill();
-        $user = $request->user();
-        $loginPath = match (true) {
-            $user->isStaff() => '/admin/login',
-            $user->isMentor() || $user->hasRole('mentor') => '/mentors/login',
-            $user->isEmployer() || $user->hasRole('employer') => '/employers/login',
-            default => '/login',
-        };
-
-        \Illuminate\Support\Facades\Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        $siteUrl = rtrim((string) config('app.url', url('/')), '/');
-
-        return redirect()->to($siteUrl.$loginPath)->with('success', 'Email verified. You can now sign in.');
-    })->middleware('signed')->name('verification.verify');
 
     Route::post('/email/verification-notification', function (Request $request) {
         $request->user()->sendEmailVerificationNotification();
