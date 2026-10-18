@@ -48,7 +48,8 @@ class ParticipantRegisterRequest extends FormRequest
             'location' => ['nullable', 'string', 'max:190'],
             'branch_id' => ['nullable', 'exists:branches,id'],
             'cohort_id' => ['nullable', 'exists:cohorts,id'],
-            'course_id' => ['nullable', 'exists:courses,id'],
+            // Only courses offered on the form (published) can be chosen for auto-enrolment.
+            'course_id' => ['nullable', 'exists:courses,id,status,published'],
             'is_pwd' => ['nullable', 'boolean'],
             'education_level' => ['nullable', 'string', 'max:150', 'not_in:Other'],
             'education_level_other' => ['nullable', 'string', 'max:150'],

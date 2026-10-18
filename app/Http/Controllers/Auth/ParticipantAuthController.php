@@ -13,6 +13,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Mail\SystemMail;
 use App\Services\AuditService;
+use App\Services\EnrolmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -113,6 +114,8 @@ class ParticipantAuthController extends Controller
             return $user;
         });
 
+        $this->enrolInChosenCourse($user, $data);
+
         Auth::login($user);
 
         $request->session()->regenerate();
@@ -131,6 +134,34 @@ class ParticipantAuthController extends Controller
                 'success',
                 'Account created. Please verify your email address.'
             );
+    }
+
+    /**
+     * Enrol a participant who chose Learning in their preferred course. The
+     * enrolment service also enrols them in that course's compulsory courses.
+     * Entry assessments and the self-enrolment switch are not applied here.
+     */
+    private function enrolInChosenCourse(User $user, array $data): void
+    {
+        if (
+            empty($data['course_id'])
+            || ! in_array('learning', $data['interests'] ?? [], true)
+        ) {
+            return;
+        }
+
+        try {
+            $course = Course::where('status', 'published')->find($data['course_id']);
+
+            if ($course) {
+                app(EnrolmentService::class)->enrol($user, $course, array_filter([
+                    'cohort_id' => $data['cohort_id'] ?? null,
+                    'progress_percent' => 0,
+                ], fn ($value) => $value !== null));
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**

@@ -246,7 +246,7 @@
 
                         </div>
                         <div class="eh-register-field eh-register-field-full" data-learning-preferences>
-                            <p class="eh-register-hint">Learning preferences (optional). You can leave these blank; the team may assign you to a branch, cohort or course.</p>
+                            <p class="eh-register-hint">Learning preferences (optional). Choosing a course enrols you in it straight away, together with any compulsory courses it requires. You can leave these blank; the team may assign you to a branch, cohort or course.</p>
                         </div>
 
                         <div class="eh-register-field" data-learning-preferences>
