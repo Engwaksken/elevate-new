@@ -51,8 +51,9 @@ class StaffOnboardingNotificationTest extends TestCase
 
         $this->actingAs($staff)->get(route('admin.dashboard'))
             ->assertRedirect(route('verification.notice'));
+        // Clicked while signed in: straight into the staff dashboard.
         $this->actingAs($staff)->get($verificationUrl)
-            ->assertRedirect(route('admin.login'));
+            ->assertRedirect(route('admin.dashboard'));
         $this->assertNotNull($staff->fresh()->email_verified_at);
     }
 }

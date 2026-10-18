@@ -68,6 +68,55 @@ class ParticipantWelcomeVerificationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_registering_shows_the_verify_page_without_the_dashboard_sidebar(): void
+    {
+        Mail::fake();
+
+        $this->register();
+
+        $this->get(route('verification.notice'))
+            ->assertOk()
+            ->assertSee('Check your email')
+            ->assertSee('sarah.welcome@gmail.com')
+            ->assertDontSee('participant-app-shell', false);
+
+        $this->get(route('dashboard'))->assertRedirect(route('verification.notice'));
+    }
+
+    public function test_the_verify_link_in_the_signed_in_browser_opens_the_dashboard(): void
+    {
+        Mail::fake();
+
+        $user = $this->register();
+
+        $this->get($user->emailVerificationUrl())->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
+        // Fresh copy: the test guard caches the user from before verification.
+        $this->actingAs($user->fresh())->get(route('dashboard'))->assertOk();
+    }
+
+    public function test_the_verify_page_status_reports_verification_for_auto_redirect(): void
+    {
+        Mail::fake();
+
+        $user = $this->register();
+
+        $this->getJson(route('verification.status'))
+            ->assertOk()
+            ->assertJson(['verified' => false, 'redirect' => null]);
+
+        $user->markEmailAsVerified();
+        $this->actingAs($user->fresh());
+
+        $this->getJson(route('verification.status'))
+            ->assertOk()
+            ->assertJson(['verified' => true, 'redirect' => route('dashboard')]);
+
+        $this->get(route('verification.notice'))->assertRedirect(route('dashboard'));
+    }
+
     public function test_a_tampered_verify_link_is_rejected(): void
     {
         $user = User::factory()->unverified()->create(['user_type' => 'participant']);

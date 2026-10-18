@@ -33,8 +33,8 @@ class RoleBasedEmailVerificationRedirectTest extends TestCase
             [$employer, 'partners.employer.login'],
             [$staff, 'admin.login'],
         ] as [$user, $destination]) {
-            $this->actingAs($user)
-                ->get($this->verifyLink($user))
+            // Opened on a device where they are not signed in.
+            $this->get($this->verifyLink($user))
                 ->assertRedirect(route($destination))
                 ->assertSessionHas('success', 'Email verified. You can now sign in.');
             $this->assertGuest();
@@ -47,8 +47,7 @@ class RoleBasedEmailVerificationRedirectTest extends TestCase
         $user = User::factory()->unverified()->create(['user_type' => 'participant']);
         $user->roles()->attach($mentorRole);
 
-        $this->actingAs($user)
-            ->get($this->verifyLink($user))
+        $this->get($this->verifyLink($user))
             ->assertRedirect(route('partners.mentor.login'))
             ->assertSessionHas('success', 'Email verified. You can now sign in.');
     }

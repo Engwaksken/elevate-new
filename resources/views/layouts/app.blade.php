@@ -21,10 +21,12 @@ $publicSiteShell = request()->routeIs(
     'home', 'legal.*', 'public.*', 'learning.index', 'learning.course.show',
     'jobs.index', 'jobs.show', 'library.*', 'events.index', 'events.show',
     'certificates.verify', 'career.documents.shared', 'career.portfolio.shared',
-    'certificates.shared', 'events.certificates.verify'
+    'certificates.shared', 'events.certificates.verify',
+    // Unverified users cannot use the workspace, so don't show its sidebar yet.
+    'verification.notice'
 );
 $participantShell=$roleShell !== null && ! $publicSiteShell;
-$inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.login') || request()->routeIs('register') || request()->routeIs('partners.*') || request()->routeIs('public.partners.*');
+$inlineAuthFeedback=request()->routeIs('login') || request()->routeIs('admin.login') || request()->routeIs('register') || request()->routeIs('partners.*') || request()->routeIs('public.partners.*') || request()->routeIs('verification.notice');
 $brandLogoPath = app(\App\Services\SettingsService::class)->get('branding.logo_path');
 $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('branding.asset')
     ? route('branding.asset', ['type' => 'logo', 'v' => md5((string) $brandLogoPath)])

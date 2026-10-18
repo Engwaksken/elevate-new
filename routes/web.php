@@ -236,6 +236,12 @@ Route::get('/email/verify/{id}/{hash}', function (Request $request, string $id, 
         event(new \Illuminate\Auth\Events\Verified($user));
     }
 
+    // Opened in the browser where they are already signed in: go straight in.
+    if ((int) $request->user()?->getKey() === (int) $user->getKey()) {
+        return redirect()->to(\App\Support\RoleShell::homeUrl($user) ?? route('dashboard'))
+            ->with('success', 'Email verified. Welcome to ElevateHer360!');
+    }
+
     $loginPath = match (true) {
         $user->isStaff() => '/admin/login',
         $user->isMentor() || $user->hasRole('mentor') => '/mentors/login',
@@ -264,8 +270,23 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:10,1')
         ->name('participant.support-tickets.store');
 
-    Route::get('/email/verify', fn () => view('auth.verify-email'))
-        ->name('verification.notice');
+    Route::get('/email/verify', function (Request $request) {
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect()->to(\App\Support\RoleShell::homeUrl($request->user()) ?? route('dashboard'));
+        }
+
+        return view('auth.verify-email');
+    })->name('verification.notice');
+
+    // Polled by the verify page so it moves on once the link is clicked on another device.
+    Route::get('/email/verify-status', function (Request $request) {
+        $verified = $request->user()->hasVerifiedEmail();
+
+        return response()->json([
+            'verified' => $verified,
+            'redirect' => $verified ? (\App\Support\RoleShell::homeUrl($request->user()) ?? route('dashboard')) : null,
+        ]);
+    })->middleware('throttle:30,1')->name('verification.status');
 
     Route::post('/email/verification-notification', function (Request $request) {
         $request->user()->sendEmailVerificationNotification();
