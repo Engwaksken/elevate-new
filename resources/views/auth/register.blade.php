@@ -104,7 +104,7 @@
                         <strong id="registerStepNumber">
                             1
                         </strong>
-                        of 4
+                        of 5
                     </span>
 
                     <h2>
@@ -133,7 +133,7 @@
                     data-register-step-button="1"
                 >
                     <span>1</span>
-                    <small>Personal</small>
+                    <small>Interests</small>
                 </button>
 
                 <button
@@ -142,7 +142,7 @@
                     data-register-step-button="2"
                 >
                     <span>2</span>
-                    <small>Location</small>
+                    <small>Personal</small>
                 </button>
 
                 <button
@@ -151,7 +151,7 @@
                     data-register-step-button="3"
                 >
                     <span>3</span>
-                    <small>Career</small>
+                    <small>Location</small>
                 </button>
 
                 <button
@@ -160,6 +160,15 @@
                     data-register-step-button="4"
                 >
                     <span>4</span>
+                    <small>Career</small>
+                </button>
+
+                <button
+                    type="button"
+                    class="eh-register-progress-item"
+                    data-register-step-button="5"
+                >
+                    <span>5</span>
                     <small>Security</small>
                 </button>
 
@@ -183,6 +192,102 @@
                 <section
                     class="eh-register-step active"
                     data-register-step="1"
+                >
+
+                    <div class="eh-register-step-heading">
+
+                        <h3>
+                            I am interested in
+                        </h3>
+
+                        <p>
+                            Choose everything that applies, or select All.
+                        </p>
+
+                    </div>
+
+
+                    <div class="eh-register-grid">
+
+                        <div class="eh-register-field eh-register-field-full">
+
+                            <div class="eh-register-check-grid" data-interest-group role="group" aria-label="I am interested in">
+
+                                @foreach([
+                                    'learning' => 'Learning',
+                                    'mentorship' => 'Mentorship',
+                                    'jobs' => 'Jobs',
+                                ] as $value => $label)
+
+                                    <label class="eh-register-check-option">
+                                        <input
+                                            type="checkbox"
+                                            name="interests[]"
+                                            value="{{ $value }}"
+                                            data-interest-option
+                                            @checked(in_array($value, old('interests', []), true))
+                                        >
+                                        <span>{{ $label }}</span>
+                                    </label>
+
+                                @endforeach
+
+                                <label class="eh-register-check-option">
+                                    <input
+                                        type="checkbox"
+                                        value="all"
+                                        data-interest-all
+                                        @checked(count(old('interests', [])) === 3)
+                                    >
+                                    <span>All</span>
+                                </label>
+
+                            </div>
+
+                        </div>
+                        <div class="eh-register-field eh-register-field-full" data-learning-preferences>
+                            <p class="eh-register-hint">Learning preferences (optional). You can leave these blank; the team may assign you to a branch, cohort or course.</p>
+                        </div>
+
+                        <div class="eh-register-field" data-learning-preferences>
+                            <label for="branch_id">Preferred branch (optional)</label>
+                            <select id="branch_id" name="branch_id">
+                                <option value="">No preference</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}" @selected((string) old('branch_id') === (string) $branch->id)>{{ $branch->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="eh-register-field" data-learning-preferences>
+                            <label for="cohort_id">Preferred cohort (optional)</label>
+                            <select id="cohort_id" name="cohort_id">
+                                <option value="">No preference</option>
+                                @foreach($cohorts as $cohort)
+                                    <option value="{{ $cohort->id }}" @selected((string) old('cohort_id') === (string) $cohort->id)>{{ $cohort->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="eh-register-field eh-register-field-full" data-learning-preferences>
+                            <label for="course_id">Preferred course (optional)</label>
+                            <select id="course_id" name="course_id">
+                                <option value="">No preference</option>
+                                @foreach($courses as $course)
+                                    <option value="{{ $course->id }}" @selected((string) old('course_id') === (string) $course->id)>{{ $course->title }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ==================================================
+                     STEP 2
+                     ================================================== --}}
+
+                <section
+                    class="eh-register-step"
+                    data-register-step="2"
                 >
 
                     <div class="eh-register-step-heading">
@@ -351,7 +456,7 @@
 
                 <section
                     class="eh-register-step"
-                    data-register-step="2"
+                    data-register-step="3"
                 >
 
                     <div class="eh-register-step-heading">
@@ -424,39 +529,7 @@
 
                         </div>
 
-                        <div class="eh-register-field eh-register-field-full" data-learning-preferences>
-                            <p class="eh-register-hint">Learning preferences (optional). You can leave these blank; the team may assign you to a branch, cohort or course.</p>
-                        </div>
 
-                        <div class="eh-register-field" data-learning-preferences>
-                            <label for="branch_id">Preferred branch (optional)</label>
-                            <select id="branch_id" name="branch_id">
-                                <option value="">No preference</option>
-                                @foreach($branches as $branch)
-                                    <option value="{{ $branch->id }}" @selected((string) old('branch_id') === (string) $branch->id)>{{ $branch->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="eh-register-field" data-learning-preferences>
-                            <label for="cohort_id">Preferred cohort (optional)</label>
-                            <select id="cohort_id" name="cohort_id">
-                                <option value="">No preference</option>
-                                @foreach($cohorts as $cohort)
-                                    <option value="{{ $cohort->id }}" @selected((string) old('cohort_id') === (string) $cohort->id)>{{ $cohort->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="eh-register-field eh-register-field-full" data-learning-preferences>
-                            <label for="course_id">Preferred course (optional)</label>
-                            <select id="course_id" name="course_id">
-                                <option value="">No preference</option>
-                                @foreach($courses as $course)
-                                    <option value="{{ $course->id }}" @selected((string) old('course_id') === (string) $course->id)>{{ $course->title }}</option>
-                                @endforeach
-                            </select>
-                        </div>
 
                     </div>
 
@@ -571,7 +644,7 @@
 
                 <section
                     class="eh-register-step"
-                    data-register-step="3"
+                    data-register-step="4"
                 >
 
                     <div class="eh-register-step-heading">
@@ -665,51 +738,6 @@
                         </div>
 
 
-                        <div class="eh-register-field eh-register-field-full">
-
-                            <label>
-                                I am interested in
-                            </label>
-
-                            <p class="eh-register-hint">
-                                Choose everything that applies, or select All.
-                            </p>
-
-                            <div class="eh-register-check-grid" data-interest-group>
-
-                                @foreach([
-                                    'learning' => 'Learning',
-                                    'mentorship' => 'Mentorship',
-                                    'jobs' => 'Jobs',
-                                ] as $value => $label)
-
-                                    <label class="eh-register-check-option">
-                                        <input
-                                            type="checkbox"
-                                            name="interests[]"
-                                            value="{{ $value }}"
-                                            data-interest-option
-                                            @checked(in_array($value, old('interests', []), true))
-                                        >
-                                        <span>{{ $label }}</span>
-                                    </label>
-
-                                @endforeach
-
-                                <label class="eh-register-check-option">
-                                    <input
-                                        type="checkbox"
-                                        value="all"
-                                        data-interest-all
-                                        @checked(count(old('interests', [])) === 3)
-                                    >
-                                    <span>All</span>
-                                </label>
-
-                            </div>
-
-                        </div>
-
                     </div>
 
                 </section>
@@ -721,7 +749,7 @@
 
                 <section
                     class="eh-register-step"
-                    data-register-step="4"
+                    data-register-step="5"
                 >
 
                     <div class="eh-register-step-heading">
@@ -931,7 +959,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let currentStep = 1;
 
-    const totalSteps = 4;
+    const totalSteps = 5;
 
     const steps =
         document.querySelectorAll(
