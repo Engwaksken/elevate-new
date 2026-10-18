@@ -62,4 +62,39 @@ class ParticipantRegistrationConsentTest extends TestCase
         $response->assertSessionHasErrors('phone');
         $this->assertDatabaseMissing('users', ['email' => 'sarah.consent@gmail.com']);
     }
+
+    public function test_a_listed_education_level_is_saved(): void
+    {
+        $this->post(route('register.store'), $this->payload(['education_level' => 'Diploma']));
+
+        $user = User::where('email', 'sarah.consent@gmail.com')->firstOrFail();
+        $this->assertSame('Diploma', $user->profile->education_level);
+    }
+
+    public function test_other_education_level_saves_the_typed_value(): void
+    {
+        $this->post(route('register.store'), $this->payload([
+            'education_level' => 'Other',
+            'education_level_other' => 'Vocational training',
+        ]));
+
+        $user = User::where('email', 'sarah.consent@gmail.com')->firstOrFail();
+        $this->assertSame('Vocational training', $user->profile->education_level);
+    }
+
+    public function test_other_education_level_requires_a_typed_value(): void
+    {
+        $response = $this->post(route('register.store'), $this->payload(['education_level' => 'Other']));
+
+        $response->assertSessionHasErrors('education_level');
+        $this->assertDatabaseMissing('users', ['email' => 'sarah.consent@gmail.com']);
+    }
+
+    public function test_preferred_language_is_always_english(): void
+    {
+        $this->post(route('register.store'), $this->payload(['preferred_language' => 'sw']));
+
+        $user = User::where('email', 'sarah.consent@gmail.com')->firstOrFail();
+        $this->assertSame('en', $user->profile->preferred_language);
+    }
 }

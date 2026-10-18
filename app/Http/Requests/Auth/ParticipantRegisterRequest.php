@@ -23,6 +23,10 @@ class ParticipantRegisterRequest extends FormRequest
             $this->merge(['country' => trim((string) $this->input('country_other'))]);
         }
 
+        if ($this->input('education_level') === 'Other' && $this->filled('education_level_other')) {
+            $this->merge(['education_level' => trim((string) $this->input('education_level_other'))]);
+        }
+
         if ($this->boolean('terms') && ! $this->filled('privacy_policy')) {
             $this->merge(['privacy_policy' => 1]);
         }
@@ -46,12 +50,12 @@ class ParticipantRegisterRequest extends FormRequest
             'cohort_id' => ['nullable', 'exists:cohorts,id'],
             'course_id' => ['nullable', 'exists:courses,id'],
             'is_pwd' => ['nullable', 'boolean'],
-            'education_level' => ['nullable', 'string', 'max:150'],
+            'education_level' => ['nullable', 'string', 'max:150', 'not_in:Other'],
+            'education_level_other' => ['nullable', 'string', 'max:150'],
             'employment_status' => ['nullable', 'string', 'max:150'],
             'career_interests' => ['nullable', 'string', 'max:2000'],
             'interests' => ['nullable', 'array', 'max:3'],
             'interests.*' => ['nullable', 'string', 'in:learning,mentorship,jobs'],
-            'preferred_language' => ['nullable', 'string', 'max:50'],
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'privacy_policy' => ['accepted'],
             'terms' => ['accepted'],

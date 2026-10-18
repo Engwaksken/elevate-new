@@ -669,13 +669,18 @@
                                 Education level
                             </label>
 
-                            <input
-                                id="education_level"
-                                type="text"
-                                name="education_level"
-                                value="{{ old('education_level') }}"
-                                placeholder="e.g. Bachelor's degree"
-                            >
+                            @php
+                                $educationLevels = ['No formal education', 'Primary', 'Secondary (O-Level)', 'Secondary (A-Level)', 'Certificate', 'Diploma', "Bachelor's degree", "Master's degree", 'Doctorate (PhD)'];
+                            @endphp
+
+                            <select id="education_level" name="education_level">
+                                <option value="">Select education level</option>
+                                @foreach($educationLevels as $level)
+                                    <option value="{{ $level }}" @selected(old('education_level') === $level)>{{ $level }}</option>
+                                @endforeach
+                                <option value="Other" @selected(old('education_level') === 'Other' || old('education_level_other'))>Other</option>
+                            </select>
+                            <input id="education_level_other" type="text" name="education_level_other" value="{{ old('education_level_other') }}" placeholder="Enter your education level" @if(old('education_level') !== 'Other' && !old('education_level_other')) hidden @endif>
 
                         </div>
 
@@ -828,34 +833,6 @@
                                 </button>
 
                             </div>
-
-                        </div>
-
-
-                        <div class="eh-register-field">
-
-                            <label for="preferred_language">
-                                Preferred language
-                            </label>
-
-                            <select
-                                id="preferred_language"
-                                name="preferred_language"
-                            >
-
-                                <option value="en">
-                                    English
-                                </option>
-
-                                <option value="lg">
-                                    Luganda
-                                </option>
-
-                                <option value="sw">
-                                    Kiswahili
-                                </option>
-
-                            </select>
 
                         </div>
 
@@ -1262,6 +1239,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     countrySelect?.addEventListener('change', syncOtherCountry);
     syncOtherCountry();
+
+    const educationSelect = document.getElementById('education_level');
+    const educationOther = document.getElementById('education_level_other');
+    function syncOtherEducation() {
+        if (!educationOther) return;
+        educationOther.hidden = educationSelect?.value !== 'Other';
+        educationOther.required = educationSelect?.value === 'Other';
+    }
+    educationSelect?.addEventListener('change', syncOtherEducation);
+    syncOtherEducation();
 
 });
 </script>
