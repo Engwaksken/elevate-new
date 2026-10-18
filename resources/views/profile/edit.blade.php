@@ -59,7 +59,7 @@ $profileFormTabs = [
     'personal' => ['label' => 'Personal', 'icon' => 'fa-user', 'fields' => ['surname', 'given_name', 'other_name', 'gender', 'date_of_birth', 'branch_id']],
     'location' => ['label' => 'Location', 'icon' => 'fa-location-dot', 'fields' => ['country', 'district', 'location', 'is_pwd']],
     'career' => ['label' => 'Career', 'icon' => 'fa-briefcase', 'fields' => ['education_level', 'employment_status', 'career_interests']],
-    'preferences' => ['label' => 'Preferences', 'icon' => 'fa-language', 'fields' => ['preferred_language', 'notifications', 'notifications.*']],
+    'preferences' => ['label' => 'Preferences', 'icon' => 'fa-bell', 'fields' => ['notifications', 'notifications.*']],
     'security' => ['label' => 'Security', 'icon' => 'fa-shield-halved', 'fields' => ['current_password', 'password', 'password_confirmation']],
 ];
 @endphp
@@ -103,7 +103,22 @@ $profileFormTabs = [
 <x-form-tab name="career">
 <div class="eh-tab-section">
 <div class="eh-form-grid">
-    <div><label>Education Level</label><input name="education_level" value="{{ old('education_level',$profile?->education_level) }}" placeholder="e.g. Diploma, Bachelor's degree"></div>
+    @php
+        $educationValue = old('education_level', $profile?->education_level);
+        $educationOther = old('education_level_other', filled($educationValue) && !in_array($educationValue, \App\Models\Profile::EDUCATION_LEVELS, true) && $educationValue !== 'Other' ? $educationValue : null);
+        $educationIsOther = $educationValue === 'Other' || filled($educationOther);
+    @endphp
+    <div>
+        <label for="profile_education_level">Education Level</label>
+        <select id="profile_education_level" name="education_level">
+            <option value="">Select education level</option>
+            @foreach(\App\Models\Profile::EDUCATION_LEVELS as $level)
+                <option value="{{ $level }}" @selected(!$educationIsOther && $educationValue === $level)>{{ $level }}</option>
+            @endforeach
+            <option value="Other" @selected($educationIsOther)>Other</option>
+        </select>
+        <input id="profile_education_level_other" type="text" name="education_level_other" value="{{ $educationOther }}" placeholder="Enter your education level" style="margin-top:8px" @unless($educationIsOther) hidden @endunless>
+    </div>
     <div><label>Employment Status</label><input name="employment_status" value="{{ old('employment_status',$profile?->employment_status) }}" placeholder="e.g. Student, Employed, Self-employed"></div>
     <div class="full"><label>Career Interests</label><textarea name="career_interests" rows="5" placeholder="Software development, data analysis, entrepreneurship...">{{ old('career_interests',$profile?->career_interests) }}</textarea></div>
 </div>
@@ -112,15 +127,12 @@ $profileFormTabs = [
 
 <x-form-tab name="preferences">
 <div class="eh-tab-section">
-<div class="eh-form-grid">
-    <div><label>Preferred Language</label><select name="preferred_language"><option value="en" @selected(old('preferred_language',$profile?->preferred_language ?? 'en')==='en')>English</option><option value="lg" @selected(old('preferred_language',$profile?->preferred_language)==='lg')>Luganda</option><option value="sw" @selected(old('preferred_language',$profile?->preferred_language)==='sw')>Kiswahili</option></select></div>
-</div>
 @php
     $notifCategories = array_keys(\App\Support\NotificationPreferences::CATEGORIES);
     $notifDisabled = (array) ($user->notification_preferences['disabled'] ?? []);
     $notifEnabled = old('notifications', array_values(array_diff($notifCategories, $notifDisabled)));
 @endphp
-<div class="eh-form-grid" style="margin-top:12px">
+<div class="eh-form-grid">
     <div class="full">
         <label>Notifications</label>
         <p class="eh-section-note">Choose which updates you want to receive in-app and by email.</p>
@@ -147,6 +159,22 @@ $profileFormTabs = [
 </x-form-tab>
 
 </x-form-tabs>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const educationSelect = document.getElementById('profile_education_level');
+    const educationOther = document.getElementById('profile_education_level_other');
+    function syncOtherEducation() {
+        if (!educationOther) return;
+        educationOther.hidden = educationSelect?.value !== 'Other';
+        educationOther.required = educationSelect?.value === 'Other';
+    }
+    educationSelect?.addEventListener('change', syncOtherEducation);
+    syncOtherEducation();
+});
+</script>
+@endpush
 
 <div class="eh-form-actions">
     <button class="btn btn-primary" type="submit"><i class="fas fa-floppy-disk"></i> Save Profile</button>

@@ -669,13 +669,9 @@
                                 Education level
                             </label>
 
-                            @php
-                                $educationLevels = ['No formal education', 'Primary', 'Secondary (O-Level)', 'Secondary (A-Level)', 'Certificate', 'Diploma', "Bachelor's degree", "Master's degree", 'Doctorate (PhD)'];
-                            @endphp
-
                             <select id="education_level" name="education_level">
                                 <option value="">Select education level</option>
-                                @foreach($educationLevels as $level)
+                                @foreach(\App\Models\Profile::EDUCATION_LEVELS as $level)
                                     <option value="{{ $level }}" @selected(old('education_level') === $level)>{{ $level }}</option>
                                 @endforeach
                                 <option value="Other" @selected(old('education_level') === 'Other' || old('education_level_other'))>Other</option>

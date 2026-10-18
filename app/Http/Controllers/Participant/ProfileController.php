@@ -30,6 +30,10 @@ class ProfileController extends Controller
     {
         $user=$request->user();
 
+        if($request->input('education_level')==='Other' && $request->filled('education_level_other')){
+            $request->merge(['education_level'=>trim((string)$request->input('education_level_other'))]);
+        }
+
         $data=$request->validate([
             'name'=>['required','string','max:255'],
             'email'=>[
@@ -49,10 +53,10 @@ class ProfileController extends Controller
             'district'=>['nullable','string','max:255'],
             'location'=>['nullable','string','max:255'],
             'is_pwd'=>['nullable','boolean'],
-            'education_level'=>['nullable','string','max:255'],
+            'education_level'=>['nullable','string','max:255','not_in:Other'],
+            'education_level_other'=>['nullable','string','max:255'],
             'employment_status'=>['nullable','string','max:255'],
             'career_interests'=>['nullable','string','max:5000'],
-            'preferred_language'=>['nullable',Rule::in(['en','lg','sw'])],
             'notifications'=>['nullable','array'],
             'notifications.*'=>['string',Rule::in(array_keys(\App\Support\NotificationPreferences::CATEGORIES))],
             'current_password'=>['nullable','string'],
@@ -107,7 +111,7 @@ class ProfileController extends Controller
                     'education_level'=>$data['education_level'] ?? null,
                     'employment_status'=>$data['employment_status'] ?? null,
                     'career_interests'=>$data['career_interests'] ?? null,
-                    'preferred_language'=>$data['preferred_language'] ?? 'en',
+                    'preferred_language'=>'en',
                 ]
             );
         });

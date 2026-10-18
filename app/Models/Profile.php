@@ -7,6 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Profile extends Model
 {
+    // Choices for the education level dropdowns; anything else is entered via "Other".
+    public const EDUCATION_LEVELS = [
+        'No formal education', 'Primary', 'Secondary (O-Level)', 'Secondary (A-Level)',
+        'Certificate', 'Diploma', "Bachelor's degree", "Master's degree", 'Doctorate (PhD)',
+    ];
+
     protected $fillable = [
         'user_id','branch_id','surname','given_name','other_name','gender',
         'date_of_birth','country','district','location','is_pwd',
