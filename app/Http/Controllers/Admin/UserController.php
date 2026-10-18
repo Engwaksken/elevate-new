@@ -32,7 +32,11 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $query = User::with(['roles', 'branches', 'instructedCourses:id,title'])->latest();
+        $query = User::with([
+            'roles', 'branches', 'instructedCourses:id,title',
+            // Participants: branch lives on the profile, cohorts/courses on enrolments.
+            'profile.branch:id,name', 'enrolments.course:id,title', 'enrolments.cohort:id,name',
+        ])->latest();
 
         if ($search = trim((string) $request->get('search'))) {
             $query->where(function ($q) use ($search) {
@@ -77,7 +81,11 @@ class UserController extends Controller
                 'Type' => fn ($u) => ucfirst((string) $u->user_type),
                 'Status' => fn ($u) => ucfirst((string) $u->status),
                 'Roles' => fn ($u) => $u->roles->pluck('name')->implode(', '),
-                'Branches' => fn ($u) => $u->branches->pluck('name')->implode(', '),
+                'Branches' => fn ($u) => $u->user_type === 'participant'
+                    ? (string) $u->profile?->branch?->name
+                    : $u->branches->pluck('name')->implode(', '),
+                'Cohorts' => fn ($u) => $u->enrolments->pluck('cohort.name')->filter()->unique()->implode(', '),
+                'Courses enrolled' => fn ($u) => $u->enrolments->pluck('course.title')->filter()->implode(', '),
                 'Courses taught' => fn ($u) => $u->instructedCourses->pluck('title')->implode(', '),
                 'Last login' => 'last_login_at',
                 'Registered' => 'created_at',

@@ -153,6 +153,19 @@
             @if($user->instructedCourses->isNotEmpty())
                 <small class="admin-cell-hint" title="{{ $user->instructedCourses->pluck('title')->join(', ') }}">{{ $user->instructedCourses->count() }} {{ \Illuminate\Support\Str::plural('course', $user->instructedCourses->count()) }}</small>
             @endif
+        @elseif($user->user_type === 'participant' && ($user->profile?->branch || $user->enrolments->isNotEmpty()))
+            {{-- Participants keep one branch on their profile; cohorts come from their enrolments. --}}
+            @if($user->profile?->branch)<span class="branch-chip">{{ $user->profile->branch->name }}</span>@endif
+            @php
+                $participantCohorts = $user->enrolments->pluck('cohort.name')->filter()->unique();
+                $participantCourses = $user->enrolments->pluck('course.title')->filter();
+            @endphp
+            @if($participantCohorts->isNotEmpty())
+                <small class="admin-cell-hint">{{ $participantCohorts->join(', ') }}</small>
+            @endif
+            @if($user->enrolments->isNotEmpty())
+                <small class="admin-cell-hint" title="{{ $participantCourses->join(', ') }}">{{ $user->enrolments->count() }} {{ \Illuminate\Support\Str::plural('course', $user->enrolments->count()) }}</small>
+            @endif
         @else
             <span class="admin-cell-hint">-</span>
         @endif

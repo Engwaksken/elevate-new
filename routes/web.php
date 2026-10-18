@@ -236,6 +236,12 @@ Route::get('/email/verify/{id}/{hash}', function (Request $request, string $id, 
         event(new \Illuminate\Auth\Events\Verified($user));
     }
 
+    // Participants used to be activated only on sign-in; verifying now lands them
+    // in the dashboard without one, so activate here too.
+    if ($user->user_type === 'participant' && $user->status === 'pending') {
+        $user->forceFill(['status' => 'active'])->save();
+    }
+
     // Opened in the browser where they are already signed in: go straight in.
     if ((int) $request->user()?->getKey() === (int) $user->getKey()) {
         return redirect()->to(\App\Support\RoleShell::homeUrl($user) ?? route('dashboard'))
