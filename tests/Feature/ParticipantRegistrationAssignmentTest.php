@@ -23,6 +23,7 @@ class ParticipantRegistrationAssignmentTest extends TestCase
         $branch = Branch::create(['name' => 'Kampala Branch', 'code' => 'KLA', 'is_active' => true]);
         $cohort = Cohort::create(['name' => 'October Cohort', 'code' => 'OCT', 'status' => 'active', 'branch_id' => $branch->id]);
         $course = Course::create(['title' => 'Digital Skills', 'delivery_mode' => 'online', 'status' => 'published', 'pass_mark' => 50]);
+        $course->branches()->attach($branch->id);
 
         $this->post(route('register.store'), [
             'surname' => 'Nansubuga',

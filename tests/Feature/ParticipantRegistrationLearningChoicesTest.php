@@ -25,7 +25,15 @@ class ParticipantRegistrationLearningChoicesTest extends TestCase
 
         $this->branch = Branch::create(['name' => 'Kampala Branch', 'code' => 'KLA', 'is_active' => true]);
         $this->cohort = Cohort::create(['name' => 'October Cohort', 'code' => 'OCT', 'status' => 'active', 'branch_id' => $this->branch->id]);
-        $this->course = Course::create(['title' => 'Digital Skills', 'delivery_mode' => 'online', 'status' => 'published', 'pass_mark' => 50]);
+        $this->course = $this->course('Digital Skills');
+    }
+
+    private function course(string $title, ?Branch $branch = null): Course
+    {
+        $course = Course::create(['title' => $title, 'delivery_mode' => 'online', 'status' => 'published', 'pass_mark' => 50]);
+        $course->branches()->attach(($branch ?? $this->branch)->id);
+
+        return $course;
     }
 
     private function payload(array $overrides = []): array
@@ -51,7 +59,12 @@ class ParticipantRegistrationLearningChoicesTest extends TestCase
             'branch_id' => null,
             'cohort_id' => null,
             'course_id' => null,
-        ]))->assertSessionHasErrors(['branch_id', 'cohort_id', 'course_id']);
+        ]))->assertSessionHasErrors('branch_id');
+
+        $this->post(route('register.store'), $this->payload([
+            'cohort_id' => null,
+            'course_id' => null,
+        ]))->assertSessionHasErrors(['cohort_id', 'course_id']);
 
         $this->assertDatabaseMissing('users', ['email' => 'sarah.choices@gmail.com']);
     }
@@ -83,6 +96,34 @@ class ParticipantRegistrationLearningChoicesTest extends TestCase
 
         $this->post(route('register.store'), $this->payload(['branch_id' => $other->id]))
             ->assertSessionHasErrors('cohort_id');
+    }
+
+    public function test_the_course_must_be_offered_at_the_chosen_branch(): void
+    {
+        $other = Branch::create(['name' => 'Gulu Branch', 'code' => 'GUL', 'is_active' => true]);
+        $elsewhere = $this->course('Tailoring', $other);
+
+        $this->post(route('register.store'), $this->payload(['course_id' => $elsewhere->id]))
+            ->assertSessionHasErrors('course_id');
+    }
+
+    public function test_compulsory_courses_are_not_offered_but_are_enrolled_automatically(): void
+    {
+        $orientation = $this->course('Orientation');
+        $this->course->compulsoryCourses()->attach($orientation->id);
+
+        $this->get(route('register'))
+            ->assertOk()
+            ->assertSee('Digital Skills')
+            ->assertDontSee('Orientation');
+
+        $this->post(route('register.store'), $this->payload(['course_id' => $orientation->id]))
+            ->assertSessionHasErrors('course_id');
+
+        $this->post(route('register.store'), $this->payload())->assertSessionHasNoErrors();
+
+        $user = User::where('email', 'sarah.choices@gmail.com')->firstOrFail();
+        $this->assertDatabaseHas('enrolments', ['user_id' => $user->id, 'course_id' => $orientation->id]);
     }
 
     public function test_an_inactive_cohort_cannot_be_chosen(): void

@@ -11,6 +11,13 @@ class Cohort extends Model {
     public function branch(): BelongsTo { return $this->belongsTo(Branch::class); }
     public function branches(): BelongsToMany { return $this->belongsToMany(Branch::class); }
 
+    /** Cohorts that run at the given branch, via the pivot or the legacy branch_id column. */
+    public function scopeAtBranch($query, $branchId)
+    {
+        return $query->where(fn ($q) => $q->where('branch_id', $branchId)
+            ->orWhereHas('branches', fn ($b) => $b->whereKey($branchId)));
+    }
+
     /** Branches this cohort runs at, from the pivot and the legacy branch_id column. */
     public function branchIds(): array
     {

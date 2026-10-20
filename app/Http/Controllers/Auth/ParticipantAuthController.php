@@ -33,7 +33,7 @@ class ParticipantAuthController extends Controller
                 ->orderBy('name')
                 ->get(),
             'cohorts' => Cohort::with('branches')->where('status', 'active')->orderBy('name')->get(),
-            'courses' => Course::where('status', 'published')->orderBy('title')->get(),
+            'courses' => Course::selectable()->with('branches')->orderBy('title')->get(),
         ]);
     }
 

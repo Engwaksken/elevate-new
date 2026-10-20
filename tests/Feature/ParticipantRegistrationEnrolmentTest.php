@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\Course;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -12,10 +13,14 @@ class ParticipantRegistrationEnrolmentTest extends TestCase
 {
     use RefreshDatabase;
 
+    private Branch $branch;
+
     protected function setUp(): void
     {
         parent::setUp();
         Mail::fake();
+
+        $this->branch = Branch::create(['name' => 'Kampala Branch', 'code' => 'KLA', 'is_active' => true]);
     }
 
     private function register(array $overrides = []): User
@@ -29,6 +34,7 @@ class ParticipantRegistrationEnrolmentTest extends TestCase
             'password_confirmation' => 'StrongPass1',
             'terms' => '1',
             'interests' => ['learning'],
+            'branch_id' => $this->branch->id,
         ], $overrides))->assertSessionHasNoErrors();
 
         return User::where('email', 'sarah.enrol@gmail.com')->firstOrFail();
@@ -36,7 +42,10 @@ class ParticipantRegistrationEnrolmentTest extends TestCase
 
     private function course(string $title, array $attributes = []): Course
     {
-        return Course::create(array_merge(['title' => $title, 'delivery_mode' => 'online', 'status' => 'published', 'pass_mark' => 50], $attributes));
+        $course = Course::create(array_merge(['title' => $title, 'delivery_mode' => 'online', 'status' => 'published', 'pass_mark' => 50], $attributes));
+        $course->branches()->attach($this->branch->id);
+
+        return $course;
     }
 
     public function test_the_chosen_course_and_its_compulsory_courses_are_enrolled(): void

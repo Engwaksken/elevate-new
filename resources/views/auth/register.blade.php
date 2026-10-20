@@ -246,7 +246,7 @@
 
                         </div>
                         <div class="eh-register-field eh-register-field-full" data-learning-preferences>
-                            <p class="eh-register-hint">Because you chose Learning, pick your branch, cohort and course. You will be enrolled in the course straight away, along with any compulsory courses it requires.</p>
+                            <p class="eh-register-hint">Because you chose Learning, pick your branch first, then a cohort and course offered there. You will be enrolled in the course straight away; any compulsory courses it requires are added for you automatically.</p>
                         </div>
 
                         <div class="eh-register-field" data-learning-preferences>
@@ -278,7 +278,11 @@
                             <select id="course_id" name="course_id" data-learning-required>
                                 <option value="">Select a course</option>
                                 @foreach($courses as $course)
-                                    <option value="{{ $course->id }}" @selected((string) old('course_id') === (string) $course->id)>{{ $course->title }}</option>
+                                    <option
+                                        value="{{ $course->id }}"
+                                        data-branches="{{ implode(',', $course->branchIds()) }}"
+                                        @selected((string) old('course_id') === (string) $course->id)
+                                    >{{ $course->title }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -1222,35 +1226,36 @@ document.addEventListener('DOMContentLoaded', function () {
     const learningChoices = document.querySelectorAll('[data-learning-preferences]');
     const learningBox = document.querySelector('[data-interest-option][value="learning"]');
     const allInterestsBox = document.querySelector('[data-interest-all]');
+    /* A participant belongs to one branch: cohorts and courses only list what that branch offers. */
+    const branchSelect = document.getElementById('branch_id');
+    const branchScoped = [document.getElementById('cohort_id'), document.getElementById('course_id')].filter(Boolean);
+    function syncBranchChoices() {
+        const branchId = branchSelect?.value || '';
+        branchScoped.forEach((select) => {
+            Array.from(select.options).forEach((option) => {
+                if (!option.value) return;
+                const available = !!branchId && (option.dataset.branches || '').split(',').includes(branchId);
+                option.hidden = !available;
+                option.disabled = !available;
+                if (!available && option.selected) select.value = '';
+            });
+        });
+    }
+
     function syncLearningChoices() {
+        syncBranchChoices();
         const enabled = !!learningBox?.checked || !!allInterestsBox?.checked;
         learningChoices.forEach((field) => field.hidden = !enabled);
         // Required only while Learning is chosen and there is something to pick.
         document.querySelectorAll('[data-learning-required]').forEach((select) => {
-            select.required = enabled && select.options.length > 1;
+            const hasChoices = Array.from(select.options).some((option) => option.value && !option.disabled);
+            select.required = enabled && hasChoices;
         });
     }
     learningBox?.addEventListener('change', syncLearningChoices);
     allInterestsBox?.addEventListener('change', syncLearningChoices);
+    branchSelect?.addEventListener('change', syncLearningChoices);
     syncLearningChoices();
-
-    /* Cohorts: only show the ones that run at the chosen branch. */
-    const branchSelect = document.getElementById('branch_id');
-    const cohortSelect = document.getElementById('cohort_id');
-    function syncCohorts() {
-        if (!cohortSelect) return;
-        const branchId = branchSelect?.value || '';
-        Array.from(cohortSelect.options).forEach((option) => {
-            if (!option.value) return;
-            const branches = (option.dataset.branches || '').split(',').filter(Boolean);
-            const available = !branchId || branches.length === 0 || branches.includes(branchId);
-            option.hidden = !available;
-            option.disabled = !available;
-            if (!available && option.selected) cohortSelect.value = '';
-        });
-    }
-    branchSelect?.addEventListener('change', syncCohorts);
-    syncCohorts();
 
     const countrySelect = document.getElementById('country');
     const countryOther = document.getElementById('country_other');

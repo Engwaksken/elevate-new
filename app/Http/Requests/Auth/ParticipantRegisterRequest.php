@@ -51,13 +51,29 @@ class ParticipantRegisterRequest extends FormRequest
      * Learning participants must pick a branch, cohort and course, but only
      * when the form actually offers at least one choice for that field.
      */
-    private function requiredForLearning(bool $hasChoices): \Illuminate\Validation\Rules\RequiredIf
+    private function requiredForLearning(\Closure $hasChoices): \Illuminate\Validation\Rules\RequiredIf
     {
-        return Rule::requiredIf(fn () => $hasChoices && $this->wantsLearning());
+        return Rule::requiredIf(fn () => $this->wantsLearning() && $hasChoices());
+    }
+
+    /**
+     * A participant belongs to one branch, so the cohort and course must be
+     * offered at the branch they chose.
+     */
+    private function atChosenBranch($query, string $message): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail) use ($query, $message) {
+            if (! $query->clone()->atBranch((int) $this->input('branch_id'))->whereKey($value)->exists()) {
+                $fail($message);
+            }
+        };
     }
 
     public function rules(): array
     {
+        $cohorts = Cohort::where('status', 'active');
+        $courses = Course::selectable();
+
         return [
             'surname' => ['required', 'string', 'max:100'],
             'given_name' => ['required', 'string', 'max:100'],
@@ -71,29 +87,20 @@ class ParticipantRegisterRequest extends FormRequest
             'district' => ['nullable', 'string', 'max:100'],
             'location' => ['nullable', 'string', 'max:190'],
             'branch_id' => [
-                $this->requiredForLearning(Branch::where('is_active', true)->exists()),
+                $this->requiredForLearning(fn () => Branch::where('is_active', true)->exists()),
                 'nullable',
                 'exists:branches,id,is_active,1',
             ],
             'cohort_id' => [
-                $this->requiredForLearning(Cohort::where('status', 'active')->exists()),
+                $this->requiredForLearning(fn () => $cohorts->clone()->atBranch((int) $this->input('branch_id'))->exists()),
                 'nullable',
-                'exists:cohorts,id,status,active',
-                function (string $attribute, mixed $value, \Closure $fail) {
-                    // A cohort with no branches runs everywhere.
-                    $branchIds = Cohort::with('branches')->find($value)?->branchIds() ?? [];
-                    $branchId = (int) $this->input('branch_id');
-
-                    if ($branchId && $branchIds !== [] && ! in_array($branchId, $branchIds, true)) {
-                        $fail('Choose a cohort that runs at your selected branch.');
-                    }
-                },
+                $this->atChosenBranch($cohorts, 'Choose an active cohort at your selected branch.'),
             ],
-            // Only courses offered on the form (published) can be chosen for auto-enrolment.
+            // Only courses offered on the form can be chosen for auto-enrolment.
             'course_id' => [
-                $this->requiredForLearning(Course::where('status', 'published')->exists()),
+                $this->requiredForLearning(fn () => $courses->clone()->atBranch((int) $this->input('branch_id'))->exists()),
                 'nullable',
-                'exists:courses,id,status,published',
+                $this->atChosenBranch($courses, 'Choose a course offered at your selected branch.'),
             ],
             'is_pwd' => ['nullable', 'boolean'],
             'education_level' => ['nullable', 'string', 'max:150', 'not_in:Other'],

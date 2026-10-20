@@ -124,6 +124,28 @@ class Course extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Published courses a participant can pick themselves. Compulsory courses
+     * are left out: they are enrolled automatically with the course that needs them.
+     */
+    public function scopeSelectable($query)
+    {
+        return $query->where('status', 'published')->whereDoesntHave('compulsoryFor');
+    }
+
+    /** Courses offered at the given branch, via the pivot or the legacy branch_id column. */
+    public function scopeAtBranch($query, $branchId)
+    {
+        return $query->where(fn ($q) => $q->where('branch_id', $branchId)
+            ->orWhereHas('branches', fn ($b) => $b->whereKey($branchId)));
+    }
+
+    /** Branches this course is offered at, from the pivot and the legacy branch_id column. */
+    public function branchIds(): array
+    {
+        return $this->branches->pluck('id')->push($this->branch_id)->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+    }
+
     public function cohorts()
     {
         return $this->belongsToMany(Cohort::class,'course_cohort','course_id','cohort_id')
