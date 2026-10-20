@@ -107,6 +107,22 @@ class ParticipantRegistrationLearningChoicesTest extends TestCase
             ->assertSessionHasErrors('course_id');
     }
 
+    public function test_a_course_offered_at_several_branches_can_be_chosen_from_each(): void
+    {
+        $other = Branch::create(['name' => 'Gulu Branch', 'code' => 'GUL', 'is_active' => true]);
+        $otherCohort = Cohort::create(['name' => 'Gulu Cohort', 'code' => 'GLC', 'status' => 'active', 'branch_id' => $other->id]);
+        $this->course->branches()->attach($other->id);
+
+        $this->get(route('register'))
+            ->assertOk()
+            ->assertSee('data-branches="'.$this->branch->id.','.$other->id.'"', false);
+
+        $this->post(route('register.store'), $this->payload([
+            'branch_id' => $other->id,
+            'cohort_id' => $otherCohort->id,
+        ]))->assertSessionHasNoErrors();
+    }
+
     public function test_compulsory_courses_are_not_offered_but_are_enrolled_automatically(): void
     {
         $orientation = $this->course('Orientation');
