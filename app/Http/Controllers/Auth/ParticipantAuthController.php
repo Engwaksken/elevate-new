@@ -32,7 +32,7 @@ class ParticipantAuthController extends Controller
             'branches' => Branch::where('is_active', true)
                 ->orderBy('name')
                 ->get(),
-            'cohorts' => Cohort::where('status', 'active')->orderBy('name')->get(),
+            'cohorts' => Cohort::with('branches')->where('status', 'active')->orderBy('name')->get(),
             'courses' => Course::where('status', 'published')->orderBy('title')->get(),
         ]);
     }

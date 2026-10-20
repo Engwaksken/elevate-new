@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\Branch;
+use App\Models\Cohort;
+use App\Models\Course;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class ParticipantRegisterRequest extends FormRequest
@@ -30,6 +34,26 @@ class ParticipantRegisterRequest extends FormRequest
         if ($this->boolean('terms') && ! $this->filled('privacy_policy')) {
             $this->merge(['privacy_policy' => 1]);
         }
+
+        // Branch, cohort and course belong to Learning only. Drop anything
+        // left in the hidden fields when Learning is not chosen.
+        if (! $this->wantsLearning()) {
+            $this->merge(['branch_id' => null, 'cohort_id' => null, 'course_id' => null]);
+        }
+    }
+
+    private function wantsLearning(): bool
+    {
+        return in_array('learning', (array) $this->input('interests', []), true);
+    }
+
+    /**
+     * Learning participants must pick a branch, cohort and course, but only
+     * when the form actually offers at least one choice for that field.
+     */
+    private function requiredForLearning(bool $hasChoices): \Illuminate\Validation\Rules\RequiredIf
+    {
+        return Rule::requiredIf(fn () => $hasChoices && $this->wantsLearning());
     }
 
     public function rules(): array
@@ -46,10 +70,31 @@ class ParticipantRegisterRequest extends FormRequest
             'country_other' => ['nullable', 'string', 'max:100'],
             'district' => ['nullable', 'string', 'max:100'],
             'location' => ['nullable', 'string', 'max:190'],
-            'branch_id' => ['nullable', 'exists:branches,id'],
-            'cohort_id' => ['nullable', 'exists:cohorts,id'],
+            'branch_id' => [
+                $this->requiredForLearning(Branch::where('is_active', true)->exists()),
+                'nullable',
+                'exists:branches,id,is_active,1',
+            ],
+            'cohort_id' => [
+                $this->requiredForLearning(Cohort::where('status', 'active')->exists()),
+                'nullable',
+                'exists:cohorts,id,status,active',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    // A cohort with no branches runs everywhere.
+                    $branchIds = Cohort::with('branches')->find($value)?->branchIds() ?? [];
+                    $branchId = (int) $this->input('branch_id');
+
+                    if ($branchId && $branchIds !== [] && ! in_array($branchId, $branchIds, true)) {
+                        $fail('Choose a cohort that runs at your selected branch.');
+                    }
+                },
+            ],
             // Only courses offered on the form (published) can be chosen for auto-enrolment.
-            'course_id' => ['nullable', 'exists:courses,id,status,published'],
+            'course_id' => [
+                $this->requiredForLearning(Course::where('status', 'published')->exists()),
+                'nullable',
+                'exists:courses,id,status,published',
+            ],
             'is_pwd' => ['nullable', 'boolean'],
             'education_level' => ['nullable', 'string', 'max:150', 'not_in:Other'],
             'education_level_other' => ['nullable', 'string', 'max:150'],
@@ -67,6 +112,9 @@ class ParticipantRegisterRequest extends FormRequest
     {
         return [
             'interests.*.in' => 'Choose Learning, Mentorship or Jobs (or All).',
+            'branch_id.required' => 'Choose a branch for your learning.',
+            'cohort_id.required' => 'Choose a cohort for your learning.',
+            'course_id.required' => 'Choose a course for your learning.',
         ];
     }
 }

@@ -10,4 +10,10 @@ class Cohort extends Model {
     public function project(): BelongsTo { return $this->belongsTo(Project::class); }
     public function branch(): BelongsTo { return $this->belongsTo(Branch::class); }
     public function branches(): BelongsToMany { return $this->belongsToMany(Branch::class); }
+
+    /** Branches this cohort runs at, from the pivot and the legacy branch_id column. */
+    public function branchIds(): array
+    {
+        return $this->branches->pluck('id')->push($this->branch_id)->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+    }
 }

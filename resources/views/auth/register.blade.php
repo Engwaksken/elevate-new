@@ -246,13 +246,13 @@
 
                         </div>
                         <div class="eh-register-field eh-register-field-full" data-learning-preferences>
-                            <p class="eh-register-hint">Learning preferences (optional). Choosing a course enrols you in it straight away, together with any compulsory courses it requires. You can leave these blank; the team may assign you to a branch, cohort or course.</p>
+                            <p class="eh-register-hint">Because you chose Learning, pick your branch, cohort and course. You will be enrolled in the course straight away, along with any compulsory courses it requires.</p>
                         </div>
 
                         <div class="eh-register-field" data-learning-preferences>
-                            <label for="branch_id">Preferred branch (optional)</label>
-                            <select id="branch_id" name="branch_id">
-                                <option value="">No preference</option>
+                            <label for="branch_id">Branch</label>
+                            <select id="branch_id" name="branch_id" data-learning-required>
+                                <option value="">Select a branch</option>
                                 @foreach($branches as $branch)
                                     <option value="{{ $branch->id }}" @selected((string) old('branch_id') === (string) $branch->id)>{{ $branch->name }}</option>
                                 @endforeach
@@ -260,19 +260,23 @@
                         </div>
 
                         <div class="eh-register-field" data-learning-preferences>
-                            <label for="cohort_id">Preferred cohort (optional)</label>
-                            <select id="cohort_id" name="cohort_id">
-                                <option value="">No preference</option>
+                            <label for="cohort_id">Cohort</label>
+                            <select id="cohort_id" name="cohort_id" data-learning-required>
+                                <option value="">Select a cohort</option>
                                 @foreach($cohorts as $cohort)
-                                    <option value="{{ $cohort->id }}" @selected((string) old('cohort_id') === (string) $cohort->id)>{{ $cohort->name }}</option>
+                                    <option
+                                        value="{{ $cohort->id }}"
+                                        data-branches="{{ implode(',', $cohort->branchIds()) }}"
+                                        @selected((string) old('cohort_id') === (string) $cohort->id)
+                                    >{{ $cohort->name }}</option>
                                 @endforeach
                             </select>
                         </div>
 
                         <div class="eh-register-field eh-register-field-full" data-learning-preferences>
-                            <label for="course_id">Preferred course (optional)</label>
-                            <select id="course_id" name="course_id">
-                                <option value="">No preference</option>
+                            <label for="course_id">Course</label>
+                            <select id="course_id" name="course_id" data-learning-required>
+                                <option value="">Select a course</option>
                                 @foreach($courses as $course)
                                     <option value="{{ $course->id }}" @selected((string) old('course_id') === (string) $course->id)>{{ $course->title }}</option>
                                 @endforeach
@@ -1221,10 +1225,32 @@ document.addEventListener('DOMContentLoaded', function () {
     function syncLearningChoices() {
         const enabled = !!learningBox?.checked || !!allInterestsBox?.checked;
         learningChoices.forEach((field) => field.hidden = !enabled);
+        // Required only while Learning is chosen and there is something to pick.
+        document.querySelectorAll('[data-learning-required]').forEach((select) => {
+            select.required = enabled && select.options.length > 1;
+        });
     }
     learningBox?.addEventListener('change', syncLearningChoices);
     allInterestsBox?.addEventListener('change', syncLearningChoices);
     syncLearningChoices();
+
+    /* Cohorts: only show the ones that run at the chosen branch. */
+    const branchSelect = document.getElementById('branch_id');
+    const cohortSelect = document.getElementById('cohort_id');
+    function syncCohorts() {
+        if (!cohortSelect) return;
+        const branchId = branchSelect?.value || '';
+        Array.from(cohortSelect.options).forEach((option) => {
+            if (!option.value) return;
+            const branches = (option.dataset.branches || '').split(',').filter(Boolean);
+            const available = !branchId || branches.length === 0 || branches.includes(branchId);
+            option.hidden = !available;
+            option.disabled = !available;
+            if (!available && option.selected) cohortSelect.value = '';
+        });
+    }
+    branchSelect?.addEventListener('change', syncCohorts);
+    syncCohorts();
 
     const countrySelect = document.getElementById('country');
     const countryOther = document.getElementById('country_other');
