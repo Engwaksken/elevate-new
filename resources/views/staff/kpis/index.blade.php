@@ -24,10 +24,13 @@
 @endif
 
 @if($canManageTargets)
-<section class="admin-panel" style="margin-bottom:18px">
-    <div class="st-section-head">
-        <div><h2><i class="fas fa-bullseye"></i> Staff KPI targets</h2><p class="st-muted">HR and administrators can update all staff targets. Supervisors can update targets for their assigned team. Changes apply to future appraisals; existing appraisal snapshots stay unchanged.</p></div>
-    </div>
+<details class="admin-panel" style="margin-bottom:18px;padding:0">
+    <summary style="cursor:pointer;list-style:none;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <span><strong><i class="fas fa-bullseye"></i> Staff KPI targets</strong><small class="st-muted" style="display:block;margin-top:4px">Manage targets for staff you’re authorized to support · {{ $staffTargetKpis->total() }} KPI(s)</small></span>
+        <span class="btn btn-outline btn-sm"><span class="staff-targets-expand">Expand</span><span class="staff-targets-collapse">Collapse</span> <i class="fas fa-chevron-down"></i></span>
+    </summary>
+    <div style="padding:0 20px 18px">
+    <p class="st-muted">HR and administrators can update all staff targets. Supervisors can update targets for their assigned team. Changes apply to future appraisals; existing appraisal snapshots stay unchanged.</p>
     <div class="admin-table-wrap">
         <table class="admin-table">
             <thead><tr><th>Staff member</th><th>KPI</th><th>Target</th><th>Unit</th><th>Save</th></tr></thead>
@@ -52,7 +55,14 @@
         </table>
     </div>
     @if($staffTargetKpis->hasPages())<div class="admin-pagination">{{ $staffTargetKpis->links() }}</div>@endif
-</section>
+    </div>
+</details>
+<style>
+.staff-targets-collapse{display:none}
+details[open] .staff-targets-collapse{display:inline}
+details[open] .staff-targets-expand{display:none}
+details[open] summary .fa-chevron-down{transform:rotate(180deg)}
+</style>
 @endif
 
 @if($employee || $pendingReviews->isNotEmpty())
