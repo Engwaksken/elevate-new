@@ -2,6 +2,11 @@
 @section('title', 'Course Timetables | Administration')
 @section('content')
 <div class="admin-page-header"><div><span class="admin-eyebrow">Learning</span><h1>Course Timetables</h1><p>See course sessions scheduled by instructors and trainers across all branches.</p></div><div class="admin-page-actions"><x-export-buttons /></div></div>
+<div class="admin-stats-grid compact">
+@foreach([['total','All Sessions','fa-calendar-days'],['scheduled','Scheduled','fa-calendar-check'],['upcoming','Upcoming','fa-clock'],['cancelled','Cancelled','fa-calendar-xmark']] as [$key,$label,$icon])
+    <div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span><div><small>{{ $label }}</small><strong>{{ number_format($stats[$key] ?? 0) }}</strong></div></div>
+@endforeach
+</div>
 <div class="admin-panel">
 <form method="GET" class="admin-toolbar">
 <select name="course_id"><option value="">All courses</option>@foreach($courses as $course)<option value="{{ $course->id }}" @selected(request('course_id') == $course->id)>{{ $course->title }}</option>@endforeach</select>

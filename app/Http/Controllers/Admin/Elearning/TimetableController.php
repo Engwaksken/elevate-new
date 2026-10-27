@@ -45,6 +45,13 @@ class TimetableController extends Controller
             'slots' => $query->paginate(30)->withQueryString(),
             'courses' => Course::orderBy('title')->get(),
             'branches' => \App\Models\Branch::orderBy('name')->get(),
+            // Cards are platform-wide totals, independent of the active table filters.
+            'stats' => [
+                'total' => CourseTimeSlot::count(),
+                'scheduled' => CourseTimeSlot::where('status', 'scheduled')->count(),
+                'upcoming' => CourseTimeSlot::where('status', 'scheduled')->where('starts_at', '>=', now()->utc())->count(),
+                'cancelled' => CourseTimeSlot::where('status', 'cancelled')->count(),
+            ],
         ]);
     }
 

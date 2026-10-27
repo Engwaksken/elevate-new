@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\HR;
 use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\HrKpiTemplate;
+use App\Models\HrKpiTemplateItem;
 use App\Services\HR\KpiWorkbookImportService;
 use Illuminate\Http\Request;
 
@@ -31,6 +32,12 @@ class KpiTemplateController extends Controller
 
         return view('admin.hr.appraisal-templates.index',[
             'templates'=>$query->paginate(20),
+            'stats' => [
+                'total' => HrKpiTemplate::count(),
+                'active' => HrKpiTemplate::where('is_active', true)->count(),
+                'items' => HrKpiTemplateItem::count(),
+                'types' => HrKpiTemplate::query()->distinct('template_type')->count('template_type'),
+            ],
         ]);
     }
 

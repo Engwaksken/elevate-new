@@ -29,6 +29,17 @@
 </div>
 @endif
 
+<div class="admin-stats-grid compact">
+@foreach([
+    ['total','KPI Templates','fa-file-lines'],
+    ['active','Active Templates','fa-circle-check'],
+    ['items','Imported KPI Items','fa-bullseye'],
+    ['types','Template Types','fa-layer-group'],
+] as [$key,$label,$icon])
+    <div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span><div><small>{{ $label }}</small><strong>{{ number_format($stats[$key] ?? 0) }}</strong></div></div>
+@endforeach
+</div>
+
 <div class="admin-panel">
 <div class="admin-table-wrap">
 <table class="admin-table">
