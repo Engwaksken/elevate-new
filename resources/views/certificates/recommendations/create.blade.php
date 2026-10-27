@@ -55,7 +55,7 @@
     <table class="admin-table">
     <thead>
     <tr>
-        <th style="width:34px"><input type="checkbox" data-select-all aria-label="Select all eligible participants"></th>
+        <th class="select-col" style="width:42px"><input type="checkbox" data-select-all aria-label="Select all eligible participants"></th>
         <th>Participant</th>
         <th>{{ $isEvent ? 'Registration & attendance' : 'Enrolment & progress' }}</th>
         <th>Certificate status</th>
@@ -69,10 +69,11 @@
     @endphp
     <tr class="{{ $locked ? 'cert-row-locked' : '' }}">
         <td>
-            @unless($locked)
-                <input type="checkbox" name="user_ids[]" value="{{ $row['user']->id }}" data-row-select @checked(in_array($row['user']->id, old('user_ids', [])))
-                       aria-label="Select {{ $row['user']->name }}">
-            @endunless
+            <input type="checkbox" class="cert-participant-select" name="user_ids[]" value="{{ $row['user']->id }}" data-row-select
+                   @disabled($locked)
+                   @if($locked) title="{{ $row['certificate'] ? 'A certificate has already been issued' : 'A recommendation is awaiting review' }}" @endif
+                   @checked(! $locked && in_array((string) $row['user']->id, array_map('strval', old('user_ids', [])), true))
+                   aria-label="{{ $locked ? ($row['certificate'] ? 'Already certified: ' : 'Awaiting review: ') : 'Select ' }}{{ $row['user']->name }}">
         </td>
         <td><strong>{{ $row['user']->name }}</strong><small class="admin-cell-hint">{{ $row['user']->participant_code ?? '-' }} · {{ $row['user']->email }}</small></td>
         <td>{{ $row['detail'] }}</td>
@@ -124,10 +125,15 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const name = document.getElementById('certificatePreviewName');
-    document.querySelectorAll('[data-row-select]').forEach(function (box) {
+    document.querySelectorAll('[data-row-select]:not(:disabled)').forEach(function (box) {
         box.addEventListener('change', function () {
-            const selected = document.querySelector('[data-row-select]:checked');
+            const selected = document.querySelector('[data-row-select]:checked:not(:disabled)');
             if (name) name.textContent = selected ? selected.closest('tr').querySelector('td:nth-child(2) strong').textContent : 'Participant name';
+        });
+    });
+    document.querySelectorAll('[data-select-all]').forEach(function (master) {
+        master.addEventListener('change', function () {
+            document.querySelectorAll('[data-row-select]:not(:disabled)').forEach(function (box) { box.checked = master.checked; });
         });
     });
 });

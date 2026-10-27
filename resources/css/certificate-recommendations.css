@@ -14,6 +14,8 @@
 .cert-picker-field select{width:100%}
 .cert-picker-or{align-self:center;padding:18px 4px 0;color:#667085;font-size:.74rem;font-weight:700}
 .cert-row-locked td{background:#fcfcfd}
+.cert-participant-select{appearance:auto!important;-webkit-appearance:checkbox!important;width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;opacity:1!important;visibility:visible!important;cursor:pointer}
+.cert-participant-select:disabled{cursor:not-allowed;opacity:.55!important}
 .cert-submit{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:end;margin-top:16px;padding-top:16px;border-top:1px solid #eef0f3}
 .cert-submit .form-group{margin:0}
 .cert-submit label{display:block;margin-bottom:6px;font-size:.78rem;font-weight:700;color:#172033}
