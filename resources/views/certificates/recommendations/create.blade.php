@@ -98,6 +98,7 @@
             <textarea id="cert-reason" name="reason" rows="3" maxlength="2000" placeholder="e.g. Completed all modules and the final project; attended every session.">{{ old('reason') }}</textarea>
         </div>
         <div class="cert-submit-actions">
+            <button type="button" class="btn btn-outline" data-modal-open="certificate-recommendation-preview"><i class="fas fa-eye"></i> Preview certificate</button>
             <button type="submit" class="btn btn-outline"><i class="fas fa-paper-plane"></i> Recommend selected</button>
             @if($canApprove)
                 <button type="submit" name="issue_now" value="1" class="btn btn-primary"><i class="fas fa-award"></i> Issue certificates now</button>
@@ -105,6 +106,32 @@
         </div>
     </div>
 </form>
+<div class="eh-modal" id="certificate-recommendation-preview" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="certificate-preview-title">
+    <div class="eh-modal-dialog" style="max-width:850px">
+        <div class="eh-modal-header"><div><h2 id="certificate-preview-title">Certificate preview</h2><p>This is a sample preview; the official certificate is created after approval or issuance.</p></div><button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark"></i></button></div>
+        <div class="eh-modal-body">
+            <div style="border:10px double #b8860b;background:#fffdf4;padding:48px 24px;text-align:center;min-height:300px;display:flex;flex-direction:column;justify-content:center">
+                <div style="font-size:12px;letter-spacing:4px;text-transform:uppercase;color:#8a6d1d">ElevateHer360 · Certificate of Achievement</div>
+                <h2 style="font-family:Georgia,serif;font-size:34px;margin:24px 0 8px">This certificate is presented to</h2>
+                <div id="certificatePreviewName" style="font-family:Georgia,serif;font-size:30px;color:#573887;border-bottom:1px solid #b8860b;max-width:560px;margin:0 auto 18px;padding:8px 20px">Participant name</div>
+                <p style="font-size:16px">For successful completion of <strong>{{ $target->title }}</strong></p>
+                <p style="font-size:12px;color:#666">Certificate number and issue date will appear after approval.</p>
+            </div>
+        </div>
+        <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Close preview</button></div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const name = document.getElementById('certificatePreviewName');
+    document.querySelectorAll('[data-row-select]').forEach(function (box) {
+        box.addEventListener('change', function () {
+            const selected = document.querySelector('[data-row-select]:checked');
+            if (name) name.textContent = selected ? selected.closest('tr').querySelector('td:nth-child(2) strong').textContent : 'Participant name';
+        });
+    });
+});
+</script>
 @endif
 </div>
 @endsection

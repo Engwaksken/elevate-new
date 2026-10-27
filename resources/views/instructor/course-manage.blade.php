@@ -191,18 +191,43 @@
                 @foreach($allModules as $module)<option value="{{ $module->id }}">{{ $module->title }}</option>@endforeach
             </select>
         </div>
-        <div><label>Lesson title</label><input name="title" required></div>
-        <div><label>Content type</label><select name="content_type" required>@foreach(['text','video','file','link','mixed'] as $type)<option value="{{ $type }}">{{ ucfirst($type) }}</option>@endforeach</select></div>
-        <div><label>Estimated minutes</label><input type="number" name="estimated_minutes" min="1"></div>
-        <div><label>Position</label><input type="number" name="position" min="1"></div>
-        <div><label>Video URL</label><input type="url" name="video_url"></div>
-        <div><label>External URL</label><input type="url" name="external_url"></div>
-        <x-learning.multi-file-input class="full" name="resource_files" label="Resource files" mimes="lesson_mimes" />
-        <div class="full"><label>Lesson content</label><textarea name="content"></textarea></div>
+        <div class="full" id="lessonRows">
+            <div class="icm-form-grid lesson-create-row" style="border:1px solid #e5e7eb;padding:14px;margin:10px 0">
+                <div><label>Lesson title</label><input name="lessons[0][title]" required></div>
+                <div><label>Content type</label><select name="lessons[0][content_type]" required>@foreach(['text','video','file','link','mixed'] as $type)<option value="{{ $type }}">{{ ucfirst($type) }}</option>@endforeach</select></div>
+                <div><label>Estimated minutes</label><input type="number" name="lessons[0][estimated_minutes]" min="1"></div>
+                <div><label>Video URL</label><input type="url" name="lessons[0][video_url]"></div>
+                <div><label>External URL</label><input type="url" name="lessons[0][external_url]"></div>
+                <div class="full"><label>Lesson content</label><textarea name="lessons[0][content]"></textarea></div>
+            </div>
+        </div>
+        <div class="full"><button type="button" class="btn btn-outline btn-sm" id="addLessonRow"><i class="fas fa-plus"></i> Add another lesson</button></div>
+        <x-learning.multi-file-input class="full" name="resource_files" label="Files to attach to each new lesson" mimes="lesson_mimes" :hint="'Selected files are attached to every lesson in this batch.'" />
         <label><input type="checkbox" name="is_published" value="1"> Published</label>
-        <div><button class="btn btn-primary" @disabled($allModules->isEmpty())><i class="fas fa-plus"></i> Add Lesson</button></div>
+        <div><button class="btn btn-primary" @disabled($allModules->isEmpty())><i class="fas fa-plus"></i> Add Lessons</button></div>
     </form>
 </section>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const rows = document.getElementById('lessonRows');
+    const add = document.getElementById('addLessonRow');
+    if (!rows || !add) return;
+    add.addEventListener('click', function () {
+        const index = rows.querySelectorAll('.lesson-create-row').length;
+        const row = rows.querySelector('.lesson-create-row').cloneNode(true);
+        row.querySelectorAll('input,select,textarea').forEach(function (field) {
+            field.name = field.name.replace(/lessons\[\d+\]/, 'lessons[' + index + ']');
+            field.value = '';
+            if (field.tagName === 'SELECT') field.selectedIndex = 0;
+        });
+        const remove = document.createElement('button');
+        remove.type = 'button'; remove.className = 'btn btn-outline btn-sm'; remove.textContent = 'Remove lesson';
+        remove.addEventListener('click', function () { row.remove(); });
+        row.appendChild(remove);
+        rows.appendChild(row);
+    });
+});
+</script>
 
 <section class="icm-panel">
     <form method="GET" class="icm-filter">
@@ -371,6 +396,10 @@
 @if($activeTab === 'submissions')
 <section class="icm-panel">
     <div class="icm-panel-head"><div><h2>Submissions</h2><p class="icm-muted">Review participant submissions and record marks and feedback.</p></div><x-export-buttons :params="['tab' => 'submissions', 'list' => 'submissions']" /></div>
+    <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">
+        <form method="POST" action="{{ route('instructor.courses.submissions.ai-mark', $course) }}" data-ai-selection-form>@csrf<button class="btn btn-outline"><i class="fas fa-wand-magic-sparkles"></i> AI mark selected</button></form>
+        <form method="POST" action="{{ route('instructor.courses.submissions.ai-approve', $course) }}" data-ai-selection-form>@csrf<button class="btn btn-primary"><i class="fas fa-check-double"></i> Approve selected AI marks</button></form>
+    </div>
     @if($pendingExtensionCount > 0)
         <div class="icm-notice">
             <span><i class="fas fa-clock"></i> <strong>{{ $pendingExtensionCount }}</strong> pending extension {{ \Illuminate\Support\Str::plural('request', $pendingExtensionCount) }} waiting for review.</span>
@@ -379,15 +408,19 @@
     @endif
     <div class="table-responsive">
         <table class="admin-table">
-            <thead><tr><th>Participant</th><th>Assessment</th><th>Status</th><th>Submitted</th><th>Review</th></tr></thead>
+            <thead><tr><th><input type="checkbox" data-ai-mark-select-all aria-label="Select submissions for AI marking"></th><th>Participant</th><th>Assessment</th><th>Status</th><th>Submitted</th><th>Review</th></tr></thead>
             <tbody>
             @forelse($submissions as $attempt)
                 <tr>
+                    <td><input type="checkbox" value="{{ $attempt->id }}" data-ai-mark-select @if($attempt->status !== 'submitted') disabled @endif aria-label="Select {{ $attempt->user?->name }} submission"></td>
                     <td>{{ $attempt->user?->name }}<br><small>{{ $attempt->user?->email }}</small></td>
                     <td>{{ $attempt->assessment?->title }}<br><small>{{ ucfirst($attempt->assessment?->type ?? '') }}</small></td>
                     <td>{{ ucfirst($attempt->status) }}</td>
                     <td>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '-' }}</td>
                     <td>
+                        @if(isset($aiMarkDrafts[$attempt->id]))
+                            <div class="icm-notice" style="margin:6px 0"><span><strong>AI draft:</strong> {{ $aiMarkDrafts[$attempt->id]['score'] }} / {{ $attempt->assessment?->total_marks ?: 100 }} ({{ $aiMarkDrafts[$attempt->id]['percentage'] }}%)<br>{{ $aiMarkDrafts[$attempt->id]['feedback'] }}</span></div>
+                        @endif
                         @if($attempt->files->isNotEmpty())
                             <small>{{ $attempt->files->count() }} file(s)</small>
                             <x-learning.file-list compact :files="$attempt->files" />
@@ -396,7 +429,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="5">No submissions found.</td></tr>
+                <tr><td colspan="6">No submissions found.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -471,6 +504,18 @@
         </div>
     @endforeach
 </section>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const selected = () => [...document.querySelectorAll('[data-ai-mark-select]:checked:not(:disabled)')].map(box => box.value);
+    document.querySelectorAll('[data-ai-selection-form]').forEach(form => form.addEventListener('submit', function (event) {
+        const ids = selected();
+        if (!ids.length) { event.preventDefault(); alert('Select at least one submitted assessment.'); return; }
+        ids.forEach(id => { const input = document.createElement('input'); input.type = 'hidden'; input.name = 'ids[]'; input.value = id; form.appendChild(input); });
+    }));
+    const all = document.querySelector('[data-ai-mark-select-all]');
+    if (all) all.addEventListener('change', () => document.querySelectorAll('[data-ai-mark-select]:not(:disabled)').forEach(box => box.checked = all.checked));
+});
+</script>
 @endif
 
 @if($activeTab === 'extensions')
