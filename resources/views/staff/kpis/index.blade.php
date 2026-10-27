@@ -39,8 +39,8 @@
                     <td colspan="3">
                         <form method="POST" action="{{ route('staff.kpis.target.update', $staffKpi) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                             @csrf @method('PUT')
-                            <input name="target" value="{{ $staffKpi->target }}" maxlength="255" aria-label="Target for {{ $staffKpi->title }}" placeholder="Set target" style="flex:1;min-width:180px">
-                            <input name="unit" value="{{ $staffKpi->unit }}" maxlength="100" aria-label="Unit for {{ $staffKpi->title }}" placeholder="Unit" style="width:120px">
+                            <input name="target" value="{{ $staffKpi->target }}" maxlength="255" aria-label="Target for {{ $staffKpi->title }}" placeholder="Set target" style="width:220px;max-width:100%;flex:0 1 220px">
+                            <input name="unit" value="{{ $staffKpi->unit }}" maxlength="100" aria-label="Unit for {{ $staffKpi->title }}" placeholder="Unit" style="width:100px;max-width:100%;flex:0 1 100px">
                             <button class="btn btn-outline btn-sm"><i class="fas fa-floppy-disk"></i> Save</button>
                         </form>
                     </td>
