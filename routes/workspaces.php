@@ -92,6 +92,7 @@ Route::middleware(['auth', 'staff'])
         Route::post('/', [\App\Http\Controllers\Staff\StaffKpiController::class, 'store'])->name('store');
         Route::post('/submit', [\App\Http\Controllers\Staff\StaffKpiController::class, 'submit'])->name('submit');
         Route::post('/review/{employee}', [\App\Http\Controllers\Staff\StaffKpiController::class, 'review'])->name('review');
+        Route::put('/{kpi}/target', [\App\Http\Controllers\Staff\StaffKpiController::class, 'updateStaffTarget'])->name('target.update');
         Route::post('/quarters/{cycle}/start', [\App\Http\Controllers\Staff\StaffKpiController::class, 'startQuarter'])->name('quarters.start');
         Route::post('/appraisals/{appraisal}/import', [\App\Http\Controllers\Staff\StaffKpiController::class, 'import'])->name('appraisals.import');
         Route::put('/{kpi}', [\App\Http\Controllers\Staff\StaffKpiController::class, 'update'])->name('update');

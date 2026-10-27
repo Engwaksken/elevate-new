@@ -28,6 +28,7 @@ class StaffKpiController extends Controller
         $employee = Employee::with('contracts')->where('user_id', $user->id)->first();
         $contract = $employee ? $this->kpis->contractFor($employee, $request->integer('contract') ?: null) : null;
         $kpis = $employee ? $this->kpis->kpis($employee, $contract) : collect();
+        $canManageTargets = $this->kpis->canManageStaffTargets($user);
 
         if ($format = $this->exportFormat($request)) {
             return $this->exportTable($format, 'My KPIs', $kpis, [
@@ -54,7 +55,23 @@ class StaffKpiController extends Controller
             'quarters' => $employee ? $this->kpis->quarterProgress($employee, $kpis, $quarters) : collect(),
             'pendingReviews' => $this->kpis->pendingTeamReviews($user),
             'canSubmit' => $kpis->contains(fn (StaffKpi $kpi) => $kpi->isEditableByOwner()),
+            'canManageTargets' => $canManageTargets,
+            'staffTargetKpis' => $canManageTargets
+                ? $this->kpis->manageableStaffKpisQuery($user)->paginate(30, ['*'], 'staff_targets_page')->withQueryString()
+                : null,
         ]);
+    }
+
+    public function updateStaffTarget(Request $request, StaffKpi $kpi): RedirectResponse
+    {
+        $data = $request->validate([
+            'target' => ['nullable', 'string', 'max:255'],
+            'unit' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $this->kpis->setStaffKpiTarget($request->user(), $kpi, $data['target'] ?? null, $data['unit'] ?? null);
+
+        return back()->with('success', 'Staff KPI target updated. New appraisals will use this target; existing appraisal snapshots are unchanged.');
     }
 
     public function store(Request $request): RedirectResponse

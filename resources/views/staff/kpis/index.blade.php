@@ -23,6 +23,38 @@
 <div class="admin-panel"><div class="admin-empty"><i class="fas fa-id-badge"></i><strong>No employee record yet</strong><span>Ask HR to set up your employee record and contract, then set your KPIs here.</span></div></div>
 @endif
 
+@if($canManageTargets)
+<section class="admin-panel" style="margin-bottom:18px">
+    <div class="st-section-head">
+        <div><h2><i class="fas fa-bullseye"></i> Staff KPI targets</h2><p class="st-muted">HR and administrators can update all staff targets. Supervisors can update targets for their assigned team. Changes apply to future appraisals; existing appraisal snapshots stay unchanged.</p></div>
+    </div>
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead><tr><th>Staff member</th><th>KPI</th><th>Target</th><th>Unit</th><th>Save</th></tr></thead>
+            <tbody>
+            @forelse($staffTargetKpis as $staffKpi)
+                <tr>
+                    <td><strong>{{ $staffKpi->employee?->user?->name ?? 'Staff member' }}</strong><small class="admin-cell-hint">{{ $staffKpi->contract?->contract_type ? ucfirst(str_replace('_', ' ', $staffKpi->contract->contract_type)) : 'Contract KPI' }}</small></td>
+                    <td><strong>{{ $staffKpi->title }}</strong><small class="admin-cell-hint">{{ $staffKpi->kra }}</small></td>
+                    <td colspan="3">
+                        <form method="POST" action="{{ route('staff.kpis.target.update', $staffKpi) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                            @csrf @method('PUT')
+                            <input name="target" value="{{ $staffKpi->target }}" maxlength="255" aria-label="Target for {{ $staffKpi->title }}" placeholder="Set target" style="flex:1;min-width:180px">
+                            <input name="unit" value="{{ $staffKpi->unit }}" maxlength="100" aria-label="Unit for {{ $staffKpi->title }}" placeholder="Unit" style="width:120px">
+                            <button class="btn btn-outline btn-sm"><i class="fas fa-floppy-disk"></i> Save</button>
+                        </form>
+                    </td>
+                </tr>
+            @empty
+                <tr><td colspan="5"><div class="admin-empty">No staff KPIs are available to manage.</div></td></tr>
+            @endforelse
+            </tbody>
+        </table>
+    </div>
+    @if($staffTargetKpis->hasPages())<div class="admin-pagination">{{ $staffTargetKpis->links() }}</div>@endif
+</section>
+@endif
+
 @if($employee || $pendingReviews->isNotEmpty())
 <div class="appraisal-admin-kra-tabs" data-kpi-tabs>
     @if($employee)

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\HR\AppraisalWorkflowService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -257,6 +258,35 @@ class StaffKpiService
             ->orderBy('position')
             ->get()
             ->groupBy('employee_id');
+    }
+
+    public function canManageStaffTargets(User $user): bool
+    {
+        return $user->hasPermission('appraisals.manage')
+            || $user->hasRole(['hr', 'administrator', 'super-administrator', 'super-admin'])
+            || $this->tasks->teamMemberIds($user)->isNotEmpty();
+    }
+
+    public function manageableStaffKpisQuery(User $user): Builder
+    {
+        $query = StaffKpi::query()->with(['employee.user', 'contract'])->orderBy('employee_id')->orderBy('position');
+
+        if ($user->hasPermission('appraisals.manage')
+            || $user->hasRole(['hr', 'administrator', 'super-administrator', 'super-admin'])) {
+            return $query;
+        }
+
+        return $query->whereHas('employee', fn ($employee) => $employee->whereIn('user_id', $this->tasks->teamMemberIds($user)));
+    }
+
+    public function setStaffKpiTarget(User $actor, StaffKpi $kpi, ?string $target, ?string $unit): void
+    {
+        $employeeUserId = (int) $kpi->employee?->user_id;
+        $isGlobalManager = $actor->hasPermission('appraisals.manage')
+            || $actor->hasRole(['hr', 'administrator', 'super-administrator', 'super-admin']);
+        abort_unless($isGlobalManager || $this->tasks->teamMemberIds($actor)->contains($employeeUserId), 403);
+
+        $kpi->update(['target' => $target, 'unit' => $unit]);
     }
 
     private function notifySafely(User $user, string $title, string $message): void
