@@ -99,7 +99,8 @@ class RoleShell
                 ],
                 'Explore' => [
                     ['route' => 'events.index', 'label' => 'Events', 'icon' => 'fa-calendar-check', 'active' => ['events.index', 'events.show']],
-                    ['route' => 'library.index', 'label' => 'Library', 'icon' => 'fa-book-open', 'active' => ['library.*']],
+                    ['route' => 'library.index', 'label' => 'Library', 'icon' => 'fa-book-open', 'active' => ['library.index', 'library.show', 'library.read']],
+                    ['route' => 'library.mine', 'label' => 'My Library', 'icon' => 'fa-book-bookmark', 'active' => ['library.mine']],
                 ],
                 'Account' => [
                     ['route' => 'profile.edit', 'label' => 'Account Settings', 'icon' => 'fa-user-gear', 'active' => ['profile.*']],
@@ -139,7 +140,8 @@ class RoleShell
                     ['route' => 'participant.course-calls.index', 'label' => 'Course Opportunities', 'icon' => 'fa-bullhorn', 'active' => ['participant.course-calls.*']],
                     ['route' => 'jobs.index', 'label' => 'Jobs', 'icon' => 'fa-briefcase', 'active' => ['jobs.index', 'jobs.show', 'jobs.recommendations', 'jobs.saved']],
                     ['route' => 'jobs.applications', 'label' => 'My Applications', 'icon' => 'fa-folder-open', 'active' => ['jobs.applications', 'jobs.applications.*']],
-                    ['route' => 'library.index', 'label' => 'Library', 'icon' => 'fa-book-open', 'active' => ['library.*']],
+                    ['route' => 'library.index', 'label' => 'Library', 'icon' => 'fa-book-open', 'active' => ['library.index', 'library.show', 'library.read']],
+                    ['route' => 'library.mine', 'label' => 'My Library', 'icon' => 'fa-book-bookmark', 'active' => ['library.mine']],
                 ],
                 'Account' => [
                     ['route' => 'participant.feedback.index', 'label' => 'Feedback', 'icon' => 'fa-comment-dots', 'active' => ['participant.feedback.*', 'events.feedback']],

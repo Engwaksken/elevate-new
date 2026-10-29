@@ -84,6 +84,7 @@ class LibraryResourceController extends Controller
                 'public'=>LibraryResource::where('access_level','public')->count(),
                 'downloads'=>LibraryResource::sum('downloads_count'),
             ],
+            'pendingDownloadRequests'=>\App\Models\LibraryDownloadRequest::where('status',\App\Models\LibraryDownloadRequest::PENDING)->count(),
         ]);
     }
 
@@ -106,6 +107,7 @@ class LibraryResourceController extends Controller
             'language'=>$data['language'],
             'publication_date'=>$data['publication_date'] ?? null,
             'access_level'=>$data['access_level'],
+            'download_policy'=>$data['download_policy'] ?? LibraryResource::DOWNLOAD_FREE,
             'is_active'=>$request->boolean('is_active',true),
             'created_by'=>auth()->id(),
         ]);
@@ -140,6 +142,7 @@ class LibraryResourceController extends Controller
             'language'=>$data['language'],
             'publication_date'=>$data['publication_date'] ?? null,
             'access_level'=>$data['access_level'],
+            'download_policy'=>$data['download_policy'] ?? $resource->download_policy,
             'is_active'=>$request->boolean('is_active'),
         ]);
 
@@ -165,6 +168,7 @@ class LibraryResourceController extends Controller
             'language'=>['required','string','max:50'],
             'publication_date'=>['nullable','date'],
             'access_level'=>['required',Rule::in(['public','authenticated','staff'])],
+            'download_policy'=>['nullable',Rule::in([LibraryResource::DOWNLOAD_FREE,LibraryResource::DOWNLOAD_ON_REQUEST])],
             'is_active'=>['nullable','boolean'],
             'file'=>['nullable','file','max:51200','mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png,mp4,mp3,zip'],
             'cover_image'=>['nullable','image','max:5120','mimes:jpg,jpeg,png,webp'],

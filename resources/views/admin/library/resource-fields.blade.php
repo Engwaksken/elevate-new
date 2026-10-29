@@ -2,7 +2,7 @@
 $editing = isset($resource) && $resource;
 $formTabsConfig = [
     'details' => ['label' => 'Details', 'icon' => 'fa-circle-info', 'fields' => ['title', 'author', 'library_category_id', 'language', 'publication_date', 'description', 'tags_text']],
-    'access' => ['label' => 'Access', 'icon' => 'fa-lock-open', 'fields' => ['access_level', 'is_active']],
+    'access' => ['label' => 'Access', 'icon' => 'fa-lock-open', 'fields' => ['access_level', 'download_policy', 'is_active']],
     'files' => ['label' => 'Files & Links', 'icon' => 'fa-paperclip', 'fields' => ['external_url', 'file', 'cover_image']],
 ];
 @endphp
@@ -39,6 +39,14 @@ $formTabsConfig = [
 <option value="{{ $value }}" @selected(old('access_level',$editing ? $resource->access_level : 'authenticated')===$value)>{{ $label }}</option>
 @endforeach
 </select>
+</div>
+
+<div class="form-group"><label>Downloading *</label>
+<select name="download_policy" required>
+<option value="free" @selected(old('download_policy',$editing ? $resource->download_policy : 'free')==='free')>Free to download</option>
+<option value="request" @selected(old('download_policy',$editing ? $resource->download_policy : 'free')==='request')>Download on request (staff approve)</option>
+</select>
+<small class="form-hint">Everyone who can see the book can always read it online. "On request" only controls saving a copy.</small>
 </div>
 
 <div class="form-group"><label class="modal-check"><input type="checkbox" name="is_active" value="1" @checked((bool)old('is_active',$editing ? $resource->is_active : true))><span>Active</span></label></div>

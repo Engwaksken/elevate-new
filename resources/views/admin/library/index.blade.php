@@ -10,6 +10,7 @@
 </div>
 <div class="admin-page-actions">
     <x-export-buttons />
+    <a class="btn btn-outline" href="{{ route('admin.library.requests.index') }}"><i class="fas fa-inbox"></i> Download requests @if($pendingDownloadRequests ?? 0)<span class="status-chip pending">{{ $pendingDownloadRequests }}</span>@endif</a>
     <button type="button" class="btn btn-primary" data-modal-open="createLibraryResource">
         <i class="fas fa-plus"></i> Add Resource
     </button>
@@ -101,7 +102,7 @@ $bulkTableId = 'libraryTable';
 </td>
 <td>{{ $resource->category?->name ?: '-' }}</td>
 <td>{{ $resource->language }}</td>
-<td>{{ ucfirst($resource->access_level) }}</td>
+<td>{{ ucfirst($resource->access_level) }}@if($resource->requiresDownloadApproval())<small class="admin-cell-hint">Download on request</small>@endif</td>
 <td>{{ number_format($resource->views_count) }}</td>
 <td>{{ number_format($resource->downloads_count) }}</td>
 <td><span class="status-chip {{ $resource->is_active ? 'active' : 'inactive' }}">{{ $resource->is_active ? 'Active' : 'Inactive' }}</span></td>

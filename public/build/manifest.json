@@ -15,8 +15,12 @@
     "file": "assets/fa-v4compatibility-CErXDOsT.woff2",
     "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-v4compatibility.woff2"
   },
+  "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs": {
+    "file": "assets/pdf.worker.min-Dkey6ZUl.mjs",
+    "src": "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-D0ss8iB_.css",
+    "file": "assets/app-Bz4WZIZB.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -29,5 +33,14 @@
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true
+  },
+  "resources/js/library-reader.js": {
+    "file": "assets/library-reader-f8LvdVD4.js",
+    "name": "library-reader",
+    "src": "resources/js/library-reader.js",
+    "isEntry": true,
+    "assets": [
+      "assets/pdf.worker.min-Dkey6ZUl.mjs"
+    ]
   }
 }

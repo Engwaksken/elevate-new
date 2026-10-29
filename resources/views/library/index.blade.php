@@ -9,6 +9,7 @@
     <h1>{{ app(\App\Services\CmsContentService::class)->text('library', 'title', 'Digital Library') }}</h1>
     <p>{{ app(\App\Services\CmsContentService::class)->text('library', 'summary', 'Browse learning materials, guides and career resources.') }}</p>
 </div>
+@auth<div class="page-actions"><a href="{{ route('library.mine') }}" class="btn btn-outline"><i class="fas fa-book-bookmark"></i> My Library</a></div>@endauth
 </div>
 
 <div class="eh-tabs" data-eh-tabs>
@@ -56,6 +57,7 @@
 <div class="library-card-placeholder"><i class="fas fa-book-open"></i></div>
 @endif
 <span class="library-access-badge">{{ ucfirst($resource->access_level) }}</span>
+@if(in_array($resource->id, $bookmarkedIds ?? [], true))<span class="library-access-badge" style="right:auto;left:8px;background:#800000;color:#fff" title="Bookmarked"><i class="fas fa-bookmark"></i></span>@endif
 </div>
 
 <div class="library-card-body">
@@ -67,6 +69,9 @@
 <span><i class="fas fa-language"></i> {{ $resource->language }}</span>
 <span><i class="fas fa-eye"></i> {{ number_format($resource->views_count) }}</span>
 </div>
+@if($p = ($progressByResource ?? collect())->get($resource->id))
+<div style="margin-top:8px" title="Your progress"><div style="height:5px;border-radius:999px;background:#f2e6e6;overflow:hidden"><span style="display:block;height:100%;width:{{ $p->completed_at ? 100 : (float) $p->percent }}%;background:#800000"></span></div><small style="color:#667085">{{ $p->completed_at ? 'Finished' : ($p->current_page ? 'Page '.$p->current_page.' of '.$p->total_pages : 'Started') }}</small></div>
+@endif
 </div>
 </a>
 @empty

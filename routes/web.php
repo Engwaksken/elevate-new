@@ -840,11 +840,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/employer/applications/{application}/interviews',[InterviewController::class,'store'])->middleware('user_type:employer')->name('employer.interviews.store');
     Route::post('/employer/applications/{application}/offers',[OfferController::class,'store'])->middleware('user_type:employer')->name('employer.offers.store');
     Route::post('/library/{resource}/bookmark',[LibraryController::class,'bookmark'])->name('library.bookmark');
+    Route::get('/library/{resource}/read',[LibraryController::class,'read'])->name('library.read');
+    Route::get('/library/{resource}/read/file',[LibraryController::class,'readFile'])->name('library.read.file');
+    Route::post('/library/{resource}/progress',[LibraryController::class,'progress'])->middleware('throttle:120,1')->name('library.progress');
+    Route::post('/library/{resource}/request-download',[LibraryController::class,'requestDownload'])->middleware('throttle:10,1')->name('library.request-download');
+    Route::get('/my-library',[LibraryController::class,'mine'])->name('library.mine');
 });
 
 Route::prefix('admin/library')->name('admin.library.')->middleware(['auth','staff','permission:library.manage'])->group(function () {
     Route::get('/',[LibraryResourceController::class,'index'])->name('index');
     Route::delete('/bulk-delete',[LibraryResourceController::class,'bulkDestroy'])->name('bulk-destroy');
+    Route::get('/requests',[\App\Http\Controllers\Admin\Library\LibraryDownloadRequestController::class,'index'])->name('requests.index');
+    Route::post('/requests/{downloadRequest}/approve',[\App\Http\Controllers\Admin\Library\LibraryDownloadRequestController::class,'approve'])->whereNumber('downloadRequest')->name('requests.approve');
+    Route::post('/requests/{downloadRequest}/decline',[\App\Http\Controllers\Admin\Library\LibraryDownloadRequestController::class,'decline'])->whereNumber('downloadRequest')->name('requests.decline');
     Route::post('/',[LibraryResourceController::class,'store'])->name('store');
     Route::put('/{resource}',[LibraryResourceController::class,'update'])->name('update');
     Route::delete('/{resource}',[LibraryResourceController::class,'destroy'])->name('destroy');
