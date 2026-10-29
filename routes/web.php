@@ -612,6 +612,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/mentorship/matches/{match}',[ParticipantMentorController::class,'destroy'])->middleware('user_type:mentee')->name('mentorship.matches.destroy');
     Route::post('/mentorship/assistant',[MentorshipAssistantController::class,'message'])
         ->middleware('throttle:20,1')->middleware('user_type:mentee,mentor')->name('mentorship.assistant.message');
+    Route::middleware('user_type:mentee,mentor')->prefix('mentorship/assistant')->name('mentorship.assistant.')->group(function () {
+        Route::patch('/messages/{message}/save',[MentorshipAssistantController::class,'toggleSave'])->whereNumber('message')->name('save');
+        Route::delete('/history',[MentorshipAssistantController::class,'clearHistory'])->name('clear');
+        Route::post('/actions/{action}/approve',[MentorshipAssistantController::class,'approveAction'])->whereNumber('action')->name('actions.approve');
+        Route::post('/actions/{action}/dismiss',[MentorshipAssistantController::class,'dismissAction'])->whereNumber('action')->name('actions.dismiss');
+        Route::post('/actions/{action}/complete',[MentorshipAssistantController::class,'toggleComplete'])->whereNumber('action')->name('actions.complete');
+    });
     Route::get('/mentorship/mentor-profile',[MentorProfileController::class,'edit'])->middleware('user_type:mentor')->name('mentorship.mentor-profile.edit');
     Route::put('/mentorship/mentor-profile',[MentorProfileController::class,'update'])->middleware('user_type:mentor')->name('mentorship.mentor-profile.update');
     Route::post('/mentorship/matches/{match}/sessions',[MentorshipSessionController::class,'store'])->middleware('user_type:mentee,mentor')->name('mentorship.sessions.store');

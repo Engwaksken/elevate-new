@@ -54,10 +54,14 @@ class MentorshipDashboardController extends Controller
         }
 
         $aiEnabled=(bool)\App\Models\AiIntegration::activeSystem()?->encrypted_api_key;
+        // AI Career Mentor history, saved answers and the approved action plan.
+        $aiHistory=$aiEnabled?\App\Models\CareerMentorMessage::with('actions.goal')->where('user_id',$userId)->latest('id')->take(30)->get()->reverse()->values()->map->toChatArray()->all():[];
+        $aiSaved=$aiEnabled?\App\Models\CareerMentorMessage::where('user_id',$userId)->where('role','assistant')->whereNotNull('saved_at')->latest('saved_at')->get():collect();
+        $actionPlan=$aiEnabled?\App\Models\CareerActionItem::with('goal')->where('user_id',$userId)->whereIn('status',[\App\Models\CareerActionItem::APPROVED,\App\Models\CareerActionItem::COMPLETED])->orderByRaw("status = 'completed'")->orderBy('due_on')->get():collect();
         $completedSessions=$sessions->filter(fn($s)=>in_array(strtolower((string)$s->status),['completed','done'],true))->count();
         $upcomingSessions=$sessions->filter(fn($s)=>$s->scheduled_at&&$s->scheduled_at->isFuture()&&!in_array(strtolower((string)$s->status),['completed','cancelled'],true))->count();
         $achieved=$goals->filter(fn($g)=>(float)($g->progress_percent??0)>=100||in_array(strtolower((string)$g->status),['completed','achieved'],true))->count();
         $inProgress=$goals->filter(fn($g)=>(float)($g->progress_percent??0)>0&&(float)($g->progress_percent??0)<100&&!in_array(strtolower((string)$g->status),['completed','achieved','cancelled'],true))->count();
-        return view('mentorship.dashboard',compact('mentorMatches','menteeMatches','sessions','goals','menteeGoals','myGoals','myGoalStats','aiEnabled')+['stats'=>['mentors'=>$menteeMatches->count(),'sessions'=>$sessions->count(),'completed_sessions'=>$completedSessions,'upcoming_sessions'=>$upcomingSessions,'goals'=>$goals->count(),'goals_in_progress'=>$inProgress,'goals_achieved'=>$achieved,'goal_progress'=>$goals->count()?round((float)$goals->avg('progress_percent'),1):0]]);
+        return view('mentorship.dashboard',compact('mentorMatches','menteeMatches','sessions','goals','menteeGoals','myGoals','myGoalStats','aiEnabled','aiHistory','aiSaved','actionPlan')+['stats'=>['mentors'=>$menteeMatches->count(),'sessions'=>$sessions->count(),'completed_sessions'=>$completedSessions,'upcoming_sessions'=>$upcomingSessions,'goals'=>$goals->count(),'goals_in_progress'=>$inProgress,'goals_achieved'=>$achieved,'goal_progress'=>$goals->count()?round((float)$goals->avg('progress_percent'),1):0]]);
     }
 }

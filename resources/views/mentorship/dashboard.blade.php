@@ -245,19 +245,36 @@
                     .eh-ai-mentor h2{margin:0 0 4px;display:flex;align-items:center;gap:10px}
                     .eh-ai-mentor h2 i{color:#800000}
                     .eh-ai-mentor .eh-ai-sub{color:#667085;margin:0 0 14px}
+                    .eh-ai-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
                     .eh-ai-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
                     .eh-ai-chips button{border:1px solid #e0cfcf;background:#fffaf3;color:#800000;border-radius:20px;padding:6px 12px;cursor:pointer;font-size:.82rem}
-                    .eh-ai-log{display:flex;flex-direction:column;gap:12px;max-height:420px;overflow:auto;padding:6px;margin-bottom:14px}
+                    .eh-ai-log{display:flex;flex-direction:column;gap:12px;max-height:520px;overflow:auto;padding:6px;margin-bottom:14px}
                     .eh-ai-msg{padding:12px 14px;border-radius:14px;max-width:85%;line-height:1.5;white-space:pre-wrap}
                     .eh-ai-msg.user{align-self:flex-end;background:#800000;color:#fff;border-bottom-right-radius:4px}
                     .eh-ai-msg.assistant{align-self:flex-start;background:#f6f1ea;color:#101828;border-bottom-left-radius:4px}
                     .eh-ai-msg.thinking{align-self:flex-start;background:#f6f1ea;color:#667085;font-style:italic}
+                    .eh-ai-tools{align-self:flex-start;display:flex;gap:6px;margin-top:-6px}
+                    .eh-ai-tools button{border:0;background:none;color:#800000;font-size:.8rem;font-weight:600;cursor:pointer;padding:2px 4px}
+                    .eh-ai-steps{align-self:flex-start;width:85%;border:1px solid #eadede;border-radius:12px;padding:10px 12px;background:#fff}
+                    .eh-ai-steps > strong{display:block;font-size:.85rem;margin-bottom:4px;color:#344054}
+                    .eh-ai-step{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #f2e6e6}
+                    .eh-ai-step:first-of-type{border-top:0}
+                    .eh-ai-step input{margin:0}
+                    .eh-ai-step-buttons{display:flex;gap:6px}
+                    .eh-ai-step-state{font-size:.85rem;color:#475467}
+                    .eh-ai-step-state i{color:#067647;margin-right:4px}
                     .eh-ai-form{display:flex;gap:10px;align-items:flex-end}
                     .eh-ai-form textarea{flex:1;min-height:52px;resize:vertical}
                     .eh-ai-error{color:#b42318;font-size:.85rem;margin-top:8px;min-height:18px}
+                    @media(max-width:640px){.eh-ai-step{grid-template-columns:1fr}.eh-ai-steps,.eh-ai-msg{width:100%;max-width:100%}}
                     </style>
-                    <h2><i class="fas fa-wand-magic-sparkles"></i> AI Career Mentor</h2>
-                    <p class="eh-ai-sub">Ask about your career path, interviews, CVs, skills or how to make the most of your mentorship. Your goals and sessions help personalise the guidance.</p>
+                    <div class="eh-ai-head">
+                        <div>
+                            <h2><i class="fas fa-wand-magic-sparkles"></i> AI Career Mentor</h2>
+                            <p class="eh-ai-sub">Ask about your career path, interviews, CVs, skills or how to make the most of your mentorship. Your goals and sessions help personalise the guidance. Approve a suggested step to add it to your calendar.</p>
+                        </div>
+                        <button type="button" class="btn btn-outline btn-sm" data-ai-clear><i class="fas fa-broom"></i> Clear chat</button>
+                    </div>
                     <div class="eh-ai-chips" data-ai-chips>
                         <button type="button">How do I choose a career path?</button>
                         <button type="button">How should I prepare for an interview?</button>
@@ -271,6 +288,48 @@
                         <button class="btn btn-primary" type="submit" data-ai-send><i class="fas fa-paper-plane"></i> Ask</button>
                     </form>
                     <div class="eh-ai-error" data-ai-error role="alert"></div>
+                </div>
+
+                <div class="eh-tab-section">
+                    <div class="eh-tab-section-header">
+                        <div><h2>My action plan</h2><p>Steps you approved from the mentor's answers. Each one is also on your calendar.</p></div>
+                        @if(Route::has('calendar.index'))<a class="btn btn-outline btn-sm" href="{{ route('calendar.index', ['event_type' => 'career_action']) }}"><i class="fas fa-calendar-days"></i> View in calendar</a>@endif
+                    </div>
+                    <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                        <thead><tr><th>Step</th><th>Goal</th><th>Due</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
+                        <tbody data-action-plan>
+                        @forelse($actionPlan as $item)
+                            @php($isDone = $item->status === \App\Models\CareerActionItem::COMPLETED)
+                            <tr>
+                                <td><strong>{{ $item->title }}</strong></td>
+                                <td>{{ $item->goal?->title ?? '-' }}</td>
+                                <td>{{ $item->due_on->format('d M Y') }}@if(! $isDone && $item->due_on->isPast() && ! $item->due_on->isToday())<small class="admin-cell-hint" style="color:#b42318">Overdue</small>@endif</td>
+                                <td><span class="status-chip {{ $isDone ? 'completed' : 'active' }}" data-plan-status>{{ $isDone ? 'Done' : 'Planned' }}</span></td>
+                                <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-plan-toggle="{{ route('mentorship.assistant.actions.complete', $item) }}">{{ $isDone ? 'Reopen' : 'Mark done' }}</button></td>
+                            </tr>
+                        @empty
+                            <tr data-plan-empty><td colspan="5"><div class="admin-empty">No approved steps yet. Approve a suggested step from the mentor's answers to add it here and to your calendar.</div></td></tr>
+                        @endforelse
+                        </tbody>
+                    </table></div></div>
+                </div>
+
+                <div class="eh-tab-section">
+                    <div class="eh-tab-section-header"><div><h2>Saved answers</h2><p>Answers you saved stay here even when you clear the chat.</p></div></div>
+                    <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                        <thead><tr><th>Answer</th><th>Saved</th><th class="table-actions">Actions</th></tr></thead>
+                        <tbody>
+                        @forelse($aiSaved as $saved)
+                            <tr>
+                                <td><details><summary style="cursor:pointer">{{ \Illuminate\Support\Str::limit($saved->content, 140) }}</summary><div style="white-space:pre-wrap;margin-top:8px">{{ $saved->content }}</div></details></td>
+                                <td>{{ $saved->saved_at->format('d M Y') }}</td>
+                                <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-saved-remove="{{ route('mentorship.assistant.save', $saved) }}"><i class="fas fa-bookmark"></i> Remove</button></td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="3"><div class="admin-empty">No saved answers yet. Use "Save" under any answer to keep it.</div></td></tr>
+                        @endforelse
+                        </tbody>
+                    </table></div></div>
                 </div>
             </section>
         @endif
@@ -289,54 +348,171 @@
     var send = form.querySelector('[data-ai-send]');
     var error = section.querySelector('[data-ai-error]');
     var token = form.querySelector('input[name="_token"]');
-    var history = [];
+    var stored = @json($aiHistory);
+    var urls = {
+        save: @json(route('mentorship.assistant.save', ['message' => '__ID__'])),
+        clear: @json(route('mentorship.assistant.clear')),
+        approve: @json(route('mentorship.assistant.actions.approve', ['action' => '__ID__'])),
+        dismiss: @json(route('mentorship.assistant.actions.dismiss', ['action' => '__ID__'])),
+        complete: @json(route('mentorship.assistant.actions.complete', ['action' => '__ID__']))
+    };
+    var today = new Date().toISOString().slice(0, 10);
+    var history = stored.map(function (m) { return { role: m.role, content: m.content }; });
 
-    function add(role, text) {
-        var el = document.createElement('div');
-        el.className = 'eh-ai-msg ' + role;
-        el.textContent = text;
-        log.appendChild(el);
-        log.scrollTop = log.scrollHeight;
-        return el;
-    }
+    function url(name, id) { return urls[name].replace('__ID__', id); }
 
-    function ask(message) {
-        if (!message) return;
-        error.textContent = '';
-        add('user', message);
-        var thinking = add('thinking', 'Thinking...');
-        send.disabled = true;
-
-        fetch(form.dataset.endpoint, {
-            method: 'POST',
+    function request(method, target, body) {
+        return fetch(target, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': token ? token.value : '',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: JSON.stringify({ message: message, history: history.slice(-8) })
+            body: body ? JSON.stringify(body) : null
         }).then(function (response) {
-            return response.json().then(function (data) { return { ok: response.ok, data: data }; });
-        }).then(function (result) {
+            return response.json().catch(function () { return {}; }).then(function (data) {
+                if (!response.ok) throw new Error(data.message || 'Something went wrong. Please try again.');
+                return data;
+            });
+        });
+    }
+
+    function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+    }
+
+    function scrollDown() { log.scrollTop = log.scrollHeight; }
+
+    function stepState(action) {
+        var labels = { approved: 'Added to your calendar for ', completed: 'Done, it was due ', dismissed: 'Dismissed' };
+        var state = el('span', 'eh-ai-step-state');
+        if (action.status === 'approved' || action.status === 'completed') {
+            state.innerHTML = '<i class="fas fa-circle-check"></i>';
+            state.appendChild(document.createTextNode(labels[action.status] + action.due_label));
+        } else {
+            state.textContent = labels[action.status] || action.status;
+        }
+        return state;
+    }
+
+    function renderStep(action) {
+        var row = el('div', 'eh-ai-step');
+        if (action.status !== 'suggested') {
+            row.appendChild(el('span', '', action.title));
+            row.appendChild(stepState(action));
+            return row;
+        }
+        var title = el('input'); title.type = 'text'; title.value = action.title; title.maxLength = 190; title.setAttribute('aria-label', 'Step');
+        var due = el('input'); due.type = 'date'; due.value = action.due_on; due.min = today; due.setAttribute('aria-label', 'Due date');
+        var buttons = el('div', 'eh-ai-step-buttons');
+        var approve = el('button', 'btn btn-primary btn-sm', 'Approve'); approve.type = 'button';
+        var dismiss = el('button', 'btn btn-outline btn-sm', 'Dismiss'); dismiss.type = 'button';
+        approve.addEventListener('click', function () {
+            approve.disabled = dismiss.disabled = true;
+            request('POST', url('approve', action.id), { title: title.value.trim(), due_on: due.value }).then(function (updated) {
+                row.replaceWith(renderStep(updated));
+                addPlanRow(updated);
+            }).catch(function (err) { error.textContent = err.message; approve.disabled = dismiss.disabled = false; });
+        });
+        dismiss.addEventListener('click', function () {
+            approve.disabled = dismiss.disabled = true;
+            request('POST', url('dismiss', action.id)).then(function (updated) {
+                row.replaceWith(renderStep(updated));
+            }).catch(function (err) { error.textContent = err.message; approve.disabled = dismiss.disabled = false; });
+        });
+        buttons.appendChild(approve); buttons.appendChild(dismiss);
+        row.appendChild(title); row.appendChild(due); row.appendChild(buttons);
+        return row;
+    }
+
+    function renderMessage(m) {
+        log.appendChild(el('div', 'eh-ai-msg ' + m.role, m.content));
+        if (m.role !== 'assistant' || !m.id) return;
+
+        var tools = el('div', 'eh-ai-tools');
+        var save = el('button', '', m.saved ? 'Saved' : 'Save'); save.type = 'button';
+        save.setAttribute('aria-pressed', m.saved ? 'true' : 'false');
+        save.addEventListener('click', function () {
+            request('PATCH', url('save', m.id)).then(function (data) {
+                m.saved = data.saved;
+                save.textContent = data.saved ? 'Saved' : 'Save';
+                save.setAttribute('aria-pressed', data.saved ? 'true' : 'false');
+            }).catch(function (err) { error.textContent = err.message; });
+        });
+        tools.appendChild(save);
+        log.appendChild(tools);
+
+        if (m.actions && m.actions.length) {
+            var box = el('div', 'eh-ai-steps');
+            box.appendChild(el('strong', '', 'Suggested steps'));
+            m.actions.forEach(function (action) { box.appendChild(renderStep(action)); });
+            log.appendChild(box);
+        }
+    }
+
+    function addPlanRow(action) {
+        var body = document.querySelector('[data-action-plan]');
+        if (!body) return;
+        var empty = body.querySelector('[data-plan-empty]');
+        if (empty) empty.remove();
+        var row = el('tr');
+        var title = el('td'); title.appendChild(el('strong', '', action.title));
+        var status = el('td'); status.appendChild(el('span', 'status-chip active', 'Planned'));
+        status.firstChild.setAttribute('data-plan-status', '');
+        var actions = el('td', 'table-actions');
+        var toggle = el('button', 'btn btn-outline btn-sm', 'Mark done'); toggle.type = 'button';
+        toggle.setAttribute('data-plan-toggle', url('complete', action.id));
+        bindPlanToggle(toggle);
+        actions.appendChild(toggle);
+        [title, el('td', '', action.goal || '-'), el('td', '', action.due_label), status, actions].forEach(function (cell) { row.appendChild(cell); });
+        body.appendChild(row);
+    }
+
+    function bindPlanToggle(button) {
+        button.addEventListener('click', function () {
+            button.disabled = true;
+            request('POST', button.getAttribute('data-plan-toggle')).then(function (updated) {
+                var done = updated.status === 'completed';
+                var chip = button.closest('tr').querySelector('[data-plan-status]');
+                chip.textContent = done ? 'Done' : 'Planned';
+                chip.className = 'status-chip ' + (done ? 'completed' : 'active');
+                button.textContent = done ? 'Reopen' : 'Mark done';
+            }).catch(function (err) { window.alert(err.message); }).finally(function () { button.disabled = false; });
+        });
+    }
+
+    function ask(message) {
+        if (!message) return;
+        error.textContent = '';
+        log.appendChild(el('div', 'eh-ai-msg user', message));
+        var thinking = el('div', 'eh-ai-msg thinking', 'Thinking...');
+        log.appendChild(thinking);
+        scrollDown();
+        send.disabled = true;
+
+        request('POST', form.dataset.endpoint, { message: message, history: history.slice(-8) }).then(function (data) {
             thinking.remove();
-            if (!result.ok) {
-                error.textContent = result.data && result.data.message ? result.data.message : 'The assistant is unavailable right now. Please try again shortly.';
-                input.value = input.value || message;
-                return;
-            }
-            var reply = result.data && result.data.message ? result.data.message : 'Sorry, I could not answer that right now.';
-            add('assistant', reply);
+            renderMessage(data);
             history.push({ role: 'user', content: message });
-            history.push({ role: 'assistant', content: reply });
-        }).catch(function () {
+            history.push({ role: 'assistant', content: data.content || data.message });
+            scrollDown();
+        }).catch(function (err) {
             thinking.remove();
-            error.textContent = 'The assistant is unavailable right now. Please try again shortly.';
+            error.textContent = err.message || 'The assistant is unavailable right now. Please try again shortly.';
+            input.value = input.value || message;
         }).finally(function () {
             send.disabled = false;
             input.focus();
         });
     }
+
+    stored.forEach(renderMessage);
+    scrollDown();
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
@@ -354,8 +530,22 @@
     });
 
     section.querySelectorAll('[data-ai-chips] button').forEach(function (chip) {
-        chip.addEventListener('click', function () {
-            ask(chip.textContent.trim());
+        chip.addEventListener('click', function () { ask(chip.textContent.trim()); });
+    });
+
+    section.querySelector('[data-ai-clear]').addEventListener('click', function () {
+        if (!window.confirm('Clear this chat? Saved answers and approved steps are kept.')) return;
+        request('DELETE', urls.clear).then(function () { window.location.hash = 'ai'; window.location.reload(); })
+            .catch(function (err) { error.textContent = err.message; });
+    });
+
+    document.querySelectorAll('[data-plan-toggle]').forEach(bindPlanToggle);
+
+    document.querySelectorAll('[data-saved-remove]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            request('PATCH', button.getAttribute('data-saved-remove')).then(function () {
+                button.closest('tr').remove();
+            }).catch(function (err) { window.alert(err.message); });
         });
     });
 })();

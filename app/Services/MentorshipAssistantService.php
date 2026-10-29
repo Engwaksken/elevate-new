@@ -2,11 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\CareerActionItem;
+use App\Models\CareerMentorMessage;
 use App\Models\MentorMatch;
 use App\Models\MentorshipGoal;
 use App\Models\MentorshipSession;
 use App\Models\ParticipantGoal;
 use App\Models\User;
+use App\Support\AiPlainText;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -25,15 +28,24 @@ class MentorshipAssistantService
         $message = trim($message);
         $goals = $this->openGoals($user);
 
-        $system = "You are ElevateHer360's AI Career Mentor, a warm, practical career coach for young women on a learning and mentorship platform. "
+        $system = "You are a career mentor on ElevateHer360, a learning and mentorship platform for young women. "
             .'Answer the participant\'s career questions (career paths, job search, interviews, CVs, skills, further study, entrepreneurship, workplace challenges, working with her mentor). '
             .'Base your guidance on the goals she has set: connect your answer to the most relevant goal by name, respect its target date and progress, and build on any mentor feedback. '
             .'If she has no goals yet, answer the question and suggest one specific goal she could set. If the question is unrelated to careers, briefly steer back to her goals. '
             .'Only use personal facts from the participant context; never invent achievements, employers or qualifications. '
-            .'Be encouraging and specific, end with 1-3 concrete next steps she can take this week, keep answers under 250 words and reply in plain text without Markdown.'
+            ."\n\nHow to write: sound like an experienced, kind human mentor talking to her, not like a report. "
+            .'Use her first name once, write in short natural paragraphs with everyday words, and speak directly to her as "you". '
+            .'Give one clear piece of advice with a short reason, then finish with two or three small, concrete things she can do this week as a short numbered list. '
+            .'Keep it under 200 words. Write plain text only: no Markdown, no asterisks, no bold, no headings, no bullet symbols, and no long dashes; use commas or full stops instead. '
+            .'Avoid filler such as "Great question", "I hope this helps" or "Good luck" and avoid abbreviations like "e.g.".'
+            ."\n\nAfter your answer, add one final line that starts with ".self::ACTIONS_MARKER.' followed by a JSON array of the same two or three steps, '
+            .'each as {"title": "short action, under 12 words", "due": "YYYY-MM-DD", "goal": "exact title of the related goal or empty"}. '
+            .'Choose realistic due dates from today onwards, no later than the related goal\'s target date. This line is read by the app and is not shown to her.'
             ."\n\nParticipant context:\n".$this->context($user, $goals);
 
-        $turns = collect($history)
+        // The stored conversation is the source of truth, so history survives page reloads and devices.
+        $stored = CareerMentorMessage::where('user_id', $user->id)->latest('id')->take(8)->get()->reverse();
+        $turns = ($stored->isNotEmpty() ? $stored->map(fn ($m) => ['role' => $m->role, 'content' => $m->content]) : collect($history))
             ->filter(fn ($entry) => is_array($entry) && isset($entry['role'], $entry['content']))
             ->map(fn ($entry) => [
                 'role' => strtolower((string) $entry['role']) === 'assistant' ? 'assistant' : 'user',
@@ -43,18 +55,79 @@ class MentorshipAssistantService
             ->values()
             ->all();
 
+        $text = '';
+        $steps = [];
         try {
             $result = $this->ai->generate('mentorship_assistant', $system, $message, $user->id, $turns);
-            $text = trim((string) ($result['text'] ?? ''));
-
-            if ($text !== '') {
-                return ['message' => $text, 'source' => 'ai'];
-            }
+            [$answer, $steps] = $this->splitActions((string) ($result['text'] ?? ''));
+            $text = AiPlainText::clean($answer);
         } catch (\Throwable $e) {
             // Fall through to the goal-based guidance below.
         }
 
-        return ['message' => $this->fallback($user, $goals), 'source' => 'guidance'];
+        $source = $text !== '' ? 'ai' : 'guidance';
+        if ($text === '') {
+            $text = $this->fallback($user, $goals);
+            $steps = [];
+        }
+
+        CareerMentorMessage::create(['user_id' => $user->id, 'role' => 'user', 'content' => Str::limit($message, 1500, '')]);
+        $reply = CareerMentorMessage::create(['user_id' => $user->id, 'role' => 'assistant', 'content' => $text, 'source' => $source]);
+        $this->storeActions($user, $reply, $steps, $goals);
+
+        return $reply->load('actions.goal')->toChatArray() + ['message' => $text];
+    }
+
+    public const ACTIONS_MARKER = 'ACTIONS:';
+
+    /**
+     * Separate the hidden "ACTIONS: [...]" line from the visible answer.
+     *
+     * @return array{0:string,1:array<int,array>}
+     */
+    public function splitActions(string $raw): array
+    {
+        $pos = strripos($raw, self::ACTIONS_MARKER);
+        if ($pos === false) {
+            return [$raw, []];
+        }
+
+        $json = trim(substr($raw, $pos + strlen(self::ACTIONS_MARKER)));
+        $json = trim(preg_replace('/^```(?:json)?|```$/m', '', $json));
+        $decoded = json_decode($json, true);
+
+        return [rtrim(substr($raw, 0, $pos)), is_array($decoded) ? array_values(array_filter($decoded, 'is_array')) : []];
+    }
+
+    private function storeActions(User $user, CareerMentorMessage $reply, array $steps, Collection $goals): void
+    {
+        $today = now()->startOfDay();
+        foreach (array_slice($steps, 0, 3) as $step) {
+            $title = Str::limit(AiPlainText::clean((string) ($step['title'] ?? '')), 185, '');
+            if ($title === '') {
+                continue;
+            }
+
+            $goalTitle = trim((string) ($step['goal'] ?? ''));
+            $goal = $goalTitle !== '' ? $goals->first(fn ($g) => strcasecmp($g->title, $goalTitle) === 0) : null;
+
+            // Keep model-suggested dates within today .. one year (or the goal's target date).
+            try {
+                $due = \Illuminate\Support\Carbon::createFromFormat('Y-m-d', (string) ($step['due'] ?? ''))->startOfDay();
+            } catch (\Throwable) {
+                $due = $today->copy()->addWeek();
+            }
+            $latest = $goal?->target_date && $goal->target_date->gte($today) ? $goal->target_date : $today->copy()->addYear();
+            $due = $due->lt($today) ? $today->copy() : ($due->gt($latest) ? $latest->copy() : $due);
+
+            $reply->actions()->create([
+                'user_id' => $user->id,
+                'participant_goal_id' => $goal?->id,
+                'title' => $title,
+                'due_on' => $due->toDateString(),
+                'status' => CareerActionItem::SUGGESTED,
+            ]);
+        }
     }
 
     public function context(User $user, ?Collection $goals = null): string

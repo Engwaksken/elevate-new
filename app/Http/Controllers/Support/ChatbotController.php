@@ -39,7 +39,7 @@ class ChatbotController extends Controller
                 .' Answer the user\'s question briefly and helpfully in plain text (no Markdown), pointing them to the relevant area of the platform. If you do not know, say so and suggest contacting support.';
 
             $result = app(CareerAiService::class)->generate('chatbot', $system, $message, auth()->id());
-            $text = trim((string) ($result['text'] ?? ''));
+            $text = \App\Support\AiPlainText::clean((string) ($result['text'] ?? ''));
 
             return $text !== '' ? $text : null;
         } catch (\Throwable $e) {

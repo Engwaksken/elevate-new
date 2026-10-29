@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CalendarEvent;
+use App\Models\CareerActionItem;
 use App\Models\CourseTimeSlot;
 use App\Models\Enrolment;
 use App\Models\Event;
@@ -45,6 +46,8 @@ class CalendarFeedService
             // Live sources below replace mirrored rows and cannot drift after edits.
             ->where(fn ($q) => $q->whereNull('eventable_type')->orWhereNotIn('eventable_type', [(new CourseTimeSlot())->getMorphClass(), (new Event())->getMorphClass()]));
         if ($type) $general->where('event_type', $type);
+        // Approved career steps are personal: only their owner sees them, staff included.
+        $general->where(fn ($q) => $q->where('event_type', '!=', CareerActionItem::CALENDAR_TYPE)->orWhere('responsible_user_id', $user->id));
         if ($programme) $general->where('programme_id', $programme);
         if (! $user->isStaff()) {
             $general->where(fn ($q) => $q->whereNull('responsible_user_id')->orWhere('responsible_user_id', $user->id))
@@ -52,7 +55,8 @@ class CalendarFeedService
         }
         foreach ($general->get() as $event) {
             $entries->push($this->entry('calendar-'.$event->id, $event->title, $event->event_type, $event->starts_at, $event->ends_at, $zone, [
-                'venue'=>$event->venue, 'status'=>$event->status, 'url'=>null, 'meeting_link'=>null,
+                'venue'=>$event->venue, 'status'=>$event->status, 'meeting_link'=>null,
+                'url'=>$event->event_type === CareerActionItem::CALENDAR_TYPE && \Illuminate\Support\Facades\Route::has('mentorship.dashboard') ? route('mentorship.dashboard').'#ai' : null,
             ]));
         }
 

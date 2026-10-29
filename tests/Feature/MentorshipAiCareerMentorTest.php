@@ -54,6 +54,18 @@ class MentorshipAiCareerMentorTest extends TestCase
         });
     }
 
+    public function test_career_mentor_replies_are_plain_text_without_markdown_or_dashes(): void
+    {
+        $this->activateAi();
+        Http::fake(['ai.example.test/*' => Http::response(['choices' => [['message' => ['content' => "**Focus** – build one project.\n- Apply to 3 firms—this week."]]]])]);
+        $user = User::factory()->create(['user_type' => 'participant', 'status' => 'active', 'email_verified_at' => now()]);
+
+        $this->actingAs($user)
+            ->postJson(route('mentorship.assistant.message'), ['message' => 'What next?'])
+            ->assertOk()
+            ->assertJson(['message' => "Focus, build one project.\n• Apply to 3 firms, this week.", 'source' => 'ai']);
+    }
+
     public function test_career_mentor_falls_back_to_goal_guidance_when_ai_is_unavailable(): void
     {
         $user = User::factory()->create(['user_type' => 'participant', 'status' => 'active', 'email_verified_at' => now()]);
