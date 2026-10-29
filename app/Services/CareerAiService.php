@@ -47,23 +47,65 @@ class CareerAiService {
             };
             return ['ok' => true, 'message' => 'Connected to '.$provider['label'].' - '.$config->model.' responded successfully.'];
         } catch (\Throwable $e) {
-            return ['ok' => false, 'message' => 'Connection failed: '.$this->errorMessage($e)];
+            return ['ok' => false, 'message' => 'Connection failed: '.$this->errorMessage($e, $config, $provider)];
         }
     }
 
-    private function errorMessage(\Throwable $e): string
+    private function errorMessage(\Throwable $e, ?AiIntegration $config = null, array $provider = []): string
     {
         if ($e instanceof \Illuminate\Http\Client\ConnectionException) {
             return 'Could not reach the endpoint. Check the URL, model ID and your network.';
         }
         if ($e instanceof \Illuminate\Http\Client\RequestException) {
             $json = $e->response?->json();
+            $message = null;
             if (is_array($json)) {
-                $message = data_get($json, 'error.message') ?: data_get($json, 'error') ?: data_get($json, 'message');
-                if (is_string($message) && $message !== '') return $message;
+                $message = data_get($json, 'error.message') ?: data_get($json, 'error') ?: data_get($json, 'message') ?: data_get($json, 'detail');
             }
+            $message = is_string($message) && $message !== '' ? $message : null;
+
+            // A 404 means the endpoint URL or the model ID does not exist; say which ones were used.
+            if ($e->response?->status() === 404 && $config) {
+                $hint = 'The provider returned 404 (not found) for model "'.$config->model.'" at '.$this->endpointFor($config, $provider)
+                    .'. Check that the model ID is current and available to your API key, and leave Endpoint blank to use the provider default.';
+                return $message ? $message.' - '.$hint : $hint;
+            }
+            if ($message) return $message;
         }
         return $e->getMessage() ?: class_basename($e);
+    }
+
+    /**
+     * Resolve the request URL, completing a base URL (e.g. https://api.openai.com/v1)
+     * with the API path the provider expects, since a bare base URL returns 404.
+     */
+    private function endpointFor(AiIntegration $c, array $provider): string
+    {
+        $api = $provider['api'] ?? 'openai';
+        $endpoint = rtrim(trim((string) $c->endpoint), '/');
+
+        if ($api === 'gemini') {
+            $model = $c->model ?: 'gemini-2.5-flash';
+            if ($endpoint === '') {
+                return $provider['endpoint'] ?: "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
+            }
+            if (str_contains($endpoint, ':generateContent')) return $endpoint;
+            return preg_match('#/models$#', $endpoint) ? "{$endpoint}/{$model}:generateContent" : "{$endpoint}/models/{$model}:generateContent";
+        }
+
+        if ($endpoint === '') {
+            return $provider['endpoint'] ?? ($api === 'anthropic' ? 'https://api.anthropic.com/v1/messages' : 'https://api.openai.com/v1/chat/completions');
+        }
+
+        if ($api === 'anthropic') {
+            if (str_ends_with($endpoint, '/messages')) return $endpoint;
+            return preg_match('#/v\d+$#', $endpoint) ? "{$endpoint}/messages" : "{$endpoint}/v1/messages";
+        }
+
+        // Azure deployment URLs carry the path and api-version query themselves.
+        if (str_contains($endpoint, '?') || str_ends_with($endpoint, '/chat/completions')) return $endpoint;
+
+        return "{$endpoint}/chat/completions";
     }
 
     /**
@@ -91,7 +133,7 @@ class CareerAiService {
     }
 
     private function openAi(AiIntegration $c,array $provider,string $system,string $user,array $history=[]):array {
-        $endpoint=$c->endpoint ?: ($provider['endpoint'] ?? 'https://api.openai.com/v1/chat/completions');
+        $endpoint=$this->endpointFor($c,$provider);
         $payload=[
             'model'=>$c->model,
             'messages'=>[['role'=>'system','content'=>$system],...$history,['role'=>'user','content'=>$user]],
@@ -106,22 +148,25 @@ class CareerAiService {
     }
 
     private function anthropic(AiIntegration $c,array $provider,string $system,string $user,array $history=[]):array {
-        $endpoint=$c->endpoint ?: ($provider['endpoint'] ?? 'https://api.anthropic.com/v1/messages');
+        $endpoint=$this->endpointFor($c,$provider);
+        // Current Claude models reject sampling parameters such as temperature (HTTP 400).
+        $sendTemperature=isset($c->settings['temperature']) && !str_starts_with(strtolower((string)$c->model),'claude-');
         $payload=[
             'model'=>$c->model,
             'max_tokens'=>4096,
             'system'=>$system,
             'messages'=>[...$history,['role'=>'user','content'=>$user]],
-            ...(isset($c->settings['temperature']) ? ['temperature' => (float) $c->settings['temperature']] : []),
+            ...($sendTemperature ? ['temperature' => (float) $c->settings['temperature']] : []),
         ];
         $r=Http::timeout(60)->withHeaders(['x-api-key'=>$c->apiKey(),'anthropic-version'=>'2023-06-01'])
             ->post($endpoint,$payload)->throw()->json();
-        return ['text'=>data_get($r,'content.0.text',''),'input_tokens'=>(int)data_get($r,'usage.input_tokens',0),'output_tokens'=>(int)data_get($r,'usage.output_tokens',0)];
+        // Responses can start with thinking blocks, so join every text block rather than reading content[0].
+        $text=collect(data_get($r,'content',[]))->where('type','text')->pluck('text')->implode('');
+        return ['text'=>$text,'input_tokens'=>(int)data_get($r,'usage.input_tokens',0),'output_tokens'=>(int)data_get($r,'usage.output_tokens',0)];
     }
 
     private function gemini(AiIntegration $c,array $provider,string $system,string $user,array $history=[]):array {
-        $model=$c->model ?: 'gemini-2.5-flash';
-        $endpoint=$c->endpoint ?: ($provider['endpoint'] ?: "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent");
+        $endpoint=$this->endpointFor($c,$provider);
         $r=Http::timeout(60)->withHeaders(['x-goog-api-key' => $c->apiKey()])->post($endpoint,[
             'system_instruction'=>['parts'=>[['text'=>$system]]],
             'contents'=>[

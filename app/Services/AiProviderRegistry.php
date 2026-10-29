@@ -28,7 +28,7 @@ class AiProviderRegistry
             'auth' => 'x-goog-api-key',
             'endpoint' => null,
             'endpoint_required' => false,
-            'models' => ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-1.5-pro'],
+            'models' => ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite'],
         ],
         'anthropic' => [
             'label' => 'Anthropic Claude',
@@ -36,7 +36,7 @@ class AiProviderRegistry
             'auth' => 'x-api-key',
             'endpoint' => 'https://api.anthropic.com/v1/messages',
             'endpoint_required' => false,
-            'models' => ['claude-opus-4-1-20250805', 'claude-sonnet-4-20250514', 'claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'],
+            'models' => ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'],
         ],
         'deepseek' => [
             'label' => 'DeepSeek',
