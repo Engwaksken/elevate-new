@@ -120,7 +120,15 @@ class DashboardController extends Controller
                 : 'in_progress'
             );
 
+        // AI Career Mentor card at the top of the dashboard: only when AI is on, with her next planned step.
+        $aiMentorEnabled=(bool)\App\Models\AiIntegration::activeSystem()?->encrypted_api_key;
+        $nextCareerStep=$aiMentorEnabled
+            ? \App\Models\CareerActionItem::where('user_id',$user->id)->where('status',\App\Models\CareerActionItem::APPROVED)->orderBy('due_on')->first()
+            : null;
+
         return view('dashboard',[
+            'aiMentorEnabled'=>$aiMentorEnabled,
+            'nextCareerStep'=>$nextCareerStep,
             'user'=>$user->load('profile'),
             'enrolments'=>$enrolments,
             'activeMentorship'=>$activeMentorship,

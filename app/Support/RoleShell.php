@@ -124,6 +124,7 @@ class RoleShell
             default => [
                 'Overview' => [
                     ['route' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'fa-gauge-high', 'active' => ['dashboard']],
+                    ['route' => 'mentorship.dashboard', 'fragment' => '#ai', 'label' => 'AI Career Mentor', 'icon' => 'fa-wand-magic-sparkles', 'active' => []],
                     ['route' => 'calendar.index', 'label' => 'Calendar', 'icon' => 'fa-calendar-days', 'active' => ['calendar.*']],
                     ['route' => 'certificates.mine', 'label' => 'My Certificates', 'icon' => 'fa-award', 'active' => ['certificates.mine']],
                     ['route' => 'notifications.index', 'label' => 'Notifications', 'icon' => 'fa-bell', 'active' => ['notifications.*']],

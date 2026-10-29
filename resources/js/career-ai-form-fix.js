@@ -186,6 +186,9 @@ function fixCareerAiForms(root = document) {
 
     const forms = root.querySelectorAll?.('form') || [];
     forms.forEach(form => {
+        // Chat-style AI mentor boxes manage their own hints.
+        if (form.closest('[data-no-career-ai-fix]')) return;
+
         const action = normaliseCareerAiText(form.getAttribute('action') || '');
         const text = normaliseCareerAiText(form.textContent || '');
 

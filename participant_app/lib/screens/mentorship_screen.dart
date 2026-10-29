@@ -10,6 +10,7 @@ import '../services/local_database.dart';
 import '../services/notification_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/cached_data.dart';
+import '../widgets/ai_mentor_card.dart';
 import '../widgets/feedback.dart';
 import '../widgets/progress_widgets.dart';
 import '../widgets/state_views.dart';
@@ -521,9 +522,6 @@ class _DetailBlock extends StatelessWidget {
 class _AiMentorEntry extends StatefulWidget {
   const _AiMentorEntry();
 
-  /// Checked once per app session.
-  static Future<bool>? _enabledCheck;
-
   @override
   State<_AiMentorEntry> createState() => _AiMentorEntryState();
 }
@@ -534,17 +532,7 @@ class _AiMentorEntryState extends State<_AiMentorEntry> {
   @override
   void initState() {
     super.initState();
-    _AiMentorEntry._enabledCheck ??= () async {
-      try {
-        if (!await SyncService.instance.isOnline()) return true;
-        final data = await ApiService.instance.mentorshipAssistantHistory();
-        return data['enabled'] != false;
-      } catch (_) {
-        _AiMentorEntry._enabledCheck = null; // try again next time
-        return true;
-      }
-    }();
-    _AiMentorEntry._enabledCheck!.then((enabled) {
+    AiMentorAvailability.enabled().then((enabled) {
       if (mounted && !enabled) setState(() => _visible = false);
     });
   }

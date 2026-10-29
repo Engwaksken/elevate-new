@@ -245,7 +245,7 @@
 
         @if($aiEnabled ?? false)
             <section class="eh-tab-pane" data-eh-pane="ai">
-                <div class="eh-tab-section eh-ai-mentor">
+                <div class="eh-tab-section eh-ai-mentor" data-no-career-ai-fix>
                     <style>
                     .eh-ai-mentor h2{margin:0 0 4px;display:flex;align-items:center;gap:10px}
                     .eh-ai-mentor h2 i{color:#800000}
@@ -538,6 +538,16 @@
 
     stored.forEach(renderMessage);
     scrollDown();
+
+    // A question sent from the dashboard card (?ask=...) is asked straight away, once.
+    var params = new URLSearchParams(window.location.search);
+    var preset = (params.get('ask') || '').trim();
+    if (preset) {
+        params.delete('ask');
+        var query = params.toString();
+        window.history.replaceState(null, '', window.location.pathname + (query ? '?' + query : '') + '#ai');
+        ask(preset.slice(0, 1500));
+    }
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();

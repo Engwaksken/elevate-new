@@ -37,7 +37,10 @@ class _ChatMessage {
 /// AI career mentor: chat grounded in her goals, saved answers, and suggested
 /// steps she can approve onto her calendar ("My plan"). Mirrors the website.
 class MentorshipAiScreen extends StatefulWidget {
-  const MentorshipAiScreen({super.key, this.sendMessage, this.client});
+  const MentorshipAiScreen({super.key, this.sendMessage, this.client, this.initialQuestion});
+
+  /// Asked automatically once the chat has loaded (from the dashboard card).
+  final String? initialQuestion;
 
   /// Test hook for the send call only (history, plan and saved stay empty).
   final AssistantSender? sendMessage;
@@ -83,6 +86,7 @@ class _MentorshipAiScreenState extends State<MentorshipAiScreen> {
             _ChatTab(
               client: _client,
               skipHistory: widget.client == null && widget.sendMessage != null,
+              initialQuestion: widget.initialQuestion,
               onStepsChanged: () => _planVersion.value++,
               onSavedChanged: () => _savedVersion.value++,
             ),
@@ -100,10 +104,11 @@ class _MentorshipAiScreenState extends State<MentorshipAiScreen> {
 // ---------------------------------------------------------------------------
 
 class _ChatTab extends StatefulWidget {
-  const _ChatTab({required this.client, required this.skipHistory, required this.onStepsChanged, required this.onSavedChanged});
+  const _ChatTab({required this.client, required this.skipHistory, required this.onStepsChanged, required this.onSavedChanged, this.initialQuestion});
 
   final AiMentorClient client;
   final bool skipHistory;
+  final String? initialQuestion;
   final VoidCallback onStepsChanged;
   final VoidCallback onSavedChanged;
 
@@ -135,9 +140,20 @@ class _ChatTabState extends State<_ChatTab> with AutomaticKeepAliveClientMixin {
     super.initState();
     if (widget.skipHistory) {
       _loading = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _askInitialQuestion());
     } else {
       _loadHistory();
     }
+  }
+
+  bool _initialAsked = false;
+
+  /// Sends the question typed on the dashboard card, once.
+  void _askInitialQuestion() {
+    final question = widget.initialQuestion?.trim();
+    if (_initialAsked || question == null || question.isEmpty || !mounted) return;
+    _initialAsked = true;
+    _ask(question);
   }
 
   @override
@@ -166,6 +182,7 @@ class _ChatTabState extends State<_ChatTab> with AutomaticKeepAliveClientMixin {
         _loading = false;
       });
       _scrollToEnd(jump: true);
+      _askInitialQuestion();
     } catch (error) {
       if (mounted) {
         setState(() {

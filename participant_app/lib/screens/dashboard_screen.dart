@@ -13,6 +13,7 @@ import '../widgets/app_drawer.dart';
 import '../widgets/cached_data.dart';
 import '../widgets/course_card.dart';
 import '../widgets/decorations.dart';
+import '../widgets/ai_mentor_card.dart';
 import '../widgets/progress_widgets.dart';
 import '../widgets/state_views.dart';
 import '../widgets/user_avatar.dart';
@@ -227,6 +228,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               summary: d.summary,
               onTap: () => widget.onOpen(AppDestination.progress),
             ),
+            const SizedBox(height: AppSpacing.md),
+            // The AI career mentor is the first thing she sees after signing in.
+            const AiMentorDashboardCard(),
             const SizedBox(height: AppSpacing.md),
             ProgressSummaryRow(
               summary: d.summary,
