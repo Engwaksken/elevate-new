@@ -286,33 +286,71 @@
 
                 <section class="eh-tab-pane" data-eh-pane="templates">
                     <div class="eh-tab-section">
-                        <div class="eh-tab-section-header"><div><h2>Resume Templates</h2><p>Select a resume first, then choose a presentation style. Template changes do not remove resume content.</p></div></div>
+                        <style>
+                        .tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+                        .tpl-card{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid #e4e7ec;border-radius:12px;background:#fff}
+                        .tpl-card.is-current{border-color:#800000;box-shadow:0 0 0 2px rgba(128,0,0,.12)}
+                        .tpl-thumb{position:relative;height:190px;overflow:hidden;border:1px solid #eef0f3;border-radius:8px;background:#f5f5f7;cursor:pointer}
+                        .tpl-thumb iframe{position:absolute;top:0;left:0;width:800px;height:1060px;border:0;transform:scale(.26);transform-origin:0 0;pointer-events:none}
+                        .tpl-card strong{font-size:.95rem;color:#101828}
+                        .tpl-card small{color:#667085}
+                        .tpl-badge{align-self:flex-start;padding:2px 8px;border-radius:999px;background:#800000;color:#fff;font-size:.7rem;font-weight:700}
+                        .tpl-actions{display:flex;gap:6px;margin-top:auto}
+                        .tpl-actions form{margin:0;flex:1}.tpl-actions .btn{width:100%;justify-content:center}
+                        .tpl-preview-frame{width:100%;height:70vh;border:1px solid #e4e7ec;border-radius:8px;background:#e9e9ee}
+                        .tpl-source{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+                        .tpl-source label{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+                        .tpl-source input{width:auto;min-height:0;margin:0}
+                        </style>
+                        <div class="eh-tab-section-header"><div><h2>Resume Templates</h2><p>Click "Preview" to see how a template looks with sample information or with your own resume. Changing the template only changes how your resume looks; your information stays the same.</p></div></div>
                         @if($resumes->count())
-                            <div class="form-group template-resume-picker"><label>Select resume</label><select id="template-resume-select">@foreach($resumes as $resume)<option value="{{ $resume->id }}">{{ $resume->title }}</option>@endforeach</select></div>
-                            <div class="resume-template-list">
-                                @foreach([
-                                    'classic'=>['Classic','Traditional and formal'],
-                                    'modern'=>['Modern','Clean contemporary layout'],
-                                    'minimal'=>['Minimal','Simple and highly readable'],
-                                    'professional'=>['Professional','Balanced business layout'],
-                                    'graduate'=>['Graduate','Ideal for early-career applicants'],
-                                    'technology'=>['Technology','Strong fit for digital and technical roles'],
-                                    'executive'=>['Executive','Leadership-focused presentation'],
-                                ] as $key=>$meta)
-                                    <form method="POST" action="{{ route('career.resume.template',$resumes->first()) }}" class="template-form" data-template-form data-template="{{ $key }}">@csrf @method('PUT')
-                                        <input type="hidden" name="template" value="{{ $key }}">
-                                        <button type="submit" class="resume-template-option">
-                                            <span class="template-preview template-preview-{{ $key }}"><i class="fas fa-file-lines"></i></span>
-                                            <strong>{{ $meta[0] }}</strong>
-                                            <span>{{ $meta[1] }}</span>
-                                            <em>Use template</em>
-                                        </button>
-                                    </form>
-                                @endforeach
-                            </div>
+                            <div class="form-group template-resume-picker"><label for="template-resume-select">Apply templates to</label><select id="template-resume-select">@foreach($resumes as $resume)<option value="{{ $resume->id }}" data-template="{{ $resume->template ?: 'classic' }}">{{ $resume->title }}</option>@endforeach</select></div>
                         @else
-                            <div class="eh-empty"><p>Create or import a resume before selecting a template.</p></div>
+                            <p class="form-hint">You can look at every template now. Create or upload a resume to start using one.</p>
                         @endif
+                        <div class="tpl-grid">
+                            @foreach(\App\Support\ResumeTemplates::TEMPLATES as $key => [$label, $description])
+                                <div class="tpl-card" data-template-card="{{ $key }}">
+                                    <div class="tpl-thumb" data-modal-open="template-preview-modal" data-template-preview="{{ $key }}" data-template-label="{{ $label }}" role="button" tabindex="0" aria-label="Preview the {{ $label }} template">
+                                        <iframe src="{{ route('career.resume.template.preview', $key) }}" loading="lazy" tabindex="-1" aria-hidden="true" title="{{ $label }} template thumbnail"></iframe>
+                                    </div>
+                                    <span class="tpl-badge" data-template-current hidden>Your resume uses this</span>
+                                    <strong>{{ $label }}</strong>
+                                    <small>{{ $description }}</small>
+                                    <div class="tpl-actions">
+                                        <button type="button" class="btn btn-outline btn-sm" data-modal-open="template-preview-modal" data-template-preview="{{ $key }}" data-template-label="{{ $label }}"><i class="fas fa-eye"></i> Preview</button>
+                                        @if($resumes->count())
+                                            <form method="POST" action="{{ route('career.resume.template',$resumes->first()) }}" data-template-form data-template="{{ $key }}">@csrf @method('PUT')
+                                                <input type="hidden" name="template" value="{{ $key }}">
+                                                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-check"></i> Use</button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <div class="eh-modal" id="template-preview-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="template-preview-title">
+                            <div class="eh-modal-dialog" style="max-width:920px;width:100%">
+                                <div class="eh-modal-header">
+                                    <div><h2 id="template-preview-title" data-template-preview-title>Template preview</h2><p>This is how your resume will look when you download it.</p></div>
+                                    <button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+                                </div>
+                                <div class="eh-modal-body">
+                                    @if($resumes->count())
+                                        <div class="tpl-source" role="radiogroup" aria-label="What to show in the preview">
+                                            <label><input type="radio" name="tpl-source" value="sample" checked data-template-source> Sample information</label>
+                                            <label><input type="radio" name="tpl-source" value="mine" data-template-source> My resume</label>
+                                        </div>
+                                    @endif
+                                    <iframe class="tpl-preview-frame" data-template-preview-frame title="Resume template preview"></iframe>
+                                </div>
+                                <div class="eh-modal-footer">
+                                    <button type="button" class="btn btn-outline" data-modal-close>Close</button>
+                                    @if($resumes->count())<button type="button" class="btn btn-primary" data-template-use><i class="fas fa-check"></i> Use this template</button>@endif
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -363,12 +401,50 @@ document.addEventListener('DOMContentLoaded', () => {
             finally { button.disabled = false; }
         });
     });
+    // Template previews: sample information, or the selected resume shown in the chosen template.
     const select = document.getElementById('template-resume-select');
-    if (!select) return;
+    const frame = document.querySelector('[data-template-preview-frame]');
+    const title = document.querySelector('[data-template-preview-title]');
+    const previewUrl = @json(route('career.resume.template.preview', ['template' => '__T__']));
+    let current = null;
+
+    const showPreview = () => {
+        if (!frame || !current) return;
+        const mine = document.querySelector('[data-template-source]:checked')?.value === 'mine';
+        const url = new URL(previewUrl.replace('__T__', current.key), window.location.origin);
+        if (mine && select) url.searchParams.set('resume', select.value);
+        frame.src = url.toString();
+        if (title) title.textContent = current.label + ' template';
+    };
+
+    document.querySelectorAll('[data-template-preview]').forEach(el => {
+        el.addEventListener('click', () => { current = { key: el.dataset.templatePreview, label: el.dataset.templateLabel }; showPreview(); });
+        if (el.getAttribute('role') === 'button') {
+            el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
+        }
+    });
+    document.querySelectorAll('[data-template-source]').forEach(radio => radio.addEventListener('change', showPreview));
+    document.querySelector('[data-template-use]')?.addEventListener('click', () => {
+        if (!current) return;
+        document.querySelector(`[data-template-form][data-template="${current.key}"]`)?.requestSubmit();
+    });
+
+    // Point "Use" forms at the selected resume and mark the template it currently uses.
+    const markCurrent = () => {
+        const used = select?.selectedOptions[0]?.dataset.template;
+        document.querySelectorAll('[data-template-card]').forEach(card => {
+            const isCurrent = card.dataset.templateCard === used;
+            card.classList.toggle('is-current', isCurrent);
+            card.querySelector('[data-template-current]').hidden = !isCurrent;
+        });
+    };
+    if (select) {
+        select.addEventListener('change', () => { markCurrent(); showPreview(); });
+        markCurrent();
+    }
     document.querySelectorAll('[data-template-form]').forEach(form => {
         form.addEventListener('submit', () => {
-            const id = select.value;
-            form.action = `{{ url('/career/resumes') }}/${id}/template`;
+            form.action = `{{ url('/career/resumes') }}/${select.value}/template`;
         });
     });
 });

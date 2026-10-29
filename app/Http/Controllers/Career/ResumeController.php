@@ -76,7 +76,9 @@ class ResumeController extends Controller
             'template'=>['required',Rule::in($this->templates())],
         ]));
 
-        return back()->with('success','Resume template updated.');
+        $label = \App\Support\ResumeTemplates::TEMPLATES[$resume->template][0] ?? ucfirst($resume->template);
+
+        return redirect()->to(strtok(url()->previous(), '#').'#templates')->with('success', '"'.$resume->title.'" now uses the '.$label.' template.');
     }
 
     public function makeDefault(Resume $resume)
@@ -112,7 +114,25 @@ class ResumeController extends Controller
 
     private function templates(): array
     {
-        return ['classic','modern','minimal','professional','graduate','technology','executive'];
+        return \App\Support\ResumeTemplates::keys();
+    }
+
+    /**
+     * Show a template in the browser before choosing it: with sample data, or with one of her own resumes.
+     */
+    public function previewTemplate(Request $request, string $template)
+    {
+        abort_unless(in_array($template, $this->templates(), true), 404);
+
+        if ($request->filled('resume')) {
+            $resume = Resume::whereKey((int) $request->query('resume'))->where('user_id', auth()->id())->firstOrFail();
+            $resume->load(['user.profile','experiences','education','skills','certifications','languages','projects','referees','portfolioFiles']);
+            $resume->template = $template; // preview only; not saved
+        } else {
+            $resume = \App\Support\ResumeTemplates::sample($template);
+        }
+
+        return response()->view('career.resume.pdf', ['resume' => $resume, 'screen' => true]);
     }
 
     private function safeFilename(string $value): string

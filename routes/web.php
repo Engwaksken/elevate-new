@@ -792,6 +792,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/career/resumes/{resume}/edit',[ResumeController::class,'edit'])->name('career.resume.edit');
     Route::put('/career/resumes/{resume}',[ResumeController::class,'update'])->name('career.resume.update');
     Route::put('/career/resumes/{resume}/template',[ResumeController::class,'updateTemplate'])->name('career.resume.template');
+    Route::get('/career/resume-templates/{template}/preview',[ResumeController::class,'previewTemplate'])->where('template','[a-z]+')->name('career.resume.template.preview');
     Route::post('/career/resumes/{resume}/default',[ResumeController::class,'makeDefault'])->name('career.resume.default');
     Route::delete('/career/resumes/{resume}',[ResumeController::class,'destroy'])->name('career.resume.destroy');
     Route::get('/career/resumes/{resume}/download',[ResumeController::class,'download'])->name('career.resume.download');
