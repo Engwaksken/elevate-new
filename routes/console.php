@@ -11,6 +11,9 @@ Artisan::command('inspire', function () {
 
 Schedule::command('events:send-reminders')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('timetable:send-reminders')->everyMinute()->withoutOverlapping();
+Schedule::command('activities:send-reminders')->everyFiveMinutes()->withoutOverlapping();
+// Delivers reminders queued through ReminderService (scheduled_reminders table).
+Schedule::command('elevateher:send-reminders')->everyFiveMinutes()->withoutOverlapping();
 
 Schedule::call(function () {
     GenerateDailyItQueueReview::dispatch(now('Africa/Kampala')->toDateString());

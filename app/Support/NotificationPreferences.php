@@ -42,7 +42,7 @@ class NotificationPreferences
             'appointments' => 'Instructor appointments',
             'jobs' => 'Jobs and opportunities',
             'account' => 'Account and roles',
-            'reminders' => 'Timetable reminders',
+            'reminders' => 'Timetable and career step reminders',
         ];
     }
 
