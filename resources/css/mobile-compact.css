@@ -1,0 +1,451 @@
+/*
+ * Phone layout (<= 640px) shared by participant, admin and public pages.
+ * Works with resources/js/mobile-compact.js, which tags filters, tables and header actions.
+ * Rules use :root so they win over app.css and page styles of equal specificity.
+ */
+
+/* Elements only used on phones. */
+:root .mc-filter-toggle,
+:root .mc-more-toggle,
+:root .mc-row-toggle-cell,
+:root .nav-menu-toggle,
+:root .nav-mobile-only {
+    display: none;
+}
+
+/* Desktop filter rows: let fields share the row instead of overflowing behind a scrollbar. */
+/* !important: an older rule sets .admin-toolbar > * { flex: none !important }. */
+:root .admin-toolbar > select,
+:root .admin-toolbar > input:not([type="hidden"]):not([type="date"]) {
+    flex: 1 1 130px !important;
+    min-width: 110px;
+}
+
+:root .admin-toolbar > input[type="search"],
+:root .admin-toolbar > .search-box {
+    flex: 2 1 200px !important;
+    min-width: 160px;
+}
+
+/* On wider screens the secondary-actions wrapper is invisible to layout. */
+:root .mc-secondary {
+    display: contents;
+}
+
+@media (max-width: 640px) {
+    /* ---------- Buttons: compact, icons kept ---------- */
+    :root .btn {
+        min-height: 36px;
+        padding: 7px 12px;
+        font-size: .85rem;
+        gap: 6px;
+    }
+
+    :root .btn i {
+        font-size: .85em;
+    }
+
+    /* ---------- Filters behind a toggle ---------- */
+    :root .mc-filter-toggle {
+        display: inline-flex;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    :root .mc-filter-toggle .mc-count {
+        min-width: 18px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: #800000;
+        color: #fff;
+        font-size: .7rem;
+        line-height: 18px;
+        text-align: center;
+    }
+
+    :root .mc-filters {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        align-items: flex-end !important;
+    }
+
+    :root .mc-filters > .mc-filter-toggle {
+        min-height: 40px;
+    }
+
+    :root .mc-filters > .mc-primary {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+    }
+
+    :root .mc-filters > .mc-collapsible {
+        flex: 1 1 100% !important;
+    }
+
+    :root .mc-filters:not(.is-open) > .mc-collapsible {
+        display: none !important;
+    }
+
+    /* ---------- Statistics: two per row, compact ---------- */
+    :root body .admin-stats-grid,
+    :root body .admin-stats-grid.compact,
+    :root body .admin-auto-stats,
+    :root body .eh-track-grid,
+    :root body .eh-stats,
+    :root body .appt-stats,
+    :root body .fb-stats,
+    :root body .ml-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+    }
+
+    :root body .admin-stat,
+    :root body .eh-track-card,
+    :root body .eh-stat,
+    :root body .appt-stat,
+    :root body .fb-stat,
+    :root body .ml-stat {
+        gap: 8px !important;
+        padding: 10px !important;
+        min-width: 0;
+    }
+
+    :root body .admin-stat-icon,
+    :root body .eh-track-card > i,
+    :root body .appt-stat > i,
+    :root body .fb-stat > i,
+    :root body .ml-stat > i {
+        flex: 0 0 30px !important;
+        width: 30px !important;
+        height: 30px !important;
+        font-size: .8rem;
+    }
+
+    :root body .admin-stat strong,
+    :root body .eh-track-card strong,
+    :root body .appt-stat strong,
+    :root body .fb-stat strong,
+    :root body .ml-stat strong {
+        font-size: 1.1rem !important;
+    }
+
+    :root body .admin-stat small,
+    :root body .eh-track-card small,
+    :root body .appt-stat small,
+    :root body .fb-stat small,
+    :root body .ml-stat small {
+        font-size: .7rem !important;
+        line-height: 1.25;
+    }
+
+    /* ---------- Tables as cards ---------- */
+    :root .admin-table-wrap:has(.mc-cards) {
+        overflow: visible !important;
+        border: 0 !important;
+        background: transparent !important;
+    }
+
+    :root table.mc-cards {
+        min-width: 0 !important;
+        width: 100% !important;
+        border: 0 !important;
+        background: transparent !important;
+    }
+
+    :root table.mc-cards thead {
+        display: none !important;
+    }
+
+    :root table.mc-cards,
+    :root table.mc-cards tbody {
+        display: block !important;
+    }
+
+    :root table.mc-cards tbody tr {
+        display: flex !important;
+        flex-direction: column;
+        margin: 0 0 10px;
+        padding: 10px 12px;
+        border: 1px solid #e4e7ec !important;
+        border-radius: 12px;
+        background: #fff !important;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+    }
+
+    /* Label in a fixed left column; the cell's own content (text, hints, chips) flows normally on the right. */
+    :root table.mc-cards tbody td {
+        position: relative;
+        display: block !important;
+        width: auto !important;
+        min-height: 22px;
+        padding: 5px 0 5px 38% !important;
+        border: 0 !important;
+        text-align: left !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+    }
+
+    :root table.mc-cards tbody td::before {
+        content: attr(data-label);
+        position: absolute;
+        top: 6px;
+        left: 0;
+        width: calc(38% - 10px);
+        color: #667085;
+        font-size: .75rem;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    /* The card title (first named column) spans the full width. */
+    :root table.mc-cards tbody td.mc-title,
+    :root table.mc-cards tbody td.mc-actions,
+    :root table.mc-cards tbody td[colspan] {
+        padding-left: 0 !important;
+    }
+
+    :root table.mc-cards tbody td.mc-select {
+        order: -2;
+    }
+
+    :root table.mc-cards tbody td.mc-actions {
+        order: 10;
+    }
+
+    :root table.mc-cards tbody td.mc-row-toggle-cell {
+        order: 9;
+    }
+
+    :root table.mc-cards tbody td.mc-title {
+        order: -1;
+        padding-bottom: 8px !important;
+        margin-bottom: 4px;
+        border-bottom: 1px solid #f2f4f7 !important;
+        font-size: .95rem;
+    }
+
+    :root table.mc-cards tbody td.mc-title::before,
+    :root table.mc-cards tbody td.mc-select::before,
+    :root table.mc-cards tbody td[colspan]::before,
+    :root table.mc-cards tbody td.mc-actions::before {
+        content: none;
+    }
+
+    :root table.mc-cards tbody td.mc-select {
+        align-self: flex-end;
+        min-height: 0;
+        margin-bottom: -22px;
+        padding: 0 !important;
+    }
+
+    :root table.mc-cards tbody td.mc-actions {
+        margin-top: 6px;
+        padding-top: 10px !important;
+        border-top: 1px solid #f2f4f7 !important;
+    }
+
+    :root table.mc-cards tbody td.mc-actions > *,
+    :root table.mc-cards tbody td.mc-actions .action-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-start;
+    }
+
+    :root table.mc-cards tbody td.mc-actions form {
+        margin: 0;
+    }
+
+    :root table.mc-cards tbody tr:not(.is-expanded) td.mc-extra {
+        display: none !important;
+    }
+
+    :root table.mc-cards tbody td.mc-row-toggle-cell {
+        display: block !important;
+        padding: 4px 0 0 !important;
+    }
+
+    :root table.mc-cards tbody td.mc-row-toggle-cell::before {
+        content: none;
+    }
+
+    :root .mc-row-toggle {
+        border: 0;
+        background: none;
+        padding: 2px 0;
+        color: #800000;
+        font-weight: 600;
+        font-size: .8rem;
+        cursor: pointer;
+    }
+
+    /* ---------- Header actions: main action + "More" menu ---------- */
+    :root .mc-has-more {
+        position: relative;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    :root .mc-has-more > .mc-keep,
+    :root .mc-has-more > .mc-keep .btn {
+        flex: 1 1 auto;
+        width: auto !important;
+    }
+
+    :root .mc-more-toggle {
+        display: inline-flex;
+        flex: 0 0 auto;
+        width: auto !important;
+    }
+
+    :root .mc-secondary {
+        display: none;
+    }
+
+    :root .mc-has-more.is-open > .mc-secondary {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 40;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 200px;
+        padding: 8px;
+        border: 1px solid #e4e7ec;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 12px 28px rgba(16, 24, 40, .16);
+    }
+
+    :root .mc-has-more.is-open > .mc-secondary > *,
+    :root .mc-has-more.is-open > .mc-secondary .btn,
+    :root .mc-has-more.is-open > .mc-secondary .eh-export-buttons {
+        width: 100% !important;
+        justify-content: flex-start;
+    }
+
+    :root .mc-has-more.is-open > .mc-secondary .eh-export-buttons {
+        display: flex !important;
+        flex-direction: column;
+    }
+}
+
+/* ---------- Public site header: menu button ---------- */
+@media (max-width: 940px) {
+    :root .site-header .nav-menu-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        margin-left: 4px;
+        border: 1px solid #e4e7ec;
+        border-radius: 10px;
+        background: #fff;
+        color: #101828;
+        font-size: 1.05rem;
+        cursor: pointer;
+    }
+
+    :root .site-header .nav-links {
+        display: none !important;
+    }
+
+    :root .site-header.is-nav-open .nav-links {
+        order: 4;
+        display: flex !important;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 2px !important;
+        width: 100%;
+        padding: 6px 0 12px !important;
+        overflow: visible !important;
+    }
+
+    :root .site-header.is-nav-open .nav-links a {
+        padding: 11px 6px;
+        border-radius: 8px;
+        font-size: .95rem;
+    }
+
+    :root .site-header.is-nav-open .nav-links a.active,
+    :root .site-header.is-nav-open .nav-links a:hover {
+        background: #fff4f4;
+    }
+}
+
+@media (max-width: 640px) {
+    /* Brand on the left, Register + menu button on the right, on one row. */
+    :root .site-header .nav {
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    :root .site-header .brand {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    :root .site-header .brand > span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    :root .site-header .brand small {
+        display: none;
+    }
+
+    :root .site-header .nav-actions {
+        flex: 0 0 auto;
+        flex-wrap: nowrap;
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Keep words on header buttons: icon-only buttons are hard for new users. */
+    :root .site-header .nav-actions .btn {
+        width: auto !important;
+        padding: 0 12px !important;
+        font-size: .82rem;
+    }
+
+    :root .site-header .nav-actions .btn span {
+        position: static !important;
+        width: auto !important;
+        height: auto !important;
+        overflow: visible !important;
+        clip: auto !important;
+    }
+
+    /* Sign in and partner links move into the menu; Register stays in the header. */
+    :root .site-header .nav-actions .partner-menu,
+    :root .site-header .nav-actions .nav-signin {
+        display: none !important;
+    }
+
+    :root .site-header.is-nav-open .nav-links .nav-mobile-only {
+        display: block;
+    }
+
+    :root .site-header.is-nav-open .nav-links .nav-mobile-divider {
+        margin-top: 6px;
+        padding-top: 10px;
+        border-top: 1px solid #f2f4f7;
+        color: #667085;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+}

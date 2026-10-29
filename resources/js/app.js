@@ -26,3 +26,6 @@ import './admin-profile-dropdown';
 import './phase25-survey-builder';
 import './cms-builder';
 import './partner-menu';
+
+// Phone layout: filter toggles, table cards, header "More" menu, public menu button. Keep last.
+import './mobile-compact';

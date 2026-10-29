@@ -61,7 +61,7 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 @if($cmsHeader['body'] ?? null)<div class="container cms-content">{!! app(\App\Services\CmsContentService::class)->render($cmsHeader['body']) !!}</div>@endif
 <div class="nav">
 <a href="{{ route('home') }}" class="brand" aria-label="ElevateHer360 home">@if($brandLogoUrl)<img src="{{ $brandLogoUrl }}" alt="" style="max-width:64px;max-height:48px;object-fit:contain">@elseif($cmsHeader['image_path'] ?? null)<img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($cmsHeader['image_path']) }}" alt="" style="max-width:64px;max-height:48px">@else<span class="brand-mark">E360</span>@endif<span>{{ $cmsHeader['title'] ?? 'ElevateHer360' }}<small>{{ $cmsHeader['summary'] ?? 'Women in Technology Uganda' }}</small></span></a>
-<nav class="nav-links" aria-label="Main navigation">
+<nav class="nav-links" id="siteNav" aria-label="Main navigation">
 @if($cmsHeader)
 @foreach(data_get($cmsHeader, 'settings.links', []) as $link)<a href="{{ $link['url'] }}">{{ $link['label'] }}</a>@endforeach
 @else
@@ -71,6 +71,15 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 @if(Route::has('library.index'))<a href="{{ route('library.index') }}" class="{{ request()->routeIs('library.*')?'active':'' }}">Library</a>@endif
 <a href="{{ route('events.index') }}">Events</a><a href="{{ route('public.faqs') }}">FAQs</a>
 @endif
+@guest
+{{-- On small phones these move here from the header buttons. --}}
+<div class="nav-mobile-only nav-mobile-divider">Account</div>
+<a class="nav-mobile-only" href="{{ route('login') }}"><i class="fas fa-right-to-bracket"></i> Sign in</a>
+@foreach(['mentor' => 'Mentors', 'employer' => 'Employers'] as $ptype => $plabel)
+@if(Route::has('partners.'.$ptype.'.login'))<a class="nav-mobile-only" href="{{ route('partners.'.$ptype.'.login') }}"><i class="fas fa-handshake-angle"></i> {{ $plabel }}: sign in</a>@endif
+@if(Route::has('public.partners.'.$ptype))<a class="nav-mobile-only" href="{{ route('public.partners.'.$ptype) }}"><i class="fas fa-user-plus"></i> {{ $plabel }}: sign up</a>@endif
+@endforeach
+@endguest
 </nav>
 <div class="nav-actions">
 @guest
@@ -92,13 +101,14 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 </div>
 </details>
 @endif
-<a href="{{ route('login') }}" class="btn btn-outline btn-sm"><i class="fas fa-right-to-bracket"></i><span>Sign In</span></a>
+<a href="{{ route('login') }}" class="btn btn-outline btn-sm nav-signin"><i class="fas fa-right-to-bracket"></i><span>Sign In</span></a>
 <a href="{{ route('register') }}" class="btn btn-primary btn-sm"><i class="fas fa-user-plus"></i><span>Register</span></a>
 @else
 @if(method_exists(auth()->user(),'isStaff') && auth()->user()->isStaff() && Route::has('admin.dashboard'))
 <a href="{{ route('admin.dashboard') }}" class="btn btn-primary btn-sm"><i class="fas fa-gauge-high"></i><span>Dashboard</span></a>
 @endif
 @endguest
+<button type="button" class="nav-menu-toggle" data-nav-toggle aria-controls="siteNav" aria-expanded="false" aria-label="Open menu"><i class="fas fa-bars"></i></button>
 </div></div>
 </header>
 
