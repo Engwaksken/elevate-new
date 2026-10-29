@@ -3,40 +3,87 @@
 @section('title', 'Feedback')
 
 @section('content')
-<div class="container py-4">
-    <h1>Course &amp; event feedback</h1>
-    <p>Share your experience of courses you are enrolled in and events you have registered for. Your feedback helps us improve future activities.</p>
+<style>
+.fb-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 20px}
+.fb-stat{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #eadede;border-left:4px solid #800000;border-radius:12px;background:#fff}
+.fb-stat i{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;background:#fff7da;color:#800000}
+.fb-stat small{display:block;color:#667085;font-weight:700}.fb-stat strong{font-size:1.3rem;color:#101828}
+@media(max-width:900px){.fb-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
 
-    @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-
-    <h2 class="mt-4">Courses</h2>
-    <div class="list-group">
-        @forelse($courses as $course)
-            <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
-                <div><strong>{{ $course->title }}</strong><div>Course feedback</div></div>
-                @if(isset($courseFeedbackByCourseId[$course->id]))
-                    <span class="badge bg-success">Feedback submitted</span><button class="btn btn-outline" type="button" data-modal-open="course-feedback-{{ $course->id }}">Edit feedback</button>
-                @else
-                    <button class="btn btn-primary" type="button" data-modal-open="course-feedback-{{ $course->id }}">Add feedback</button>
-                @endif
-            </div>
-        @empty
-            <div class="list-group-item">No enrolled courses are available for feedback.</div>
-        @endforelse
-    </div>
-
-    <h2 class="mt-4">Events</h2>
-    <div class="list-group">
-        @forelse($events as $event)
-            <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
-                <div><strong>{{ $event->title }}</strong><div>{{ optional($event->starts_at)->format('d M Y') }}</div></div>
-                @if(isset($eventFeedbackByEventId[$event->id]))<span class="badge bg-success">Feedback submitted</span><button class="btn btn-outline" type="button" data-modal-open="event-feedback-{{ $event->id }}">Edit feedback</button>@else<button class="btn btn-primary" type="button" data-modal-open="event-feedback-{{ $event->id }}">Add feedback</button>@endif
-            </div>
-        @empty
-            <div class="list-group-item">There are no registered, feedback-enabled events available.</div>
-        @endforelse
-    </div>
+<div class="page-header">
+    <div><span class="eh-kicker">Your voice</span><h1>Course &amp; event feedback</h1><p>Tell us how your courses and events went. Your feedback helps us improve future activities.</p></div>
 </div>
+
+<div class="fb-stats">
+    <div class="fb-stat"><i class="fas fa-graduation-cap"></i><div><small>Courses waiting for feedback</small><strong>{{ number_format($stats['courses_waiting']) }}</strong></div></div>
+    <div class="fb-stat"><i class="fas fa-calendar-check"></i><div><small>Events waiting for feedback</small><strong>{{ number_format($stats['events_waiting']) }}</strong></div></div>
+    <div class="fb-stat"><i class="fas fa-circle-check"></i><div><small>Feedback given</small><strong>{{ number_format($stats['submitted']) }}</strong></div></div>
+    <div class="fb-stat"><i class="fas fa-star"></i><div><small>Your average rating</small><strong>{{ $stats['average'] !== null ? number_format($stats['average'], 1).' / 5' : '-' }}</strong></div></div>
+</div>
+
+<div class="admin-panel">
+    <form method="GET" class="admin-toolbar">
+        <input type="search" name="search" value="{{ request('search') }}" placeholder="Search course or event..." aria-label="Search">
+        <select name="type" aria-label="Type">
+            <option value="">Courses and events</option>
+            <option value="course" @selected(request('type') === 'course')>Courses</option>
+            <option value="event" @selected(request('type') === 'event')>Events</option>
+        </select>
+        <select name="status" aria-label="Status">
+            <option value="">Any status</option>
+            <option value="waiting" @selected(request('status') === 'waiting')>Waiting for my feedback</option>
+            <option value="submitted" @selected(request('status') === 'submitted')>Feedback given</option>
+        </select>
+        <select name="period" aria-label="Date" data-period-select>
+            @foreach(\App\Support\PeriodFilter::OPTIONS as $value => $label)
+                <option value="{{ $value }}" @selected(request('period', '') === $value)>{{ $value === '' ? 'Any date' : $label }}</option>
+            @endforeach
+        </select>
+        <input type="date" name="from" value="{{ request('from') }}" aria-label="From date" data-period-custom @unless(request('period') === 'custom') hidden @endunless>
+        <input type="date" name="to" value="{{ request('to') }}" aria-label="To date" data-period-custom @unless(request('period') === 'custom') hidden @endunless>
+        <button class="btn btn-primary btn-sm"><i class="fas fa-filter"></i> Apply</button>
+        <a class="btn btn-outline btn-sm" href="{{ route('participant.feedback.index') }}">Reset</a>
+    </form>
+    @if($feedbackItems->total() > 0)<p class="admin-cell-hint" style="margin:0 0 10px">Showing {{ $feedbackItems->firstItem() }}–{{ $feedbackItems->lastItem() }} of {{ number_format($feedbackItems->total()) }}. Items waiting for your feedback are listed first.</p>@endif
+
+    <div class="admin-table-wrap"><table class="admin-table">
+        <thead><tr><th>Type</th><th>Course or event</th><th>Date</th><th>Status</th><th>Your rating</th><th class="table-actions">Actions</th></tr></thead>
+        <tbody>
+        @forelse($feedbackItems as $item)
+            <tr>
+                <td><span class="status-chip {{ $item['type'] === 'course' ? 'active' : 'pending' }}"><i class="fas {{ $item['type'] === 'course' ? 'fa-graduation-cap' : 'fa-calendar-check' }}"></i> {{ ucfirst($item['type']) }}</span></td>
+                <td><strong>{{ $item['title'] }}</strong></td>
+                <td>{{ $item['date']?->format('d M Y') ?? '-' }}<small class="admin-cell-hint">{{ $item['type'] === 'course' ? 'Enrolled' : 'Event date' }}</small></td>
+                <td>
+                    @if($item['response'])
+                        <span class="status-chip completed">Feedback submitted</span><small class="admin-cell-hint">{{ optional($item['response']->submitted_at)->format('d M Y') }}</small>
+                    @else
+                        <span class="status-chip pending">Waiting for your feedback</span>
+                    @endif
+                </td>
+                <td>{{ $item['response'] ? $item['response']->overall_rating.' / 5' : '-' }}</td>
+                <td class="table-actions">
+                    <button class="btn {{ $item['response'] ? 'btn-outline' : 'btn-primary' }} btn-sm" type="button" data-modal-open="{{ $item['type'] }}-feedback-{{ $item['id'] }}">
+                        <i class="fas {{ $item['response'] ? 'fa-pen' : 'fa-star' }}"></i> {{ $item['response'] ? 'Edit feedback' : 'Give feedback' }}
+                    </button>
+                </td>
+            </tr>
+        @empty
+            <tr><td colspan="6"><div class="admin-empty">{{ request()->hasAny(['search', 'type', 'status', 'period']) ? 'Nothing matches these filters.' : 'There are no courses or events to give feedback on yet. Enrol in a course or register for an event to share your experience.' }}</div></td></tr>
+        @endforelse
+        </tbody>
+    </table></div>
+    <div class="admin-pagination">{{ $feedbackItems->links() }}</div>
+</div>
+
+<script>
+document.querySelectorAll('[data-period-select]').forEach(function (select) {
+    select.addEventListener('change', function () {
+        select.form.querySelectorAll('[data-period-custom]').forEach(function (input) { input.hidden = select.value !== 'custom'; });
+    });
+});
+</script>
 
 @foreach($courses as $course)
         <div class="eh-modal" id="course-feedback-{{ $course->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="course-feedback-{{ $course->id }}-title" @if($errors->any() && old('feedback_context') === 'course-'.$course->id) data-modal-autoopen @endif>

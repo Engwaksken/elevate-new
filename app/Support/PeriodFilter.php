@@ -16,8 +16,23 @@ class PeriodFilter
 
     public static function apply(Builder $query, string $column, Request $request, string $prefix = ''): Builder
     {
+        [$from, $to] = self::range($request, $prefix);
+
+        return $query
+            ->when($from, fn ($q) => $q->where($column, '>=', $from))
+            ->when($to, fn ($q) => $q->where($column, '<=', $to));
+    }
+
+    /**
+     * The selected [from, to] bounds (either may be null), for filtering collections as well as queries.
+     *
+     * @return array{0: ?Carbon, 1: ?Carbon}
+     */
+    public static function range(Request $request, string $prefix = ''): array
+    {
         $now = now();
-        [$from, $to] = match ($request->query($prefix.'period')) {
+
+        return match ($request->query($prefix.'period')) {
             'today' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
             'week' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
             'month' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
@@ -25,10 +40,6 @@ class PeriodFilter
             'custom' => [self::date($request->query($prefix.'from'))?->startOfDay(), self::date($request->query($prefix.'to'))?->endOfDay()],
             default => [null, null],
         };
-
-        return $query
-            ->when($from, fn ($q) => $q->where($column, '>=', $from))
-            ->when($to, fn ($q) => $q->where($column, '<=', $to));
     }
 
     private static function date(mixed $value): ?Carbon

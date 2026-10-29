@@ -10,6 +10,7 @@ use App\Models\EventFeedbackResponse;
 use App\Models\Course;
 use App\Models\Enrolment;
 use App\Models\CourseFeedbackResponse;
+use App\Support\PeriodFilter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -41,8 +42,45 @@ class EventEngagementController extends Controller
             ->get()
             ->keyBy('event_id');
 
+        // One list of everything she can rate, so it can be searched, filtered by period and paginated.
+        $items = $courses->map(fn ($course) => [
+            'type' => 'course', 'id' => $course->id, 'title' => $course->title,
+            'date' => $course->enrolments->first()?->enrolled_at ?? $course->enrolments->first()?->created_at,
+            'response' => $courseFeedbackByCourseId->get($course->id),
+        ])->concat($events->map(fn ($event) => [
+            'type' => 'event', 'id' => $event->id, 'title' => $event->title,
+            'date' => $event->starts_at,
+            'response' => $eventFeedbackByEventId->get($event->id),
+        ]));
+
+        $stats = [
+            'courses_waiting' => $items->where('type', 'course')->whereNull('response')->count(),
+            'events_waiting' => $items->where('type', 'event')->whereNull('response')->count(),
+            'submitted' => $items->whereNotNull('response')->count(),
+            'average' => ($rated = $items->pluck('response')->filter())->isNotEmpty() ? round($rated->avg('overall_rating'), 1) : null,
+        ];
+
+        $request = request();
+        $search = mb_strtolower(trim((string) $request->query('search')));
+        [$from, $to] = PeriodFilter::range($request);
+        $filtered = $items
+            ->when($search !== '', fn ($c) => $c->filter(fn ($item) => str_contains(mb_strtolower($item['title']), $search)))
+            ->when(in_array($request->query('type'), ['course', 'event'], true), fn ($c) => $c->where('type', $request->query('type')))
+            ->when($request->query('status') === 'waiting', fn ($c) => $c->whereNull('response'))
+            ->when($request->query('status') === 'submitted', fn ($c) => $c->whereNotNull('response'))
+            ->when($from, fn ($c) => $c->filter(fn ($item) => $item['date'] && $item['date']->gte($from)))
+            ->when($to, fn ($c) => $c->filter(fn ($item) => $item['date'] && $item['date']->lte($to)))
+            // Things still waiting for feedback come first, then the most recent.
+            ->sortBy([fn ($a, $b) => (int) ($a['response'] !== null) <=> (int) ($b['response'] !== null), fn ($a, $b) => ($b['date']?->getTimestamp() ?? 0) <=> ($a['date']?->getTimestamp() ?? 0)])
+            ->values();
+
+        $page = max(1, (int) $request->query('page', 1));
+        $feedbackItems = new \Illuminate\Pagination\LengthAwarePaginator($filtered->forPage($page, 15)->values(), $filtered->count(), 15, $page, [
+            'path' => $request->url(), 'query' => $request->query(),
+        ]);
+
         return view('events.feedback-index', compact(
-            'events', 'courses', 'courseFeedbackIds', 'courseFeedbackByCourseId', 'eventFeedbackByEventId'
+            'events', 'courses', 'courseFeedbackIds', 'courseFeedbackByCourseId', 'eventFeedbackByEventId', 'feedbackItems', 'stats'
         ));
     }
 
