@@ -37,7 +37,7 @@ class AiProviderTableTest extends TestCase
         $this->assertTrue($gemini->enabled);
 
         $this->get(route('admin.platform-settings.index'))->assertOk()
-            ->assertSee('Saved AI providers')->assertSee('Google Gemini')->assertSee('gemini-3.8-flash')
+            ->assertSee('Saved AI providers')->assertSee('id="aiProviderModal"', false)->assertSee('Add provider')->assertSee('Google Gemini')->assertSee('gemini-3.8-flash')
             ->assertDontSee('openai-key')->assertDontSee('gemini-key');
 
         $this->patch(route('admin.platform-settings.ai-toggle', $openai))->assertRedirect()->assertSessionHas('success', 'OpenAI is now the active AI provider.');

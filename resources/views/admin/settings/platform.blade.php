@@ -160,7 +160,14 @@
 @php($aiProviders = \App\Services\AiProviderRegistry::PROVIDERS)
 @php($activeProvider = old('provider', $aiConfig->provider ?? 'openai'))
 
-<h3 style="margin:18px 0 8px">Saved AI providers</h3>
+@php($aiSaved = $aiIntegrations->filter(fn ($i) => str_starts_with((string) $i->feature, 'system_ai'))->keyBy('provider')->map(fn ($i) => [
+    'model' => $i->model, 'endpoint' => $i->endpoint, 'has_key' => (bool) $i->encrypted_api_key, 'enabled' => (bool) $i->enabled,
+    'daily_limit' => data_get($i->settings, 'daily_limit', 1000), 'user_daily_limit' => data_get($i->settings, 'user_daily_limit', 20), 'temperature' => data_get($i->settings, 'temperature'),
+]))
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 8px;flex-wrap:wrap">
+    <h3 style="margin:0">Saved AI providers</h3>
+    <button type="button" class="btn btn-primary btn-sm" data-modal-open="aiProviderModal" data-ai-edit=""><i class="fas fa-plus"></i> Add provider</button>
+</div>
 @error('ai_toggle')<div class="alert alert-danger" role="alert">{{ $message }}</div>@enderror
 <div class="admin-table-wrap">
 <table class="admin-table" id="aiProvidersTable">
@@ -180,7 +187,7 @@
                 <i class="fas {{ $integration->enabled ? 'fa-toggle-off' : 'fa-toggle-on' }}"></i> {{ $integration->enabled ? 'Disable' : 'Enable' }}
             </button>
         </form>
-        <a class="btn btn-outline btn-sm" href="{{ route('admin.platform-settings.index', ['ai_provider' => $integration->provider]) }}"><i class="fas fa-pen"></i> Edit</a>
+        <button type="button" class="btn btn-outline btn-sm" data-modal-open="aiProviderModal" data-ai-edit="{{ $integration->provider }}"><i class="fas fa-pen"></i> Edit</button>
     </div></td>
 </tr>
 @empty
@@ -191,8 +198,16 @@
 </div>
 <p class="admin-cell-hint" style="margin:6px 0 18px">Only one provider can be active at a time. Enabling a provider disables the others; each keeps its own saved key and model.</p>
 
-<h3 style="margin:0 0 8px">{{ $aiConfig->exists ? 'Edit '.\App\Services\AiProviderRegistry::resolve((string) $aiConfig->provider)['label'] : 'Add or update a provider' }}</h3>
-<form method="POST" action="{{ route('admin.platform-settings.ai') }}">@csrf @method('PUT')
+@php($aiReopen = $errors->hasAny(['provider', 'model', 'endpoint', 'api_key', 'daily_limit', 'user_daily_limit', 'temperature']) || request()->filled('ai_provider'))
+<div class="eh-modal" id="aiProviderModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="aiProviderModalTitle" @if($aiReopen) data-modal-autoopen @endif>
+<div class="eh-modal-dialog">
+<form method="POST" action="{{ route('admin.platform-settings.ai') }}" data-ai-form>@csrf @method('PUT')
+<div class="eh-modal-header">
+    <div><h2 id="aiProviderModalTitle" data-ai-modal-title>{{ $aiConfig->exists ? 'Edit '.\App\Services\AiProviderRegistry::resolve((string) $aiConfig->provider)['label'] : 'Add AI provider' }}</h2><p>Keys are stored encrypted and are never displayed.</p></div>
+    <button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+</div>
+<div class="eh-modal-body">
+@if($aiReopen && $errors->any())<div class="alert alert-danger" role="alert">{{ $errors->first() }}</div>@endif
 <div class="eh-form-grid">
 <div><label>Provider</label>
     <select name="provider" data-ai-provider>
@@ -208,12 +223,21 @@
     </datalist>
 </div>
 <div class="full"><label>API endpoint <span data-ai-endpoint-label></span></label><input type="url" name="endpoint" data-ai-endpoint value="{{ old('endpoint', $aiConfig->endpoint) }}" maxlength="255" placeholder="https://..."></div>
-<div class="full"><label>API key {{ $aiConfig->apiKey() ? '(configured - leave blank to retain)' : '(not configured)' }}</label><input type="password" name="api_key" value="" autocomplete="new-password" maxlength="1000"></div>
+<div class="full"><label>API key <span data-ai-key-label>{{ $aiConfig->apiKey() ? '(configured - leave blank to retain)' : '(not configured)' }}</span></label><input type="password" name="api_key" value="" autocomplete="new-password" maxlength="1000"></div>
 <div><label>Daily system request limit</label><input type="number" min="1" max="100000" name="daily_limit" value="{{ old('daily_limit', data_get($aiConfig->settings, 'daily_limit', 1000)) }}"></div>
 <div><label>Daily request limit per user</label><input type="number" min="1" max="1000" name="user_daily_limit" value="{{ old('user_daily_limit', data_get($aiConfig->settings, 'user_daily_limit', 20)) }}"></div>
 <div><label>Temperature (optional, if supported by the model)</label><input type="number" min="0" max="2" step="0.1" name="temperature" value="{{ old('temperature', data_get($aiConfig->settings, 'temperature')) }}"></div>
 </div><label><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $aiConfig->enabled))> Make this the active AI provider (disables the others)</label>
-<div class="ai-actions"><button class="btn btn-primary">Save AI configuration</button><button type="button" class="btn btn-outline" data-ai-test><i class="fas fa-plug"></i> Test connection</button><span class="ai-test-result" data-ai-test-result role="status"></span></div></form>
+<div class="ai-test-result" data-ai-test-result role="status" style="margin-top:10px"></div>
+</div>
+<div class="eh-modal-footer">
+    <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+    <button type="button" class="btn btn-outline" data-ai-test><i class="fas fa-plug"></i> Test connection</button>
+    <button class="btn btn-primary"><i class="fas fa-floppy-disk"></i> Save provider</button>
+</div>
+</form>
+</div>
+</div>
 </div></section>
 <section data-config-panel="admissions" hidden>
 <div class="admin-panel">
@@ -266,12 +290,36 @@ document.addEventListener('DOMContentLoaded',()=>{
         if(endpointLabel){ endpointLabel.textContent=required?'(required)':'(optional)'; }
     };
     if(providerSelect){ providerSelect.addEventListener('change',syncProvider); syncProvider(); }
-    // Each provider has its own saved settings; load them when the admin picks a different provider.
-    providerSelect?.addEventListener('change',()=>{
-        const url=new URL(@json(route('admin.platform-settings.index')),window.location.origin);
-        url.searchParams.set('ai_provider',providerSelect.value);
-        window.location.assign(url.toString());
+    // Each provider has its own saved settings; fill the modal form from them on Add/Edit and provider change.
+    const aiSaved=@json($aiSaved);
+    const aiLabels=@json(collect($aiProviders)->map(fn ($p) => $p['label']));
+    const aiForm=document.querySelector('[data-ai-form]');
+    const fillAiForm=(provider)=>{
+        if(!aiForm||!providerSelect)return;
+        const saved=aiSaved[provider]||null;
+        providerSelect.value=provider;
+        aiForm.querySelector('[name="model"]').value=saved?.model||'';
+        aiForm.querySelector('[name="endpoint"]').value=saved?.endpoint||'';
+        aiForm.querySelector('[name="api_key"]').value='';
+        aiForm.querySelector('[name="daily_limit"]').value=saved?.daily_limit??1000;
+        aiForm.querySelector('[name="user_daily_limit"]').value=saved?.user_daily_limit??20;
+        aiForm.querySelector('[name="temperature"]').value=saved?.temperature??'';
+        aiForm.querySelector('[name="enabled"]').checked=saved ? !!saved.enabled : true;
+        const keyLabel=aiForm.querySelector('[data-ai-key-label]');
+        if(keyLabel)keyLabel.textContent=saved?.has_key?'(configured - leave blank to retain)':'(not configured)';
+        const title=document.querySelector('[data-ai-modal-title]');
+        if(title)title.textContent=(saved?'Edit ':'Add ')+(aiLabels[provider]||'AI provider');
+        if(testResult){testResult.textContent='';testResult.className='ai-test-result';}
+        syncProvider();
+    };
+    document.querySelectorAll('[data-ai-edit]').forEach((button)=>{
+        button.addEventListener('click',()=>{
+            // "Add" starts with the first provider that has not been saved yet.
+            const provider=button.dataset.aiEdit||Object.keys(aiLabels).find((key)=>!aiSaved[key])||'openai';
+            fillAiForm(provider);
+        });
     });
+    providerSelect?.addEventListener('change',()=>fillAiForm(providerSelect.value));
 
     const testBtn=document.querySelector('[data-ai-test]');
     const testResult=document.querySelector('[data-ai-test-result]');
