@@ -12,7 +12,7 @@ class CareerAiService {
      */
     public function generate(string $feature,string $system,string $user,?int $userId=null,array $history=[]):array {
         $history=$this->normaliseHistory($history);
-        $cfg=AiIntegration::where('feature','system_ai')->where('enabled',true)->first();
+        $cfg=AiIntegration::activeSystem();
         if(!$cfg || !$cfg->apiKey() || !$cfg->model) throw new \RuntimeException('AI_UNAVAILABLE');
         $usage = AiUsageLog::where('created_at', '>=', now()->startOfDay())->where('status', 'success');
         if ((clone $usage)->count() >= ($cfg->settings['daily_limit'] ?? 1000)
@@ -54,7 +54,16 @@ class CareerAiService {
     private function errorMessage(\Throwable $e, ?AiIntegration $config = null, array $provider = []): string
     {
         if ($e instanceof \Illuminate\Http\Client\ConnectionException) {
-            return 'Could not reach the endpoint. Check the URL, model ID and your network.';
+            // Surface the cURL reason (timeout, SSL certificate, DNS, blocked outbound port) so it can be acted on.
+            $reason = preg_replace('/\s*\(see https?:\/\/curl\.haxx\.se[^)]*\)/', '', $e->getMessage());
+            $hint = match (true) {
+                str_contains($reason, 'cURL error 28') => ' The provider did not answer in time; try again or pick a faster model.',
+                str_contains($reason, 'cURL error 60'), str_contains($reason, 'cURL error 77') => ' The server cannot verify SSL certificates: set curl.cainfo/openssl.cafile in php.ini to a current cacert.pem.',
+                str_contains($reason, 'cURL error 6') => ' The server could not resolve the host name (DNS).',
+                str_contains($reason, 'cURL error 7') => ' The connection was refused or outbound HTTPS is blocked by the host.',
+                default => '',
+            };
+            return 'Could not reach the endpoint: '.$reason.$hint;
         }
         if ($e instanceof \Illuminate\Http\Client\RequestException) {
             $json = $e->response?->json();
@@ -90,22 +99,32 @@ class CareerAiService {
                 return $provider['endpoint'] ?: "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
             }
             if (str_contains($endpoint, ':generateContent')) return $endpoint;
-            return preg_match('#/models$#', $endpoint) ? "{$endpoint}/{$model}:generateContent" : "{$endpoint}/models/{$model}:generateContent";
+            if (preg_match('#/models$#', $endpoint)) return "{$endpoint}/{$model}:generateContent";
+            return $this->isBaseUrl($endpoint) ? "{$endpoint}/models/{$model}:generateContent" : $endpoint;
         }
 
         if ($endpoint === '') {
             return $provider['endpoint'] ?? ($api === 'anthropic' ? 'https://api.anthropic.com/v1/messages' : 'https://api.openai.com/v1/chat/completions');
         }
 
+        // Only complete bare base URLs; any other path (custom gateways, Azure deployments) is used as entered.
+        if (! $this->isBaseUrl($endpoint)) return $endpoint;
+
+        $versioned = preg_match('#/v\d+(beta)?$#', $endpoint) === 1;
         if ($api === 'anthropic') {
-            if (str_ends_with($endpoint, '/messages')) return $endpoint;
-            return preg_match('#/v\d+$#', $endpoint) ? "{$endpoint}/messages" : "{$endpoint}/v1/messages";
+            return $versioned ? "{$endpoint}/messages" : "{$endpoint}/v1/messages";
         }
 
-        // Azure deployment URLs carry the path and api-version query themselves.
-        if (str_contains($endpoint, '?') || str_ends_with($endpoint, '/chat/completions')) return $endpoint;
+        return $versioned ? "{$endpoint}/chat/completions" : "{$endpoint}/v1/chat/completions";
+    }
 
-        return "{$endpoint}/chat/completions";
+    /** A URL with no path, or a path that ends in an API version such as /v1 or /openai/v1beta. */
+    private function isBaseUrl(string $endpoint): bool
+    {
+        if (str_contains($endpoint, '?')) return false;
+        $path = trim((string) parse_url($endpoint, PHP_URL_PATH), '/');
+
+        return $path === '' || preg_match('#(^|/)v\d+(beta)?$#', $path) === 1;
     }
 
     /**
@@ -139,7 +158,7 @@ class CareerAiService {
             'messages'=>[['role'=>'system','content'=>$system],...$history,['role'=>'user','content'=>$user]],
             ...(isset($c->settings['temperature']) ? ['temperature' => (float) $c->settings['temperature']] : []),
         ];
-        $http=Http::timeout(60);
+        $http=Http::connectTimeout(15)->timeout(90);
         $auth=$provider['auth'] ?? 'bearer';
         if ($auth === 'api-key') $http=$http->withHeaders(['api-key'=>$c->apiKey()]);
         elseif ($auth !== 'none') $http=$http->withToken($c->apiKey());
@@ -158,7 +177,7 @@ class CareerAiService {
             'messages'=>[...$history,['role'=>'user','content'=>$user]],
             ...($sendTemperature ? ['temperature' => (float) $c->settings['temperature']] : []),
         ];
-        $r=Http::timeout(60)->withHeaders(['x-api-key'=>$c->apiKey(),'anthropic-version'=>'2023-06-01'])
+        $r=Http::connectTimeout(15)->timeout(90)->withHeaders(['x-api-key'=>$c->apiKey(),'anthropic-version'=>'2023-06-01'])
             ->post($endpoint,$payload)->throw()->json();
         // Responses can start with thinking blocks, so join every text block rather than reading content[0].
         $text=collect(data_get($r,'content',[]))->where('type','text')->pluck('text')->implode('');
@@ -167,7 +186,7 @@ class CareerAiService {
 
     private function gemini(AiIntegration $c,array $provider,string $system,string $user,array $history=[]):array {
         $endpoint=$this->endpointFor($c,$provider);
-        $r=Http::timeout(60)->withHeaders(['x-goog-api-key' => $c->apiKey()])->post($endpoint,[
+        $r=Http::connectTimeout(15)->timeout(90)->withHeaders(['x-goog-api-key' => $c->apiKey()])->post($endpoint,[
             'system_instruction'=>['parts'=>[['text'=>$system]]],
             'contents'=>[
                 ...array_map(fn($t)=>['role'=>$t['role']==='assistant'?'model':'user','parts'=>[['text'=>$t['content']]]],$history),

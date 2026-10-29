@@ -1237,6 +1237,7 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
         ->middleware('permission:settings.manage')
         ->name('platform-settings.index');
     Route::put('/platform-settings/ai', [PlatformSettingsController::class, 'updateAi'])->middleware('permission:settings.manage')->name('platform-settings.ai');
+    Route::patch('/platform-settings/ai/{integration}/toggle', [PlatformSettingsController::class, 'toggleAi'])->whereNumber('integration')->middleware('permission:settings.manage')->name('platform-settings.ai-toggle');
     Route::post('/platform-settings/ai-test', [PlatformSettingsController::class, 'testAi'])->middleware('permission:settings.manage')->name('platform-settings.ai-test');
 
     Route::put('/platform-settings/branding',[PlatformSettingsController::class,'updateBranding'])

@@ -96,7 +96,8 @@ class ResumePortfolioAndSystemAiTest extends TestCase
         $legacy = AiIntegration::create(['feature'=>'old_feature','provider'=>'openai','model'=>'old','enabled'=>true]);
         $config = ['provider'=>'compatible','model'=>'test-model','endpoint'=>'https://ai.example.test/chat','api_key'=>'test-api-key','enabled'=>1];
         $this->put(route('admin.platform-settings.ai'), $config)->assertSessionHasNoErrors();
-        $ai = AiIntegration::where('feature','system_ai')->sole();
+        $ai = AiIntegration::activeSystem();
+        $this->assertSame('system_ai:compatible', $ai->feature);
         $this->assertSame('test-api-key', $ai->apiKey());
         $this->assertNotSame('test-api-key', $ai->encrypted_api_key);
         $this->assertFalse($legacy->fresh()->enabled);
@@ -115,12 +116,12 @@ class ResumePortfolioAndSystemAiTest extends TestCase
         $this->put(route('admin.platform-settings.ai'), $config + ['api_key'=>'new-key'])->assertSessionHasNoErrors();
     }
 
-    public function test_ai_provider_switches_require_new_credentials_and_non_admins_are_denied(): void
+    public function test_new_providers_require_credentials_and_non_admins_are_denied(): void
     {
         $this->admin();
         $this->put(route('admin.platform-settings.ai'), ['provider'=>'openai','model'=>'test-model','api_key'=>'test-key','enabled'=>1])->assertSessionHasNoErrors();
         $this->put(route('admin.platform-settings.ai'), ['provider'=>'gemini','model'=>'gemini-test','enabled'=>1])->assertSessionHasErrors('api_key');
-        $this->assertSame('openai', AiIntegration::where('feature','system_ai')->sole()->provider);
+        $this->assertSame('openai', AiIntegration::activeSystem()->provider);
         $this->put(route('admin.platform-settings.ai'), ['provider'=>'gemini','model'=>'gemini-test','enabled'=>1,'api_key'=>'gemini-key'])->assertSessionHasNoErrors();
         $this->actingAs(User::factory()->create(['user_type'=>'staff','status'=>'active']))->put(route('admin.platform-settings.ai'), ['provider'=>'openai'])->assertForbidden();
     }

@@ -12,12 +12,19 @@ use Illuminate\Support\Facades\Storage;
 
 class PlatformSettingsController extends Controller
 {
-    public function index(SettingsService $settings)
+    public function index(Request $request, SettingsService $settings)
     {
+        $aiIntegrations = \App\Models\AiIntegration::query()->systemProviders()->orderByDesc('enabled')->orderBy('provider')->get();
+        $editProvider = $request->query('ai_provider');
+        $aiConfig = is_string($editProvider) && \App\Services\AiProviderRegistry::get($editProvider)
+            ? \App\Models\AiIntegration::forProvider($editProvider)
+            : (\App\Models\AiIntegration::activeSystem() ?? $aiIntegrations->first() ?? new \App\Models\AiIntegration(['provider' => 'openai']));
+
         return view('admin.settings.platform', [
             'backups' => PlatformBackup::latest()->limit(20)->get(),
             'settings' => $settings,
-            'aiConfig' => \App\Models\AiIntegration::firstOrNew(['feature' => 'system_ai']),
+            'aiConfig' => $aiConfig,
+            'aiIntegrations' => $aiIntegrations,
             'assessments' => \App\Models\Assessment::orderBy('title')->get(['id', 'title']),
             'entryAssessmentId' => (int) $settings->get('admissions.entry_assessment_id'),
         ]);
@@ -44,6 +51,16 @@ class PlatformSettingsController extends Controller
     {
         $ai->save($request);
         return back()->with('success', 'System AI configuration saved. All AI features use this provider when active.')->with('platform_settings_tab', 'ai');
+    }
+
+    public function toggleAi(\App\Models\AiIntegration $integration, \App\Services\SystemAiSettingsService $ai)
+    {
+        $integration = $ai->toggle($integration);
+        $label = \App\Services\AiProviderRegistry::resolve((string) $integration->provider)['label'];
+
+        return back()
+            ->with('success', $integration->enabled ? "{$label} is now the active AI provider." : "{$label} disabled. AI features are off until a provider is enabled.")
+            ->with('platform_settings_tab', 'ai');
     }
 
     public function testAi(Request $request, \App\Services\SystemAiSettingsService $ai)

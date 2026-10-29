@@ -11,7 +11,7 @@
     $faviconUrl = $faviconPath && \Illuminate\Support\Facades\Route::has('branding.asset')
         ? route('branding.asset', ['type' => 'favicon', 'v' => md5((string) $faviconPath)])
         : null;
-    $activeConfigTab = session('platform_settings_tab', old('provider') ? 'ai' : 'branding');
+    $activeConfigTab = session('platform_settings_tab', old('provider') || $errors->has('ai_toggle') || request()->filled('ai_provider') ? 'ai' : 'branding');
 @endphp
 
 <div class="admin-page-header">
@@ -159,6 +159,39 @@
 <h2>System-wide AI Provider</h2><p>The active provider is used for resume and cover-letter parsing, writing, tailoring, ATS reviews and other system AI requests. Pick any supported provider or use a custom endpoint for any other OpenAI/Anthropic-compatible API. Keys are stored encrypted and are never displayed.</p>
 @php($aiProviders = \App\Services\AiProviderRegistry::PROVIDERS)
 @php($activeProvider = old('provider', $aiConfig->provider ?? 'openai'))
+
+<h3 style="margin:18px 0 8px">Saved AI providers</h3>
+@error('ai_toggle')<div class="alert alert-danger" role="alert">{{ $message }}</div>@enderror
+<div class="admin-table-wrap">
+<table class="admin-table" id="aiProvidersTable">
+<thead><tr><th>Provider</th><th>Model</th><th>API key</th><th>Last updated</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
+<tbody>
+@forelse($aiIntegrations as $integration)
+@php($meta = \App\Services\AiProviderRegistry::resolve((string) $integration->provider))
+<tr>
+    <td><strong>{{ $meta['label'] }}</strong>@if($integration->endpoint)<small class="admin-cell-hint">{{ $integration->endpoint }}</small>@endif</td>
+    <td>{{ $integration->model ?: '-' }}</td>
+    <td>{{ $integration->encrypted_api_key ? 'Configured' : 'Missing' }}</td>
+    <td>{{ optional($integration->updated_at)->format('d M Y H:i') }}</td>
+    <td><span class="status-chip {{ $integration->enabled ? 'active' : 'inactive' }}">{{ $integration->enabled ? 'Active' : 'Disabled' }}</span></td>
+    <td class="table-actions"><div class="action-group">
+        <form method="POST" action="{{ route('admin.platform-settings.ai-toggle', $integration) }}">@csrf @method('PATCH')
+            <button class="btn btn-sm {{ $integration->enabled ? 'btn-outline' : 'btn-primary' }}">
+                <i class="fas {{ $integration->enabled ? 'fa-toggle-off' : 'fa-toggle-on' }}"></i> {{ $integration->enabled ? 'Disable' : 'Enable' }}
+            </button>
+        </form>
+        <a class="btn btn-outline btn-sm" href="{{ route('admin.platform-settings.index', ['ai_provider' => $integration->provider]) }}"><i class="fas fa-pen"></i> Edit</a>
+    </div></td>
+</tr>
+@empty
+<tr><td colspan="6"><div class="admin-empty">No AI providers saved yet. Add one with the form below.</div></td></tr>
+@endforelse
+</tbody>
+</table>
+</div>
+<p class="admin-cell-hint" style="margin:6px 0 18px">Only one provider can be active at a time. Enabling a provider disables the others; each keeps its own saved key and model.</p>
+
+<h3 style="margin:0 0 8px">{{ $aiConfig->exists ? 'Edit '.\App\Services\AiProviderRegistry::resolve((string) $aiConfig->provider)['label'] : 'Add or update a provider' }}</h3>
 <form method="POST" action="{{ route('admin.platform-settings.ai') }}">@csrf @method('PUT')
 <div class="eh-form-grid">
 <div><label>Provider</label>
@@ -179,7 +212,7 @@
 <div><label>Daily system request limit</label><input type="number" min="1" max="100000" name="daily_limit" value="{{ old('daily_limit', data_get($aiConfig->settings, 'daily_limit', 1000)) }}"></div>
 <div><label>Daily request limit per user</label><input type="number" min="1" max="1000" name="user_daily_limit" value="{{ old('user_daily_limit', data_get($aiConfig->settings, 'user_daily_limit', 20)) }}"></div>
 <div><label>Temperature (optional, if supported by the model)</label><input type="number" min="0" max="2" step="0.1" name="temperature" value="{{ old('temperature', data_get($aiConfig->settings, 'temperature')) }}"></div>
-</div><label><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $aiConfig->enabled))> Activate AI across the system</label>
+</div><label><input type="checkbox" name="enabled" value="1" @checked(old('enabled', $aiConfig->enabled))> Make this the active AI provider (disables the others)</label>
 <div class="ai-actions"><button class="btn btn-primary">Save AI configuration</button><button type="button" class="btn btn-outline" data-ai-test><i class="fas fa-plug"></i> Test connection</button><span class="ai-test-result" data-ai-test-result role="status"></span></div></form>
 </div></section>
 <section data-config-panel="admissions" hidden>
@@ -233,6 +266,12 @@ document.addEventListener('DOMContentLoaded',()=>{
         if(endpointLabel){ endpointLabel.textContent=required?'(required)':'(optional)'; }
     };
     if(providerSelect){ providerSelect.addEventListener('change',syncProvider); syncProvider(); }
+    // Each provider has its own saved settings; load them when the admin picks a different provider.
+    providerSelect?.addEventListener('change',()=>{
+        const url=new URL(@json(route('admin.platform-settings.index')),window.location.origin);
+        url.searchParams.set('ai_provider',providerSelect.value);
+        window.location.assign(url.toString());
+    });
 
     const testBtn=document.querySelector('[data-ai-test]');
     const testResult=document.querySelector('[data-ai-test-result]');

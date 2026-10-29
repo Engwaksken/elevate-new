@@ -53,7 +53,7 @@ class MentorshipDashboardController extends Controller
             };
         }
 
-        $aiEnabled=\App\Models\AiIntegration::query()->where('feature','system_ai')->where('enabled',true)->whereNotNull('encrypted_api_key')->exists();
+        $aiEnabled=(bool)\App\Models\AiIntegration::activeSystem()?->encrypted_api_key;
         $completedSessions=$sessions->filter(fn($s)=>in_array(strtolower((string)$s->status),['completed','done'],true))->count();
         $upcomingSessions=$sessions->filter(fn($s)=>$s->scheduled_at&&$s->scheduled_at->isFuture()&&!in_array(strtolower((string)$s->status),['completed','cancelled'],true))->count();
         $achieved=$goals->filter(fn($g)=>(float)($g->progress_percent??0)>=100||in_array(strtolower((string)$g->status),['completed','achieved'],true))->count();

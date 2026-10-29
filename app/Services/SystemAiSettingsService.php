@@ -37,23 +37,52 @@ class SystemAiSettingsService
         return DB::transaction(function () use ($request, $data) {
             // Lock existing configuration rows so provider switches are serialized.
             AiIntegration::query()->lockForUpdate()->get();
-            $config = AiIntegration::firstOrNew(['feature' => 'system_ai']);
-            if ($request->boolean('enabled') && blank($data['api_key'] ?? null) && (! $config->apiKey() || ($config->exists && $config->provider !== $data['provider']))) {
+            // Each provider keeps its own row, key and model so admins can switch between them.
+            $config = AiIntegration::forProvider($data['provider']);
+            if ($request->boolean('enabled') && blank($data['api_key'] ?? null) && ! $config->apiKey()) {
                 $request->merge(['api_key' => null]);
-                throw ValidationException::withMessages(['api_key' => 'Enter an API key when activating a provider for the first time or switching providers.']);
-            }
-            if ($config->provider && $config->provider !== $data['provider']) {
-                $config->encrypted_api_key = null;
-                $config->endpoint = null;
+                throw ValidationException::withMessages(['api_key' => 'Enter an API key when activating a provider for the first time.']);
             }
             $config->fill(collect($data)->only(['provider', 'model', 'endpoint'])->all());
             $config->enabled = $request->boolean('enabled');
             $config->settings = ['daily_limit' => $data['daily_limit'] ?? 1000, 'user_daily_limit' => $data['user_daily_limit'] ?? 20, 'temperature' => $data['temperature'] ?? null];
             $config->setApiKey($data['api_key'] ?? null);
-            AiIntegration::where('feature', '!=', 'system_ai')->where('enabled', true)->update(['enabled' => false]);
+            if ($config->enabled) {
+                $this->disableOthers($config);
+            }
             $config->save();
             return $config;
         });
+    }
+
+    /**
+     * Switch a saved provider on (turning every other provider off) or off.
+     */
+    public function toggle(AiIntegration $config): AiIntegration
+    {
+        abort_unless($config->feature === AiIntegration::SYSTEM_FEATURE || str_starts_with($config->feature, AiIntegration::SYSTEM_FEATURE.':'), 404);
+
+        return DB::transaction(function () use ($config) {
+            AiIntegration::query()->lockForUpdate()->get();
+            $config->refresh();
+            if (! $config->enabled && (! $config->apiKey() || ! $config->model)) {
+                throw ValidationException::withMessages(['ai_toggle' => 'Add a model and API key for '.AiProviderRegistry::resolve((string) $config->provider)['label'].' before enabling it.']);
+            }
+            $config->enabled = ! $config->enabled;
+            if ($config->enabled) {
+                $this->disableOthers($config);
+            }
+            $config->save();
+            return $config;
+        });
+    }
+
+    private function disableOthers(AiIntegration $config): void
+    {
+        AiIntegration::query()
+            ->when($config->exists, fn ($q) => $q->whereKeyNot($config->getKey()))
+            ->where('enabled', true)
+            ->update(['enabled' => false]);
     }
 
     public function test(Request $request): array
@@ -80,7 +109,8 @@ class SystemAiSettingsService
         if ($apiKey !== '') {
             $config->setApiKey($apiKey);
         } else {
-            $saved = AiIntegration::where('feature', 'system_ai')->first();
+            // Only reuse the key saved for this same provider.
+            $saved = AiIntegration::forProvider($data['provider']);
             if (! $saved || ! $saved->apiKey()) {
                 return ['ok' => false, 'message' => 'Enter an API key to test the connection.'];
             }
