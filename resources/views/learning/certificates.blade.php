@@ -10,58 +10,51 @@
     <div class="page-actions"><x-export-buttons /></div>
 </div>
 
-<div class="eh-data-list">
+<div class="admin-panel">
+<div class="admin-table-wrap">
+<table class="admin-table">
+<thead><tr><th>Certificate</th><th>Type</th><th>Issued</th><th>Certificate No.</th><th class="table-actions">Actions</th></tr></thead>
+<tbody>
 @foreach($certificates as $certificate)
-<div class="eh-data-row">
-    <div class="eh-data-row-main">
-        <span class="eh-data-row-icon"><i class="fas fa-certificate"></i></span>
-        <div class="eh-data-row-copy">
-            <strong>{{ $certificate->course?->title ?? $certificate->event?->title ?? 'Certificate' }}</strong>
-            <span>Course certificate · {{ $certificate->issued_on?->format('d M Y') }} · {{ $certificate->certificate_number }}</span>
-        </div>
-    </div>
-    <div class="eh-data-row-actions">
-    <a class="btn btn-outline btn-sm" href="{{ route('certificates.file.preview',['type'=>'course','id'=>$certificate->id]) }}" data-file-preview data-file-preview-title="{{ $certificate->course?->title ?? 'Certificate' }}">Preview</a>
-    <a class="btn btn-outline btn-sm" href="{{ route('certificates.download',$certificate) }}">
-        <i class="fas fa-file-pdf"></i> Download PDF
-    </a>
-    <button type="button" class="btn btn-outline btn-sm" data-certificate-share="{{ route('certificates.file.share',['type'=>'course','id'=>$certificate->id]) }}">Share</button>
-    </div>
-</div>
+<tr>
+    <td><strong>{{ $certificate->course?->title ?? $certificate->event?->title ?? 'Certificate' }}</strong></td>
+    <td><span class="status-chip active"><i class="fas fa-certificate"></i> Course</span></td>
+    <td>{{ $certificate->issued_on?->format('d M Y') ?? '-' }}</td>
+    <td>{{ $certificate->certificate_number ?: '-' }}</td>
+    <td class="table-actions"><div class="action-group">
+        <a class="btn btn-outline btn-sm" href="{{ route('certificates.file.preview',['type'=>'course','id'=>$certificate->id]) }}" data-file-preview data-file-preview-title="{{ $certificate->course?->title ?? 'Certificate' }}"><i class="fas fa-eye"></i> Preview</a>
+        <a class="btn btn-outline btn-sm" href="{{ route('certificates.download',$certificate) }}"><i class="fas fa-file-pdf"></i> Download PDF</a>
+        <button type="button" class="btn btn-outline btn-sm" data-certificate-share="{{ route('certificates.file.share',['type'=>'course','id'=>$certificate->id]) }}"><i class="fas fa-share-nodes"></i> Share</button>
+    </div></td>
+</tr>
 @endforeach
 
 @if($certificates->onFirstPage())
 @foreach($eventCertificates as $certificate)
 @continue(! $certificate->event)
-<div class="eh-data-row">
-    <div class="eh-data-row-main">
-        <span class="eh-data-row-icon"><i class="fas fa-award"></i></span>
-        <div class="eh-data-row-copy">
-            <strong>{{ $certificate->event->title }}</strong>
-            <span>Event certificate · {{ $certificate->issued_at?->format('d M Y') }}</span>
-        </div>
-    </div>
-    <div class="eh-data-row-actions">
-    <a class="btn btn-outline btn-sm" href="{{ route('certificates.file.preview',['type'=>'event','id'=>$certificate->id]) }}" data-file-preview data-file-preview-title="{{ $certificate->event->title }}">Preview</a>
-    <a class="btn btn-outline btn-sm" href="{{ route('certificates.file.download',['type'=>'event','id'=>$certificate->id]) }}">
-        <i class="fas fa-file-pdf"></i> Download PDF
-    </a>
-    <button type="button" class="btn btn-outline btn-sm" data-certificate-share="{{ route('certificates.file.share',['type'=>'event','id'=>$certificate->id]) }}">Share</button>
-    </div>
-</div>
+<tr>
+    <td><strong>{{ $certificate->event->title }}</strong></td>
+    <td><span class="status-chip pending"><i class="fas fa-award"></i> Event</span></td>
+    <td>{{ $certificate->issued_at?->format('d M Y') ?? '-' }}</td>
+    <td>-</td>
+    <td class="table-actions"><div class="action-group">
+        <a class="btn btn-outline btn-sm" href="{{ route('certificates.file.preview',['type'=>'event','id'=>$certificate->id]) }}" data-file-preview data-file-preview-title="{{ $certificate->event->title }}"><i class="fas fa-eye"></i> Preview</a>
+        <a class="btn btn-outline btn-sm" href="{{ route('certificates.file.download',['type'=>'event','id'=>$certificate->id]) }}"><i class="fas fa-file-pdf"></i> Download PDF</a>
+        <button type="button" class="btn btn-outline btn-sm" data-certificate-share="{{ route('certificates.file.share',['type'=>'event','id'=>$certificate->id]) }}"><i class="fas fa-share-nodes"></i> Share</button>
+    </div></td>
+</tr>
 @endforeach
 @endif
 
 @if($certificates->isEmpty() && $eventCertificates->isEmpty())
-<div class="eh-empty">
-    <i class="fas fa-certificate"></i>
-    <h3>No certificates yet</h3>
-    <p>Your certificates will appear here once issued.</p>
-</div>
+<tr><td colspan="5"><div class="admin-empty"><i class="fas fa-certificate"></i><strong>No certificates yet</strong><span>Your certificates will appear here once issued.</span></div></td></tr>
 @endif
+</tbody>
+</table>
 </div>
 
-{{ $certificates->links() }}
+<div class="admin-pagination">{{ $certificates->links() }}</div>
+</div>
 @push('scripts')
 <script>
 document.querySelectorAll('[data-certificate-share]').forEach(button => button.addEventListener('click', async () => {

@@ -10,18 +10,23 @@
 @if(session('success'))<div class="alert alert-success" role="status">{{ session('success') }}</div>@endif
 
 <section class="sp-card" aria-label="Your support requests">
-<div class="eh-data-list">
+<div class="admin-table-wrap">
+<table class="admin-table">
+<thead><tr><th>Ticket</th><th>Subject</th><th>Submitted</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
+<tbody>
     @forelse($tickets as $ticket)
-        <a class="eh-data-row" href="{{ route('participant.support-tickets.show', $ticket) }}">
-            <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-life-ring"></i></span><div class="eh-data-row-copy">
-                <strong>{{ $ticket->subject }}</strong>
-                <span>Ticket #{{ $ticket->id }} · Submitted {{ $ticket->created_at?->format('d M Y') ?: '-' }}</span>
-            </div></div>
-            <span class="status-chip {{ $ticket->status }}">{{ ucfirst(str_replace('_', ' ', $ticket->status)) }}</span>
-        </a>
+        <tr>
+            <td>#{{ $ticket->id }}</td>
+            <td><a href="{{ route('participant.support-tickets.show', $ticket) }}"><strong>{{ $ticket->subject }}</strong></a></td>
+            <td>{{ $ticket->created_at?->format('d M Y') ?: '-' }}</td>
+            <td><span class="status-chip {{ $ticket->status }}">{{ ucfirst(str_replace('_', ' ', $ticket->status)) }}</span></td>
+            <td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('participant.support-tickets.show', $ticket) }}"><i class="fas fa-eye"></i> View</a></td>
+        </tr>
     @empty
-        <div class="eh-empty"><h3>No support requests yet</h3><p>Submit a request below and its status will appear here.</p></div>
+        <tr><td colspan="5"><div class="admin-empty"><strong>No support requests yet</strong><span>Submit a request below and its status will appear here.</span></div></td></tr>
     @endforelse
+</tbody>
+</table>
 </div>
 <div class="admin-pagination">{{ $tickets->links() }}</div>
 </section>
@@ -39,7 +44,6 @@
 </section>
 <style>
 .sp-card{margin-bottom:22px;padding:22px 24px;border:1px solid #eadede;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04)}
-.sp-card .eh-data-list{margin:0;border:0;padding:0}
 .sp-card .eh-empty{margin:0;padding:18px 0;background:transparent;border:0;box-shadow:none}
 .sp-card .admin-pagination:empty{display:none}
 .sp-card-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:18px}

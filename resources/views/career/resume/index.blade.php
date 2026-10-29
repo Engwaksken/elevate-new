@@ -43,29 +43,28 @@
                             <a href="{{ route('career.resume.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Create Resume</a>
                         </div>
 
-                        <div class="eh-data-list">
+                        <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                            <thead><tr><th>Resume</th><th>Template</th><th>Completion</th><th class="table-actions">Actions</th></tr></thead>
+                            <tbody>
                             @forelse($resumes as $resume)
-                                <div class="eh-data-row">
-                                    <div class="eh-data-row-main">
-                                        <span class="eh-data-row-icon"><i class="fas fa-file-lines"></i></span>
-                                        <div class="eh-data-row-copy">
-                                            <strong>{{ $resume->title }}</strong>
-                                            <span>{{ ucfirst($resume->template) }} · {{ $resume->completion_percent ?? 0 }}% complete @if($resume->is_default) · Default @endif</span>
-                                        </div>
-                                    </div>
-                                    <div class="eh-data-row-actions">
+                                <tr>
+                                    <td><strong>{{ $resume->title }}</strong>@if($resume->is_default) <span class="status-chip active">Default</span>@endif</td>
+                                    <td>{{ ucfirst($resume->template) }}</td>
+                                    <td>{{ $resume->completion_percent ?? 0 }}% complete</td>
+                                    <td class="table-actions"><div class="action-group">
                                         <a href="{{ route('career.resume.edit',$resume) }}" class="btn btn-outline btn-sm"><i class="fas fa-pen"></i> Edit</a>
                                         <a href="{{ route('career.resume.download',$resume) }}" class="btn btn-primary btn-sm"><i class="fas fa-file-pdf"></i> PDF</a>
                                         <button type="button" class="btn btn-outline btn-sm" data-document-share="{{ route('career.documents.share',['type'=>'resume','id'=>$resume->id]) }}"><i class="fas fa-share-nodes"></i> Share</button>
                                         <form method="POST" action="{{ route('career.resume.destroy',$resume) }}" onsubmit="return confirm('Delete this resume? This cannot be undone.')">@csrf @method('DELETE')
                                             <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</button>
                                         </form>
-                                    </div>
-                                </div>
+                                    </div></td>
+                                </tr>
                             @empty
-                                <div class="eh-empty"><i class="fas fa-file-circle-plus"></i><h3>No resumes yet</h3><p>Create one manually or upload an existing resume.</p></div>
+                                <tr><td colspan="4"><div class="admin-empty"><i class="fas fa-file-circle-plus"></i><strong>No resumes yet</strong><span>Create one manually or upload an existing resume.</span></div></td></tr>
                             @endforelse
-                        </div>
+                            </tbody>
+                        </table></div></div>
                     </div>
                 </section>
 
@@ -97,17 +96,17 @@
                         <div class="eh-tab-section-header"><div><h2>Uploaded Files</h2><p>Track, replace, retry, download or delete your original files.</p></div></div>
 
                         <h3 class="subheading">Resume uploads</h3>
-                        <div class="eh-data-list">
+                        <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                            <thead><tr><th>File</th><th>Type</th><th>Size</th><th>Status</th><th>Uploaded</th><th class="table-actions">Actions</th></tr></thead>
+                            <tbody>
                             @forelse($resumeUploads as $upload)
-                                <div class="eh-data-row">
-                                    <div class="eh-data-row-main">
-                                        <span class="eh-data-row-icon"><i class="fas fa-file-arrow-up"></i></span>
-                                        <div class="eh-data-row-copy">
-                                            <strong>{{ $upload->original_name }}</strong>
-                                            <span>{{ strtoupper(pathinfo($upload->original_name,PATHINFO_EXTENSION)) }} · {{ number_format($upload->file_size/1024,1) }} KB · {{ ucfirst($upload->status) }} · {{ $upload->created_at->format('d M Y H:i') }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="eh-data-row-actions">
+                                <tr>
+                                    <td><strong>{{ $upload->original_name }}</strong></td>
+                                    <td>{{ strtoupper(pathinfo($upload->original_name,PATHINFO_EXTENSION)) }}</td>
+                                    <td>{{ number_format($upload->file_size/1024,1) }} KB</td>
+                                    <td><span class="status-chip {{ $upload->status }}">{{ ucfirst($upload->status) }}</span></td>
+                                    <td>{{ $upload->created_at->format('d M Y H:i') }}</td>
+                                    <td class="table-actions"><div class="action-group">
                                         <a class="btn btn-outline btn-sm" href="{{ route('career.resume.upload.review',$upload) }}"><i class="fas fa-eye"></i> Review</a>
                                         <a class="btn btn-outline btn-sm" href="{{ route('career.resume.upload.original',[$upload,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="{{ $upload->original_name }}"><i class="fas fa-eye"></i> Preview</a>
                                         <a class="btn btn-outline btn-sm" href="{{ route('career.resume.upload.original',$upload) }}"><i class="fas fa-download"></i> Original</a>
@@ -123,25 +122,26 @@
                                         <form method="POST" action="{{ route('career.resume.upload.destroy',$upload) }}" onsubmit="return confirm('Delete this uploaded resume and its extracted data?')">@csrf @method('DELETE')
                                             <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</button>
                                         </form>
-                                    </div>
-                                </div>
+                                    </div></td>
+                                </tr>
                             @empty
-                                <div class="eh-empty"><p>No uploaded resumes yet.</p></div>
+                                <tr><td colspan="6"><div class="admin-empty">No uploaded resumes yet.</div></td></tr>
                             @endforelse
-                        </div>
+                            </tbody>
+                        </table></div></div>
 
                         <h3 class="subheading">Cover letter uploads</h3>
-                        <div class="eh-data-list">
+                        <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                            <thead><tr><th>File</th><th>Type</th><th>Size</th><th>Status</th><th>Uploaded</th><th class="table-actions">Actions</th></tr></thead>
+                            <tbody>
                             @forelse($coverLetterUploads as $upload)
-                                <div class="eh-data-row">
-                                    <div class="eh-data-row-main">
-                                        <span class="eh-data-row-icon"><i class="fas fa-envelope"></i></span>
-                                        <div class="eh-data-row-copy">
-                                            <strong>{{ $upload->original_name }}</strong>
-                                            <span>{{ strtoupper(pathinfo($upload->original_name,PATHINFO_EXTENSION)) }} · {{ number_format($upload->file_size/1024,1) }} KB · {{ ucfirst($upload->status) }} · {{ $upload->created_at->format('d M Y H:i') }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="eh-data-row-actions">
+                                <tr>
+                                    <td><strong>{{ $upload->original_name }}</strong></td>
+                                    <td>{{ strtoupper(pathinfo($upload->original_name,PATHINFO_EXTENSION)) }}</td>
+                                    <td>{{ number_format($upload->file_size/1024,1) }} KB</td>
+                                    <td><span class="status-chip {{ $upload->status }}">{{ ucfirst($upload->status) }}</span></td>
+                                    <td>{{ $upload->created_at->format('d M Y H:i') }}</td>
+                                    <td class="table-actions"><div class="action-group">
                                         <a class="btn btn-outline btn-sm" href="{{ route('career.cover-letter.upload.review',$upload) }}"><i class="fas fa-eye"></i> Review</a>
                                         <a class="btn btn-outline btn-sm" href="{{ route('career.cover-letter.upload.original',[$upload,'preview'=>1]) }}" target="_blank" rel="noopener" data-file-preview data-file-preview-title="{{ $upload->original_name }}"><i class="fas fa-eye"></i> Preview</a>
                                         <a class="btn btn-outline btn-sm" href="{{ route('career.cover-letter.upload.original',$upload) }}"><i class="fas fa-download"></i> Original</a>
@@ -157,12 +157,13 @@
                                         <form method="POST" action="{{ route('career.cover-letter.upload.destroy',$upload) }}" onsubmit="return confirm('Delete this uploaded cover letter and its extracted data?')">@csrf @method('DELETE')
                                             <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</button>
                                         </form>
-                                    </div>
-                                </div>
+                                    </div></td>
+                                </tr>
                             @empty
-                                <div class="eh-empty"><p>No uploaded cover letters yet.</p></div>
+                                <tr><td colspan="6"><div class="admin-empty">No uploaded cover letters yet.</div></td></tr>
                             @endforelse
-                        </div>
+                            </tbody>
+                        </table></div></div>
                     </div>
                 </section>
 
@@ -193,30 +194,50 @@
                             </div>
                         </div>
 
-                        <div class="eh-data-list spacing-top">
+                        <div class="admin-panel spacing-top"><div class="admin-table-wrap"><table class="admin-table">
+                            <thead><tr><th>Cover letter</th><th>Employer</th><th>Source</th><th class="table-actions">Actions</th></tr></thead>
+                            <tbody>
                             @forelse($coverLetters as $letter)
-                                <div class="eh-data-row">
-                                    <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-envelope-open-text"></i></span><div class="eh-data-row-copy"><strong>{{ $letter->title }}</strong><span>{{ $letter->employer_name ?: 'General' }} @if($letter->ai_generated) · AI generated @endif</span></div></div>
-                                    <div class="eh-data-row-actions">
-                                        <a class="btn btn-primary btn-sm" href="{{ route('career.cover-letter.download',$letter) }}">PDF</a>
-                                        <button type="button" class="btn btn-outline btn-sm" data-document-share="{{ route('career.documents.share',['type'=>'cover-letter','id'=>$letter->id]) }}">Share</button>
-                                        <details><summary class="btn btn-outline btn-sm">Edit</summary>
-                                            <form method="POST" action="{{ route('career.cover-letter.update',$letter) }}">@csrf @method('PUT')
-                                                <div class="form-group"><label>Title</label><input name="title" value="{{ $letter->title }}" required maxlength="190"></div>
-                                                <div class="form-group"><label>Employer</label><input name="employer_name" value="{{ $letter->employer_name }}" maxlength="190"></div>
-                                                <div class="form-group"><label>Job title</label><input name="job_title" value="{{ $letter->job_title }}" maxlength="190"></div>
-                                                <div class="form-group"><label>Recipient</label><input name="recipient_name" value="{{ $letter->recipient_name }}" maxlength="190"></div>
-                                                <div class="form-group"><label>Body</label><textarea name="body" rows="10" required>{{ $letter->body }}</textarea></div>
-                                                <button class="btn btn-primary btn-sm">Save changes</button>
-                                            </form>
-                                        </details>
-                                        <form method="POST" action="{{ route('career.cover-letter.destroy',$letter) }}" onsubmit="return confirm('Delete this cover letter?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm">Delete</button></form>
-                                    </div>
-                                </div>
+                                <tr>
+                                    <td><strong>{{ $letter->title }}</strong></td>
+                                    <td>{{ $letter->employer_name ?: 'General' }}</td>
+                                    <td>@if($letter->ai_generated)<span class="status-chip active">AI generated</span>@else Written @endif</td>
+                                    <td class="table-actions"><div class="action-group">
+                                        <a class="btn btn-primary btn-sm" href="{{ route('career.cover-letter.download',$letter) }}"><i class="fas fa-file-pdf"></i> PDF</a>
+                                        <button type="button" class="btn btn-outline btn-sm" data-document-share="{{ route('career.documents.share',['type'=>'cover-letter','id'=>$letter->id]) }}"><i class="fas fa-share-nodes"></i> Share</button>
+                                        <button type="button" class="btn btn-outline btn-sm" data-modal-open="cover-letter-edit-{{ $letter->id }}"><i class="fas fa-pen"></i> Edit</button>
+                                        <form method="POST" action="{{ route('career.cover-letter.destroy',$letter) }}" onsubmit="return confirm('Delete this cover letter?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</button></form>
+                                    </div></td>
+                                </tr>
                             @empty
-                                <div class="eh-empty"><p>No saved cover letters yet.</p></div>
+                                <tr><td colspan="4"><div class="admin-empty">No saved cover letters yet.</div></td></tr>
                             @endforelse
+                            </tbody>
+                        </table></div></div>
+
+                        @foreach($coverLetters as $letter)
+                        <div class="eh-modal" id="cover-letter-edit-{{ $letter->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="cover-letter-edit-{{ $letter->id }}-title">
+                        <div class="eh-modal-dialog">
+                            <form method="POST" action="{{ route('career.cover-letter.update',$letter) }}">@csrf @method('PUT')
+                                <div class="eh-modal-header">
+                                    <div><h2 id="cover-letter-edit-{{ $letter->id }}-title">Edit cover letter</h2><p>{{ $letter->title }}</p></div>
+                                    <button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+                                </div>
+                                <div class="eh-modal-body">
+                                    <div class="form-group"><label>Title</label><input name="title" value="{{ $letter->title }}" required maxlength="190"></div>
+                                    <div class="form-group"><label>Employer</label><input name="employer_name" value="{{ $letter->employer_name }}" maxlength="190"></div>
+                                    <div class="form-group"><label>Job title</label><input name="job_title" value="{{ $letter->job_title }}" maxlength="190"></div>
+                                    <div class="form-group"><label>Recipient</label><input name="recipient_name" value="{{ $letter->recipient_name }}" maxlength="190"></div>
+                                    <div class="form-group"><label>Body</label><textarea name="body" rows="10" required>{{ $letter->body }}</textarea></div>
+                                </div>
+                                <div class="eh-modal-footer">
+                                    <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+                                    <button class="btn btn-primary">Save changes</button>
+                                </div>
+                            </form>
                         </div>
+                        </div>
+                        @endforeach
                     </div>
                 </section>
 
@@ -277,14 +298,20 @@
                 <section class="eh-tab-pane" data-eh-pane="downloads">
                     <div class="eh-tab-section">
                         <div class="eh-tab-section-header"><div><h2>Downloads</h2><p>Download current resume PDFs and original uploaded files.</p></div></div>
-                        <div class="eh-data-list">
-                            @foreach($resumes as $resume)
-                                <div class="eh-data-row">
-                                    <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-file-pdf"></i></span><div class="eh-data-row-copy"><strong>{{ $resume->title }}</strong><span>Current generated resume</span></div></div>
-                                    <div class="eh-data-row-actions"><a class="btn btn-primary btn-sm" href="{{ route('career.resume.download',$resume) }}"><i class="fas fa-download"></i> Download PDF</a></div>
-                                </div>
-                            @endforeach
-                        </div>
+                        <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                            <thead><tr><th>Resume</th><th>File</th><th class="table-actions">Actions</th></tr></thead>
+                            <tbody>
+                            @forelse($resumes as $resume)
+                                <tr>
+                                    <td><strong>{{ $resume->title }}</strong></td>
+                                    <td>Current generated resume</td>
+                                    <td class="table-actions"><a class="btn btn-primary btn-sm" href="{{ route('career.resume.download',$resume) }}"><i class="fas fa-download"></i> Download PDF</a></td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="3"><div class="admin-empty">No resumes to download yet.</div></td></tr>
+                            @endforelse
+                            </tbody>
+                        </table></div></div>
                     </div>
                 </section>
             </div>

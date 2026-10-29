@@ -68,52 +68,68 @@
 
         <section class="eh-tab-pane active" data-eh-pane="overview">
             <div class="eh-tab-section">
-                <div class="eh-data-list">
+                <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                    <thead><tr><th>Mentor</th><th>Relationship</th><th>Status</th></tr></thead>
+                    <tbody>
                     @forelse($menteeMatches as $match)
-                        <div class="eh-data-row">
-                            <div class="eh-data-row-main">
-                                <span class="eh-data-row-icon"><i class="fas fa-user-tie"></i></span>
-                                <div class="eh-data-row-copy"><strong>{{ $match->mentor?->name??'Assigned Mentor' }}</strong><span>Mentor relationship</span></div>
-                            </div>
-                            <span class="eh-status">{{ $match->status }}</span>
-                        </div>
+                        <tr>
+                            <td><strong>{{ $match->mentor?->name??'Assigned Mentor' }}</strong></td>
+                            <td>Mentor relationship</td>
+                            <td><span class="status-chip {{ $match->status }}">{{ ucfirst($match->status) }}</span></td>
+                        </tr>
                     @empty
-                        <div class="eh-empty"><p>No mentor assigned yet.</p></div>
+                        <tr><td colspan="3"><div class="admin-empty">No mentor assigned yet.</div></td></tr>
                     @endforelse
-                </div>
+                    </tbody>
+                </table></div></div>
             </div>
         </section>
 
         <section class="eh-tab-pane" data-eh-pane="sessions">
             <div class="eh-tab-section">
                 <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><x-export-buttons :params="['list' => 'sessions']" /></div>
-                <div class="eh-data-list">
+                <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                    <thead><tr><th>Session</th><th>Scheduled</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
+                    <tbody>
                     @forelse($sessions as $session)
-                        <div class="eh-data-row">
-                            <div class="eh-data-row-main">
-                                <span class="eh-data-row-icon"><i class="fas fa-calendar-days"></i></span>
-                                <div class="eh-data-row-copy"><strong>{{ $session->title?:'Mentorship Session' }}</strong><span>{{ $session->scheduled_at?->format('d M Y H:i')??'Date not set' }}</span></div>
-                            </div>
-                            <span class="eh-status">{{ $session->status }}</span>
-                            <details style="flex-basis:100%;margin-top:8px">
-                                <summary style="cursor:pointer;color:#800000;font-weight:600;font-size:.85rem">Submit session report</summary>
-                                <form method="POST" action="{{ route('mentorship.sessions.reports.store',$session) }}" style="margin-top:10px">
-                                    @csrf
-                                    <div><label>Summary *</label><textarea name="summary" required maxlength="5000">{{ old('summary') }}</textarea></div>
-                                    <div class="form-grid">
-                                        <div><label>Challenges</label><textarea name="challenges" maxlength="5000">{{ old('challenges') }}</textarea></div>
-                                        <div><label>Achievements</label><textarea name="achievements" maxlength="5000">{{ old('achievements') }}</textarea></div>
-                                    </div>
-                                    <label class="modal-check"><input type="checkbox" name="mentor_attended" value="1"><span>Mentor attended</span></label>
-                                    <label class="modal-check"><input type="checkbox" name="mentee_attended" value="1"><span>Mentee attended</span></label>
-                                    <button class="btn btn-primary btn-sm">Submit report</button>
-                                </form>
-                            </details>
-                        </div>
+                        <tr>
+                            <td><strong>{{ $session->title?:'Mentorship Session' }}</strong></td>
+                            <td>{{ $session->scheduled_at?->format('d M Y H:i')??'Date not set' }}</td>
+                            <td><span class="status-chip {{ $session->status }}">{{ ucfirst((string) $session->status) }}</span></td>
+                            <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-modal-open="session-report-{{ $session->id }}"><i class="fas fa-file-pen"></i> Submit report</button></td>
+                        </tr>
                     @empty
-                        <div class="eh-empty"><p>No mentorship sessions yet.</p></div>
+                        <tr><td colspan="4"><div class="admin-empty">No mentorship sessions yet.</div></td></tr>
                     @endforelse
+                    </tbody>
+                </table></div></div>
+
+                @foreach($sessions as $session)
+                <div class="eh-modal" id="session-report-{{ $session->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="session-report-{{ $session->id }}-title">
+                <div class="eh-modal-dialog">
+                    <form method="POST" action="{{ route('mentorship.sessions.reports.store',$session) }}">
+                        @csrf
+                        <div class="eh-modal-header">
+                            <div><h2 id="session-report-{{ $session->id }}-title">Submit session report</h2><p>{{ $session->title?:'Mentorship Session' }} · {{ $session->scheduled_at?->format('d M Y H:i')??'Date not set' }}</p></div>
+                            <button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+                        </div>
+                        <div class="eh-modal-body">
+                            <div><label>Summary *</label><textarea name="summary" required maxlength="5000">{{ old('summary') }}</textarea></div>
+                            <div class="form-grid">
+                                <div><label>Challenges</label><textarea name="challenges" maxlength="5000">{{ old('challenges') }}</textarea></div>
+                                <div><label>Achievements</label><textarea name="achievements" maxlength="5000">{{ old('achievements') }}</textarea></div>
+                            </div>
+                            <label class="modal-check"><input type="checkbox" name="mentor_attended" value="1"><span>Mentor attended</span></label>
+                            <label class="modal-check"><input type="checkbox" name="mentee_attended" value="1"><span>Mentee attended</span></label>
+                        </div>
+                        <div class="eh-modal-footer">
+                            <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+                            <button class="btn btn-primary">Submit report</button>
+                        </div>
+                    </form>
                 </div>
+                </div>
+                @endforeach
             </div>
         </section>
 

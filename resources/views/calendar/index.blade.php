@@ -46,10 +46,11 @@
 </div></div>
  </section>
 <section id="agendaViewPanel" role="tabpanel" aria-labelledby="agendaViewTab" data-calendar-panel="agenda" @if($activeView !== 'agenda') hidden @endif>
-<div class="admin-panel"><div class="eh-data-list">
-@forelse($events as $entry)<article class="eh-data-row"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-calendar-days"></i></span><div class="eh-data-row-copy"><strong>{{ $entry['title'] }}</strong>@if($entry['course_title'])<span>{{ $entry['course_title'] }}</span>@endif<span>{{ $entry['starts_at']->format('d M Y H:i') }}@if($entry['ends_at']) - {{ $entry['ends_at']->format('d M Y H:i') }}@endif · {{ $zone }}</span>@if($entry['venue'])<span>{{ $entry['venue'] }}</span>@endif<span>{{ ucfirst($entry['status']) }}</span></div></div><div class="eh-data-row-actions">@if($entry['url'])<a class="btn btn-outline btn-sm" href="{{ $entry['url'] }}">View</a>@endif @if($entry['meeting_link'])<a class="btn btn-outline btn-sm" href="{{ $entry['meeting_link'] }}" target="_blank" rel="noopener noreferrer">Online meeting</a>@endif</div></article>
-@empty<p>No activities for this month.</p>@endforelse
-</div>{{ $events->links() }}</div>
+<div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+<thead><tr><th>Activity</th><th>When ({{ $zone }})</th><th>Venue</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@forelse($events as $entry)<tr><td><strong>{{ $entry['title'] }}</strong>@if($entry['course_title'])<small class="admin-cell-hint">{{ $entry['course_title'] }}</small>@endif</td><td>{{ $entry['starts_at']->format('d M Y H:i') }}@if($entry['ends_at'])<small class="admin-cell-hint">to {{ $entry['ends_at']->format('d M Y H:i') }}</small>@endif</td><td>{{ $entry['venue'] ?: '-' }}</td><td><span class="status-chip {{ $entry['status'] }}">{{ ucfirst($entry['status']) }}</span></td><td class="table-actions"><div class="action-group">@if($entry['url'])<a class="btn btn-outline btn-sm" href="{{ $entry['url'] }}"><i class="fas fa-eye"></i> View</a>@endif @if($entry['meeting_link'])<a class="btn btn-outline btn-sm" href="{{ $entry['meeting_link'] }}" target="_blank" rel="noopener noreferrer"><i class="fas fa-video"></i> Online meeting</a>@endif</div></td></tr>
+@empty<tr><td colspan="5"><div class="admin-empty">No activities for this month.</div></td></tr>@endforelse
+</tbody></table></div><div class="admin-pagination">{{ $events->links() }}</div></div>
 </section>
 @endsection
 

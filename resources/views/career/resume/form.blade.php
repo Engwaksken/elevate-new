@@ -105,19 +105,29 @@
                 <div class="career-form-panel">@include('career.resume.extras-form', ['item'=>null])</div>
             @endforeach
             <h2>Portfolio files</h2>
-            @foreach($resume->portfolioFiles as $file)<div class="eh-data-row"><a href="{{ route('career.portfolio.download', [$resume, $file]) }}">{{ $file->label }} - {{ $file->original_name }}</a><form method="POST" action="{{ route('career.portfolio.destroy', [$resume, $file]) }}">@csrf @method('DELETE')<button class="btn btn-outline btn-sm">Remove file</button></form></div>@endforeach
+            @if($resume->portfolioFiles->isNotEmpty())
+            <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                <thead><tr><th>Label</th><th>File</th><th class="table-actions">Actions</th></tr></thead>
+                <tbody>
+                @foreach($resume->portfolioFiles as $file)<tr><td><strong>{{ $file->label ?: '-' }}</strong></td><td><a href="{{ route('career.portfolio.download', [$resume, $file]) }}">{{ $file->original_name }}</a></td><td class="table-actions"><div class="action-group"><a class="btn btn-outline btn-sm" href="{{ route('career.portfolio.download', [$resume, $file]) }}"><i class="fas fa-download"></i> Download</a><form method="POST" action="{{ route('career.portfolio.destroy', [$resume, $file]) }}">@csrf @method('DELETE')<button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i> Remove file</button></form></div></td></tr>@endforeach
+                </tbody>
+            </table></div></div>
+            @endif
             <form method="POST" enctype="multipart/form-data" action="{{ route('career.portfolio.store', $resume) }}">@csrf<div class="form-group"><label>File label / project name</label><input name="label" maxlength="190"></div><div class="form-group"><label>Portfolio file (up to 10 MB)</label><input type="file" name="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.zip,.txt" required></div><button class="btn btn-primary">Upload portfolio file</button></form>
         </div></section>
         <section class="eh-tab-pane" data-eh-pane="experience">
             <div class="eh-tab-section">
                 <div class="eh-tab-section-header"><div><h2>Work Experience</h2><p>Add employment, internship, volunteer and consulting experience that supports your career goals.</p></div></div>
-                <div class="eh-data-list">
-                    @foreach($resume->experiences as $x)
-                        <div class="eh-data-row">
-                            <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-briefcase"></i></span><div class="eh-data-row-copy"><strong>{{ $x->job_title }}</strong><span>{{ $x->organisation }} @if($x->location) · {{ $x->location }} @endif</span></div></div>
-                        </div>
-                    @endforeach
-                </div>
+                <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                    <thead><tr><th>Job title</th><th>Organisation</th><th>Location</th></tr></thead>
+                    <tbody>
+                    @forelse($resume->experiences as $x)
+                        <tr><td><strong>{{ $x->job_title }}</strong></td><td>{{ $x->organisation }}</td><td>{{ $x->location ?: '-' }}</td></tr>
+                    @empty
+                        <tr><td colspan="3"><div class="admin-empty">No work experience added yet.</div></td></tr>
+                    @endforelse
+                    </tbody>
+                </table></div></div>
 
                 <div class="career-form-panel spacing-top">
                     <form method="POST" action="{{ route('career.resume.experience.store',$resume) }}">@csrf
@@ -151,13 +161,16 @@
         <section class="eh-tab-pane" data-eh-pane="education">
             <div class="eh-tab-section">
                 <div class="eh-tab-section-header"><div><h2>Education</h2><p>Add formal education, relevant qualifications and major training.</p></div></div>
-                <div class="eh-data-list">
-                    @foreach($resume->education as $x)
-                        <div class="eh-data-row">
-                            <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-graduation-cap"></i></span><div class="eh-data-row-copy"><strong>{{ $x->qualification }}</strong><span>{{ $x->institution }}</span></div></div>
-                        </div>
-                    @endforeach
-                </div>
+                <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                    <thead><tr><th>Qualification</th><th>Institution</th><th>Field of study</th></tr></thead>
+                    <tbody>
+                    @forelse($resume->education as $x)
+                        <tr><td><strong>{{ $x->qualification }}</strong></td><td>{{ $x->institution }}</td><td>{{ $x->field_of_study ?: '-' }}</td></tr>
+                    @empty
+                        <tr><td colspan="3"><div class="admin-empty">No education added yet.</div></td></tr>
+                    @endforelse
+                    </tbody>
+                </table></div></div>
 
                 <div class="career-form-panel spacing-top">
                     <form method="POST" action="{{ route('career.resume.education.store',$resume) }}">@csrf
@@ -185,13 +198,16 @@
         <section class="eh-tab-pane" data-eh-pane="skills">
             <div class="eh-tab-section">
                 <div class="eh-tab-section-header"><div><h2>Skills</h2><p>Add relevant technical, digital and professional skills.</p></div></div>
-                <div class="eh-data-list">
-                    @foreach($resume->skills as $x)
-                        <div class="eh-data-row">
-                            <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-lightbulb"></i></span><div class="eh-data-row-copy"><strong>{{ $x->skill }}</strong><span>{{ $x->level ?: 'Level not specified' }}</span></div></div>
-                        </div>
-                    @endforeach
-                </div>
+                <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                    <thead><tr><th>Skill</th><th>Level</th></tr></thead>
+                    <tbody>
+                    @forelse($resume->skills as $x)
+                        <tr><td><strong>{{ $x->skill }}</strong></td><td>{{ $x->level ?: 'Level not specified' }}</td></tr>
+                    @empty
+                        <tr><td colspan="2"><div class="admin-empty">No skills added yet.</div></td></tr>
+                    @endforelse
+                    </tbody>
+                </table></div></div>
 
                 <div class="career-form-panel spacing-top">
                     <form method="POST" action="{{ route('career.resume.skill.store',$resume) }}">@csrf
@@ -223,16 +239,21 @@
             <div class="eh-tab-section">
                 <div class="eh-tab-section-header"><div><h2>AI Career Assistant</h2><p>Get suggestions without automatically replacing your resume content.</p></div></div>
                 <div class="career-form-panel">
-                    <div class="eh-data-list">
-                        <div class="eh-data-row">
-                            <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-wand-magic-sparkles"></i></span><div class="eh-data-row-copy"><strong>Improve Resume</strong><span>Review wording, clarity and structure without inventing facts.</span></div></div>
-                            <form method="POST" action="{{ route('career.resume.ai.improve',$resume) }}">@csrf<button class="btn btn-primary btn-sm">Analyse</button></form>
-                        </div>
-                        <div class="eh-data-row">
-                            <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-robot"></i></span><div class="eh-data-row-copy"><strong>ATS Readiness</strong><span>Review headings, readability, keywords and relevant experience.</span></div></div>
-                            <form method="POST" action="{{ route('career.resume.ai.ats',$resume) }}">@csrf<button class="btn btn-primary btn-sm">Check</button></form>
-                        </div>
-                    </div>
+                    <div class="admin-table-wrap"><table class="admin-table">
+                        <thead><tr><th>AI tool</th><th>What it does</th><th class="table-actions">Actions</th></tr></thead>
+                        <tbody>
+                        <tr>
+                            <td><strong><i class="fas fa-wand-magic-sparkles" style="color:#800000;margin-right:6px"></i>Improve Resume</strong></td>
+                            <td>Review wording, clarity and structure without inventing facts.</td>
+                            <td class="table-actions"><form method="POST" action="{{ route('career.resume.ai.improve',$resume) }}">@csrf<button class="btn btn-primary btn-sm">Analyse</button></form></td>
+                        </tr>
+                        <tr>
+                            <td><strong><i class="fas fa-robot" style="color:#800000;margin-right:6px"></i>ATS Readiness</strong></td>
+                            <td>Review headings, readability, keywords and relevant experience.</td>
+                            <td class="table-actions"><form method="POST" action="{{ route('career.resume.ai.ats',$resume) }}">@csrf<button class="btn btn-primary btn-sm">Check</button></form></td>
+                        </tr>
+                        </tbody>
+                    </table></div>
 
                     <form method="POST" action="{{ route('career.resume.ai.tailor',$resume) }}" class="spacing-top">@csrf
                         <div class="form-group">

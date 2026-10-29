@@ -43,83 +43,89 @@
 <div class="eh-tab-content">
 <section class="eh-tab-pane active" data-eh-pane="overview">
 <div class="eh-tab-section">
-<div class="eh-data-list">
-@if(Route::has('learning.my-courses'))<a class="eh-data-row" href="{{ route('learning.my-courses') }}"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-graduation-cap"></i></span><div class="eh-data-row-copy"><strong>Learning</strong><span>Continue your courses and track progress.</span></div></div><i class="fas fa-chevron-right"></i></a>@endif
-@if(Route::has('mentorship.dashboard'))<a class="eh-data-row" href="{{ route('mentorship.dashboard') }}"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-user-group"></i></span><div class="eh-data-row-copy"><strong>Mentorship</strong><span>Review mentor relationships, sessions and goals.</span></div></div><i class="fas fa-chevron-right"></i></a>@endif
-@if(Route::has('career.resume.index'))<a class="eh-data-row" href="{{ route('career.resume.index') }}"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-file-lines"></i></span><div class="eh-data-row-copy"><strong>Resume Builder</strong><span>Create and manage your professional resume.</span></div></div><i class="fas fa-chevron-right"></i></a>@endif
-@if(Route::has('jobs.index'))<a class="eh-data-row" href="{{ route('jobs.index') }}"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-briefcase"></i></span><div class="eh-data-row-copy"><strong>Jobs</strong><span>Browse career opportunities and applications.</span></div></div><i class="fas fa-chevron-right"></i></a>@endif
-@if(Route::has('library.index'))<a class="eh-data-row" href="{{ route('library.index') }}"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-book-open"></i></span><div class="eh-data-row-copy"><strong>Library</strong><span>Access digital learning and career resources.</span></div></div><i class="fas fa-chevron-right"></i></a>@endif
-</div>
+@php($quickLinks = collect([
+    ['learning.my-courses', 'fa-graduation-cap', 'Learning', 'Continue your courses and track progress.'],
+    ['mentorship.dashboard', 'fa-user-group', 'Mentorship', 'Review mentor relationships, sessions and goals.'],
+    ['career.resume.index', 'fa-file-lines', 'Resume Builder', 'Create and manage your professional resume.'],
+    ['jobs.index', 'fa-briefcase', 'Jobs', 'Browse career opportunities and applications.'],
+    ['library.index', 'fa-book-open', 'Library', 'Access digital learning and career resources.'],
+])->filter(fn ($link) => Route::has($link[0])))
+<div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+<thead><tr><th>Area</th><th>What you can do</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@foreach($quickLinks as [$route, $icon, $label, $description])
+<tr><td><a href="{{ route($route) }}"><strong><i class="fas {{ $icon }}" style="color:#800000;margin-right:6px"></i>{{ $label }}</strong></a></td><td>{{ $description }}</td><td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route($route) }}"><i class="fas fa-arrow-right"></i> Open</a></td></tr>
+@endforeach
+</tbody></table></div></div>
 </div>
 </section>
 
 <section class="eh-tab-pane" data-eh-pane="learning">
-<div class="eh-tab-section"><div class="eh-data-list">
-@forelse($enrolments as $enrolment)
-@if($enrolment->course)
-<a class="eh-data-row" href="{{ route('learning.course.dashboard',$enrolment->course) }}">
-<div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-book"></i></span><div class="eh-data-row-copy"><strong>{{ $enrolment->course->title }}</strong><span>{{ number_format((float)$enrolment->progress_percent,0) }}% complete</span></div></div><i class="fas fa-chevron-right"></i>
-</a>
-@endif
+<div class="eh-tab-section"><div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+<thead><tr><th>Course</th><th>Progress</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@forelse($enrolments->filter(fn ($enrolment) => $enrolment->course) as $enrolment)
+<tr><td><strong>{{ $enrolment->course->title }}</strong></td><td>{{ number_format((float)$enrolment->progress_percent,0) }}% complete</td><td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('learning.course.dashboard',$enrolment->course) }}"><i class="fas fa-arrow-right"></i> Open</a></td></tr>
 @empty
-<div class="eh-empty"><i class="fas fa-graduation-cap"></i><h3>No recent courses</h3><p>Your recent learning activity will appear here.</p></div>
+<tr><td colspan="3"><div class="admin-empty"><i class="fas fa-graduation-cap"></i><strong>No recent courses</strong><span>Your recent learning activity will appear here.</span></div></td></tr>
 @endforelse
-</div></div>
+</tbody></table></div></div></div>
 </section>
 
 <section class="eh-tab-pane" data-eh-pane="mentorship">
-<div class="eh-tab-section">
+<div class="eh-tab-section"><div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+<thead><tr><th>Mentor</th><th>Status</th><th>Next session</th></tr></thead><tbody>
 @if($activeMentorship)
-<div class="eh-data-row"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-user-tie"></i></span><div class="eh-data-row-copy"><strong>{{ data_get($activeMentorship,'mentor.name','Mentor connection') }}</strong><span>Status: {{ ucfirst($activeMentorship->status) }}</span></div></div></div>
 @php($nextSession=$activeMentorship->sessions->first())
-@if($nextSession)
-<div class="eh-data-row"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-calendar-check"></i></span><div class="eh-data-row-copy"><strong>Next Session</strong><span>{{ optional($nextSession->scheduled_at)->format('d M Y H:i') }}</span></div></div></div>
-@endif
+<tr><td><strong>{{ data_get($activeMentorship,'mentor.name','Mentor connection') }}</strong></td><td><span class="status-chip {{ $activeMentorship->status }}">{{ ucfirst($activeMentorship->status) }}</span></td><td>{{ $nextSession ? optional($nextSession->scheduled_at)->format('d M Y H:i') : '-' }}</td></tr>
 @else
-<div class="eh-empty"><i class="fas fa-user-group"></i><h3>No active mentor match</h3><p>Your mentorship connection will appear here when available.</p></div>
+<tr><td colspan="3"><div class="admin-empty"><i class="fas fa-user-group"></i><strong>No active mentor match</strong><span>Your mentorship connection will appear here when available.</span></div></td></tr>
 @endif
-</div>
+</tbody></table></div></div></div>
 </section>
 
 <section class="eh-tab-pane" data-eh-pane="career">
-<div class="eh-tab-section"><div class="eh-data-list">
+<div class="eh-tab-section"><div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+<thead><tr><th>Resume</th><th>Type</th></tr></thead><tbody>
 @forelse($resumes as $resume)
-<div class="eh-data-row"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-file-lines"></i></span><div class="eh-data-row-copy"><strong>{{ $resume->title }}</strong><span>{{ $resume->is_default ? 'Default resume' : 'Resume' }}</span></div></div></div>
+<tr><td><strong>{{ $resume->title }}</strong></td><td>@if($resume->is_default)<span class="status-chip active">Default resume</span>@else Resume @endif</td></tr>
 @empty
-<div class="eh-empty"><i class="fas fa-file-lines"></i><h3>No resume yet</h3><p>Create your professional resume from the career section.</p>@if(Route::has('career.resume.index'))<a class="btn btn-primary" href="{{ route('career.resume.index') }}">Resume Builder</a>@endif</div>
+<tr><td colspan="2"><div class="admin-empty"><i class="fas fa-file-lines"></i><strong>No resume yet</strong><span>Create your professional resume from the career section.</span>@if(Route::has('career.resume.index'))<a class="btn btn-primary btn-sm" href="{{ route('career.resume.index') }}">Resume Builder</a>@endif</div></td></tr>
 @endforelse
-</div></div>
+</tbody></table></div></div></div>
 </section>
 
 <section class="eh-tab-pane" data-eh-pane="opportunities">
-<div class="eh-tab-section"><div class="eh-data-list">
+<div class="eh-tab-section"><div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+<thead><tr><th>Job</th><th>Employer</th><th>Status</th></tr></thead><tbody>
 @forelse($jobApplications as $application)
-<div class="eh-data-row"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-paper-plane"></i></span><div class="eh-data-row-copy"><strong>{{ $application->job?->title ?: 'Job Application' }}</strong><span>{{ data_get($application,'job.employer.company_name','') }}{{ data_get($application,'job.employer.company_name') ? ' · ' : '' }}{{ ucfirst($application->status) }}</span></div></div></div>
+<tr><td><strong>{{ $application->job?->title ?: 'Job Application' }}</strong></td><td>{{ data_get($application,'job.employer.company_name') ?: '-' }}</td><td><span class="status-chip {{ $application->status }}">{{ ucfirst(str_replace('_',' ',$application->status)) }}</span></td></tr>
 @empty
-<div class="eh-empty"><i class="fas fa-briefcase"></i><h3>No recent applications</h3><p>Explore opportunities and start applying.</p>@if(Route::has('jobs.index'))<a class="btn btn-primary" href="{{ route('jobs.index') }}">Browse Jobs</a>@endif</div>
+<tr><td colspan="3"><div class="admin-empty"><i class="fas fa-briefcase"></i><strong>No recent applications</strong><span>Explore opportunities and start applying.</span>@if(Route::has('jobs.index'))<a class="btn btn-primary btn-sm" href="{{ route('jobs.index') }}">Browse Jobs</a>@endif</div></td></tr>
 @endforelse
-</div></div>
+</tbody></table></div></div></div>
 </section>
 
 <section class="eh-tab-pane" data-eh-pane="calendar">
-<div class="eh-tab-section"><div class="eh-data-list">
+<div class="eh-tab-section"><div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+<thead><tr><th>Event</th><th>Starts</th></tr></thead><tbody>
 @forelse($upcomingEvents as $event)
-<div class="eh-data-row"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-calendar-check"></i></span><div class="eh-data-row-copy"><strong>{{ $event->title }}</strong><span>{{ optional($event->starts_at)->format('d M Y H:i') }}</span></div></div></div>
+<tr><td><strong>{{ $event->title }}</strong></td><td>{{ optional($event->starts_at)->format('d M Y H:i') ?: '-' }}</td></tr>
 @empty
-<div class="eh-empty"><i class="fas fa-calendar"></i><h3>No upcoming events</h3><p>Your upcoming activities will appear here.</p></div>
+<tr><td colspan="2"><div class="admin-empty"><i class="fas fa-calendar"></i><strong>No upcoming events</strong><span>Your upcoming activities will appear here.</span></div></td></tr>
 @endforelse
-</div></div>
+</tbody></table></div></div></div>
 </section>
 
 <section class="eh-tab-pane" data-eh-pane="notifications">
-<div class="eh-tab-section"><div class="eh-data-list">
+<div class="eh-tab-section"><div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+<thead><tr><th>Notification</th><th>Received</th></tr></thead><tbody>
 @forelse($notifications as $notification)
-<div class="eh-data-row"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-bell"></i></span><div class="eh-data-row-copy"><strong>{{ $notification->title }}</strong><span>{{ Str::limit($notification->message,120) }}</span></div></div><span>{{ optional($notification->created_at)->diffForHumans() }}</span></div>
+<tr><td><strong>{{ $notification->title }}</strong>@if($notification->message)<small class="admin-cell-hint">{{ Str::limit($notification->message,120) }}</small>@endif</td><td>{{ optional($notification->created_at)->diffForHumans() }}</td></tr>
 @empty
-<div class="eh-empty"><i class="fas fa-bell-slash"></i><h3>No recent notifications</h3><p>You are all caught up.</p></div>
+<tr><td colspan="2"><div class="admin-empty"><i class="fas fa-bell-slash"></i><strong>No recent notifications</strong><span>You are all caught up.</span></div></td></tr>
 @endforelse
-</div></div>
+</tbody></table></div></div></div>
 </section>
+
 
 </div>
 </div>

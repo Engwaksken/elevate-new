@@ -9,13 +9,13 @@
 @endforeach
 </div>
 <div class="eh-tabs" data-eh-tabs><div class="eh-tab-nav" role="tablist"><button class="eh-tab-button active" data-eh-tab="courses"><i class="fas fa-graduation-cap"></i> My Courses</button><button class="eh-tab-button" data-eh-tab="progress"><i class="fas fa-chart-line"></i> Progress</button></div><div class="eh-tab-content">
-<section class="eh-tab-pane active" data-eh-pane="courses"><div class="eh-tab-section"><div class="eh-data-list">
+<section class="eh-tab-pane active" data-eh-pane="courses"><div class="eh-tab-section"><div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Course</th><th>Status</th><th>Progress</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($enrolments as $enrolment)
-<a class="eh-data-row" href="{{ route('learning.course.dashboard', $enrolment->course) }}"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-book-open"></i></span><div class="eh-data-row-copy"><strong>{{ $enrolment->course->title }}</strong><span>Status: {{ ucfirst(str_replace('_',' ',$enrolment->status)) }} · {{ number_format((float)$enrolment->progress_percent,0) }}% complete</span></div></div><i class="fas fa-chevron-right"></i></a>
-@empty<div class="eh-empty"><h3>No courses yet</h3><p>Browse available courses and start learning.</p><a class="btn btn-primary" href="{{ route('learning.index') }}">Browse Courses</a></div>@endforelse
-</div>{{ $enrolments->links() }}</div></section>
-<section class="eh-tab-pane" data-eh-pane="progress"><div class="eh-tab-section"><div class="eh-data-list">
-@forelse($enrolments as $enrolment)<div class="eh-data-row"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-chart-simple"></i></span><div class="eh-data-row-copy"><strong>{{ $enrolment->course->title }}</strong><span>{{ number_format((float)$enrolment->progress_percent,0) }}% complete</span></div></div><strong>{{ number_format((float)$enrolment->progress_percent,0) }}%</strong></div>@empty<p>No learning progress to display yet.</p>@endforelse
-</div></div></section>
+<tr><td><a href="{{ route('learning.course.dashboard', $enrolment->course) }}"><strong>{{ $enrolment->course->title }}</strong></a></td><td><span class="status-chip {{ $enrolment->status }}">{{ ucfirst(str_replace('_',' ',$enrolment->status)) }}</span></td><td>{{ number_format((float)$enrolment->progress_percent,0) }}%</td><td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('learning.course.dashboard', $enrolment->course) }}"><i class="fas fa-arrow-right"></i> Open</a></td></tr>
+@empty<tr><td colspan="4"><div class="admin-empty"><strong>No courses yet</strong><span>Browse available courses and start learning.</span><a class="btn btn-primary btn-sm" href="{{ route('learning.index') }}">Browse Courses</a></div></td></tr>@endforelse
+</tbody></table></div><div class="admin-pagination">{{ $enrolments->links() }}</div></div></div></section>
+<section class="eh-tab-pane" data-eh-pane="progress"><div class="eh-tab-section"><div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Course</th><th>Progress</th><th style="width:40%">Completion</th></tr></thead><tbody>
+@forelse($enrolments as $enrolment)<tr><td><strong>{{ $enrolment->course->title }}</strong></td><td>{{ number_format((float)$enrolment->progress_percent,0) }}%</td><td><div style="height:8px;border-radius:999px;background:#f2e6e6;overflow:hidden"><span style="display:block;height:100%;width:{{ max(0,min(100,(float)$enrolment->progress_percent)) }}%;background:#800000"></span></div></td></tr>@empty<tr><td colspan="3"><div class="admin-empty">No learning progress to display yet.</div></td></tr>@endforelse
+</tbody></table></div></div></div></section>
 </div></div>
 @endsection

@@ -26,22 +26,24 @@
 @if($matches->isNotEmpty())
     <div class="card">
         <h2 style="margin-top:0">My current mentors ({{ $matches->count() }}/{{ $maxMentors }})</h2>
-        <div class="eh-data-list">
+        <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead><tr><th>Mentor</th><th>Mentorship ends</th><th class="table-actions">Actions</th></tr></thead>
+            <tbody>
             @foreach($matches as $match)
-                <div class="eh-data-row">
-                    <div class="eh-data-row-main">
-                        <span class="eh-data-row-icon"><i class="fas fa-user-tie"></i></span>
-                        <div class="eh-data-row-copy">
-                            <strong>{{ $match->mentor?->name }}</strong>
-                            <span>Until {{ optional($match->end_date)->format('d M Y') }}</span>
-                        </div>
-                    </div>
-                    <form method="POST" action="{{ route('mentorship.matches.destroy', $match) }}" onsubmit="return confirm('End this mentorship?')">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-outline btn-sm"><i class="fas fa-xmark"></i> End</button>
-                    </form>
-                </div>
+                <tr>
+                    <td><strong>{{ $match->mentor?->name }}</strong></td>
+                    <td>{{ optional($match->end_date)->format('d M Y') ?: '-' }}</td>
+                    <td class="table-actions">
+                        <form method="POST" action="{{ route('mentorship.matches.destroy', $match) }}" onsubmit="return confirm('End this mentorship?')">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-outline btn-sm"><i class="fas fa-xmark"></i> End</button>
+                        </form>
+                    </td>
+                </tr>
             @endforeach
+            </tbody>
+        </table>
         </div>
     </div>
 @endif

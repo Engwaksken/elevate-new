@@ -20,26 +20,30 @@
 <section class="eh-tab-section" aria-labelledby="course-timetable-title">
     <h2 id="course-timetable-title"><i class="fas fa-calendar-days"></i> Course Timetable</h2>
     <p>All session times are shown in their listed timezone.</p>
-    <div class="eh-data-list">
+    <div class="admin-panel"><div class="admin-table-wrap">
+    <table class="admin-table">
+        <thead><tr><th>Session</th><th>Date</th><th>Time</th><th>Venue</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
+        <tbody>
         @forelse($timetable as $session)
-            <article class="eh-data-row">
-                <div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-calendar-days"></i></span>
-                    <div class="eh-data-row-copy">
-                        <strong>{{ $session['title'] }}</strong>
-                        <span>{{ $session['date_label'] }} · {{ $session['time_label'] }} · {{ $session['timezone'] }}</span>
-                        <span>{{ $session['status'] === 'cancelled' ? 'Cancelled' : ($session['is_past'] ? 'Past session' : 'Scheduled') }}</span>
-                        @if($session['venue'])<span>Venue: {{ $session['venue'] }}</span>@endif
-                        @if($session['notes'])<p style="white-space:pre-wrap">{{ $session['notes'] }}</p>@endif
-                    </div>
-                </div>
-                @if($session['meeting_link'] && $session['status'] === 'scheduled')
-                    <a class="btn btn-outline btn-sm" href="{{ $session['meeting_link'] }}" target="_blank" rel="noopener noreferrer">Online meeting</a>
-                @endif
-            </article>
+            @php($sessionState = $session['status'] === 'cancelled' ? 'Cancelled' : ($session['is_past'] ? 'Past session' : 'Scheduled'))
+            <tr>
+                <td><strong>{{ $session['title'] }}</strong>@if($session['notes'])<small class="admin-cell-hint" style="white-space:pre-wrap">{{ $session['notes'] }}</small>@endif</td>
+                <td>{{ $session['date_label'] }}</td>
+                <td>{{ $session['time_label'] }}<small class="admin-cell-hint">{{ $session['timezone'] }}</small></td>
+                <td>{{ $session['venue'] ?: '-' }}</td>
+                <td><span class="status-chip {{ $session['status'] === 'cancelled' ? 'inactive' : ($session['is_past'] ? 'completed' : 'active') }}">{{ $sessionState }}</span></td>
+                <td class="table-actions">
+                    @if($session['meeting_link'] && $session['status'] === 'scheduled')
+                        <a class="btn btn-outline btn-sm" href="{{ $session['meeting_link'] }}" target="_blank" rel="noopener noreferrer"><i class="fas fa-video"></i> Online meeting</a>
+                    @endif
+                </td>
+            </tr>
         @empty
-            <p>Your instructor has not added any time slots yet.</p>
+            <tr><td colspan="6"><div class="admin-empty">Your instructor has not added any time slots yet.</div></td></tr>
         @endforelse
-    </div>
+        </tbody>
+    </table>
+    </div></div>
 </section>
 @endif
 
@@ -76,18 +80,32 @@
 </div>
 
 @if($enrolment && $course->assessments->count())
-<div class="eh-tab-section"><h2>Assessments</h2><div class="eh-data-list">@foreach($course->assessments as $assessment)
+<div class="eh-tab-section"><h2>Assessments</h2>
+<div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+<thead><tr><th>Assessment</th><th>Type</th><th>Attempts</th><th>Best score</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@foreach($course->assessments as $assessment)
 @php($tried = ($assessmentAttempts ?? collect())->get($assessment->id))
 @php($used = (int) ($tried->used ?? 0))
 @php($max = (int) $assessment->max_attempts)
 @php($exhausted = $max > 0 && $used >= $max)
 @php($best = $tried && $tried->best !== null ? rtrim(rtrim(number_format((float) $tried->best, 1), '0'), '.').'%' : null)
-@if($exhausted)
-{{-- Every attempt is used, so opening it would be refused: show the result instead of a link. --}}
-<div class="eh-data-row" aria-label="{{ $assessment->title }}, completed"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-circle-check"></i></span><div class="eh-data-row-copy"><strong>{{ $assessment->title }}</strong><span>{{ ucfirst($assessment->type) }} · All {{ $max }} {{ \Illuminate\Support\Str::plural('attempt', $max) }} used{{ $best ? ' · Best score '.$best : '' }}</span></div></div><span class="eh-status is-success">Completed</span></div>
-@else
-<a class="eh-data-row" href="{{ route('learning.assessment.show',$assessment) }}"><div class="eh-data-row-main"><span class="eh-data-row-icon"><i class="fas fa-clipboard-question"></i></span><div class="eh-data-row-copy"><strong>{{ $assessment->title }}</strong><span>{{ ucfirst($assessment->type) }}@if($max > 0) · {{ $max - $used }} of {{ $max }} {{ \Illuminate\Support\Str::plural('attempt', $max) }} left @endif</span></div></div><i class="fas fa-chevron-right"></i></a>
-@endif
-@endforeach</div></div>
+<tr @if($exhausted) aria-label="{{ $assessment->title }}, completed" @endif>
+    <td><strong>{{ $assessment->title }}</strong></td>
+    <td>{{ ucfirst($assessment->type) }}</td>
+    @if($exhausted)
+    {{-- Every attempt is used, so opening it would be refused: show the result instead of a link. --}}
+    <td>All {{ $max }} {{ \Illuminate\Support\Str::plural('attempt', $max) }} used</td>
+    <td>{{ $best ? 'Best score '.$best : '-' }}</td>
+    <td><span class="status-chip completed">Completed</span></td>
+    <td class="table-actions"></td>
+    @else
+    <td>@if($max > 0){{ $max - $used }} of {{ $max }} {{ \Illuminate\Support\Str::plural('attempt', $max) }} left @else Unlimited @endif</td>
+    <td>{{ $best ? 'Best score '.$best : '-' }}</td>
+    <td><span class="status-chip {{ $used > 0 ? 'pending' : 'active' }}">{{ $used > 0 ? 'In progress' : 'Open' }}</span></td>
+    <td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('learning.assessment.show',$assessment) }}"><i class="fas fa-arrow-right"></i> Open</a></td>
+    @endif
+</tr>
+@endforeach
+</tbody></table></div></div></div>
 @endif
 @endsection
