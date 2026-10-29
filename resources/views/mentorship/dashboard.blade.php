@@ -258,6 +258,15 @@
                     .eh-ai-msg.user{align-self:flex-end;background:#800000;color:#fff;border-bottom-right-radius:4px}
                     .eh-ai-msg.assistant{align-self:flex-start;background:#f6f1ea;color:#101828;border-bottom-left-radius:4px}
                     .eh-ai-msg.thinking{align-self:flex-start;background:#f6f1ea;color:#667085;font-style:italic}
+                    .eh-ai-turn{border:1px solid #eadede;border-radius:12px;background:#fff;flex:none}
+                    .eh-ai-turn > summary{list-style:none;display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;color:#101828}
+                    .eh-ai-turn > summary::-webkit-details-marker{display:none}
+                    .eh-ai-turn > summary::before{content:"\25B8";color:#800000;font-size:.9rem;transition:transform .15s}
+                    .eh-ai-turn[open] > summary::before{transform:rotate(90deg)}
+                    .eh-ai-turn-q{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+                    .eh-ai-turn[open] .eh-ai-turn-q{white-space:normal}
+                    .eh-ai-turn-meta{flex:none;font-size:.78rem;color:#800000;font-weight:600}
+                    .eh-ai-turn-body{display:flex;flex-direction:column;gap:12px;padding:0 12px 12px}
                     .eh-ai-tools{align-self:flex-start;display:flex;gap:6px;margin-top:-6px}
                     .eh-ai-tools button{border:0;background:none;color:#800000;font-size:.8rem;font-weight:600;cursor:pointer;padding:2px 4px}
                     .eh-ai-steps{align-self:flex-start;width:85%;border:1px solid #eadede;border-radius:12px;padding:10px 12px;background:#fff}
@@ -455,9 +464,37 @@
         return row;
     }
 
-    function renderMessage(m) {
-        log.appendChild(el('div', 'eh-ai-msg ' + m.role, m.content));
-        if (m.role !== 'assistant' || !m.id) return;
+    // Each question and its answer form one collapsible "turn"; older turns stay closed to keep the chat short.
+    function startTurn(question, open) {
+        if (open) {
+            log.querySelectorAll('.eh-ai-turn[open]').forEach(function (turn) { turn.open = false; });
+        }
+        var turn = el('details', 'eh-ai-turn');
+        turn.open = !!open;
+        var summary = el('summary');
+        summary.appendChild(el('span', 'eh-ai-turn-q', question || 'Earlier answer'));
+        summary.appendChild(el('span', 'eh-ai-turn-meta'));
+        turn.appendChild(summary);
+        turn.appendChild(el('div', 'eh-ai-turn-body'));
+        log.appendChild(turn);
+        return turn;
+    }
+
+    function updateTurnMeta(turn, m) {
+        var meta = turn.querySelector('.eh-ai-turn-meta');
+        var parts = [];
+        if (m.saved) parts.push('★ Saved');
+        var steps = (m.actions || []).length;
+        if (steps) parts.push(steps + (steps === 1 ? ' step' : ' steps'));
+        meta.textContent = parts.join(' · ');
+    }
+
+    function renderMessage(m, turn) {
+        turn = turn || log.querySelector('.eh-ai-turn:last-of-type') || startTurn('', true);
+        var body = turn.querySelector('.eh-ai-turn-body');
+        body.appendChild(el('div', 'eh-ai-msg assistant', m.content));
+        updateTurnMeta(turn, m);
+        if (!m.id) return;
 
         var tools = el('div', 'eh-ai-tools');
         var save = el('button', '', m.saved ? 'Saved' : 'Save'); save.type = 'button';
@@ -467,17 +504,32 @@
                 m.saved = data.saved;
                 save.textContent = data.saved ? 'Saved' : 'Save';
                 save.setAttribute('aria-pressed', data.saved ? 'true' : 'false');
+                updateTurnMeta(turn, m);
             }).catch(function (err) { error.textContent = err.message; });
         });
         tools.appendChild(save);
-        log.appendChild(tools);
+        body.appendChild(tools);
 
         if (m.actions && m.actions.length) {
             var box = el('div', 'eh-ai-steps');
             box.appendChild(el('strong', '', 'Suggested steps'));
             m.actions.forEach(function (action) { box.appendChild(renderStep(action)); });
-            log.appendChild(box);
+            body.appendChild(box);
         }
+    }
+
+    function renderStored(messages) {
+        var turn = null;
+        messages.forEach(function (m) {
+            if (m.role === 'user') {
+                turn = startTurn(m.content, false);
+            } else {
+                renderMessage(m, turn || startTurn('', false));
+                turn = null;
+            }
+        });
+        var last = log.querySelector('.eh-ai-turn:last-of-type');
+        if (last) last.open = true; // the latest exchange stays open
     }
 
     function addPlanRow(action) {
@@ -514,15 +566,15 @@
     function ask(message) {
         if (!message) return;
         error.textContent = '';
-        log.appendChild(el('div', 'eh-ai-msg user', message));
+        var turn = startTurn(message, true);
         var thinking = el('div', 'eh-ai-msg thinking', 'Thinking...');
-        log.appendChild(thinking);
+        turn.querySelector('.eh-ai-turn-body').appendChild(thinking);
         scrollDown();
         send.disabled = true;
 
         request('POST', form.dataset.endpoint, { message: message, history: history.slice(-8) }).then(function (data) {
             thinking.remove();
-            renderMessage(data);
+            renderMessage(data, turn);
             history.push({ role: 'user', content: message });
             history.push({ role: 'assistant', content: data.content || data.message });
             scrollDown();
@@ -536,7 +588,7 @@
         });
     }
 
-    stored.forEach(renderMessage);
+    renderStored(stored);
     scrollDown();
 
     // A question sent from the dashboard card (?ask=...) is asked straight away, once.
