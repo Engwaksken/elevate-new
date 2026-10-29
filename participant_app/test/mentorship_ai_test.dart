@@ -173,8 +173,29 @@ void _mentorTabsTests() {
     expect(find.text('Apply to two firms this week.'), findsOneWidget);
   });
 
+  testWidgets('earlier answers collapse when a new question is asked and reopen on tap', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: MentorshipAiScreen(client: _FakeMentorClient())));
+    await tester.pumpAndSettle();
+    expect(find.text('Apply to two firms this week.'), findsOneWidget);
+    expect(find.text('1 step'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'What next?');
+    await tester.tap(find.byTooltip('Send'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reply'), findsOneWidget);
+    expect(find.text('Apply to two firms this week.'), findsNothing);
+    expect(find.text('Help me find work'), findsOneWidget);
+
+    await tester.tap(find.text('Help me find work'));
+    await tester.pumpAndSettle();
+    expect(find.text('Apply to two firms this week.'), findsOneWidget);
+  });
+
   testWidgets('shows a notice when the AI mentor is switched off', (tester) async {
     await tester.pumpWidget(MaterialApp(home: MentorshipAiScreen(client: _FakeMentorClient(enabled: false))));
+    await tester.pumpAndSettle();
+    // The chat opens at the latest answer; the notice sits at the top.
+    await tester.fling(find.byType(ListView).first, const Offset(0, 600), 2000);
     await tester.pumpAndSettle();
     expect(find.text('AI help is switched off'), findsOneWidget);
   });

@@ -127,6 +127,8 @@ class _ChatTabState extends State<_ChatTab> with AutomaticKeepAliveClientMixin {
   final _messages = <_ChatMessage>[];
   final _controller = TextEditingController();
   final _scroll = ScrollController();
+  /// Which question/answer pairs are open; older ones stay collapsed to keep the chat short.
+  final _openTurns = <int>{};
   bool _sending = false;
   bool _loading = true;
   bool _enabled = true;
@@ -179,6 +181,7 @@ class _ChatTabState extends State<_ChatTab> with AutomaticKeepAliveClientMixin {
             for (final m in (data['messages'] as List? ?? const []))
               if (m is Map) _ChatMessage.fromJson(Map<String, dynamic>.from(m)),
           ]);
+        _openOnlyLatest();
         _loading = false;
       });
       _scrollToEnd(jump: true);
@@ -193,6 +196,25 @@ class _ChatTabState extends State<_ChatTab> with AutomaticKeepAliveClientMixin {
     }
   }
 
+  /// Pairs each question with the answer that follows it.
+  List<({_ChatMessage? question, _ChatMessage? answer})> get _turns {
+    final turns = <({_ChatMessage? question, _ChatMessage? answer})>[];
+    for (final message in _messages) {
+      if (message.role == 'user') {
+        turns.add((question: message, answer: null));
+      } else if (turns.isNotEmpty && turns.last.answer == null) {
+        turns.last = (question: turns.last.question, answer: message);
+      } else {
+        turns.add((question: null, answer: message));
+      }
+    }
+    return turns;
+  }
+
+  void _openOnlyLatest() => _openTurns
+    ..clear()
+    ..add(_turns.length - 1);
+
   List<Map<String, String>> get _history => _messages
       .skip(_messages.length > 8 ? _messages.length - 8 : 0)
       .map((m) => {'role': m.role, 'content': m.text})
@@ -206,6 +228,7 @@ class _ChatTabState extends State<_ChatTab> with AutomaticKeepAliveClientMixin {
     final history = _history;
     setState(() {
       _messages.add(_ChatMessage(role: 'user', text: text));
+      _openOnlyLatest();
       _sending = true;
       _controller.clear();
     });
@@ -329,20 +352,17 @@ class _ChatTabState extends State<_ChatTab> with AutomaticKeepAliveClientMixin {
                 ),
               const SizedBox(height: AppSpacing.md),
               if (_messages.isEmpty) _emptyState(context),
-              for (final message in _messages) ...[
-                _Bubble(message: message),
-                if (message.role == 'assistant' && message.id != null)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () => _toggleSaved(message),
-                      icon: Icon(message.saved ? Icons.bookmark : Icons.bookmark_outline, size: 18),
-                      label: Text(message.saved ? 'Saved' : 'Save'),
-                    ),
-                  ),
-                if (message.actions.isNotEmpty) _StepsCard(steps: message.actions, onApprove: _approve, onDismiss: _dismiss),
-              ],
-              if (_sending) const _ThinkingBubble(),
+              for (final (index, turn) in _turns.indexed)
+                _TurnCard(
+                  question: turn.question,
+                  answer: turn.answer,
+                  expanded: _openTurns.contains(index),
+                  thinking: _sending && index == _turns.length - 1 && turn.answer == null,
+                  onToggle: () => setState(() => _openTurns.contains(index) ? _openTurns.remove(index) : _openTurns.add(index)),
+                  onToggleSaved: _toggleSaved,
+                  onApprove: _approve,
+                  onDismiss: _dismiss,
+                ),
               if (_messages.isNotEmpty && !_sending)
                 Center(
                   child: TextButton.icon(
@@ -887,6 +907,99 @@ class _Bubble extends StatelessWidget {
           message.text,
           style: theme.textTheme.bodyMedium?.copyWith(color: isUser ? scheme.onPrimary : scheme.onSurface),
         ),
+      ),
+    );
+  }
+}
+
+/// One question and its answer, collapsible so earlier answers don't fill the chat.
+class _TurnCard extends StatelessWidget {
+  const _TurnCard({
+    required this.question,
+    required this.answer,
+    required this.expanded,
+    required this.thinking,
+    required this.onToggle,
+    required this.onToggleSaved,
+    required this.onApprove,
+    required this.onDismiss,
+  });
+
+  final _ChatMessage? question;
+  final _ChatMessage? answer;
+  final bool expanded;
+  final bool thinking;
+  final VoidCallback onToggle;
+  final void Function(_ChatMessage) onToggleSaved;
+  final Future<void> Function(Map<String, dynamic>) onApprove;
+  final Future<void> Function(Map<String, dynamic>) onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final answer = this.answer;
+    final steps = answer?.actions.length ?? 0;
+    final meta = [
+      if (answer?.saved == true) 'Saved',
+      if (steps > 0) '$steps ${steps == 1 ? 'step' : 'steps'}',
+    ].join(' · ');
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+              child: Row(
+                children: [
+                  Icon(expanded ? Icons.expand_less : Icons.expand_more, color: scheme.primary),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      question?.text ?? 'Earlier answer',
+                      maxLines: expanded ? null : 1,
+                      overflow: expanded ? null : TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                  ),
+                  if (meta.isNotEmpty) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    if (answer?.saved == true) Icon(Icons.bookmark, size: 16, color: scheme.primary),
+                    Text(meta, style: theme.textTheme.labelSmall?.copyWith(color: scheme.primary)),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          if (expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (answer != null) ...[
+                    _Bubble(message: answer),
+                    if (answer.id != null)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () => onToggleSaved(answer),
+                          icon: Icon(answer.saved ? Icons.bookmark : Icons.bookmark_outline, size: 18),
+                          label: Text(answer.saved ? 'Saved' : 'Save'),
+                        ),
+                      ),
+                    if (answer.actions.isNotEmpty) _StepsCard(steps: answer.actions, onApprove: onApprove, onDismiss: onDismiss),
+                  ] else if (thinking)
+                    const _ThinkingBubble(),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
