@@ -30,5 +30,5 @@ class AppConfig {
   );
 
   /// Keep in step with `version:` in pubspec.yaml.
-  static const String appVersion = '1.3.0';
+  static const String appVersion = '1.3.1';
 }
