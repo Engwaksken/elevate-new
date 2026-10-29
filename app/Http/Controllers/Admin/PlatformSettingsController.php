@@ -25,6 +25,7 @@ class PlatformSettingsController extends Controller
             'settings' => $settings,
             'aiConfig' => $aiConfig,
             'aiIntegrations' => $aiIntegrations,
+            'aiRecentIssues' => \App\Models\AiUsageLog::whereIn('status', ['failed', 'limited'])->latest()->take(5)->get(),
             'assessments' => \App\Models\Assessment::orderBy('title')->get(['id', 'title']),
             'entryAssessmentId' => (int) $settings->get('admissions.entry_assessment_id'),
         ]);

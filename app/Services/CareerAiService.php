@@ -15,8 +15,15 @@ class CareerAiService {
         $cfg=AiIntegration::activeSystem();
         if(!$cfg || !$cfg->apiKey() || !$cfg->model) throw new \RuntimeException('AI_UNAVAILABLE');
         $usage = AiUsageLog::where('created_at', '>=', now()->startOfDay())->where('status', 'success');
-        if ((clone $usage)->count() >= ($cfg->settings['daily_limit'] ?? 1000)
-            || ($userId && (clone $usage)->where('user_id', $userId)->count() >= ($cfg->settings['user_daily_limit'] ?? 20))) throw new \RuntimeException('AI_UNAVAILABLE');
+        $limit = match (true) {
+            (clone $usage)->count() >= ($cfg->settings['daily_limit'] ?? 1000) => 'Daily system request limit reached.',
+            $userId && (clone $usage)->where('user_id', $userId)->count() >= ($cfg->settings['user_daily_limit'] ?? 20) => 'Daily request limit per user reached.',
+            default => null,
+        };
+        if ($limit) {
+            AiUsageLog::create(['user_id'=>$userId,'feature'=>$feature,'provider'=>$cfg->provider,'model'=>$cfg->model,'status'=>'limited','metadata'=>['error'=>$limit]]);
+            throw new \RuntimeException('AI_UNAVAILABLE');
+        }
         $started=microtime(true);
         try{
             $provider = AiProviderRegistry::resolve(strtolower($cfg->provider));
@@ -30,22 +37,36 @@ class CareerAiService {
             return $result;
         }catch(\Throwable $e){
             report($e);
+            // Keep the readable reason so admins can see why answers fell back to offline guidance.
             AiUsageLog::create(['user_id'=>$userId,'feature'=>$feature,'provider'=>$cfg->provider,'model'=>$cfg->model,'status'=>'failed',
-                'duration_ms'=>(int)((microtime(true)-$started)*1000),'error_code'=>class_basename($e)]);
+                'duration_ms'=>(int)((microtime(true)-$started)*1000),'error_code'=>class_basename($e),
+                'metadata'=>['error'=>mb_substr($this->errorMessage($e,$cfg,$provider??[]),0,500)]]);
             throw new \RuntimeException('AI_UNAVAILABLE');
         }
+    }
+
+    /**
+     * Fail loudly when a provider answers 200 but without usable text (blocked, cut off, empty).
+     */
+    private function requireText(array $result, ?string $reason = null): array
+    {
+        if (trim((string) ($result['text'] ?? '')) === '') {
+            throw new \UnexpectedValueException('The model returned no text'.($reason ? ' (finish reason: '.$reason.')' : '').'.');
+        }
+        return $result;
     }
 
     public function testConnection(AiIntegration $config): array
     {
         $provider = AiProviderRegistry::resolve(strtolower($config->provider));
         try {
-            match($provider['api']) {
-                'gemini' => $this->gemini($config, $provider, 'You are a concise assistant.', 'Reply with exactly: OK'),
-                'anthropic' => $this->anthropic($config, $provider, 'You are a concise assistant.', 'Reply with exactly: OK'),
-                default => $this->openAi($config, $provider, 'You are a concise assistant.', 'Reply with exactly: OK'),
+            // Ask a realistic question so the test exercises the same path as real answers.
+            $result = match($provider['api']) {
+                'gemini' => $this->gemini($config, $provider, 'You are a concise career assistant.', 'In one sentence, give one tip for choosing a career path.'),
+                'anthropic' => $this->anthropic($config, $provider, 'You are a concise career assistant.', 'In one sentence, give one tip for choosing a career path.'),
+                default => $this->openAi($config, $provider, 'You are a concise career assistant.', 'In one sentence, give one tip for choosing a career path.'),
             };
-            return ['ok' => true, 'message' => 'Connected to '.$provider['label'].' - '.$config->model.' responded successfully.'];
+            return ['ok' => true, 'message' => 'Connected to '.$provider['label'].' - '.$config->model.' answered: "'.\Illuminate\Support\Str::limit(trim($result['text']), 160).'"'];
         } catch (\Throwable $e) {
             return ['ok' => false, 'message' => 'Connection failed: '.$this->errorMessage($e, $config, $provider)];
         }
@@ -163,7 +184,7 @@ class CareerAiService {
         if ($auth === 'api-key') $http=$http->withHeaders(['api-key'=>$c->apiKey()]);
         elseif ($auth !== 'none') $http=$http->withToken($c->apiKey());
         $r=$http->post($endpoint,$payload)->throw()->json();
-        return ['text'=>data_get($r,'choices.0.message.content',''),'input_tokens'=>(int)data_get($r,'usage.prompt_tokens',0),'output_tokens'=>(int)data_get($r,'usage.completion_tokens',0)];
+        return $this->requireText(['text'=>(string)data_get($r,'choices.0.message.content',''),'input_tokens'=>(int)data_get($r,'usage.prompt_tokens',0),'output_tokens'=>(int)data_get($r,'usage.completion_tokens',0)], data_get($r,'choices.0.finish_reason'));
     }
 
     private function anthropic(AiIntegration $c,array $provider,string $system,string $user,array $history=[]):array {
@@ -181,7 +202,7 @@ class CareerAiService {
             ->post($endpoint,$payload)->throw()->json();
         // Responses can start with thinking blocks, so join every text block rather than reading content[0].
         $text=collect(data_get($r,'content',[]))->where('type','text')->pluck('text')->implode('');
-        return ['text'=>$text,'input_tokens'=>(int)data_get($r,'usage.input_tokens',0),'output_tokens'=>(int)data_get($r,'usage.output_tokens',0)];
+        return $this->requireText(['text'=>$text,'input_tokens'=>(int)data_get($r,'usage.input_tokens',0),'output_tokens'=>(int)data_get($r,'usage.output_tokens',0)], data_get($r,'stop_reason'));
     }
 
     private function gemini(AiIntegration $c,array $provider,string $system,string $user,array $history=[]):array {
@@ -193,6 +214,17 @@ class CareerAiService {
                 ['role'=>'user','parts'=>[['text'=>$user]]],
             ],
         ])->throw()->json();
-        return ['text'=>data_get($r,'candidates.0.content.parts.0.text','')];
+        if ($block = data_get($r,'promptFeedback.blockReason')) {
+            throw new \UnexpectedValueException('Gemini blocked the request ('.$block.').');
+        }
+        // Replies can be split over several parts and may include thought parts; join the visible text.
+        $text=collect(data_get($r,'candidates.0.content.parts',[]))
+            ->reject(fn($part)=>!empty($part['thought']))
+            ->pluck('text')->filter()->implode('');
+        return $this->requireText([
+            'text'=>$text,
+            'input_tokens'=>(int)data_get($r,'usageMetadata.promptTokenCount',0),
+            'output_tokens'=>(int)data_get($r,'usageMetadata.candidatesTokenCount',0),
+        ], data_get($r,'candidates.0.finishReason'));
     }
 }

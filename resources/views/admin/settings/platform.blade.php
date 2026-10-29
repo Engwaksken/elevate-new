@@ -197,6 +197,26 @@
 </table>
 </div>
 <p class="admin-cell-hint" style="margin:6px 0 18px">Only one provider can be active at a time. Enabling a provider disables the others; each keeps its own saved key and model.</p>
+@if($aiRecentIssues->isNotEmpty())
+<h3 style="margin:18px 0 8px">Recent AI problems</h3>
+<p class="admin-cell-hint" style="margin:0 0 8px">When a request fails, participants see offline guidance instead of an AI answer. The reason is recorded here.</p>
+<div class="admin-table-wrap">
+<table class="admin-table">
+<thead><tr><th>When</th><th>Feature</th><th>Provider / model</th><th>Status</th><th>Reason</th></tr></thead>
+<tbody>
+@foreach($aiRecentIssues as $issue)
+<tr>
+    <td>{{ optional($issue->created_at)->format('d M Y H:i') }}</td>
+    <td>{{ ucfirst(str_replace('_', ' ', $issue->feature)) }}</td>
+    <td>{{ $issue->provider }}<small class="admin-cell-hint">{{ $issue->model }}</small></td>
+    <td><span class="status-chip {{ $issue->status === 'limited' ? 'pending' : 'inactive' }}">{{ ucfirst($issue->status) }}</span></td>
+    <td>{{ data_get($issue->metadata, 'error', $issue->error_code ?: '-') }}</td>
+</tr>
+@endforeach
+</tbody>
+</table>
+</div>
+@endif
 
 @php($aiReopen = $errors->hasAny(['provider', 'model', 'endpoint', 'api_key', 'daily_limit', 'user_daily_limit', 'temperature']) || request()->filled('ai_provider'))
 <div class="eh-modal" id="aiProviderModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="aiProviderModalTitle" @if($aiReopen) data-modal-autoopen @endif>
