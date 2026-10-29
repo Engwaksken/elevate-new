@@ -3,12 +3,11 @@
 @section('content')
 
 <style>
-/* Show notifications four per row (two on tablets, one on phones). */
-.notification-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.notification-item{grid-template-columns:1fr;align-items:stretch;gap:10px}
-.notification-item .notification-actions{justify-content:flex-end}
-@media(max-width:1100px){.notification-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:640px){.notification-list{grid-template-columns:1fr}}
+.notification-row{cursor:pointer}
+.notification-row:hover td{background:#fbf7f4}
+.notification-row:focus-visible{outline:2px solid #800000;outline-offset:-2px}
+.notification-row.unread td:first-child strong::before{content:'';display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:#800000;vertical-align:middle}
+.notification-row.read td{color:#667085}
 </style>
 
 <div class="admin-page-header">
@@ -44,25 +43,25 @@
 <a href="{{ route('notifications.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-<div class="notification-list">
+<div class="admin-table-wrap">
+<table class="admin-table">
+<thead><tr><th>Notification</th><th>Type</th><th>Received</th><th>Status</th><th class="table-actions">Details</th></tr></thead>
+<tbody>
 @forelse($notifications as $notification)
-<article class="notification-item is-clickable {{ $notification->read_at ? 'read' : 'unread' }}" id="notification-item-{{ $notification->id }}" data-modal-open="notification-{{ $notification->id }}" tabindex="0" role="button" aria-haspopup="dialog" aria-label="View notification: {{ $notification->title }}">
-    <div class="notification-icon"><i class="fas fa-bell"></i></div>
-    <div class="notification-content">
-        <div class="notification-heading">
-            <strong>{{ $notification->title }}</strong>
-            <small>{{ optional($notification->created_at)->diffForHumans() }}</small>
-        </div>
-        @if($notification->message)<p>{{ \Illuminate\Support\Str::limit($notification->message, 160) }}</p>@endif
-        <span class="status-chip {{ $notification->read_at ? 'active' : 'pending' }}" data-notification-status>{{ $notification->read_at ? 'Read' : 'Unread' }}</span>
-    </div>
-    <div class="notification-actions">
+<tr class="notification-row {{ $notification->read_at ? 'read' : 'unread' }}" id="notification-item-{{ $notification->id }}" data-modal-open="notification-{{ $notification->id }}" tabindex="0" aria-haspopup="dialog" aria-label="View notification: {{ $notification->title }}">
+    <td><strong>{{ $notification->title }}</strong>@if($notification->message)<small class="admin-cell-hint">{{ \Illuminate\Support\Str::limit($notification->message, 120) }}</small>@endif</td>
+    <td>{{ $notification->type ? ucfirst(str_replace('_',' ',$notification->type)) : 'Notification' }}</td>
+    <td title="{{ optional($notification->created_at)->format('d M Y H:i') }}">{{ optional($notification->created_at)->diffForHumans() }}</td>
+    <td><span class="status-chip {{ $notification->read_at ? 'active' : 'pending' }}" data-notification-status>{{ $notification->read_at ? 'Read' : 'Unread' }}</span></td>
+    <td class="table-actions">
         <button type="button" class="btn btn-outline btn-sm" data-modal-open="notification-{{ $notification->id }}"><i class="fas fa-eye"></i> View</button>
-    </div>
-</article>
+    </td>
+</tr>
 @empty
-<div class="admin-empty"><i class="fas fa-bell-slash"></i><strong>No notifications</strong><span>You are all caught up.</span></div>
+<tr><td colspan="5"><div class="admin-empty"><i class="fas fa-bell-slash"></i><strong>No notifications</strong><span>You are all caught up.</span></div></td></tr>
 @endforelse
+</tbody>
+</table>
 </div>
 
 @foreach($notifications as $notification)

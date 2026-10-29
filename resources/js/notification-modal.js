@@ -1,6 +1,6 @@
 // Notification list: keyboard access for clickable rows and mark-as-read when a detail modal opens.
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.notification-item[data-modal-open]').forEach(item => {
+    document.querySelectorAll('.notification-item[data-modal-open], .notification-row[data-modal-open]').forEach(item => {
         item.addEventListener('keydown', e => {
             if (e.target !== item || (e.key !== 'Enter' && e.key !== ' ')) return;
             e.preventDefault();
