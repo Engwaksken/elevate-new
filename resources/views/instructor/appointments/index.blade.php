@@ -41,110 +41,114 @@
         @if(request('search'))<a href="{{ route('instructor.appointments.index', array_merge(request()->only('scope'), ['tab' => $tab])) }}" class="btn btn-outline btn-sm">Reset</a>@endif
     </form>
 
-    @if($appointments->isEmpty())
-        <div class="appt-empty"><i class="fas fa-calendar" aria-hidden="true"></i>
-            {{ match($tab) { 'requests' => 'No appointment requests right now.', 'upcoming' => 'No upcoming appointments.', default => 'No past appointments yet.' } }}
-        </div>
-    @else
-        <div class="appt-list">
-            @foreach($appointments as $appointment)
+    <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead><tr><th>Date and time</th><th>Participant</th><th>Topic</th>@if($showAll)<th>Instructor</th>@endif<th>Mode</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
+            <tbody>
+            @forelse($appointments as $appointment)
                 @php
                     $mine = $appointment->instructor_user_id === auth()->id();
                     $isPending = $appointment->status === 'pending';
                     $isApproved = $appointment->status === 'approved';
                     $started = $appointment->starts_at->isPast();
                 @endphp
-                <article class="appt-card appt-card--{{ $appointment->status }}" aria-labelledby="ia-{{ $appointment->id }}-title">
-                    <div class="appt-date" aria-hidden="true"><b>{{ $appointment->starts_at->format('j') }}</b><span>{{ $appointment->starts_at->format('M') }}</span></div>
-                    <div class="appt-body">
-                        <div class="appt-head">
-                            <h3 id="ia-{{ $appointment->id }}-title">{{ $appointment->topic }}</h3>
-                            <span class="appt-chip appt-chip--{{ $appointment->status }}">{{ $appointment->status === 'rescheduled_proposed' ? 'Awaiting participant' : $appointment->statusLabel() }}</span>
-                        </div>
-                        <ul class="appt-meta">
-                            <li><i class="fas fa-user-graduate" aria-hidden="true"></i> {{ $appointment->participant?->name ?? 'Participant' }}</li>
-                            @if($appointment->participant?->email)<li><i class="fas fa-envelope" aria-hidden="true"></i> {{ $appointment->participant->email }}</li>@endif
-                            @if($showAll)<li><i class="fas fa-chalkboard-user" aria-hidden="true"></i> {{ $appointment->instructor?->name }}</li>@endif
-                            @if($appointment->course)<li><i class="fas fa-book" aria-hidden="true"></i> {{ $appointment->course->title }}</li>@endif
-                            <li><i class="fas fa-clock" aria-hidden="true"></i> <time datetime="{{ $appointment->starts_at->toIso8601String() }}">{{ $appointment->starts_at->format('D j M Y, H:i') }}</time> – {{ $appointment->ends_at->format('H:i') }}</li>
-                            <li><i class="fas {{ $appointment->mode === 'online' ? 'fa-video' : 'fa-location-dot' }}" aria-hidden="true"></i> {{ $appointment->modeLabel() }} · {{ $appointment->duration_minutes }} min</li>
-                        </ul>
-                        @if($appointment->details)<p class="appt-details">{{ $appointment->details }}</p>@endif
+                <tr>
+                    <td>
+                        <strong><time datetime="{{ $appointment->starts_at->toIso8601String() }}">{{ $appointment->starts_at->format('D j M Y') }}</time></strong>
+                        <small class="admin-cell-hint">{{ $appointment->starts_at->format('H:i') }} to {{ $appointment->ends_at->format('H:i') }} · {{ $appointment->duration_minutes }} min</small>
+                    </td>
+                    <td><strong>{{ $appointment->participant?->name ?? 'Participant' }}</strong>@if($appointment->participant?->email)<small class="admin-cell-hint">{{ $appointment->participant->email }}</small>@endif</td>
+                    <td>
+                        <strong>{{ $appointment->topic }}</strong>
+                        @if($appointment->course)<small class="admin-cell-hint">{{ $appointment->course->title }}</small>@endif
+                        @if($appointment->details)<small class="admin-cell-hint">{{ \Illuminate\Support\Str::limit($appointment->details, 140) }}</small>@endif
+                    </td>
+                    @if($showAll)<td>{{ $appointment->instructor?->name ?? '-' }}</td>@endif
+                    <td>
+                        <i class="fas {{ $appointment->mode === 'online' ? 'fa-video' : 'fa-location-dot' }}" aria-hidden="true"></i> {{ $appointment->modeLabel() }}
+                        @if($isApproved && $appointment->meeting_url)<small class="admin-cell-hint"><a href="{{ $appointment->meeting_url }}" target="_blank" rel="noopener noreferrer">Meeting link</a></small>@endif
+                        @if($isApproved && $appointment->location)<small class="admin-cell-hint">{{ $appointment->location }}</small>@endif
+                    </td>
+                    <td>
+                        <span class="appt-chip appt-chip--{{ $appointment->status }}">{{ $appointment->status === 'rescheduled_proposed' ? 'Awaiting participant' : $appointment->statusLabel() }}</span>
                         @if($appointment->status === 'rescheduled_proposed' && $appointment->proposed_starts_at)
-                            <p class="appt-note appt-note--proposal"><strong>You proposed:</strong> {{ $appointment->proposed_starts_at->format('D j M Y, H:i') }} – {{ $appointment->proposedEndsAt()->format('H:i') }}. Waiting for the participant to respond.</p>
-                        @endif
-                        @if($isApproved && ($appointment->meeting_url || $appointment->location))
-                            <p class="appt-note appt-note--link">
-                                @if($appointment->meeting_url)<i class="fas fa-video" aria-hidden="true"></i> <a href="{{ $appointment->meeting_url }}" target="_blank" rel="noopener noreferrer">Meeting link</a>@endif
-                                @if($appointment->meeting_url && $appointment->location) · @endif
-                                @if($appointment->location)<i class="fas fa-location-dot" aria-hidden="true"></i> {{ $appointment->location }}@endif
-                            </p>
+                            <small class="admin-cell-hint" style="color:#5925dc">You proposed {{ $appointment->proposed_starts_at->format('D j M Y, H:i') }} to {{ $appointment->proposedEndsAt()->format('H:i') }}</small>
                         @endif
                         @if(in_array($appointment->status, ['declined', 'cancelled'], true) && ($appointment->decision_reason || $appointment->cancelled_by))
-                            <p class="appt-note appt-note--reason">@if($appointment->status === 'cancelled' && $appointment->cancelled_by)<strong>Cancelled by {{ $appointment->cancelled_by === $appointment->participant_user_id ? 'participant' : 'instructor' }}.</strong> @endif{{ $appointment->decision_reason }}</p>
+                            <small class="admin-cell-hint" style="color:#b42318">@if($appointment->status === 'cancelled' && $appointment->cancelled_by)Cancelled by {{ $appointment->cancelled_by === $appointment->participant_user_id ? 'participant' : 'instructor' }}. @endif{{ $appointment->decision_reason }}</small>
                         @endif
-
-                        @if($mine && ($isPending || $isApproved))
-                            <div class="appt-actions">
-                                @if($isPending)
-                                    <button type="button" class="btn btn-primary btn-sm" data-modal-open="ia-approve-{{ $appointment->id }}"><i class="fas fa-check" aria-hidden="true"></i> Approve</button>
-                                    <button type="button" class="btn btn-outline btn-sm" data-modal-open="ia-propose-{{ $appointment->id }}"><i class="fas fa-calendar-plus" aria-hidden="true"></i> Propose time</button>
-                                    <button type="button" class="btn btn-outline btn-sm" data-modal-open="ia-decline-{{ $appointment->id }}"><i class="fas fa-xmark" aria-hidden="true"></i> Decline</button>
-                                @elseif($isApproved)
-                                    @if($started)
-                                        <form method="POST" action="{{ route('instructor.appointments.complete', $appointment) }}">@csrf
-                                            <button class="btn btn-primary btn-sm"><i class="fas fa-circle-check" aria-hidden="true"></i> Mark completed</button>
-                                        </form>
-                                    @else
-                                        <button type="button" class="btn btn-outline btn-sm" data-modal-open="ia-cancel-{{ $appointment->id }}"><i class="fas fa-ban" aria-hidden="true"></i> Cancel</button>
-                                    @endif
-                                @endif
+                    </td>
+                    <td class="table-actions">
+                        @if($mine && $isPending)
+                            <div class="action-group">
+                                <button type="button" class="btn btn-primary btn-sm" data-modal-open="ia-approve-{{ $appointment->id }}"><i class="fas fa-check" aria-hidden="true"></i> Approve</button>
+                                <button type="button" class="btn btn-outline btn-sm" data-modal-open="ia-propose-{{ $appointment->id }}"><i class="fas fa-calendar-plus" aria-hidden="true"></i> Propose time</button>
+                                <button type="button" class="btn btn-outline btn-sm" data-modal-open="ia-decline-{{ $appointment->id }}"><i class="fas fa-xmark" aria-hidden="true"></i> Decline</button>
                             </div>
+                        @elseif($mine && $isApproved && $started)
+                            <form method="POST" action="{{ route('instructor.appointments.complete', $appointment) }}">@csrf
+                                <button class="btn btn-primary btn-sm"><i class="fas fa-circle-check" aria-hidden="true"></i> Mark completed</button>
+                            </form>
+                        @elseif($mine && $isApproved)
+                            <button type="button" class="btn btn-outline btn-sm" data-modal-open="ia-cancel-{{ $appointment->id }}"><i class="fas fa-ban" aria-hidden="true"></i> Cancel</button>
+                        @else
+                            <span class="appt-hint">-</span>
                         @endif
-                    </div>
-                </article>
-
-                @if($mine && $isPending)
-                    <div class="eh-modal" id="ia-approve-{{ $appointment->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ia-approve-{{ $appointment->id }}-title">
-                        <div class="eh-modal-dialog"><form method="POST" action="{{ route('instructor.appointments.approve', $appointment) }}">@csrf
-                            <div class="eh-modal-header"><div><h2 id="ia-approve-{{ $appointment->id }}-title">Approve appointment</h2><p>{{ $appointment->participant?->name }} · {{ $appointment->starts_at->format('D j M Y, H:i') }} – {{ $appointment->ends_at->format('H:i') }}</p></div><button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button></div>
-                            <div class="eh-modal-body"><div class="modal-grid">
-                                <div class="form-group full"><label for="ia-url-{{ $appointment->id }}">Meeting link {{ $appointment->mode === 'online' ? '(recommended)' : '(optional)' }}</label><input id="ia-url-{{ $appointment->id }}" type="url" name="meeting_url" maxlength="500" placeholder="https://meet.example.com/..."></div>
-                                <div class="form-group full"><label for="ia-loc-{{ $appointment->id }}">Venue {{ $appointment->mode === 'in_person' ? '(recommended)' : '(optional)' }}</label><input id="ia-loc-{{ $appointment->id }}" name="location" maxlength="255" placeholder="e.g. Room 4, Kampala hub"></div>
-                            </div><span class="appt-hint">The participant is notified and the appointment appears on both your calendars.</span></div>
-                            <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary"><i class="fas fa-check" aria-hidden="true"></i> Approve</button></div>
-                        </form></div>
-                    </div>
-                    <div class="eh-modal" id="ia-propose-{{ $appointment->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ia-propose-{{ $appointment->id }}-title">
-                        <div class="eh-modal-dialog"><form method="POST" action="{{ route('instructor.appointments.propose', $appointment) }}">@csrf
-                            <div class="eh-modal-header"><div><h2 id="ia-propose-{{ $appointment->id }}-title">Propose another time</h2><p>Requested: {{ $appointment->starts_at->format('D j M Y, H:i') }} ({{ $appointment->duration_minutes }} min)</p></div><button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button></div>
-                            <div class="eh-modal-body"><div class="modal-grid">
-                                <div class="form-group"><label for="ia-pdate-{{ $appointment->id }}">New date *</label><input id="ia-pdate-{{ $appointment->id }}" type="date" name="proposed_date" required min="{{ now()->toDateString() }}" value="{{ $appointment->starts_at->isFuture() ? $appointment->starts_at->toDateString() : now()->addDay()->toDateString() }}"></div>
-                                <div class="form-group"><label for="ia-ptime-{{ $appointment->id }}">New start time *</label><input id="ia-ptime-{{ $appointment->id }}" type="time" name="proposed_time" required step="300" value="{{ $appointment->starts_at->format('H:i') }}"></div>
-                                <div class="form-group full"><label for="ia-pnote-{{ $appointment->id }}">Message to participant (optional)</label><textarea id="ia-pnote-{{ $appointment->id }}" name="note" maxlength="1000" rows="3"></textarea></div>
-                            </div></div>
-                            <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary"><i class="fas fa-paper-plane" aria-hidden="true"></i> Send proposal</button></div>
-                        </form></div>
-                    </div>
-                    <div class="eh-modal" id="ia-decline-{{ $appointment->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ia-decline-{{ $appointment->id }}-title">
-                        <div class="eh-modal-dialog eh-modal-sm"><form method="POST" action="{{ route('instructor.appointments.decline', $appointment) }}">@csrf
-                            <div class="eh-modal-header"><div><h2 id="ia-decline-{{ $appointment->id }}-title">Decline request</h2><p>{{ $appointment->participant?->name }} · {{ $appointment->topic }}</p></div><button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button></div>
-                            <div class="eh-modal-body"><div class="modal-grid"><div class="form-group full"><label for="ia-reason-{{ $appointment->id }}">Reason *</label><textarea id="ia-reason-{{ $appointment->id }}" name="reason" required maxlength="1000" rows="3"></textarea></div></div></div>
-                            <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Back</button><button class="btn btn-danger"><i class="fas fa-xmark" aria-hidden="true"></i> Decline</button></div>
-                        </form></div>
-                    </div>
-                @elseif($mine && $isApproved && ! $started)
-                    <div class="eh-modal" id="ia-cancel-{{ $appointment->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ia-cancel-{{ $appointment->id }}-title">
-                        <div class="eh-modal-dialog eh-modal-sm"><form method="POST" action="{{ route('instructor.appointments.cancel', $appointment) }}">@csrf
-                            <div class="eh-modal-header"><div><h2 id="ia-cancel-{{ $appointment->id }}-title">Cancel appointment</h2><p>{{ $appointment->participant?->name }} · {{ $appointment->starts_at->format('D j M, H:i') }}</p></div><button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button></div>
-                            <div class="eh-modal-body"><div class="modal-grid"><div class="form-group full"><label for="ia-creason-{{ $appointment->id }}">Reason *</label><textarea id="ia-creason-{{ $appointment->id }}" name="reason" required maxlength="1000" rows="3"></textarea></div></div></div>
-                            <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Keep it</button><button class="btn btn-danger"><i class="fas fa-ban" aria-hidden="true"></i> Cancel appointment</button></div>
-                        </form></div>
-                    </div>
-                @endif
-            @endforeach
-        </div>
-        <div class="admin-pagination">{{ $appointments->links() }}</div>
-    @endif
+                    </td>
+                </tr>
+            @empty
+                <tr><td colspan="{{ $showAll ? 7 : 6 }}"><div class="admin-empty">{{ match($tab) { 'requests' => 'No appointment requests right now.', 'upcoming' => 'No upcoming appointments.', default => 'No past appointments yet.' } }}</div></td></tr>
+            @endforelse
+            </tbody>
+        </table>
+    </div>
+    <div class="admin-pagination">{{ $appointments->links() }}</div>
 </div>
+
+@foreach($appointments as $appointment)
+    @php
+        $mine = $appointment->instructor_user_id === auth()->id();
+        $isPending = $appointment->status === 'pending';
+        $isApproved = $appointment->status === 'approved';
+        $started = $appointment->starts_at->isPast();
+    @endphp
+    @if($mine && $isPending)
+        <div class="eh-modal" id="ia-approve-{{ $appointment->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ia-approve-{{ $appointment->id }}-title">
+            <div class="eh-modal-dialog"><form method="POST" action="{{ route('instructor.appointments.approve', $appointment) }}">@csrf
+                <div class="eh-modal-header"><div><h2 id="ia-approve-{{ $appointment->id }}-title">Approve appointment</h2><p>{{ $appointment->participant?->name }} · {{ $appointment->starts_at->format('D j M Y, H:i') }} to {{ $appointment->ends_at->format('H:i') }}</p></div><button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button></div>
+                <div class="eh-modal-body"><div class="modal-grid">
+                    <div class="form-group full"><label for="ia-url-{{ $appointment->id }}">Meeting link {{ $appointment->mode === 'online' ? '(recommended)' : '(optional)' }}</label><input id="ia-url-{{ $appointment->id }}" type="url" name="meeting_url" maxlength="500" placeholder="https://meet.example.com/..."></div>
+                    <div class="form-group full"><label for="ia-loc-{{ $appointment->id }}">Venue {{ $appointment->mode === 'in_person' ? '(recommended)' : '(optional)' }}</label><input id="ia-loc-{{ $appointment->id }}" name="location" maxlength="255" placeholder="e.g. Room 4, Kampala hub"></div>
+                </div><span class="appt-hint">The participant is notified and the appointment appears on both your calendars.</span></div>
+                <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary"><i class="fas fa-check" aria-hidden="true"></i> Approve</button></div>
+            </form></div>
+        </div>
+        <div class="eh-modal" id="ia-propose-{{ $appointment->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ia-propose-{{ $appointment->id }}-title">
+            <div class="eh-modal-dialog"><form method="POST" action="{{ route('instructor.appointments.propose', $appointment) }}">@csrf
+                <div class="eh-modal-header"><div><h2 id="ia-propose-{{ $appointment->id }}-title">Propose another time</h2><p>Requested: {{ $appointment->starts_at->format('D j M Y, H:i') }} ({{ $appointment->duration_minutes }} min)</p></div><button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button></div>
+                <div class="eh-modal-body"><div class="modal-grid">
+                    <div class="form-group"><label for="ia-pdate-{{ $appointment->id }}">New date *</label><input id="ia-pdate-{{ $appointment->id }}" type="date" name="proposed_date" required min="{{ now()->toDateString() }}" value="{{ $appointment->starts_at->isFuture() ? $appointment->starts_at->toDateString() : now()->addDay()->toDateString() }}"></div>
+                    <div class="form-group"><label for="ia-ptime-{{ $appointment->id }}">New start time *</label><input id="ia-ptime-{{ $appointment->id }}" type="time" name="proposed_time" required step="300" value="{{ $appointment->starts_at->format('H:i') }}"></div>
+                    <div class="form-group full"><label for="ia-pnote-{{ $appointment->id }}">Message to participant (optional)</label><textarea id="ia-pnote-{{ $appointment->id }}" name="note" maxlength="1000" rows="3"></textarea></div>
+                </div></div>
+                <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary"><i class="fas fa-paper-plane" aria-hidden="true"></i> Send proposal</button></div>
+            </form></div>
+        </div>
+        <div class="eh-modal" id="ia-decline-{{ $appointment->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ia-decline-{{ $appointment->id }}-title">
+            <div class="eh-modal-dialog eh-modal-sm"><form method="POST" action="{{ route('instructor.appointments.decline', $appointment) }}">@csrf
+                <div class="eh-modal-header"><div><h2 id="ia-decline-{{ $appointment->id }}-title">Decline request</h2><p>{{ $appointment->participant?->name }} · {{ $appointment->topic }}</p></div><button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button></div>
+                <div class="eh-modal-body"><div class="modal-grid"><div class="form-group full"><label for="ia-reason-{{ $appointment->id }}">Reason *</label><textarea id="ia-reason-{{ $appointment->id }}" name="reason" required maxlength="1000" rows="3"></textarea></div></div></div>
+                <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Back</button><button class="btn btn-danger"><i class="fas fa-xmark" aria-hidden="true"></i> Decline</button></div>
+            </form></div>
+        </div>
+    @elseif($mine && $isApproved && ! $started)
+        <div class="eh-modal" id="ia-cancel-{{ $appointment->id }}" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ia-cancel-{{ $appointment->id }}-title">
+            <div class="eh-modal-dialog eh-modal-sm"><form method="POST" action="{{ route('instructor.appointments.cancel', $appointment) }}">@csrf
+                <div class="eh-modal-header"><div><h2 id="ia-cancel-{{ $appointment->id }}-title">Cancel appointment</h2><p>{{ $appointment->participant?->name }} · {{ $appointment->starts_at->format('D j M, H:i') }}</p></div><button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button></div>
+                <div class="eh-modal-body"><div class="modal-grid"><div class="form-group full"><label for="ia-creason-{{ $appointment->id }}">Reason *</label><textarea id="ia-creason-{{ $appointment->id }}" name="reason" required maxlength="1000" rows="3"></textarea></div></div></div>
+                <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Keep it</button><button class="btn btn-danger"><i class="fas fa-ban" aria-hidden="true"></i> Cancel appointment</button></div>
+            </form></div>
+        </div>
+    @endif
+@endforeach
 @endsection

@@ -20,10 +20,27 @@
 @if(session('warning')) <div class="warning-box">{{ session('warning') }}</div> @endif
 @if(session('ai_suggestion'))
     <div class="ai-note">
-        <strong><i class="fas fa-wand-magic-sparkles"></i> AI suggestion</strong>
+        <strong><i class="fas fa-wand-magic-sparkles"></i> Suggestions for your resume</strong>
         <p style="white-space:pre-wrap">{{ session('ai_suggestion') }}</p>
-        <small>Confirm that suggestions accurately reflect your experience before using them.</small>
+        <small>Only make changes that are true for you.</small>
     </div>
+@endif
+@if(session('ai_summary_draft') && $resume->exists)
+    <div class="ai-note">
+        <strong><i class="fas fa-wand-magic-sparkles"></i> Here is a summary written from your resume</strong>
+        <form method="POST" action="{{ route('career.resume.ai.summary.apply', $resume) }}" style="margin-top:8px">@csrf
+            <label for="ai-summary-draft" class="sr-only">Suggested summary</label>
+            <textarea id="ai-summary-draft" name="professional_summary" rows="5" maxlength="5000">{{ session('ai_summary_draft') }}</textarea>
+            <small class="form-hint">Read it carefully and change any words you like. It replaces your current summary when you click "Use this summary".</small>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm"><i class="fas fa-check"></i> Use this summary</button>
+                <button type="submit" form="ai-summary-form" class="btn btn-outline btn-sm"><i class="fas fa-rotate"></i> Try another version</button>
+            </div>
+        </form>
+    </div>
+@endif
+@if($resume->exists)
+    <form id="ai-summary-form" method="POST" action="{{ route('career.resume.ai.summary', $resume) }}" hidden>@csrf</form>
 @endif
 
 <div class="career-workspace">
@@ -80,8 +97,12 @@
 
                         <div class="form-group">
                             <label for="professional_summary">Professional summary</label>
-                            <textarea id="professional_summary" name="professional_summary" rows="7" placeholder="Summarise your experience, strengths and career goals in 3–5 sentences...">{{ old('professional_summary',$resume->professional_summary) }}</textarea>
+                            <textarea id="professional_summary" name="professional_summary" rows="5" placeholder="Summarise your experience, strengths and career goals in 3 to 5 sentences...">{{ old('professional_summary',$resume->professional_summary) }}</textarea>
                             <small class="form-hint">Focus on relevant strengths, experience and the value you can bring to an employer.</small>
+                            @if($resume->exists)
+                                <div style="margin-top:8px"><button type="submit" form="ai-summary-form" class="btn btn-outline btn-sm"><i class="fas fa-wand-magic-sparkles"></i> Write my summary for me</button>
+                                <small class="form-hint" style="display:inline">AI uses the experience, education and skills you have added. You can check and edit it before using it.</small></div>
+                            @endif
                             @error('professional_summary')<small class="form-error">{{ $message }}</small>@enderror
                         </div>
 
@@ -237,31 +258,36 @@
 
         <section class="eh-tab-pane" data-eh-pane="ai">
             <div class="eh-tab-section">
-                <div class="eh-tab-section-header"><div><h2>AI Career Assistant</h2><p>Get suggestions without automatically replacing your resume content.</p></div></div>
+                <div class="eh-tab-section-header"><div><h2>Get help from AI</h2><p>Pick what you need help with. AI only uses what you have already written and never changes your resume without your say.</p></div></div>
                 <div class="career-form-panel">
                     <div class="admin-table-wrap"><table class="admin-table">
-                        <thead><tr><th>AI tool</th><th>What it does</th><th class="table-actions">Actions</th></tr></thead>
+                        <thead><tr><th>I want to...</th><th>What happens</th><th class="table-actions">Start</th></tr></thead>
                         <tbody>
                         <tr>
-                            <td><strong><i class="fas fa-wand-magic-sparkles" style="color:#800000;margin-right:6px"></i>Improve Resume</strong></td>
-                            <td>Review wording, clarity and structure without inventing facts.</td>
-                            <td class="table-actions"><form method="POST" action="{{ route('career.resume.ai.improve',$resume) }}">@csrf<button class="btn btn-primary btn-sm">Analyse</button></form></td>
+                            <td><strong><i class="fas fa-pen-nib" style="color:#800000;margin-right:6px"></i>Get a summary written for me</strong></td>
+                            <td>AI writes the short introduction at the top of your resume. You read it, change any words, then click "Use this summary".</td>
+                            <td class="table-actions"><button type="submit" form="ai-summary-form" class="btn btn-primary btn-sm">Write it</button></td>
                         </tr>
                         <tr>
-                            <td><strong><i class="fas fa-robot" style="color:#800000;margin-right:6px"></i>ATS Readiness</strong></td>
-                            <td>Review headings, readability, keywords and relevant experience.</td>
-                            <td class="table-actions"><form method="POST" action="{{ route('career.resume.ai.ats',$resume) }}">@csrf<button class="btn btn-primary btn-sm">Check</button></form></td>
+                            <td><strong><i class="fas fa-wand-magic-sparkles" style="color:#800000;margin-right:6px"></i>Find out how to improve my resume</strong></td>
+                            <td>You get up to five simple changes that would make the biggest difference, with example sentences.</td>
+                            <td class="table-actions"><form method="POST" action="{{ route('career.resume.ai.improve',$resume) }}">@csrf<button class="btn btn-primary btn-sm">Check it</button></form></td>
+                        </tr>
+                        <tr>
+                            <td><strong><i class="fas fa-laptop" style="color:#800000;margin-right:6px"></i>Make sure it works for online applications</strong></td>
+                            <td>Many employers use computer systems to read resumes. This checks that yours is easy for them to read.</td>
+                            <td class="table-actions"><form method="POST" action="{{ route('career.resume.ai.ats',$resume) }}">@csrf<button class="btn btn-primary btn-sm">Check it</button></form></td>
                         </tr>
                         </tbody>
                     </table></div>
 
                     <form method="POST" action="{{ route('career.resume.ai.tailor',$resume) }}" class="spacing-top">@csrf
                         <div class="form-group">
-                            <label>Tailor Resume to Job <span class="required">*</span></label>
-                            <textarea name="job_description" rows="9" required placeholder="Paste the job description here..."></textarea>
-                            <small class="form-hint">AI compares the job with your existing resume and will not add qualifications or experience you have not provided.</small>
+                            <label for="tailor-job">See how well I match a job <span class="required">*</span></label>
+                            <textarea id="tailor-job" name="job_description" rows="5" required placeholder="Copy the job advert from the website or email and paste it here..."></textarea>
+                            <small class="form-hint">You will see what you already have, what is missing, and honest ways to describe your experience for this job.</small>
                         </div>
-                        <button class="btn btn-primary"><i class="fas fa-bullseye"></i> Compare With Job</button>
+                        <button class="btn btn-primary"><i class="fas fa-bullseye"></i> Compare with this job</button>
                     </form>
                 </div>
             </div>

@@ -808,6 +808,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/career/resumes/{resume}/ai/improve',[ResumeAiController::class,'improve'])->name('career.resume.ai.improve');
     Route::post('/career/resumes/{resume}/ai/ats',[ResumeAiController::class,'ats'])->name('career.resume.ai.ats');
     Route::post('/career/resumes/{resume}/ai/tailor',[ResumeAiController::class,'tailor'])->name('career.resume.ai.tailor');
+    Route::post('/career/resumes/{resume}/ai/summary',[ResumeAiController::class,'summary'])->name('career.resume.ai.summary');
+    Route::post('/career/resumes/{resume}/ai/summary/apply',[ResumeAiController::class,'applySummary'])->name('career.resume.ai.summary.apply');
+    Route::post('/career/cover-letters/{letter}/ai/improve',[CoverLetterController::class,'improve'])->name('career.cover-letter.ai.improve');
+    Route::post('/career/cover-letters/{letter}/ai/apply',[CoverLetterController::class,'applyDraft'])->name('career.cover-letter.ai.apply');
 
     Route::post('/career/cover-letters',[CoverLetterController::class,'store'])->name('career.cover-letter.store');
     Route::get('/career/cover-letters/{letter}/download', [CoverLetterController::class, 'download'])->name('career.cover-letter.download');

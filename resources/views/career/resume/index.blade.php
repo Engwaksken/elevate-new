@@ -14,9 +14,24 @@
     @if(session('warning')) <div class="warning-box">{{ session('warning') }}</div> @endif
     @if(session('ai_suggestion'))
         <div class="ai-note">
-            <strong><i class="fas fa-wand-magic-sparkles"></i> AI suggestion</strong>
+            <strong><i class="fas fa-wand-magic-sparkles"></i> Suggestions for you</strong>
             <p style="white-space:pre-wrap">{{ session('ai_suggestion') }}</p>
-            <small>Confirm that every suggestion accurately represents your experience and qualifications.</small>
+            <small>Only use suggestions that are true for you.</small>
+        </div>
+    @endif
+    @if($draft = session('ai_letter_draft'))
+        <div class="ai-note">
+            <strong><i class="fas fa-wand-magic-sparkles"></i> Improved version of "{{ $draft['title'] }}"</strong>
+            <form method="POST" action="{{ route('career.cover-letter.ai.apply', $draft['id']) }}" style="margin-top:8px">@csrf
+                <label for="ai-letter-draft" class="sr-only">Improved cover letter</label>
+                <textarea id="ai-letter-draft" name="body" rows="10" maxlength="50000">{{ $draft['body'] }}</textarea>
+                <details style="margin-top:8px"><summary style="cursor:pointer">Show my original letter</summary><p style="white-space:pre-wrap;margin-top:6px">{{ $draft['original'] }}</p></details>
+                <small class="form-hint">Read it and change any words you like. Your original is only replaced when you click "Use this version".</small>
+                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                    <button class="btn btn-primary btn-sm"><i class="fas fa-check"></i> Use this version</button>
+                    <a class="btn btn-outline btn-sm" href="{{ route('career.resume.index') }}#cover">Keep my original</a>
+                </div>
+            </form>
         </div>
     @endif
 
@@ -205,6 +220,7 @@
                                     <td class="table-actions"><div class="action-group">
                                         <a class="btn btn-primary btn-sm" href="{{ route('career.cover-letter.download',$letter) }}"><i class="fas fa-file-pdf"></i> PDF</a>
                                         <button type="button" class="btn btn-outline btn-sm" data-document-share="{{ route('career.documents.share',['type'=>'cover-letter','id'=>$letter->id]) }}"><i class="fas fa-share-nodes"></i> Share</button>
+                                        <form method="POST" action="{{ route('career.cover-letter.ai.improve',$letter) }}">@csrf<button class="btn btn-outline btn-sm" title="AI rewrites your letter in clear, natural language. You choose whether to use it."><i class="fas fa-wand-magic-sparkles"></i> Improve with AI</button></form>
                                         <button type="button" class="btn btn-outline btn-sm" data-modal-open="cover-letter-edit-{{ $letter->id }}"><i class="fas fa-pen"></i> Edit</button>
                                         <form method="POST" action="{{ route('career.cover-letter.destroy',$letter) }}" onsubmit="return confirm('Delete this cover letter?')">@csrf @method('DELETE')<button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</button></form>
                                     </div></td>
@@ -243,21 +259,26 @@
 
                 <section class="eh-tab-pane" data-eh-pane="ai">
                     <div class="eh-tab-section">
-                        <div class="eh-tab-section-header"><div><h2>AI Assistant</h2><p>AI provides suggestions only and does not invent qualifications or overwrite your content.</p></div></div>
+                        <div class="eh-tab-section-header"><div><h2>Write a cover letter with AI</h2><p>Tell us the job you want. AI writes a letter from your resume in clear, natural language. You can read it and change anything before you send it.</p></div></div>
                         <div class="career-form-panel">
                             @if($resumes->count())
+                                <ol class="form-hint" style="margin:0 0 14px;padding-left:18px;line-height:1.7">
+                                    <li>Choose your resume and type the job title.</li>
+                                    <li>Add the employer and paste the job advert if you have them. This makes the letter better, but you can skip it.</li>
+                                    <li>Click "Write my cover letter". It appears in the Cover Letters tab, where you can improve, edit or download it.</li>
+                                </ol>
                                 <form method="POST" action="{{ route('career.cover-letter.generate') }}">@csrf
                                     <div class="form-grid">
-                                        <div class="form-group"><label>Resume <span class="required">*</span></label><select name="resume_id" required>@foreach($resumes as $resume)<option value="{{ $resume->id }}">{{ $resume->title }}</option>@endforeach</select><small class="form-hint">Choose the resume that best matches the opportunity.</small></div>
-                                        <div class="form-group"><label>Job title <span class="required">*</span></label><input name="job_title" required placeholder="e.g. Program Officer"></div>
-                                        <div class="form-group"><label>Employer</label><input name="employer_name" placeholder="e.g. ABC Organisation"></div>
-                                        <div class="form-group"><label>Tone</label><select name="tone"><option value="professional">Professional</option><option value="confident">Confident</option><option value="warm">Warm</option><option value="concise">Concise</option></select></div>
+                                        <div class="form-group"><label for="gen-resume">Which resume? <span class="required">*</span></label><select id="gen-resume" name="resume_id" required>@foreach($resumes as $resume)<option value="{{ $resume->id }}">{{ $resume->title }}</option>@endforeach</select></div>
+                                        <div class="form-group"><label for="gen-job">Job title <span class="required">*</span></label><input id="gen-job" name="job_title" required placeholder="For example: Program Officer"></div>
+                                        <div class="form-group"><label for="gen-employer">Employer (optional)</label><input id="gen-employer" name="employer_name" placeholder="For example: ABC Organisation"></div>
+                                        <div class="form-group"><label for="gen-tone">How should it sound?</label><select id="gen-tone" name="tone"><option value="professional">Polite and professional</option><option value="warm">Warm and friendly</option><option value="confident">Confident</option><option value="concise">Short and simple</option></select></div>
                                     </div>
-                                    <div class="form-group"><label>Job description <span class="required">*</span></label><textarea name="job_description" rows="9" required placeholder="Paste the full job description here..."></textarea><small class="form-hint">AI compares this with your existing information and will not add qualifications you have not provided.</small></div>
-                                    <button class="btn btn-primary"><i class="fas fa-wand-magic-sparkles"></i> Generate Cover Letter</button>
+                                    <div class="form-group"><label for="gen-advert">Job advert (optional)</label><textarea id="gen-advert" name="job_description" rows="5" placeholder="Copy the job advert from the website or email and paste it here..."></textarea><small class="form-hint">AI only uses facts from your resume. It will not add qualifications you do not have.</small></div>
+                                    <button class="btn btn-primary"><i class="fas fa-wand-magic-sparkles"></i> Write my cover letter</button>
                                 </form>
                             @else
-                                <div class="eh-empty"><p>Create or upload a resume before using AI assistance.</p></div>
+                                <div class="eh-empty"><p>Create or upload a resume first. AI uses it to write your cover letter.</p></div>
                             @endif
                         </div>
                     </div>

@@ -47,29 +47,13 @@
 
     <section class="appt-section" aria-labelledby="appt-upcoming-heading">
         <h2 id="appt-upcoming-heading"><i class="fas fa-calendar-day" aria-hidden="true"></i> Upcoming and awaiting response</h2>
-        @if($upcoming->isEmpty())
-            <div class="appt-empty"><i class="fas fa-calendar" aria-hidden="true"></i>No upcoming appointments.</div>
-        @else
-            <div class="appt-list">
-                @foreach($upcoming as $appointment)
-                    @include('appointments._participant-card', ['appointment' => $appointment])
-                @endforeach
-            </div>
-        @endif
+        @include('appointments._participant-table', ['rows' => $upcoming, 'empty' => 'No upcoming appointments.'])
     </section>
 
     <section class="appt-section" aria-labelledby="appt-past-heading">
         <h2 id="appt-past-heading"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Past and closed</h2>
-        @if($past->isEmpty())
-            <div class="appt-empty"><i class="fas fa-box-archive" aria-hidden="true"></i>Nothing here yet.</div>
-        @else
-            <div class="appt-list">
-                @foreach($past as $appointment)
-                    @include('appointments._participant-card', ['appointment' => $appointment])
-                @endforeach
-            </div>
-            <div style="margin-top:12px">{{ $past->links() }}</div>
-        @endif
+        @include('appointments._participant-table', ['rows' => $past, 'empty' => 'Nothing here yet.'])
+        @if($past->hasPages())<div class="admin-pagination">{{ $past->links() }}</div>@endif
     </section>
 </div>
 
