@@ -74,6 +74,30 @@ class AiAnswerFailuresTest extends TestCase
         $this->assertStringContainsString('Follow what energises you.', $passed['message']);
     }
 
+    public function test_temporary_overload_is_retried_before_failing(): void
+    {
+        \Illuminate\Support\Sleep::fake();
+        $this->activateGemini();
+        $busy = ['error' => ['code' => 503, 'message' => 'This model is currently experiencing high demand.']];
+
+        // One sequence for the whole test: later fakes for the same URL would never be reached.
+        Http::fakeSequence('generativelanguage.googleapis.com/*')
+            ->push($busy, 503)
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Answer after retry']]]]]])
+            ->push($busy, 503)->push($busy, 503)->push($busy, 503)
+            ->push(['error' => ['message' => 'Bad request']], 400);
+
+        $this->assertSame('Answer after retry', app(CareerAiService::class)->generate('mentorship_assistant', 'system', 'question')['text']);
+
+        $config = AiIntegration::activeSystem();
+        $result = app(CareerAiService::class)->testConnection($config);
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('retried automatically', $result['message']);
+
+        app(CareerAiService::class)->testConnection($config);
+        Http::assertSentCount(6); // 2 + 3 retried calls, and the 400 is not retried
+    }
+
     public function test_daily_limit_hits_are_recorded_and_shown_to_admins(): void
     {
         $this->activateGemini(['user_daily_limit' => 1]);

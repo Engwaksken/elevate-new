@@ -46,6 +46,20 @@ class CareerAiService {
     }
 
     /**
+     * HTTP client for provider calls. Temporary overload or rate limiting (429/500/502/503/504)
+     * is retried twice with a short backoff before giving up; other errors fail immediately.
+     */
+    private function http(): \Illuminate\Http\Client\PendingRequest
+    {
+        return Http::connectTimeout(15)->timeout(90)->retry(
+            3,
+            fn (int $attempt) => $attempt * 1500,
+            fn (\Throwable $e) => $e instanceof \Illuminate\Http\Client\RequestException
+                && in_array($e->response->status(), [429, 500, 502, 503, 504], true),
+        );
+    }
+
+    /**
      * Fail loudly when a provider answers 200 but without usable text (blocked, cut off, empty).
      */
     private function requireText(array $result, ?string $reason = null): array
@@ -95,6 +109,10 @@ class CareerAiService {
             $message = is_string($message) && $message !== '' ? $message : null;
 
             // A 404 means the endpoint URL or the model ID does not exist; say which ones were used.
+            if (in_array($e->response?->status(), [429, 503], true)) {
+                $hint = 'The provider is busy or rate-limiting requests; it was retried automatically. Try again shortly, or enable another saved provider meanwhile.';
+                return $message ? $message.' - '.$hint : $hint;
+            }
             if ($e->response?->status() === 404 && $config) {
                 $hint = 'The provider returned 404 (not found) for model "'.$config->model.'" at '.$this->endpointFor($config, $provider)
                     .'. Check that the model ID is current and available to your API key, and leave Endpoint blank to use the provider default.';
@@ -179,7 +197,7 @@ class CareerAiService {
             'messages'=>[['role'=>'system','content'=>$system],...$history,['role'=>'user','content'=>$user]],
             ...(isset($c->settings['temperature']) ? ['temperature' => (float) $c->settings['temperature']] : []),
         ];
-        $http=Http::connectTimeout(15)->timeout(90);
+        $http=$this->http();
         $auth=$provider['auth'] ?? 'bearer';
         if ($auth === 'api-key') $http=$http->withHeaders(['api-key'=>$c->apiKey()]);
         elseif ($auth !== 'none') $http=$http->withToken($c->apiKey());
@@ -198,7 +216,7 @@ class CareerAiService {
             'messages'=>[...$history,['role'=>'user','content'=>$user]],
             ...($sendTemperature ? ['temperature' => (float) $c->settings['temperature']] : []),
         ];
-        $r=Http::connectTimeout(15)->timeout(90)->withHeaders(['x-api-key'=>$c->apiKey(),'anthropic-version'=>'2023-06-01'])
+        $r=$this->http()->withHeaders(['x-api-key'=>$c->apiKey(),'anthropic-version'=>'2023-06-01'])
             ->post($endpoint,$payload)->throw()->json();
         // Responses can start with thinking blocks, so join every text block rather than reading content[0].
         $text=collect(data_get($r,'content',[]))->where('type','text')->pluck('text')->implode('');
@@ -207,7 +225,7 @@ class CareerAiService {
 
     private function gemini(AiIntegration $c,array $provider,string $system,string $user,array $history=[]):array {
         $endpoint=$this->endpointFor($c,$provider);
-        $r=Http::connectTimeout(15)->timeout(90)->withHeaders(['x-goog-api-key' => $c->apiKey()])->post($endpoint,[
+        $r=$this->http()->withHeaders(['x-goog-api-key' => $c->apiKey()])->post($endpoint,[
             'system_instruction'=>['parts'=>[['text'=>$system]]],
             'contents'=>[
                 ...array_map(fn($t)=>['role'=>$t['role']==='assistant'?'model':'user','parts'=>[['text'=>$t['content']]]],$history),
