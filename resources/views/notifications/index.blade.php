@@ -6,7 +6,8 @@
 .notification-row{cursor:pointer}
 .notification-row:hover td{background:#fbf7f4}
 .notification-row:focus-visible{outline:2px solid #800000;outline-offset:-2px}
-.notification-row.unread td:first-child strong::before{content:'';display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:#800000;vertical-align:middle}
+.notification-select{cursor:default}
+.notification-row.unread td:nth-child(2) strong::before{content:'';display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:#800000;vertical-align:middle}
 .notification-row.read td{color:#667085}
 </style>
 
@@ -71,12 +72,14 @@ document.querySelector('[data-notification-period]')?.addEventListener('change',
 <p class="admin-cell-hint" style="margin:0 0 10px">Showing {{ $notifications->firstItem() }}–{{ $notifications->lastItem() }} of {{ number_format($notifications->total()) }} notifications</p>
 @endif
 
+@include('partials.admin-bulk-bar', ['bulkRoute' => route('notifications.bulk-destroy'), 'bulkTableId' => 'notificationsTable'])
 <div class="admin-table-wrap">
-<table class="admin-table">
-<thead><tr><th>Notification</th><th>Type</th><th>Received</th><th>Status</th><th class="table-actions">Details</th></tr></thead>
+<table class="admin-table" id="notificationsTable">
+<thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#notificationsTable-bar" aria-label="Select all notifications on this page"></th><th>Notification</th><th>Type</th><th>Received</th><th>Status</th><th class="table-actions">Details</th></tr></thead>
 <tbody>
 @forelse($notifications as $notification)
 <tr class="notification-row {{ $notification->read_at ? 'read' : 'unread' }}" id="notification-item-{{ $notification->id }}" data-modal-open="notification-{{ $notification->id }}" tabindex="0" aria-haspopup="dialog" aria-label="View notification: {{ $notification->title }}">
+    <td class="notification-select"><input type="checkbox" data-row-select value="{{ $notification->id }}" aria-label="Select {{ $notification->title }}"></td>
     <td><strong>{{ $notification->title }}</strong>@if($notification->message)<small class="admin-cell-hint">{{ \Illuminate\Support\Str::limit($notification->message, 120) }}</small>@endif</td>
     <td>{{ $notification->type ? ucfirst(str_replace('_',' ',$notification->type)) : 'Notification' }}</td>
     <td title="{{ optional($notification->created_at)->format('d M Y H:i') }}">{{ optional($notification->created_at)->diffForHumans() }}</td>
@@ -86,7 +89,7 @@ document.querySelector('[data-notification-period]')?.addEventListener('change',
     </td>
 </tr>
 @empty
-<tr><td colspan="5"><div class="admin-empty"><i class="fas fa-bell-slash"></i><strong>No notifications</strong><span>You are all caught up.</span></div></td></tr>
+<tr><td colspan="6"><div class="admin-empty"><i class="fas fa-bell-slash"></i><strong>No notifications</strong><span>You are all caught up.</span></div></td></tr>
 @endforelse
 </tbody>
 </table>

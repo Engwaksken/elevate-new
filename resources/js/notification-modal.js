@@ -8,6 +8,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Selecting a row for bulk delete must not open its detail modal.
+    document.querySelectorAll('.notification-row .notification-select').forEach(cell => {
+        cell.addEventListener('click', e => e.stopPropagation());
+        cell.addEventListener('keydown', e => e.stopPropagation());
+    });
+
     document.querySelectorAll('.eh-modal[data-notification-read-url]').forEach(modal => {
         const markRead = () => {
             const url = modal.dataset.notificationReadUrl;

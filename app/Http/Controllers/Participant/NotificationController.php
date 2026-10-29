@@ -128,4 +128,19 @@ class NotificationController extends Controller
 
         return back()->with('success', 'All notifications marked as read.');
     }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'max:200'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $deleted = UserNotification::query()
+            ->where('user_id', $request->user()->id)
+            ->whereIn('id', $data['ids'])
+            ->delete();
+
+        return back()->with('success', $deleted.' notification'.($deleted === 1 ? '' : 's').' deleted.');
+    }
 }

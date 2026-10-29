@@ -60,6 +60,25 @@ class NotificationListFiltersTest extends TestCase
             ->assertSee('Last year reminder')->assertDontSee('Today alert');
     }
 
+    public function test_selected_notifications_can_be_bulk_deleted_but_only_the_users_own(): void
+    {
+        $other = User::factory()->create(['user_type' => 'participant', 'status' => 'active', 'email_verified_at' => now()]);
+        $foreign = UserNotification::create(['user_id' => $other->id, 'type' => 'general', 'title' => 'Not yours']);
+        $mine = UserNotification::where('user_id', $this->user->id)->whereIn('title', ['Today alert', 'Earlier this month'])->pluck('id');
+
+        $this->actingAs($this->user)->get(route('notifications.index'))->assertSee('Delete Selected');
+
+        $this->actingAs($this->user)
+            ->delete(route('notifications.bulk-destroy'), ['ids' => [...$mine->all(), $foreign->id]])
+            ->assertRedirect()
+            ->assertSessionHas('success', '2 notifications deleted.');
+
+        $this->assertSame(['Last year reminder'], UserNotification::where('user_id', $this->user->id)->pluck('title')->all());
+        $this->assertModelExists($foreign);
+
+        $this->actingAs($this->user)->delete(route('notifications.bulk-destroy'), ['ids' => []])->assertSessionHasErrors('ids');
+    }
+
     public function test_search_and_pagination(): void
     {
         $this->actingAs($this->user)->get(route('notifications.index', ['search' => 'reminder']))
