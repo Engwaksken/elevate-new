@@ -42,7 +42,10 @@ class ParticipantGoalController extends Controller
             report($e);
         }
 
-        return back()->with('success', 'Feedback saved for '.$goal->user->name.'.');
+        // Return to the same filtered page, reopening the Mentee goals tab (the fragment is not sent in the referrer).
+        $previous = strtok(url()->previous(), '#');
+
+        return redirect()->to($previous.'#mentee-goals')->with('success', 'Feedback saved for '.$goal->user->name.'.');
     }
 
     private function canReview(Request $request, ParticipantGoal $goal): bool

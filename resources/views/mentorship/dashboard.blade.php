@@ -61,6 +61,11 @@
         <button class="eh-tab-button" data-eh-tab="goals"><i class="fas fa-bullseye"></i> Goals</button>
         @if($aiEnabled ?? false)
             <button class="eh-tab-button" data-eh-tab="ai"><i class="fas fa-wand-magic-sparkles"></i> AI Career Mentor</button>
+            <button class="eh-tab-button" data-eh-tab="action-plan"><i class="fas fa-list-check"></i> My action plan</button>
+            <button class="eh-tab-button" data-eh-tab="saved-answers"><i class="fas fa-bookmark"></i> Saved answers</button>
+        @endif
+        @if($hasMentees ?? false)
+            <button class="eh-tab-button" data-eh-tab="mentee-goals"><i class="fas fa-flag"></i> Mentee goals</button>
         @endif
     </div>
 
@@ -289,13 +294,18 @@
                     </form>
                     <div class="eh-ai-error" data-ai-error role="alert"></div>
                 </div>
+            </section>
 
+            <section class="eh-tab-pane" data-eh-pane="action-plan">
                 <div class="eh-tab-section">
                     <div class="eh-tab-section-header">
                         <div><h2>My action plan</h2><p>Steps you approved from the mentor's answers. Each one is also on your calendar.</p></div>
                         @if(Route::has('calendar.index'))<a class="btn btn-outline btn-sm" href="{{ route('calendar.index', ['event_type' => 'career_action']) }}"><i class="fas fa-calendar-days"></i> View in calendar</a>@endif
                     </div>
-                    <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                    <div class="admin-panel">
+                    @include('mentorship.partials.list-filters', ['prefix' => 'plan_', 'tab' => 'action-plan', 'placeholder' => 'Search steps or goals...', 'periodLabel' => 'Due', 'statuses' => ['' => 'All statuses', 'approved' => 'Planned', 'completed' => 'Done']])
+                    @if($actionPlan->total() > 0)<p class="admin-cell-hint" style="margin:0 0 10px">Showing {{ $actionPlan->firstItem() }}–{{ $actionPlan->lastItem() }} of {{ number_format($actionPlan->total()) }} steps</p>@endif
+                    <div class="admin-table-wrap"><table class="admin-table">
                         <thead><tr><th>Step</th><th>Goal</th><th>Due</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
                         <tbody data-action-plan>
                         @forelse($actionPlan as $item)
@@ -308,15 +318,22 @@
                                 <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-plan-toggle="{{ route('mentorship.assistant.actions.complete', $item) }}">{{ $isDone ? 'Reopen' : 'Mark done' }}</button></td>
                             </tr>
                         @empty
-                            <tr data-plan-empty><td colspan="5"><div class="admin-empty">No approved steps yet. Approve a suggested step from the mentor's answers to add it here and to your calendar.</div></td></tr>
+                            <tr data-plan-empty><td colspan="5"><div class="admin-empty">{{ request()->hasAny(['plan_q', 'plan_period', 'plan_status']) ? 'No steps match these filters.' : 'No approved steps yet. Approve a suggested step from the mentor\'s answers to add it here and to your calendar.' }}</div></td></tr>
                         @endforelse
                         </tbody>
-                    </table></div></div>
+                    </table></div>
+                    <div class="admin-pagination">{{ $actionPlan->links() }}</div>
+                    </div>
                 </div>
+            </section>
 
+            <section class="eh-tab-pane" data-eh-pane="saved-answers">
                 <div class="eh-tab-section">
                     <div class="eh-tab-section-header"><div><h2>Saved answers</h2><p>Answers you saved stay here even when you clear the chat.</p></div></div>
-                    <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
+                    <div class="admin-panel">
+                    @include('mentorship.partials.list-filters', ['prefix' => 'saved_', 'tab' => 'saved-answers', 'placeholder' => 'Search saved answers...', 'periodLabel' => 'Saved'])
+                    @if($aiSaved->total() > 0)<p class="admin-cell-hint" style="margin:0 0 10px">Showing {{ $aiSaved->firstItem() }}–{{ $aiSaved->lastItem() }} of {{ number_format($aiSaved->total()) }} answers</p>@endif
+                    <div class="admin-table-wrap"><table class="admin-table">
                         <thead><tr><th>Answer</th><th>Saved</th><th class="table-actions">Actions</th></tr></thead>
                         <tbody>
                         @forelse($aiSaved as $saved)
@@ -326,11 +343,19 @@
                                 <td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-saved-remove="{{ route('mentorship.assistant.save', $saved) }}"><i class="fas fa-bookmark"></i> Remove</button></td>
                             </tr>
                         @empty
-                            <tr><td colspan="3"><div class="admin-empty">No saved answers yet. Use "Save" under any answer to keep it.</div></td></tr>
+                            <tr><td colspan="3"><div class="admin-empty">{{ request()->hasAny(['saved_q', 'saved_period']) ? 'No saved answers match these filters.' : 'No saved answers yet. Use "Save" under any answer to keep it.' }}</div></td></tr>
                         @endforelse
                         </tbody>
-                    </table></div></div>
+                    </table></div>
+                    <div class="admin-pagination">{{ $aiSaved->links() }}</div>
+                    </div>
                 </div>
+            </section>
+        @endif
+
+        @if($hasMentees ?? false)
+            <section class="eh-tab-pane" data-eh-pane="mentee-goals">
+                @include('mentorship.partials.mentee-goals')
             </section>
         @endif
 
@@ -552,64 +577,16 @@
 </script>
 @endif
 
-@isset($menteeGoals)
-@if($menteeGoals->isNotEmpty())
-<section id="mentee-goals" class="eh-mentee-goals" aria-labelledby="mentee-goals-heading" style="margin-top:26px">
-<style>
-.eh-mentee-goals{background:#fff;border:1px solid #eadede;border-radius:16px;padding:22px}
-.eh-mentee-goals h2{margin:0 0 4px;display:flex;align-items:center;gap:10px}
-.eh-mentee-goals h2 i{color:#800000}
-.eh-mentee-goals .eh-mg-sub{color:#667085;margin:0 0 14px}
-.eh-mg-group{margin-top:14px}
-.eh-mg-group>h3{margin:0 0 8px;font-size:1rem;color:#101828}
-.eh-mg-card{border:1px solid #eadede;border-radius:12px;padding:14px;margin-bottom:12px}
-.eh-mg-bar{height:8px;background:#eee;border-radius:8px;overflow:hidden;margin:8px 0}
-.eh-mg-bar>span{display:block;height:100%;background:linear-gradient(90deg,#800000,#b03a3a)}
-.eh-mg-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:.8rem;color:#667085}
-.eh-mg-meta span{background:#f6f1ea;border-radius:20px;padding:3px 10px}
-.eh-mg-review{margin-top:10px;background:#faf7f2;border-radius:10px;padding:10px 12px}
-.eh-mg-review textarea{width:100%;min-height:70px;border:1px solid #d0d5dd;border-radius:8px;padding:8px 10px;font:inherit}
-.eh-mg-note{margin-top:8px;color:#475467;font-size:.85rem}
-</style>
-<h2 id="mentee-goals-heading"><i class="fas fa-flag"></i> Mentee goals</h2>
-<p class="eh-mg-sub">Review your mentees' personal goals and leave encouraging, actionable feedback.</p>
-<div style="margin-bottom:10px"><x-export-buttons :params="['list' => 'mentee-goals']" /></div>
-@foreach($menteeGoals->groupBy('user_id') as $userId => $goals)
-<div class="eh-mg-group">
-    <h3>{{ $goals->first()->user?->name ?? 'Mentee' }} <span style="color:#98a2b3;font-weight:400">({{ $goals->count() }} goal{{ $goals->count() === 1 ? '' : 's' }})</span></h3>
-    @foreach($goals as $goal)
-    <div class="eh-mg-card">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
-            <strong>{{ $goal->title }}</strong>
-            <span class="eh-status">{{ ucfirst(str_replace('_',' ',$goal->status)) }}</span>
-        </div>
-        @if($goal->description)<p style="margin:6px 0 0;color:#475467">{{ $goal->description }}</p>@endif
-        <div class="eh-mg-bar"><span style="width:{{ max(0,min(100,(float)$goal->progress_percent)) }}%"></span></div>
-        <div class="eh-mg-meta">
-            <span>{{ ucfirst($goal->category) }}</span>
-            @if($goal->target_value !== null)<span>{{ rtrim(rtrim(number_format((float)$goal->current_value,2),'0'),'.') }} / {{ rtrim(rtrim(number_format((float)$goal->target_value,2),'0'),'.') }} {{ $goal->unit }}</span>@endif
-            @if($goal->target_date)<span>Due {{ $goal->target_date->format('d M Y') }}</span>@endif
-            <span>{{ number_format((float)$goal->progress_percent,0) }}% complete</span>
-        </div>
-        @if($goal->mentor_comment)
-            <div class="eh-mg-note"><strong>Your last feedback:</strong> {{ $goal->mentor_comment }}<br><small>{{ optional($goal->mentor_reviewed_at)->format('d M Y') }} · {{ $goal->mentorReviewer?->name }}</small></div>
-        @endif
-        <form method="POST" action="{{ route('mentorship.participant-goals.review',$goal) }}" class="eh-mg-review">
-            @csrf
-            <label for="mentor_comment_{{ $goal->id }}" style="font-weight:600;color:#344054;display:block;margin-bottom:6px">Feedback for {{ $goal->user?->name }}</label>
-            <textarea id="mentor_comment_{{ $goal->id }}" name="mentor_comment" maxlength="2000" placeholder="Add guidance, next steps or encouragement...">{{ $goal->mentor_comment }}</textarea>
-            <div style="margin-top:8px"><button class="btn btn-primary btn-sm"><i class="fas fa-comment-dots"></i> Save feedback</button></div>
-        </form>
-    </div>
-    @endforeach
-</div>
-@endforeach
-</section>
-@endif
-@endisset
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // "Custom range" shows its from/to date boxes.
+    document.querySelectorAll('[data-period-select]').forEach(function (select) {
+        select.addEventListener('change', function () {
+            select.form.querySelectorAll('[data-period-custom]').forEach(function (input) { input.hidden = select.value !== 'custom'; });
+        });
+    });
+
     var name = (window.location.hash || '').replace('#', '');
     if (!name) return;
     var button = document.querySelector('[data-eh-tab="' + name + '"]');
