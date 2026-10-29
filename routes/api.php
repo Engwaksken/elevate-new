@@ -93,6 +93,18 @@ Route::prefix('v1')->group(function () {
                     ->name('api.participant.mentorship.sessions.attendance');
                 Route::post('/mentorship/assistant',[App\Http\Controllers\Api\V1\Participant\MentorshipAssistantController::class,'message'])
                     ->middleware('throttle:20,1')->name('api.participant.mentorship.assistant');
+                // AI career mentor history, saved answers and approved steps (same logic as the website).
+                Route::prefix('mentorship/assistant')->group(function () {
+                    $mentor = \App\Http\Controllers\Mentorship\MentorshipAssistantController::class;
+                    Route::get('/', [$mentor, 'history']);
+                    Route::get('/plan', [$mentor, 'plan']);
+                    Route::get('/saved', [$mentor, 'saved']);
+                    Route::patch('/messages/{message}/save', [$mentor, 'toggleSave'])->whereNumber('message');
+                    Route::delete('/history', [$mentor, 'clearHistory']);
+                    Route::post('/actions/{action}/approve', [$mentor, 'approveAction'])->whereNumber('action');
+                    Route::post('/actions/{action}/dismiss', [$mentor, 'dismissAction'])->whereNumber('action');
+                    Route::post('/actions/{action}/complete', [$mentor, 'toggleComplete'])->whereNumber('action');
+                });
 
                 Route::prefix('appointments')
                     ->controller(\App\Http\Controllers\Api\V1\Participant\AppointmentController::class)

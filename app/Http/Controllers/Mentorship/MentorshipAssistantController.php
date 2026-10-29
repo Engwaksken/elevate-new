@@ -25,6 +25,45 @@ class MentorshipAssistantController extends Controller
         return response()->json($reply);
     }
 
+    /** Recent conversation (oldest first) and whether the AI mentor is switched on. Used by the mobile app. */
+    public function history(Request $request): JsonResponse
+    {
+        $messages = CareerMentorMessage::with('actions.goal')->where('user_id', $request->user()->id)
+            ->latest('id')->take(30)->get()->reverse()->values();
+
+        return response()->json([
+            'enabled' => (bool) \App\Models\AiIntegration::activeSystem()?->encrypted_api_key,
+            'messages' => $messages->map->toChatArray()->all(),
+        ]);
+    }
+
+    /** Approved and completed steps ("My action plan"), planned first then by due date. */
+    public function plan(Request $request): JsonResponse
+    {
+        $status = in_array($request->query('status'), [CareerActionItem::APPROVED, CareerActionItem::COMPLETED], true)
+            ? [$request->query('status')] : [CareerActionItem::APPROVED, CareerActionItem::COMPLETED];
+
+        $page = CareerActionItem::with('goal')->where('user_id', $request->user()->id)->whereIn('status', $status)
+            ->orderByRaw("status = 'completed'")->orderBy('due_on')->paginate(20);
+
+        return response()->json([
+            'data' => collect($page->items())->map->toChatArray()->all(),
+            'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
+        ]);
+    }
+
+    /** Answers the participant saved, newest first. */
+    public function saved(Request $request): JsonResponse
+    {
+        $page = CareerMentorMessage::where('user_id', $request->user()->id)->where('role', 'assistant')
+            ->whereNotNull('saved_at')->latest('saved_at')->paginate(20);
+
+        return response()->json([
+            'data' => collect($page->items())->map(fn ($m) => ['id' => $m->id, 'content' => $m->content, 'saved_at' => $m->saved_at?->toIso8601String()])->all(),
+            'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
+        ]);
+    }
+
     /** Pin or unpin an answer so it stays in "Saved answers". */
     public function toggleSave(Request $request, CareerMentorMessage $message): JsonResponse
     {

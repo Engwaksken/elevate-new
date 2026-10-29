@@ -8,7 +8,7 @@ App ID: `org.elevateher360.elevateher360_participant` (cannot change after the f
 
 ## 1. Before every release
 
-1. Bump the version in `pubspec.yaml` (`version: 1.2.0+3` = name `1.2.0`, build number `3`).
+1. Bump the version in `pubspec.yaml` (`version: 1.3.0+4` = name `1.3.0`, build number `4`).
    The build number must be higher than any build already uploaded to Play.
    Also update `appVersion` in `lib/core/app_config.dart` to the same name.
 2. Run the tests: `flutter test`.

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
-import '../services/api_service.dart';
+import '../services/ai_mentor_client.dart';
 import '../widgets/feedback.dart';
 import '../widgets/state_views.dart';
 
@@ -13,24 +13,105 @@ typedef AssistantSender = Future<Map<String, dynamic>> Function(
 );
 
 class _ChatMessage {
-  _ChatMessage(this.role, this.text);
+  _ChatMessage({this.id, required this.role, required this.text, this.saved = false, List<Map<String, dynamic>>? actions})
+      : actions = actions ?? [];
 
+  factory _ChatMessage.fromJson(Map<String, dynamic> json) => _ChatMessage(
+        id: (json['id'] as num?)?.toInt(),
+        role: json['role'] == 'user' ? 'user' : 'assistant',
+        text: (json['content'] ?? json['message'] ?? '').toString(),
+        saved: json['saved'] == true,
+        actions: [
+          for (final action in (json['actions'] as List? ?? const []))
+            if (action is Map) Map<String, dynamic>.from(action),
+        ],
+      );
+
+  final int? id;
   final String role; // 'user' | 'assistant'
   final String text;
+  bool saved;
+  final List<Map<String, dynamic>> actions;
 }
 
-/// AI career mentor. Answers career questions and points the participant to
-/// concrete next steps, grounded in her goals and mentorship on the server.
+/// AI career mentor: chat grounded in her goals, saved answers, and suggested
+/// steps she can approve onto her calendar ("My plan"). Mirrors the website.
 class MentorshipAiScreen extends StatefulWidget {
-  const MentorshipAiScreen({super.key, this.sendMessage});
+  const MentorshipAiScreen({super.key, this.sendMessage, this.client});
 
+  /// Test hook for the send call only (history, plan and saved stay empty).
   final AssistantSender? sendMessage;
+
+  /// Full server client; defaults to the API.
+  final AiMentorClient? client;
 
   @override
   State<MentorshipAiScreen> createState() => _MentorshipAiScreenState();
 }
 
 class _MentorshipAiScreenState extends State<MentorshipAiScreen> {
+  late final AiMentorClient _client =
+      widget.client ?? (widget.sendMessage != null ? _SendOnlyClient(widget.sendMessage!) : const ApiAiMentorClient());
+
+  /// Bumped whenever steps change so "My plan" reloads.
+  final _planVersion = ValueNotifier<int>(0);
+  final _savedVersion = ValueNotifier<int>(0);
+
+  @override
+  void dispose() {
+    _planVersion.dispose();
+    _savedVersion.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('AI career mentor'),
+          bottom: const TabBar(tabs: [
+            Tab(icon: Icon(Icons.chat_bubble_outline), text: 'Chat'),
+            Tab(icon: Icon(Icons.checklist), text: 'My plan'),
+            Tab(icon: Icon(Icons.bookmark_outline), text: 'Saved'),
+          ]),
+        ),
+        body: SafeArea(
+          top: false,
+          child: TabBarView(children: [
+            _ChatTab(
+              client: _client,
+              skipHistory: widget.client == null && widget.sendMessage != null,
+              onStepsChanged: () => _planVersion.value++,
+              onSavedChanged: () => _savedVersion.value++,
+            ),
+            _PlanTab(client: _client, version: _planVersion),
+            _SavedTab(client: _client, version: _savedVersion),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Chat
+// ---------------------------------------------------------------------------
+
+class _ChatTab extends StatefulWidget {
+  const _ChatTab({required this.client, required this.skipHistory, required this.onStepsChanged, required this.onSavedChanged});
+
+  final AiMentorClient client;
+  final bool skipHistory;
+  final VoidCallback onStepsChanged;
+  final VoidCallback onSavedChanged;
+
+  @override
+  State<_ChatTab> createState() => _ChatTabState();
+}
+
+class _ChatTabState extends State<_ChatTab> with AutomaticKeepAliveClientMixin {
   static const _suggestions = <String>[
     'How do I choose a career path?',
     'How should I prepare for an interview?',
@@ -42,6 +123,22 @@ class _MentorshipAiScreenState extends State<MentorshipAiScreen> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   bool _sending = false;
+  bool _loading = true;
+  bool _enabled = true;
+  Object? _loadError;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.skipHistory) {
+      _loading = false;
+    } else {
+      _loadHistory();
+    }
+  }
 
   @override
   void dispose() {
@@ -50,14 +147,37 @@ class _MentorshipAiScreenState extends State<MentorshipAiScreen> {
     super.dispose();
   }
 
-  Future<Map<String, dynamic>> _send(String message, List<Map<String, String>> history) {
-    final injected = widget.sendMessage;
-    if (injected != null) return injected(message, history);
-    return ApiService.instance.mentorshipAssistant(message: message, history: history);
+  Future<void> _loadHistory() async {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    try {
+      final data = await widget.client.history();
+      if (!mounted) return;
+      setState(() {
+        _enabled = data['enabled'] != false;
+        _messages
+          ..clear()
+          ..addAll([
+            for (final m in (data['messages'] as List? ?? const []))
+              if (m is Map) _ChatMessage.fromJson(Map<String, dynamic>.from(m)),
+          ]);
+        _loading = false;
+      });
+      _scrollToEnd(jump: true);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+        _loading = false;
+        _loadError = error;
+      });
+      }
+    }
   }
 
   List<Map<String, String>> get _history => _messages
-      .take(8)
+      .skip(_messages.length > 8 ? _messages.length - 8 : 0)
       .map((m) => {'role': m.role, 'content': m.text})
       .toList();
 
@@ -66,24 +186,22 @@ class _MentorshipAiScreenState extends State<MentorshipAiScreen> {
     if (text.isEmpty || _sending) return;
     FocusScope.of(context).unfocus();
 
+    final history = _history;
     setState(() {
-      _messages.add(_ChatMessage('user', text));
+      _messages.add(_ChatMessage(role: 'user', text: text));
       _sending = true;
       _controller.clear();
     });
     _scrollToEnd();
 
     try {
-      final result = await _send(text, _history);
+      final result = await widget.client.send(text, history);
       if (!mounted) return;
-      final reply = result['message']?.toString().trim();
+      final reply = _ChatMessage.fromJson({...result, 'role': 'assistant'});
       setState(() {
-        _messages.add(_ChatMessage(
-          'assistant',
-          reply == null || reply.isEmpty
-              ? "I couldn't find an answer just now. Please try again."
-              : reply,
-        ));
+        _messages.add(reply.text.trim().isEmpty
+            ? _ChatMessage(role: 'assistant', text: "I couldn't find an answer just now. Please try again.")
+            : reply);
         _sending = false;
       });
     } catch (error) {
@@ -95,48 +213,132 @@ class _MentorshipAiScreenState extends State<MentorshipAiScreen> {
     }
   }
 
-  void _scrollToEnd() {
+  Future<void> _toggleSaved(_ChatMessage message) async {
+    if (message.id == null) return;
+    try {
+      final result = await widget.client.toggleSaved(message.id!);
+      if (!mounted) return;
+      setState(() => message.saved = result['saved'] == true);
+      widget.onSavedChanged();
+      showAppSnackBar(context, message.saved ? 'Saved. Find it in the Saved tab.' : 'Removed from saved answers.');
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error);
+    }
+  }
+
+  Future<void> _approve(Map<String, dynamic> step) async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _ApproveSheet(step: step, client: widget.client),
+    );
+    if (result == null || !mounted) return;
+    setState(() => step
+      ..clear()
+      ..addAll(result));
+    widget.onStepsChanged();
+    showAppSnackBar(context, 'Added to your calendar and your plan.');
+  }
+
+  Future<void> _dismiss(Map<String, dynamic> step) async {
+    try {
+      final result = await widget.client.dismiss((step['id'] as num).toInt());
+      if (mounted) {
+        setState(() => step
+        ..clear()
+        ..addAll(result));
+      }
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error);
+    }
+  }
+
+  Future<void> _clear() async {
+    final ok = await confirmDialog(
+      context,
+      title: 'Clear chat?',
+      message: 'Your conversation is removed. Saved answers and steps in your plan are kept.',
+      confirmLabel: 'Clear chat',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    try {
+      await widget.client.clear();
+      await _loadHistory();
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error);
+    }
+  }
+
+  void _scrollToEnd({bool jump = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
-      _scroll.animateTo(
-        _scroll.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
+      if (jump) {
+        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      } else {
+        _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('AI career mentor')),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                controller: _scroll,
-                padding: AppSpacing.listPadding,
-                children: [
-                  const NoticeCard(
-                    icon: Icons.info_outline,
-                    tone: PillTone.accent,
-                    title: 'Guidance, not a final decision',
-                    message: 'This mentor gives AI-generated suggestions. Check '
-                        'important choices with your human mentor and the '
-                        'programme team.',
+    super.build(context);
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loadError != null) return ErrorState(error: _loadError!, onRetry: _loadHistory);
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            controller: _scroll,
+            padding: AppSpacing.listPadding,
+            children: [
+              if (!_enabled)
+                const NoticeCard(
+                  icon: Icons.cloud_off_outlined,
+                  tone: PillTone.warning,
+                  title: 'AI help is switched off',
+                  message: 'You will get general career tips instead of a personal answer for now.',
+                )
+              else
+                const NoticeCard(
+                  icon: Icons.info_outline,
+                  tone: PillTone.accent,
+                  title: 'Guidance, not a final decision',
+                  message: 'This mentor gives AI-generated suggestions. Check '
+                      'important choices with your human mentor and the '
+                      'programme team.',
+                ),
+              const SizedBox(height: AppSpacing.md),
+              if (_messages.isEmpty) _emptyState(context),
+              for (final message in _messages) ...[
+                _Bubble(message: message),
+                if (message.role == 'assistant' && message.id != null)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => _toggleSaved(message),
+                      icon: Icon(message.saved ? Icons.bookmark : Icons.bookmark_outline, size: 18),
+                      label: Text(message.saved ? 'Saved' : 'Save'),
+                    ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  if (_messages.isEmpty) _emptyState(context),
-                  for (final message in _messages) _Bubble(message: message),
-                  if (_sending) const _ThinkingBubble(),
-                ],
-              ),
-            ),
-            _composer(context),
-          ],
+                if (message.actions.isNotEmpty) _StepsCard(steps: message.actions, onApprove: _approve, onDismiss: _dismiss),
+              ],
+              if (_sending) const _ThinkingBubble(),
+              if (_messages.isNotEmpty && !_sending)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _clear,
+                    icon: const Icon(Icons.delete_sweep_outlined),
+                    label: const Text('Clear chat'),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
+        _composer(context),
+      ],
     );
   }
 
@@ -149,9 +351,7 @@ class _MentorshipAiScreenState extends State<MentorshipAiScreen> {
         const SizedBox(height: AppSpacing.xs),
         Text(
           'Try one of these to get started:',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: AppSpacing.sm),
         Wrap(
@@ -172,12 +372,7 @@ class _MentorshipAiScreenState extends State<MentorshipAiScreen> {
 
   Widget _composer(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.sm,
-        AppSpacing.md,
-        AppSpacing.md,
-      ),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.md),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
@@ -189,10 +384,7 @@ class _MentorshipAiScreenState extends State<MentorshipAiScreen> {
               maxLength: 1500,
               textCapitalization: TextCapitalization.sentences,
               enabled: !_sending,
-              decoration: const InputDecoration(
-                hintText: 'Type your career question…',
-                counterText: '',
-              ),
+              decoration: const InputDecoration(hintText: 'Type your career question…', counterText: ''),
               onSubmitted: _sending ? null : _ask,
             ),
           ),
@@ -201,17 +393,451 @@ class _MentorshipAiScreenState extends State<MentorshipAiScreen> {
             tooltip: 'Send',
             onPressed: _sending ? null : () => _ask(_controller.text),
             icon: _sending
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.send_rounded),
           ),
         ],
       ),
     );
   }
+}
+
+/// Suggested steps under an answer: approve onto the calendar or dismiss.
+class _StepsCard extends StatelessWidget {
+  const _StepsCard({required this.steps, required this.onApprove, required this.onDismiss});
+
+  final List<Map<String, dynamic>> steps;
+  final ValueChanged<Map<String, dynamic>> onApprove;
+  final ValueChanged<Map<String, dynamic>> onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Suggested steps', style: theme.textTheme.titleSmall),
+            for (final step in steps) ...[
+              const Divider(height: AppSpacing.lg),
+              Text(step['title']?.toString() ?? '', style: theme.textTheme.bodyMedium),
+              const SizedBox(height: AppSpacing.xxs),
+              switch (step['status']) {
+                'approved' => Text('On your calendar for ${step['due_label'] ?? ''}', style: muted),
+                'completed' => Text('Done', style: muted),
+                'dismissed' => Text('Dismissed', style: muted),
+                _ => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Suggested for ${step['due_label'] ?? ''}', style: muted),
+                      const SizedBox(height: AppSpacing.xs),
+                      Wrap(spacing: AppSpacing.sm, children: [
+                        FilledButton.tonalIcon(
+                          onPressed: () => onApprove(step),
+                          icon: const Icon(Icons.event_available, size: 18),
+                          label: const Text('Add to calendar'),
+                        ),
+                        TextButton(onPressed: () => onDismiss(step), child: const Text('Dismiss')),
+                      ]),
+                    ],
+                  ),
+              },
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Edit a step's wording and date, then approve it onto the calendar.
+class _ApproveSheet extends StatefulWidget {
+  const _ApproveSheet({required this.step, required this.client});
+
+  final Map<String, dynamic> step;
+  final AiMentorClient client;
+
+  @override
+  State<_ApproveSheet> createState() => _ApproveSheetState();
+}
+
+class _ApproveSheetState extends State<_ApproveSheet> {
+  late final _title = TextEditingController(text: widget.step['title']?.toString() ?? '');
+  late DateTime _due = DateTime.tryParse(widget.step['due_on']?.toString() ?? '') ?? DateTime.now().add(const Duration(days: 7));
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    super.dispose();
+  }
+
+  String get _dueText => '${_due.year}-${_due.month.toString().padLeft(2, '0')}-${_due.day.toString().padLeft(2, '0')}';
+
+  Future<void> _pickDate() async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _due.isBefore(today) ? today : _due,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 730)),
+      helpText: 'When will you do this?',
+    );
+    if (picked != null) setState(() => _due = picked);
+  }
+
+  Future<void> _save() async {
+    if (_title.text.trim().isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      final result = await widget.client.approve((widget.step['id'] as num).toInt(), title: _title.text.trim(), dueOn: _dueText);
+      if (mounted) Navigator.pop(context, result);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _saving = false);
+        showErrorSnackBar(context, error);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.lg + MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Add to my calendar', style: theme.textTheme.titleLarge),
+          const SizedBox(height: AppSpacing.xs),
+          Text('Change the words or the date if you like. You will get a reminder on the day.', style: theme.textTheme.bodyMedium),
+          const SizedBox(height: AppSpacing.md),
+          TextField(controller: _title, maxLength: 190, decoration: const InputDecoration(labelText: 'Step')),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.event_outlined),
+            title: Text(MaterialLocalizations.of(context).formatFullDate(_due)),
+            subtitle: const Text('Tap to change the date'),
+            onTap: _saving ? null : _pickDate,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          FilledButton.icon(
+            onPressed: _saving ? null : _save,
+            icon: const Icon(Icons.check),
+            label: Text(_saving ? 'Saving…' : 'Add to calendar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// My plan
+// ---------------------------------------------------------------------------
+
+class _PlanTab extends StatefulWidget {
+  const _PlanTab({required this.client, required this.version});
+
+  final AiMentorClient client;
+  final ValueNotifier<int> version;
+
+  @override
+  State<_PlanTab> createState() => _PlanTabState();
+}
+
+class _PlanTabState extends State<_PlanTab> with AutomaticKeepAliveClientMixin {
+  final _steps = <Map<String, dynamic>>[];
+  String? _status; // null = all, 'approved', 'completed'
+  int _page = 1;
+  int _lastPage = 1;
+  bool _loading = true;
+  Object? _error;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.version.addListener(_reload);
+    _reload();
+  }
+
+  @override
+  void dispose() {
+    widget.version.removeListener(_reload);
+    super.dispose();
+  }
+
+  Future<void> _reload() => _load(reset: true);
+
+  Future<void> _load({bool reset = false}) async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final page = reset ? 1 : _page + 1;
+      final data = await widget.client.plan(status: _status, page: page);
+      if (!mounted) return;
+      setState(() {
+        if (reset) _steps.clear();
+        _steps.addAll([for (final s in (data['data'] as List? ?? const [])) if (s is Map) Map<String, dynamic>.from(s)]);
+        _page = ((data['meta'] as Map?)?['current_page'] as num?)?.toInt() ?? page;
+        _lastPage = ((data['meta'] as Map?)?['last_page'] as num?)?.toInt() ?? page;
+        _loading = false;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+        _loading = false;
+        _error = error;
+      });
+      }
+    }
+  }
+
+  Future<void> _toggle(Map<String, dynamic> step) async {
+    try {
+      final result = await widget.client.toggleDone((step['id'] as num).toInt());
+      if (mounted) {
+        setState(() => step
+        ..clear()
+        ..addAll(result));
+      }
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error);
+    }
+  }
+
+  bool _overdue(Map<String, dynamic> step) {
+    final due = DateTime.tryParse(step['due_on']?.toString() ?? '');
+    return step['status'] == 'approved' && due != null && due.isBefore(DateUtils.dateOnly(DateTime.now()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final theme = Theme.of(context);
+
+    return RefreshIndicator(
+      onRefresh: _reload,
+      child: ListView(
+        padding: AppSpacing.listPadding,
+        children: [
+          Wrap(spacing: AppSpacing.sm, children: [
+            for (final (value, label) in const [(null, 'All'), ('approved', 'Planned'), ('completed', 'Done')])
+              ChoiceChip(
+                label: Text(label),
+                selected: _status == value,
+                onSelected: (_) {
+                  setState(() => _status = value);
+                  _reload();
+                },
+              ),
+          ]),
+          const SizedBox(height: AppSpacing.md),
+          if (_error != null && _steps.isEmpty)
+            ErrorState(error: _error!, onRetry: _reload)
+          else if (_loading && _steps.isEmpty)
+            const Padding(padding: EdgeInsets.all(AppSpacing.xl), child: Center(child: CircularProgressIndicator()))
+          else if (_steps.isEmpty)
+            const EmptyState(
+              icon: Icons.checklist,
+              title: 'No steps yet',
+              message: 'When the mentor suggests steps, tap "Add to calendar" and they appear here.',
+            )
+          else ...[
+            for (final step in _steps)
+              Card(
+                child: CheckboxListTile(
+                  value: step['status'] == 'completed',
+                  onChanged: (_) => _toggle(step),
+                  title: Text(
+                    step['title']?.toString() ?? '',
+                    style: step['status'] == 'completed' ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
+                  ),
+                  subtitle: Text(
+                    [
+                      if (_overdue(step)) 'Overdue' else 'Due ${step['due_label'] ?? ''}',
+                      if (step['goal'] != null) 'Goal: ${step['goal']}',
+                    ].join(' · '),
+                    style: _overdue(step) ? TextStyle(color: theme.colorScheme.error) : null,
+                  ),
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+              ),
+            if (_page < _lastPage)
+              Center(
+                child: TextButton(onPressed: _loading ? null : () => _load(), child: Text(_loading ? 'Loading…' : 'Show more')),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Saved answers
+// ---------------------------------------------------------------------------
+
+class _SavedTab extends StatefulWidget {
+  const _SavedTab({required this.client, required this.version});
+
+  final AiMentorClient client;
+  final ValueNotifier<int> version;
+
+  @override
+  State<_SavedTab> createState() => _SavedTabState();
+}
+
+class _SavedTabState extends State<_SavedTab> with AutomaticKeepAliveClientMixin {
+  final _answers = <Map<String, dynamic>>[];
+  int _page = 1;
+  int _lastPage = 1;
+  bool _loading = true;
+  Object? _error;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.version.addListener(_reload);
+    _reload();
+  }
+
+  @override
+  void dispose() {
+    widget.version.removeListener(_reload);
+    super.dispose();
+  }
+
+  Future<void> _reload() => _load(reset: true);
+
+  Future<void> _load({bool reset = false}) async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final page = reset ? 1 : _page + 1;
+      final data = await widget.client.saved(page: page);
+      if (!mounted) return;
+      setState(() {
+        if (reset) _answers.clear();
+        _answers.addAll([for (final a in (data['data'] as List? ?? const [])) if (a is Map) Map<String, dynamic>.from(a)]);
+        _page = ((data['meta'] as Map?)?['current_page'] as num?)?.toInt() ?? page;
+        _lastPage = ((data['meta'] as Map?)?['last_page'] as num?)?.toInt() ?? page;
+        _loading = false;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+        _loading = false;
+        _error = error;
+      });
+      }
+    }
+  }
+
+  Future<void> _remove(Map<String, dynamic> answer) async {
+    try {
+      await widget.client.toggleSaved((answer['id'] as num).toInt());
+      if (mounted) setState(() => _answers.remove(answer));
+    } catch (error) {
+      if (mounted) showErrorSnackBar(context, error);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return RefreshIndicator(
+      onRefresh: _reload,
+      child: ListView(
+        padding: AppSpacing.listPadding,
+        children: [
+          if (_error != null && _answers.isEmpty)
+            ErrorState(error: _error!, onRetry: _reload)
+          else if (_loading && _answers.isEmpty)
+            const Padding(padding: EdgeInsets.all(AppSpacing.xl), child: Center(child: CircularProgressIndicator()))
+          else if (_answers.isEmpty)
+            const EmptyState(
+              icon: Icons.bookmark_outline,
+              title: 'No saved answers yet',
+              message: 'Tap "Save" under any answer in the chat to keep it here.',
+            )
+          else ...[
+            for (final answer in _answers)
+              Card(
+                child: ExpansionTile(
+                  leading: const Icon(Icons.bookmark),
+                  title: Text(answer['content']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
+                  childrenPadding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
+                  children: [
+                    Align(alignment: Alignment.centerLeft, child: SelectableText(answer['content']?.toString() ?? '')),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => _remove(answer),
+                        icon: const Icon(Icons.bookmark_remove_outlined),
+                        label: const Text('Remove'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (_page < _lastPage)
+              Center(
+                child: TextButton(onPressed: _loading ? null : () => _load(), child: Text(_loading ? 'Loading…' : 'Show more')),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared pieces
+// ---------------------------------------------------------------------------
+
+/// Used when a test injects only [MentorshipAiScreen.sendMessage].
+class _SendOnlyClient implements AiMentorClient {
+  _SendOnlyClient(this._send);
+
+  final AssistantSender _send;
+  static const _empty = {'data': <dynamic>[], 'meta': {'current_page': 1, 'last_page': 1, 'total': 0}};
+
+  @override
+  Future<Map<String, dynamic>> history() async => {'enabled': true, 'messages': <dynamic>[]};
+  @override
+  Future<Map<String, dynamic>> send(String message, List<Map<String, String>> history) => _send(message, history);
+  @override
+  Future<Map<String, dynamic>> plan({String? status, int page = 1}) async => Map.of(_empty);
+  @override
+  Future<Map<String, dynamic>> saved({int page = 1}) async => Map.of(_empty);
+  @override
+  Future<Map<String, dynamic>> toggleSaved(int messageId) => throw UnsupportedError('Not available in this mode');
+  @override
+  Future<void> clear() => throw UnsupportedError('Not available in this mode');
+  @override
+  Future<Map<String, dynamic>> approve(int stepId, {required String title, required String dueOn}) =>
+      throw UnsupportedError('Not available in this mode');
+  @override
+  Future<Map<String, dynamic>> dismiss(int stepId) => throw UnsupportedError('Not available in this mode');
+  @override
+  Future<Map<String, dynamic>> toggleDone(int stepId) => throw UnsupportedError('Not available in this mode');
 }
 
 class _Bubble extends StatelessWidget {
@@ -230,9 +856,7 @@ class _Bubble extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         padding: const EdgeInsets.all(AppSpacing.md),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.82,
-        ),
+        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.82),
         decoration: BoxDecoration(
           color: isUser ? scheme.primary : scheme.surfaceContainerHighest,
           borderRadius: BorderRadius.only(
@@ -244,9 +868,7 @@ class _Bubble extends StatelessWidget {
         ),
         child: SelectableText(
           message.text,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: isUser ? scheme.onPrimary : scheme.onSurface,
-          ),
+          style: theme.textTheme.bodyMedium?.copyWith(color: isUser ? scheme.onPrimary : scheme.onSurface),
         ),
       ),
     );
@@ -263,29 +885,14 @@ class _ThinkingBubble extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        decoration: BoxDecoration(color: scheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(AppRadius.lg)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
             const SizedBox(width: AppSpacing.sm),
-            Text(
-              'Thinking…',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-            ),
+            Text('Thinking…', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
           ],
         ),
       ),

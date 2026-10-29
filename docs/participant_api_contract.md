@@ -570,6 +570,29 @@ Throttled 20/min. Body: `message` (required, ≤1500), `history` (optional, up t
 The reply is grounded in the participant's own goals, mentorship sessions and profile.
 200:
 ```json
-{"message": "Start by listing your strengths, then ...", "source": "ai"}
+{"id": 42, "role": "assistant", "content": "Start by listing your strengths, then ...", "message": "same as content", "source": "ai", "saved": false,
+ "actions": [{"id": 7, "title": "List three roles you enjoy", "due_on": "2026-11-02", "due_label": "02 Nov 2026", "status": "suggested", "goal": "Get IT internship"}]}
 ```
 `source` is `ai` when the configured provider answered, or `guidance` when AI is unavailable and a short fallback is returned. This endpoint never fails because AI is down; it falls back instead.
+Each exchange is stored; the stored conversation is used as history, so `history` in the body is only a fallback. `actions` are suggested dated steps (`status`: `suggested|approved|completed|dismissed`).
+
+### GET /mentorship/assistant
+`{"enabled": true, "messages": [{"id","role","content","source","saved","created_at","actions":[...]}]}` - last 30 messages, oldest first. `enabled` is false when AI is switched off (answers fall back to general guidance).
+
+### PATCH /mentorship/assistant/messages/{id}/save
+Toggles saving an assistant answer. 200 `{"id": 42, "saved": true}`.
+
+### DELETE /mentorship/assistant/history
+Clears the conversation; saved answers and approved steps are kept. 200 `{"deleted": 5}`.
+
+### POST /mentorship/assistant/actions/{id}/approve
+Body `{"title": "...", "due_on": "YYYY-MM-DD"}` (today or later, within two years). Puts the step on her calendar. 200 = the updated step. 422 if already handled or the date is invalid.
+
+### POST /mentorship/assistant/actions/{id}/dismiss  ·  POST /mentorship/assistant/actions/{id}/complete
+Dismiss a suggested step, or toggle an approved step done / planned. 200 = the updated step.
+
+### GET /mentorship/assistant/plan?status=approved|completed&page=
+Approved and completed steps, planned first then by due date. `{"data": [step], "meta": {"current_page","last_page","total"}}`.
+
+### GET /mentorship/assistant/saved?page=
+Saved answers, newest first. `{"data": [{"id","content","saved_at"}], "meta": {...}}`.

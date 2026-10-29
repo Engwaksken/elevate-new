@@ -666,6 +666,58 @@ class ApiService {
         return _mapResponse(response.data);
       });
 
+  /// GET /mentorship/assistant -> `{enabled, messages: [{id, role, content,
+  /// saved, actions: [...]}]}` (oldest first).
+  Future<Map<String, dynamic>> mentorshipAssistantHistory() =>
+      _getMap('/mentorship/assistant');
+
+  /// GET /mentorship/assistant/plan -> `{data: [step], meta}`. [status] is
+  /// `approved` (planned) or `completed`; null lists both.
+  Future<Map<String, dynamic>> mentorshipAssistantPlan({String? status, int page = 1}) =>
+      _getMap('/mentorship/assistant/plan', query: {
+        'page': page,
+        if (status != null) 'status': status,
+      });
+
+  /// GET /mentorship/assistant/saved -> `{data: [{id, content, saved_at}], meta}`.
+  Future<Map<String, dynamic>> mentorshipAssistantSaved({int page = 1}) =>
+      _getMap('/mentorship/assistant/saved', query: {'page': page});
+
+  /// PATCH /mentorship/assistant/messages/{id}/save -> `{id, saved}` (toggles).
+  Future<Map<String, dynamic>> toggleMentorAnswerSaved(int messageId) => _guard(() async {
+        final response = await dio.patch('/mentorship/assistant/messages/$messageId/save');
+        return _mapResponse(response.data);
+      });
+
+  /// DELETE /mentorship/assistant/history. Saved answers and approved steps are kept.
+  Future<Map<String, dynamic>> clearMentorHistory() => _guard(() async {
+        final response = await dio.delete('/mentorship/assistant/history');
+        return _mapResponse(response.data);
+      });
+
+  /// POST /mentorship/assistant/actions/{id}/approve -> the updated step; it is
+  /// added to her calendar. [dueOn] is `YYYY-MM-DD`, today or later.
+  Future<Map<String, dynamic>> approveMentorStep(int stepId, {required String title, required String dueOn}) =>
+      _guard(() async {
+        final response = await dio.post('/mentorship/assistant/actions/$stepId/approve', data: {
+          'title': title,
+          'due_on': dueOn,
+        });
+        return _mapResponse(response.data);
+      });
+
+  /// POST /mentorship/assistant/actions/{id}/dismiss -> the updated step.
+  Future<Map<String, dynamic>> dismissMentorStep(int stepId) => _guard(() async {
+        final response = await dio.post('/mentorship/assistant/actions/$stepId/dismiss');
+        return _mapResponse(response.data);
+      });
+
+  /// POST /mentorship/assistant/actions/{id}/complete -> toggles done / planned.
+  Future<Map<String, dynamic>> toggleMentorStepDone(int stepId) => _guard(() async {
+        final response = await dio.post('/mentorship/assistant/actions/$stepId/complete');
+        return _mapResponse(response.data);
+      });
+
   // =========================================================
   // PERSONAL GOALS AND PROGRESS TRACKING
   // =========================================================

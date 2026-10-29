@@ -516,12 +516,42 @@ class _DetailBlock extends StatelessWidget {
 }
 
 /// Prominent entry point to the AI career mentor, shown at the top of the
-/// mentorship screen.
-class _AiMentorEntry extends StatelessWidget {
+/// mentorship screen. Hidden when the server reports the AI mentor is
+/// switched off; shown when offline or if the check fails.
+class _AiMentorEntry extends StatefulWidget {
   const _AiMentorEntry();
+
+  /// Checked once per app session.
+  static Future<bool>? _enabledCheck;
+
+  @override
+  State<_AiMentorEntry> createState() => _AiMentorEntryState();
+}
+
+class _AiMentorEntryState extends State<_AiMentorEntry> {
+  bool _visible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _AiMentorEntry._enabledCheck ??= () async {
+      try {
+        if (!await SyncService.instance.isOnline()) return true;
+        final data = await ApiService.instance.mentorshipAssistantHistory();
+        return data['enabled'] != false;
+      } catch (_) {
+        _AiMentorEntry._enabledCheck = null; // try again next time
+        return true;
+      }
+    }();
+    _AiMentorEntry._enabledCheck!.then((enabled) {
+      if (mounted && !enabled) setState(() => _visible = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!_visible) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
