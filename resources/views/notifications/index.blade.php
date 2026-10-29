@@ -29,19 +29,47 @@
 </div>
 
 <div class="admin-stats-grid compact">
-<div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-bell"></i></span><div><small>Unread Notifications</small><strong>{{ number_format($unreadCount) }}</strong></div></div>
+<div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-calendar-week"></i></span><div><small>This Week</small><strong>{{ number_format($stats['week']) }}</strong></div></div>
+<div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-calendar-days"></i></span><div><small>This Month</small><strong>{{ number_format($stats['month']) }}</strong></div></div>
+<div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-layer-group"></i></span><div><small>Total</small><strong>{{ number_format($stats['total']) }}</strong></div></div>
+<div class="admin-stat"><span class="admin-stat-icon"><i class="fas fa-bell"></i></span><div><small>Unread</small><strong>{{ number_format($unreadCount) }}</strong></div></div>
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
-<select name="status">
-    <option value="">All notifications</option>
+<form method="GET" class="admin-toolbar" data-notification-filters>
+<input type="search" name="search" value="{{ request('search') }}" placeholder="Search title or message..." aria-label="Search notifications">
+<select name="period" aria-label="Period" data-notification-period>
+    <option value="">All time</option>
+    <option value="today" @selected(request('period')==='today')>Today</option>
+    <option value="week" @selected(request('period')==='week')>This week</option>
+    <option value="month" @selected(request('period')==='month')>This month</option>
+    <option value="year" @selected(request('period')==='year')>This year</option>
+    <option value="custom" @selected(request('period')==='custom')>Custom range</option>
+</select>
+<input type="date" name="from" value="{{ request('from') }}" title="From date" aria-label="From date" data-notification-custom @unless(request('period')==='custom') hidden @endunless>
+<input type="date" name="to" value="{{ request('to') }}" title="To date" aria-label="To date" data-notification-custom @unless(request('period')==='custom') hidden @endunless>
+<select name="status" aria-label="Status">
+    <option value="">All statuses</option>
     <option value="unread" @selected(request('status')==='unread')>Unread</option>
     <option value="read" @selected(request('status')==='read')>Read</option>
 </select>
-<button class="btn btn-primary btn-sm">Apply</button>
+<select name="per_page" aria-label="Rows per page">
+    @foreach([10,15,25,50] as $n)
+        <option value="{{ $n }}" @selected($perPage===$n)>{{ $n }}/page</option>
+    @endforeach
+</select>
+<button class="btn btn-primary btn-sm"><i class="fas fa-filter"></i> Apply</button>
 <a href="{{ route('notifications.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
+<script>
+document.querySelector('[data-notification-period]')?.addEventListener('change', function () {
+    document.querySelectorAll('[data-notification-custom]').forEach(el => { el.hidden = this.value !== 'custom'; });
+});
+</script>
+
+@if($notifications->total() > 0)
+<p class="admin-cell-hint" style="margin:0 0 10px">Showing {{ $notifications->firstItem() }}–{{ $notifications->lastItem() }} of {{ number_format($notifications->total()) }} notifications</p>
+@endif
 
 <div class="admin-table-wrap">
 <table class="admin-table">

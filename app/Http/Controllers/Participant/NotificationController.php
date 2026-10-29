@@ -16,8 +16,16 @@ class NotificationController extends Controller
 
     public function index(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
-        $query = UserNotification::query()
-            ->where('user_id', $request->user()->id);
+        $base = UserNotification::query()->where('user_id', $request->user()->id);
+        $query = clone $base;
+
+        [$from, $to] = $this->periodRange($request);
+        if ($from) {
+            $query->where('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->where('created_at', '<=', $to);
+        }
 
         if ($request->get('status') === 'unread') {
             $query->whereNull('read_at');
@@ -46,13 +54,49 @@ class NotificationController extends Controller
             ]);
         }
 
+        $perPage = in_array((int) $request->get('per_page'), [10, 15, 25, 50], true) ? (int) $request->get('per_page') : 15;
+
         return view('notifications.index', [
-            'notifications' => $query->latest()->paginate(15)->withQueryString(),
-            'unreadCount' => UserNotification::query()
-                ->where('user_id', $request->user()->id)
-                ->whereNull('read_at')
-                ->count(),
+            'notifications' => $query->latest()->paginate($perPage)->withQueryString(),
+            'unreadCount' => (clone $base)->whereNull('read_at')->count(),
+            'stats' => [
+                'week' => (clone $base)->where('created_at', '>=', now()->startOfWeek())->count(),
+                'month' => (clone $base)->where('created_at', '>=', now()->startOfMonth())->count(),
+                'total' => (clone $base)->count(),
+            ],
+            'perPage' => $perPage,
         ]);
+    }
+
+    /**
+     * Resolve the selected period (today/week/month/year/custom) to a created_at range.
+     */
+    private function periodRange(Request $request): array
+    {
+        return match ($request->get('period')) {
+            'today' => [now()->startOfDay(), null],
+            'week' => [now()->startOfWeek(), null],
+            'month' => [now()->startOfMonth(), null],
+            'year' => [now()->startOfYear(), null],
+            'custom' => [
+                $this->parseDate($request->get('from'))?->startOfDay(),
+                $this->parseDate($request->get('to'))?->endOfDay(),
+            ],
+            default => [null, null],
+        };
+    }
+
+    private function parseDate(mixed $value): ?\Illuminate\Support\Carbon
+    {
+        if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return null;
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $value);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     public function read(Request $request, UserNotification $notification): RedirectResponse|Response
