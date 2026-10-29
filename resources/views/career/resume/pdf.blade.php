@@ -65,7 +65,10 @@ a{color:{{ $theme['accent'] }};text-decoration:none}
 .t-professional .tag,.t-modern .tag{background:#f3e8e8;color:#5b0000}
 .t-professional .tag{background:#e2e8f0;color:#1f3a5f}
 .main{padding:0 0 0 16px;vertical-align:top}
-@if($screen ?? false)
+@if($thumb ?? false)
+html,body{background:#fff;overflow:hidden}
+body{width:794px;min-height:1123px;margin:0;padding:36px 42px;box-sizing:border-box}
+@elseif($screen ?? false)
 html{background:#e9e9ee}
 body{max-width:780px;margin:18px auto;padding:30px 36px;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.15)}
 @endif

@@ -132,7 +132,8 @@ class ResumeController extends Controller
             $resume = \App\Support\ResumeTemplates::sample($template);
         }
 
-        return response()->view('career.resume.pdf', ['resume' => $resume, 'screen' => true]);
+        // ?thumb=1 renders a bare A4 page (794 x 1123 px) for the scaled card thumbnails.
+        return response()->view('career.resume.pdf', ['resume' => $resume, 'screen' => true, 'thumb' => $request->boolean('thumb')]);
     }
 
     private function safeFilename(string $value): string

@@ -30,6 +30,17 @@ class ResumeTemplates
         'executive' => ['Executive', 'Leadership-focused presentation'],
     ];
 
+    /** Card details: accent colour, short traits and who the layout suits. */
+    public const DETAILS = [
+        'classic' => ['accent' => '#111111', 'traits' => ['Serif', 'Single column'], 'best_for' => 'Banks, government and formal applications'],
+        'modern' => ['accent' => '#800000', 'traits' => ['Colour header', 'Skill tags'], 'best_for' => 'Most jobs, a confident first impression'],
+        'minimal' => ['accent' => '#8a8a8a', 'traits' => ['Lots of white space', 'No colour'], 'best_for' => 'Online applications and printing'],
+        'professional' => ['accent' => '#1f3a5f', 'traits' => ['Two columns', 'Sidebar'], 'best_for' => 'Office, NGO and business roles'],
+        'graduate' => ['accent' => '#0f766e', 'traits' => ['Education first', 'Single column'], 'best_for' => 'Students, interns and first jobs'],
+        'technology' => ['accent' => '#2563eb', 'traits' => ['Two columns', 'Projects early'], 'best_for' => 'IT, digital and technical roles'],
+        'executive' => ['accent' => '#8a6d1f', 'traits' => ['Serif', 'Elegant rules'], 'best_for' => 'Senior and leadership roles'],
+    ];
+
     public static function keys(): array
     {
         return array_keys(self::TEMPLATES);

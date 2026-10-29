@@ -287,22 +287,38 @@
                 <section class="eh-tab-pane" data-eh-pane="templates">
                     <div class="eh-tab-section">
                         <style>
-                        .tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
-                        .tpl-card{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid #e4e7ec;border-radius:12px;background:#fff}
-                        .tpl-card.is-current{border-color:#800000;box-shadow:0 0 0 2px rgba(128,0,0,.12)}
-                        .tpl-thumb{position:relative;height:190px;overflow:hidden;border:1px solid #eef0f3;border-radius:8px;background:#f5f5f7;cursor:pointer}
-                        .tpl-thumb iframe{position:absolute;top:0;left:0;width:800px;height:1060px;border:0;transform:scale(.26);transform-origin:0 0;pointer-events:none}
-                        .tpl-card strong{font-size:.95rem;color:#101828}
-                        .tpl-card small{color:#667085}
-                        .tpl-badge{align-self:flex-start;padding:2px 8px;border-radius:999px;background:#800000;color:#fff;font-size:.7rem;font-weight:700}
-                        .tpl-actions{display:flex;gap:6px;margin-top:auto}
-                        .tpl-actions form{margin:0;flex:1}.tpl-actions .btn{width:100%;justify-content:center}
+                        .tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
+                        .tpl-card{position:relative;display:flex;flex-direction:column;border:1px solid #e4e7ec;border-radius:14px;background:#fff;overflow:hidden;transition:box-shadow .2s,border-color .2s,transform .2s}
+                        .tpl-card:hover{box-shadow:0 10px 28px rgba(16,24,40,.10);transform:translateY(-2px)}
+                        .tpl-card.is-current{border-color:#800000;box-shadow:0 0 0 2px rgba(128,0,0,.18)}
+                        .tpl-stage{padding:18px 18px 0;background:linear-gradient(180deg,#f4f5f8 0%,#eceef3 100%)}
+                        .tpl-thumb{position:relative;width:100%;aspect-ratio:210/297;overflow:hidden;border-radius:4px 4px 0 0;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.08),0 8px 18px rgba(16,24,40,.10);cursor:pointer;outline:none}
+                        .tpl-thumb iframe{position:absolute;top:0;left:0;width:794px;height:1123px;border:0;transform-origin:0 0;transform:scale(.29);pointer-events:none;background:#fff}
+                        .tpl-thumb-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(16,24,40,0);transition:background .2s}
+                        .tpl-thumb-overlay span{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;background:#fff;color:#101828;font-weight:700;font-size:.85rem;box-shadow:0 4px 14px rgba(0,0,0,.18);opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s}
+                        .tpl-thumb:hover .tpl-thumb-overlay,.tpl-thumb:focus-visible .tpl-thumb-overlay{background:rgba(16,24,40,.35)}
+                        .tpl-thumb:hover .tpl-thumb-overlay span,.tpl-thumb:focus-visible .tpl-thumb-overlay span{opacity:1;transform:none}
+                        .tpl-thumb:focus-visible{box-shadow:0 0 0 3px rgba(128,0,0,.45)}
+                        .tpl-current{position:absolute;top:12px;right:12px;z-index:2;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:#800000;color:#fff;font-size:.7rem;font-weight:700;box-shadow:0 2px 8px rgba(128,0,0,.3)}
+                        .tpl-body{display:flex;flex-direction:column;gap:8px;flex:1;padding:14px 16px 16px;border-top:1px solid #eef0f3}
+                        .tpl-title{display:flex;align-items:center;gap:8px}
+                        .tpl-swatch{width:12px;height:12px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+                        .tpl-title strong{font-size:1rem;color:#101828}
+                        .tpl-desc{margin:0;color:#475467;font-size:.82rem}
+                        .tpl-traits{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+                        .tpl-traits li{padding:2px 8px;border-radius:999px;background:#f2f4f7;color:#344054;font-size:.7rem;font-weight:600}
+                        .tpl-best{margin:0;color:#667085;font-size:.75rem}
+                        .tpl-best b{color:#344054;font-weight:600}
+                        .tpl-actions{display:flex;gap:8px;margin-top:auto;padding-top:6px}
+                        .tpl-actions>*{flex:1 1 0;min-width:0}
+                        .tpl-actions form{margin:0}.tpl-actions .btn{width:100%;justify-content:center;white-space:nowrap}
+                        .tpl-card.is-current [data-template-form] .btn{background:#fff;color:#800000;border:1px solid #800000}
                         .tpl-preview-frame{width:100%;height:70vh;border:1px solid #e4e7ec;border-radius:8px;background:#e9e9ee}
                         .tpl-source{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
                         .tpl-source label{display:inline-flex;align-items:center;gap:6px;font-weight:600}
                         .tpl-source input{width:auto;min-height:0;margin:0}
                         </style>
-                        <div class="eh-tab-section-header"><div><h2>Resume Templates</h2><p>Click "Preview" to see how a template looks with sample information or with your own resume. Changing the template only changes how your resume looks; your information stays the same.</p></div></div>
+                        <div class="eh-tab-section-header"><div><h2>Resume Templates</h2><p>Click any page to see it full size, with sample information or with your own resume. Changing the template only changes how your resume looks; your information stays the same.</p></div></div>
                         @if($resumes->count())
                             <div class="form-group template-resume-picker"><label for="template-resume-select">Apply templates to</label><select id="template-resume-select">@foreach($resumes as $resume)<option value="{{ $resume->id }}" data-template="{{ $resume->template ?: 'classic' }}">{{ $resume->title }}</option>@endforeach</select></div>
                         @else
@@ -310,23 +326,31 @@
                         @endif
                         <div class="tpl-grid">
                             @foreach(\App\Support\ResumeTemplates::TEMPLATES as $key => [$label, $description])
-                                <div class="tpl-card" data-template-card="{{ $key }}">
-                                    <div class="tpl-thumb" data-modal-open="template-preview-modal" data-template-preview="{{ $key }}" data-template-label="{{ $label }}" role="button" tabindex="0" aria-label="Preview the {{ $label }} template">
-                                        <iframe src="{{ route('career.resume.template.preview', $key) }}" loading="lazy" tabindex="-1" aria-hidden="true" title="{{ $label }} template thumbnail"></iframe>
+                                @php($details = \App\Support\ResumeTemplates::DETAILS[$key])
+                                <article class="tpl-card" data-template-card="{{ $key }}" aria-labelledby="tpl-{{ $key }}-title">
+                                    <span class="tpl-current" data-template-current hidden><i class="fas fa-check"></i> Current</span>
+                                    <div class="tpl-stage">
+                                        <div class="tpl-thumb" data-modal-open="template-preview-modal" data-template-preview="{{ $key }}" data-template-label="{{ $label }}" role="button" tabindex="0" aria-label="Preview the {{ $label }} template">
+                                            <iframe src="{{ route('career.resume.template.preview', ['template' => $key, 'thumb' => 1]) }}" loading="lazy" tabindex="-1" aria-hidden="true" title="{{ $label }} template thumbnail" scrolling="no"></iframe>
+                                            <div class="tpl-thumb-overlay"><span><i class="fas fa-magnifying-glass-plus"></i> Preview</span></div>
+                                        </div>
                                     </div>
-                                    <span class="tpl-badge" data-template-current hidden>Your resume uses this</span>
-                                    <strong>{{ $label }}</strong>
-                                    <small>{{ $description }}</small>
-                                    <div class="tpl-actions">
-                                        <button type="button" class="btn btn-outline btn-sm" data-modal-open="template-preview-modal" data-template-preview="{{ $key }}" data-template-label="{{ $label }}"><i class="fas fa-eye"></i> Preview</button>
-                                        @if($resumes->count())
-                                            <form method="POST" action="{{ route('career.resume.template',$resumes->first()) }}" data-template-form data-template="{{ $key }}">@csrf @method('PUT')
-                                                <input type="hidden" name="template" value="{{ $key }}">
-                                                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-check"></i> Use</button>
-                                            </form>
-                                        @endif
+                                    <div class="tpl-body">
+                                        <div class="tpl-title"><span class="tpl-swatch" style="background:{{ $details['accent'] }}"></span><strong id="tpl-{{ $key }}-title">{{ $label }}</strong></div>
+                                        <p class="tpl-desc">{{ $description }}</p>
+                                        <ul class="tpl-traits">@foreach($details['traits'] as $trait)<li>{{ $trait }}</li>@endforeach</ul>
+                                        <p class="tpl-best"><b>Best for:</b> {{ $details['best_for'] }}</p>
+                                        <div class="tpl-actions">
+                                            <button type="button" class="btn btn-outline btn-sm" data-modal-open="template-preview-modal" data-template-preview="{{ $key }}" data-template-label="{{ $label }}"><i class="fas fa-eye"></i> Preview</button>
+                                            @if($resumes->count())
+                                                <form method="POST" action="{{ route('career.resume.template',$resumes->first()) }}" data-template-form data-template="{{ $key }}">@csrf @method('PUT')
+                                                    <input type="hidden" name="template" value="{{ $key }}">
+                                                    <button type="submit" class="btn btn-primary btn-sm" data-template-use-label><i class="fas fa-check"></i> Use</button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </div>
-                                </div>
+                                </article>
                             @endforeach
                         </div>
 
@@ -429,6 +453,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector(`[data-template-form][data-template="${current.key}"]`)?.requestSubmit();
     });
 
+    // Fit each A4 thumbnail page (794px wide) exactly to its card, whatever the card width.
+    const fitThumb = thumb => {
+        const page = thumb.querySelector('iframe');
+        if (page && thumb.clientWidth) page.style.transform = `scale(${thumb.clientWidth / 794})`;
+    };
+    const thumbs = document.querySelectorAll('.tpl-thumb');
+    if ('ResizeObserver' in window) {
+        const observer = new ResizeObserver(entries => entries.forEach(entry => fitThumb(entry.target)));
+        thumbs.forEach(thumb => observer.observe(thumb));
+    } else {
+        thumbs.forEach(fitThumb);
+    }
+
     // Point "Use" forms at the selected resume and mark the template it currently uses.
     const markCurrent = () => {
         const used = select?.selectedOptions[0]?.dataset.template;
@@ -436,6 +473,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const isCurrent = card.dataset.templateCard === used;
             card.classList.toggle('is-current', isCurrent);
             card.querySelector('[data-template-current]').hidden = !isCurrent;
+            const useButton = card.querySelector('[data-template-use-label]');
+            if (useButton) useButton.innerHTML = isCurrent ? '<i class="fas fa-check"></i> In use' : '<i class="fas fa-check"></i> Use';
         });
     };
     if (select) {

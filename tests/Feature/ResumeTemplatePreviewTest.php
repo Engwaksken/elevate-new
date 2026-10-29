@@ -37,6 +37,18 @@ class ResumeTemplatePreviewTest extends TestCase
         $this->assertDatabaseCount('resumes', 0);
 
         $this->get(route('career.resume.template.preview', 'unknown'))->assertNotFound();
+
+        // Card thumbnails get a bare A4-sized page without the grey preview backdrop.
+        $this->get(route('career.resume.template.preview', ['template' => 'modern', 'thumb' => 1]))->assertOk()
+            ->assertSee('width:794px', false)->assertDontSee('box-shadow:0 2px 14px', false);
+    }
+
+    public function test_template_cards_show_thumbnails_details_and_preview_controls(): void
+    {
+        $this->actingAs($this->participant())->get(route('career.resume.index'))->assertOk()
+            ->assertSee(route('career.resume.template.preview', ['template' => 'technology', 'thumb' => 1]), false)
+            ->assertSee('Best for:')->assertSee('IT, digital and technical roles')->assertSee('Two columns')
+            ->assertSee('data-template-card="executive"', false);
     }
 
     public function test_preview_can_use_her_own_resume_without_changing_it_but_not_someone_elses(): void
