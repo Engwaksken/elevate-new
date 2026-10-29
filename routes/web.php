@@ -163,6 +163,10 @@ Route::get('/', [\App\Http\Controllers\Public\ContentPageController::class, 'hom
 // to these URLs, so they must stay public and keep these paths.
 Route::get('/privacy-policy', [\App\Http\Controllers\Public\ContentPageController::class, 'privacy'])->name('legal.privacy');
 Route::get('/terms', [\App\Http\Controllers\Public\ContentPageController::class, 'terms'])->name('legal.terms');
+// Google Play links here: how to delete an account, with a request form for signed-in users.
+Route::get('/account-deletion', [\App\Http\Controllers\Public\AccountDeletionController::class, 'show'])->name('account-deletion.show');
+Route::post('/account-deletion', [\App\Http\Controllers\Public\AccountDeletionController::class, 'store'])
+    ->middleware(['auth', 'throttle:5,1'])->name('account-deletion.store');
 Route::get('/faqs', [\App\Http\Controllers\Public\ContentPageController::class, 'faqs'])->name('public.faqs');
 Route::get('/pages/{slug}', [\App\Http\Controllers\Public\ContentPageController::class, 'show'])->where('slug', '[a-z][a-z0-9-]*')->name('public.pages.show');
 
@@ -868,6 +872,11 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(function () {
+    Route::middleware('permission:users.delete')->prefix('account-deletions')->name('account-deletions.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AccountDeletionController::class, 'index'])->name('index');
+        Route::post('/{deletionRequest}/complete', [\App\Http\Controllers\Admin\AccountDeletionController::class, 'complete'])->whereNumber('deletionRequest')->name('complete');
+        Route::post('/{deletionRequest}/reject', [\App\Http\Controllers\Admin\AccountDeletionController::class, 'reject'])->whereNumber('deletionRequest')->name('reject');
+    });
     Route::get('/participant-goals',[AdminParticipantGoalController::class,'index'])
         ->middleware('permission:users.view')->name('participant-goals.index');
 

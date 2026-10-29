@@ -49,6 +49,10 @@ android {
 
     buildTypes {
         release {
+            // Smaller, harder-to-reverse Play Store build. Keep rules for plugins live in proguard-rules.pro.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig =
                 if (keystorePropertiesFile.exists()) {
                     signingConfigs.getByName("release")

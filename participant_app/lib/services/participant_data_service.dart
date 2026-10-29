@@ -133,6 +133,19 @@ class ParticipantDataService {
         confirmation: confirmation,
       );
 
+  /// The latest account deletion request (`status`, `requested_at`, ...) or null.
+  Future<Map<String, dynamic>?> accountDeletionRequest() async {
+    final data = await _api.accountDeletionRequest();
+    final request = data['request'];
+    return request is Map ? Map<String, dynamic>.from(request) : null;
+  }
+
+  Future<Map<String, dynamic>> requestAccountDeletion({
+    required String password,
+    String? reason,
+  }) =>
+      _api.requestAccountDeletion(password: password, reason: reason);
+
   Future<File> _photoFile() async {
     final dir = await getApplicationSupportDirectory();
     return File(p.join(dir.path, 'profile_photo'));

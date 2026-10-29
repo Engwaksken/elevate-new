@@ -42,6 +42,8 @@ Route::prefix('v1')->group(function () {
             ->middleware(EnsureParticipantApi::class)
             ->group(function () {
                 Route::post('/logout',[ParticipantAuthController::class,'logout']);
+                Route::get('/account/deletion-request',[\App\Http\Controllers\Api\V1\Participant\AccountDeletionController::class,'show']);
+                Route::post('/account/deletion-request',[\App\Http\Controllers\Api\V1\Participant\AccountDeletionController::class,'store'])->middleware('throttle:5,1');
                 Route::get('/me',[ParticipantController::class,'me']);
                 Route::post('/email/verification-notification',[ParticipantAuthController::class,'resendVerification'])
                     ->middleware('throttle:6,1')->name('api.participant.email.verification');

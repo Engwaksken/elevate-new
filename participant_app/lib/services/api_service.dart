@@ -311,6 +311,28 @@ class ApiService {
       });
 
   // =========================================================
+  // ACCOUNT DELETION
+  // =========================================================
+
+  /// GET /account/deletion-request -> `{request: {...}|null, days_to_process}`.
+  Future<Map<String, dynamic>> accountDeletionRequest() =>
+      _getMap('/account/deletion-request');
+
+  /// POST /account/deletion-request. An admin completes it within
+  /// `days_to_process` days. 422 (wrong password) carries `errors`.
+  Future<Map<String, dynamic>> requestAccountDeletion({
+    required String password,
+    String? reason,
+  }) =>
+      _guard(() async {
+        final response = await dio.post('/account/deletion-request', data: {
+          'password': password,
+          if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+        });
+        return _mapResponse(response.data);
+      });
+
+  // =========================================================
   // PROGRESS
   // =========================================================
 

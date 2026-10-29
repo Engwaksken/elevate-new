@@ -272,30 +272,29 @@
         <section id="deletion">
             <h2>12. Deleting your account and data</h2>
             <div class="legal-callout">
-                <p><strong>How to request deletion:</strong> send an email to <a href="mailto:{{ $email }}?subject=Account%20deletion%20request">{{ $email }}</a> with the subject "Account deletion request", from the email address registered to your ElevateHer360 account. Include your full name and say whether you want your whole account deleted or only certain data.</p>
-                <p>You do not need to have the app installed to request deletion. We will confirm your identity, then complete the request within {{ $deletionDays }} days and confirm by email when it is done.</p>
+                <p><strong>How to request deletion:</strong> in the mobile app, open Profile, then Settings, and tap "Delete my account"; or sign in and use the form on our <a href="{{ route('account-deletion.show') }}">account deletion page</a>. If you cannot sign in, email <a href="mailto:{{ $email }}?subject=Account%20deletion%20request">{{ $email }}</a> from the address registered to your account with the subject "Account deletion request".</p>
+                <p>You do not need to have the app installed to request deletion. Our team reviews each request and completes it within {{ $deletionDays }} days.</p>
             </div>
 
             <h3>What is deleted</h3>
             <ul>
-                <li>Your account, sign-in details and app sign-in tokens.</li>
-                <li>Your profile, including gender, date of birth, location, disability information, education, employment and career interests.</li>
-                <li>Push notification tokens and device records.</li>
-                <li>Lesson progress, assessment attempts and answers, assignment submissions and the files you uploaded.</li>
-                <li>Resumes, uploaded CVs, cover letters, saved jobs and job applications.</li>
-                <li>Mentee or mentor profiles, mentorship goals and sessions.</li>
-                <li>Event registrations, survey responses and notifications addressed to you.</li>
+                <li>Your name, email address, phone number, password and app sign-in tokens.</li>
+                <li>Your profile, including photo, gender, date of birth, location, disability information, education, employment and career interests.</li>
+                <li>Push notification tokens and device records, and notifications addressed to you.</li>
+                <li>Resumes, uploaded CVs and their files, cover letters, saved jobs and personal goals.</li>
+                <li>Your mentee profile, AI career mentor conversations and action plans.</li>
+                <li>Library bookmarks, reading history and download requests.</li>
             </ul>
 
-            <h3>What may be kept</h3>
+            <h3>What is kept, without your identity</h3>
             <ul>
+                <li>Programme records such as course enrolments, lesson progress, assessment results, assignment submissions, certificates, attendance, event registrations, survey and feedback responses, mentorship sessions and job applications. These are kept for programme reporting but are no longer linked to your name or contact details.</li>
                 <li>Records we must keep to meet a legal obligation or to establish or defend legal claims, kept only as long as necessary.</li>
-                <li>Security and audit logs and attendance records, which are de-identified so they are no longer linked to you.</li>
-                <li>Aggregated statistics that do not identify you.</li>
+                <li>Security and audit logs, de-identified where possible, and aggregated statistics that do not identify you.</li>
                 <li>Copies of an application you already sent to an employer, which that employer holds. Contact the employer directly to have those deleted.</li>
             </ul>
-            <p>Deletion is permanent. After deletion you will no longer be able to sign in, and certificates issued to you may no longer be verifiable through the platform, so download anything you want to keep first.</p>
-            <p>Signing out of the app or uninstalling it deletes data stored on your device, but does not delete your account on our servers. To delete your account, send the request above.</p>
+            <p>Deletion is permanent. After deletion you will no longer be able to sign in, and certificates issued to you can no longer be linked to you through the platform, so download anything you want to keep first.</p>
+            <p>Signing out of the app or uninstalling it deletes data stored on your device, but does not delete your account on our servers. To delete your account, send a request as described above.</p>
         </section>
 
         <section id="cookies">

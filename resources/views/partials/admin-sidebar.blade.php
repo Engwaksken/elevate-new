@@ -358,6 +358,12 @@
             'colour' => 'assets',
             'items' => [
                 [
+                    'route' => 'admin.account-deletions.index',
+                    'label' => 'Account Deletions',
+                    'icon' => 'fa-user-xmark',
+                    'permissions' => ['users.delete'],
+                ],
+                [
                     'route' => 'admin.import-centre.index',
                     'label' => 'Import Centre',
                     'icon' => 'fa-file-import',

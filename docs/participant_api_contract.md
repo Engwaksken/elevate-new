@@ -63,6 +63,15 @@ Revokes the current token. 200 `{"message":"Signed out successfully."}`
 ### GET /me
 200 `{"user":{"id":5,"name":"Jane","email":"...","user_type":"participant","status":"active","email_verified":true,"profile":{...}|null, ...}}`
 
+### GET /account/deletion-request
+The participant's latest account deletion request, or `null`.
+200 `{"request":{"id":3,"status":"pending|completed|rejected","requested_at":"ISO8601","processed_at":null,"admin_note":null,"days_to_process":30}|null,"days_to_process":30}`
+`admin_note` is only returned for rejected requests.
+
+### POST /account/deletion-request
+Body `{"password":"...","reason":"optional, max 1000"}` (throttled 5/min). Creates a pending request for admin review, or returns the existing pending one; admins complete it within 30 days, which anonymises the account and revokes its tokens.
+201 `{"message":"...","request":{...}}` · 422 `{"errors":{"password":["That password is not correct."]}}`
+
 ### POST /email/verification-notification
 Resends the verification email to the signed-in participant (throttled 6/min). Unaffected when the email is already verified.
 200 `{"message":"Verification link sent. Please check your inbox."}`

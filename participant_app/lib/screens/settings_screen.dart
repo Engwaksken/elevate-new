@@ -4,9 +4,11 @@ import '../core/formatters.dart';
 import '../core/theme/app_theme.dart';
 import '../services/download_service.dart';
 import '../services/local_database.dart';
+import '../services/participant_data_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/feedback.dart';
 import '../widgets/state_views.dart';
+import 'delete_account_screen.dart';
 import 'downloads_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -21,6 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _pending = 0;
   int _downloads = 0;
   String? _lastSync;
+  Map<String, dynamic>? _deletionRequest;
 
   @override
   void initState() {
@@ -48,6 +51,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _downloads = downloads;
       _lastSync = lastSync;
     });
+    await _loadDeletionRequest();
+  }
+
+  /// Best effort: the Account tile still works offline, just without the status.
+  Future<void> _loadDeletionRequest() async {
+    try {
+      if (!await SyncService.instance.isOnline()) return;
+      final request = await ParticipantDataService.instance.accountDeletionRequest();
+      if (mounted) setState(() => _deletionRequest = request);
+    } catch (_) {
+      // Ignore; shown without status.
+    }
   }
 
   Future<void> _syncNow() async {
@@ -141,6 +156,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SectionHeader(title: 'Account'),
+              Card(
+                child: ListTile(
+                  leading: Icon(Icons.person_remove_outlined, color: Theme.of(context).colorScheme.error),
+                  title: const Text('Delete my account'),
+                  subtitle: Text(_deletionRequest?['status'] == 'pending'
+                      ? 'Request received. Your account will be deleted soon.'
+                      : 'Ask us to delete your account and personal data.'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => DeleteAccountScreen(existingRequest: _deletionRequest)),
+                    );
+                    await _loadDeletionRequest();
+                  },
                 ),
               ),
             ],
