@@ -225,6 +225,10 @@ document.addEventListener('DOMContentLoaded',()=>{
 
         if(!message) return;
 
+        // Capture the form data before clearing the textarea, otherwise an empty message is posted.
+        const body=new FormData(form);
+        body.set('message',message);
+
         addChatMessage('user',message);
         textarea.value='';
         setChatBusy(true);
@@ -236,7 +240,7 @@ document.addEventListener('DOMContentLoaded',()=>{
                     'Accept':'application/json',
                     'X-Requested-With':'XMLHttpRequest',
                 },
-                body:new FormData(form),
+                body,
             });
 
             const data=await response.json();

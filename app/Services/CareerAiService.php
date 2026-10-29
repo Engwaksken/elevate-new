@@ -7,7 +7,11 @@ use App\Models\AiUsageLog;
 use Illuminate\Support\Facades\Http;
 
 class CareerAiService {
-    public function generate(string $feature,string $system,string $user,?int $userId=null):array {
+    /**
+     * @param  array<int,array{role:string,content:string}>  $history  earlier user/assistant turns, oldest first
+     */
+    public function generate(string $feature,string $system,string $user,?int $userId=null,array $history=[]):array {
+        $history=$this->normaliseHistory($history);
         $cfg=AiIntegration::where('feature','system_ai')->where('enabled',true)->first();
         if(!$cfg || !$cfg->apiKey() || !$cfg->model) throw new \RuntimeException('AI_UNAVAILABLE');
         $usage = AiUsageLog::where('created_at', '>=', now()->startOfDay())->where('status', 'success');
@@ -17,9 +21,9 @@ class CareerAiService {
         try{
             $provider = AiProviderRegistry::resolve(strtolower($cfg->provider));
             $result = match($provider['api']) {
-                'gemini' => $this->gemini($cfg,$provider,$system,$user),
-                'anthropic' => $this->anthropic($cfg,$provider,$system,$user),
-                default => $this->openAi($cfg,$provider,$system,$user),
+                'gemini' => $this->gemini($cfg,$provider,$system,$user,$history),
+                'anthropic' => $this->anthropic($cfg,$provider,$system,$user,$history),
+                default => $this->openAi($cfg,$provider,$system,$user,$history),
             };
             AiUsageLog::create(['user_id'=>$userId,'feature'=>$feature,'provider'=>$cfg->provider,'model'=>$cfg->model,'status'=>'success',
                 'input_tokens'=>$result['input_tokens']??0,'output_tokens'=>$result['output_tokens']??0,'duration_ms'=>(int)((microtime(true)-$started)*1000)]);
@@ -62,11 +66,35 @@ class CareerAiService {
         return $e->getMessage() ?: class_basename($e);
     }
 
-    private function openAi(AiIntegration $c,array $provider,string $system,string $user):array {
+    /**
+     * Keep only well-formed user/assistant turns that start with a user turn and
+     * alternate roles (consecutive turns are merged) so every provider accepts them.
+     */
+    private function normaliseHistory(array $history):array {
+        $turns=[];
+        foreach($history as $entry){
+            if(!is_array($entry)) continue;
+            $role=strtolower((string)($entry['role']??''));
+            $content=trim((string)($entry['content']??''));
+            if(!in_array($role,['user','assistant'],true) || $content==='') continue;
+            if($turns===[] && $role!=='user') continue;
+            $last=array_key_last($turns);
+            if($last!==null && $turns[$last]['role']===$role){
+                $turns[$last]['content'].="\n\n".$content;
+                continue;
+            }
+            $turns[]=['role'=>$role,'content'=>$content];
+        }
+        // The new question is a user turn, so history must end on an assistant turn.
+        if($turns!==[] && end($turns)['role']==='user') array_pop($turns);
+        return $turns;
+    }
+
+    private function openAi(AiIntegration $c,array $provider,string $system,string $user,array $history=[]):array {
         $endpoint=$c->endpoint ?: ($provider['endpoint'] ?? 'https://api.openai.com/v1/chat/completions');
         $payload=[
             'model'=>$c->model,
-            'messages'=>[['role'=>'system','content'=>$system],['role'=>'user','content'=>$user]],
+            'messages'=>[['role'=>'system','content'=>$system],...$history,['role'=>'user','content'=>$user]],
             ...(isset($c->settings['temperature']) ? ['temperature' => (float) $c->settings['temperature']] : []),
         ];
         $http=Http::timeout(60);
@@ -77,13 +105,13 @@ class CareerAiService {
         return ['text'=>data_get($r,'choices.0.message.content',''),'input_tokens'=>(int)data_get($r,'usage.prompt_tokens',0),'output_tokens'=>(int)data_get($r,'usage.completion_tokens',0)];
     }
 
-    private function anthropic(AiIntegration $c,array $provider,string $system,string $user):array {
+    private function anthropic(AiIntegration $c,array $provider,string $system,string $user,array $history=[]):array {
         $endpoint=$c->endpoint ?: ($provider['endpoint'] ?? 'https://api.anthropic.com/v1/messages');
         $payload=[
             'model'=>$c->model,
             'max_tokens'=>4096,
             'system'=>$system,
-            'messages'=>[['role'=>'user','content'=>$user]],
+            'messages'=>[...$history,['role'=>'user','content'=>$user]],
             ...(isset($c->settings['temperature']) ? ['temperature' => (float) $c->settings['temperature']] : []),
         ];
         $r=Http::timeout(60)->withHeaders(['x-api-key'=>$c->apiKey(),'anthropic-version'=>'2023-06-01'])
@@ -91,12 +119,15 @@ class CareerAiService {
         return ['text'=>data_get($r,'content.0.text',''),'input_tokens'=>(int)data_get($r,'usage.input_tokens',0),'output_tokens'=>(int)data_get($r,'usage.output_tokens',0)];
     }
 
-    private function gemini(AiIntegration $c,array $provider,string $system,string $user):array {
+    private function gemini(AiIntegration $c,array $provider,string $system,string $user,array $history=[]):array {
         $model=$c->model ?: 'gemini-2.5-flash';
         $endpoint=$c->endpoint ?: ($provider['endpoint'] ?: "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent");
         $r=Http::timeout(60)->withHeaders(['x-goog-api-key' => $c->apiKey()])->post($endpoint,[
             'system_instruction'=>['parts'=>[['text'=>$system]]],
-            'contents'=>[['parts'=>[['text'=>$user]]]],
+            'contents'=>[
+                ...array_map(fn($t)=>['role'=>$t['role']==='assistant'?'model':'user','parts'=>[['text'=>$t['content']]]],$history),
+                ['role'=>'user','parts'=>[['text'=>$user]]],
+            ],
         ])->throw()->json();
         return ['text'=>data_get($r,'candidates.0.content.parts.0.text','')];
     }

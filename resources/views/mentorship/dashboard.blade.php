@@ -304,6 +304,11 @@
             return response.json().then(function (data) { return { ok: response.ok, data: data }; });
         }).then(function (result) {
             thinking.remove();
+            if (!result.ok) {
+                error.textContent = result.data && result.data.message ? result.data.message : 'The assistant is unavailable right now. Please try again shortly.';
+                input.value = input.value || message;
+                return;
+            }
             var reply = result.data && result.data.message ? result.data.message : 'Sorry, I could not answer that right now.';
             add('assistant', reply);
             history.push({ role: 'user', content: message });
