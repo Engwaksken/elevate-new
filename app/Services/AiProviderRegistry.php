@@ -28,7 +28,7 @@ class AiProviderRegistry
             'auth' => 'x-goog-api-key',
             'endpoint' => null,
             'endpoint_required' => false,
-            'models' => ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite'],
+            'models' => ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'],
         ],
         'anthropic' => [
             'label' => 'Anthropic Claude',

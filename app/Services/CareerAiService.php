@@ -85,7 +85,7 @@ class CareerAiService {
         $endpoint = rtrim(trim((string) $c->endpoint), '/');
 
         if ($api === 'gemini') {
-            $model = $c->model ?: 'gemini-2.5-flash';
+            $model = $c->model ?: 'gemini-3.8-flash';
             if ($endpoint === '') {
                 return $provider['endpoint'] ?: "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
             }
