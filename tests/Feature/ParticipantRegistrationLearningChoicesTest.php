@@ -90,6 +90,15 @@ class ParticipantRegistrationLearningChoicesTest extends TestCase
         $this->assertDatabaseMissing('enrolments', ['user_id' => $user->id]);
     }
 
+    public function test_cohort_options_show_their_period(): void
+    {
+        $this->cohort->update(['start_date' => '2026-11-03', 'end_date' => '2027-02-26']);
+
+        $this->get(route('register'))
+            ->assertOk()
+            ->assertSee('October Cohort (3 Nov 2026 – 26 Feb 2027)');
+    }
+
     public function test_the_cohort_must_run_at_the_chosen_branch(): void
     {
         $other = Branch::create(['name' => 'Gulu Branch', 'code' => 'GUL', 'is_active' => true]);

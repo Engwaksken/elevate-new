@@ -268,7 +268,7 @@
                                         value="{{ $cohort->id }}"
                                         data-branches="{{ implode(',', $cohort->branchIds()) }}"
                                         @selected((string) old('cohort_id') === (string) $cohort->id)
-                                    >{{ $cohort->name }}</option>
+                                    >{{ $cohort->name }}@if($cohort->start_date || $cohort->end_date) ({{ $cohort->start_date?->format('j M Y') ?? 'TBC' }} – {{ $cohort->end_date?->format('j M Y') ?? 'TBC' }})@endif</option>
                                 @endforeach
                             </select>
                         </div>

@@ -19,7 +19,7 @@ $roleShell=\App\Support\RoleShell::roleFor(auth()->user());
 // Role-specific workspaces (including dashboards) retain the role shell.
 $publicSiteShell = request()->routeIs(
     'home', 'legal.*', 'public.*', 'learning.index', 'learning.course.show',
-    'jobs.index', 'jobs.show', 'library.*', 'events.index', 'events.show',
+    'jobs.index', 'jobs.show', 'library.index', 'library.show', 'library.read', 'events.index', 'events.show',
     'certificates.verify', 'career.documents.shared', 'career.portfolio.shared',
     'certificates.shared', 'events.certificates.verify',
     // Unverified users cannot use the workspace, so don't show its sidebar yet.
@@ -104,8 +104,10 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 <a href="{{ route('login') }}" class="btn btn-outline btn-sm nav-signin"><i class="fas fa-right-to-bracket"></i><span>Sign In</span></a>
 <a href="{{ route('register') }}" class="btn btn-primary btn-sm"><i class="fas fa-user-plus"></i><span>Register</span></a>
 @else
-@if(method_exists(auth()->user(),'isStaff') && auth()->user()->isStaff() && Route::has('admin.dashboard'))
-<a href="{{ route('admin.dashboard') }}" class="btn btn-primary btn-sm"><i class="fas fa-gauge-high"></i><span>Dashboard</span></a>
+{{-- Signed-in users browsing the public site need a way back to their workspace. --}}
+@php($workspaceUrl = \App\Support\RoleShell::homeUrl(auth()->user()))
+@if($workspaceUrl)
+<a href="{{ $workspaceUrl }}" class="btn btn-primary btn-sm"><i class="fas fa-gauge-high"></i><span>Dashboard</span></a>
 @endif
 @endguest
 <button type="button" class="nav-menu-toggle" data-nav-toggle aria-controls="siteNav" aria-expanded="false" aria-label="Open menu"><i class="fas fa-bars"></i></button>
