@@ -30,6 +30,16 @@ class AdminPagesTest extends TestCase
         return $user;
     }
 
+    public function test_dashboard_groups_its_stats_into_tabs(): void
+    {
+        $this->actingAs($this->superAdmin())->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('role="tablist"', false)
+            ->assertSeeInOrder(['People &amp; Learning', 'Programmes &amp; Outcomes', 'Operations', 'Quick Access'], false)
+            ->assertSee('Participants')
+            ->assertSee('Open Purchase Requests');
+    }
+
     public function test_every_blade_view_compiles_to_valid_php(): void
     {
         $failures = [];

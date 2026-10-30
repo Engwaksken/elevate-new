@@ -102,53 +102,65 @@
     </section>
 @endif
 
-@if(($abilities['view_reports'] ?? false) || ! $isInstructor)
-    @foreach($groups as $group => $items)
-        <section class="admin-panel executive-section">
-            <div class="admin-panel-head">
-                <div>
-                    <h2>{{ $group }}</h2>
-                </div>
-            </div>
+@php
+    $showStats = ($abilities['view_reports'] ?? false) || ! $isInstructor;
+    $visibleQuickLinks = collect($quickLinks ?? [])
+        ->filter(fn ($link) => \Illuminate\Support\Facades\Route::has($link['route']));
 
-            <div class="admin-stats-grid compact">
-                @foreach($items as [$key, $label, $icon])
-                    <div class="admin-stat">
-                        <span class="admin-stat-icon">
-                            <i class="fas {{ $icon }}"></i>
-                        </span>
+    // One tabbed panel instead of four stacked ones keeps the dashboard short.
+    $groupTabs = ['people' => 'People & Learning', 'programmes' => 'Programmes & Outcomes', 'operations' => 'Operations'];
+    $groupIcons = ['people' => 'fa-users', 'programmes' => 'fa-diagram-project', 'operations' => 'fa-building'];
 
-                        <div>
-                            <small>{{ $label }}</small>
-                            <strong>{{ number_format((float) ($stats[$key] ?? 0)) }}</strong>
+    $dashboardTabs = [];
+    if ($showStats) {
+        foreach ($groupTabs as $tabKey => $group) {
+            $dashboardTabs[$tabKey] = ['label' => $group, 'icon' => $groupIcons[$tabKey]];
+        }
+    }
+    if ($visibleQuickLinks->isNotEmpty()) {
+        $dashboardTabs['quick'] = ['label' => 'Quick Access', 'icon' => 'fa-bolt'];
+    }
+@endphp
+
+@if($dashboardTabs)
+    <section class="admin-panel executive-section">
+        <x-form-tabs id="dashboard" label="Dashboard sections" :tabs="$dashboardTabs">
+            @if($showStats)
+                @foreach($groupTabs as $tabKey => $group)
+                    <x-form-tab :name="$tabKey">
+                        <div class="admin-stats-grid compact">
+                            @foreach($groups[$group] as [$key, $label, $icon])
+                                <div class="admin-stat">
+                                    <span class="admin-stat-icon">
+                                        <i class="fas {{ $icon }}"></i>
+                                    </span>
+
+                                    <div>
+                                        <small>{{ $label }}</small>
+                                        <strong>{{ number_format((float) ($stats[$key] ?? 0)) }}</strong>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
-                    </div>
+                    </x-form-tab>
                 @endforeach
-            </div>
-        </section>
-    @endforeach
-@endif
+            @endif
 
-@if(!empty($quickLinks))
-    <section class="admin-panel">
-        <div class="admin-panel-head">
-            <div>
-                <h2>Quick Management Access</h2>
-                <p>Open the administration areas available to your account.</p>
-            </div>
-        </div>
-
-        <div class="executive-links">
-            @foreach($quickLinks as $link)
-                @if(\Illuminate\Support\Facades\Route::has($link['route']))
-                    <a href="{{ route($link['route']) }}">
-                        <i class="fas {{ $link['icon'] }}"></i>
-                        <span>{{ $link['label'] }}</span>
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                @endif
-            @endforeach
-        </div>
+            @if($visibleQuickLinks->isNotEmpty())
+                <x-form-tab name="quick">
+                    <p style="margin:0 0 12px;color:var(--admin-muted)">Open the administration areas available to your account.</p>
+                    <div class="executive-links">
+                        @foreach($visibleQuickLinks as $link)
+                            <a href="{{ route($link['route']) }}">
+                                <i class="fas {{ $link['icon'] }}"></i>
+                                <span>{{ $link['label'] }}</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        @endforeach
+                    </div>
+                </x-form-tab>
+            @endif
+        </x-form-tabs>
     </section>
 @endif
 
