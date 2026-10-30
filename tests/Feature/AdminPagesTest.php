@@ -30,6 +30,14 @@ class AdminPagesTest extends TestCase
         return $user;
     }
 
+    public function test_frontend_cms_is_listed_under_administration_in_the_sidebar(): void
+    {
+        $this->actingAs($this->superAdmin())->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSeeInOrder(['Administration', 'Frontend CMS', 'Platform Configuration'])
+            ->assertSee('href="'.route('admin.cms.index').'"', false);
+    }
+
     public function test_dashboard_groups_its_stats_into_tabs(): void
     {
         $this->actingAs($this->superAdmin())->get(route('admin.dashboard'))

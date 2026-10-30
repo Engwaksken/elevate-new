@@ -299,13 +299,6 @@
                     'badge' => $appointmentPending,
                 ],
                 [
-                    'route' => 'admin.cms.index',
-                    'label' => 'Frontend CMS',
-                    'icon' => 'fa-file-pen',
-                    'permissions' => ['cms.manage'],
-                    'active' => ['admin.cms.*'],
-                ],
-                [
                     'route' => 'admin.projects.index',
                     'label' => 'Projects',
                     'icon' => 'fa-folder-tree',
@@ -408,6 +401,13 @@
                     'label' => 'Notifications',
                     'icon' => 'fa-bell',
                     'permissions' => ['reports.view'],
+                ],
+                [
+                    'route' => 'admin.cms.index',
+                    'label' => 'Frontend CMS',
+                    'icon' => 'fa-file-pen',
+                    'permissions' => ['cms.manage'],
+                    'active' => ['admin.cms.*'],
                 ],
                 [
                     'route' => 'admin.platform-settings.index',
