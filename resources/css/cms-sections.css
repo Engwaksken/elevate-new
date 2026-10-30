@@ -388,6 +388,35 @@
     margin-top: 1.4em;
 }
 
+/* The CSS reset removes list bullets; CMS pages (privacy policy, terms, FAQs) need them. */
+.cms-content ul,
+.cms-content ol {
+    margin: 0.4em 0 1em;
+    padding-left: 1.5em;
+}
+
+.cms-content ul {
+    list-style: disc;
+}
+
+.cms-content ol {
+    list-style: decimal;
+}
+
+.cms-content ul ul {
+    list-style: circle;
+    margin: 0.2em 0 0.4em;
+}
+
+.cms-content li {
+    margin: 0.2em 0;
+}
+
+.cms-content a {
+    color: var(--eh-primary, #800000);
+    text-decoration: underline;
+}
+
 .cms-image-text {
     display: grid;
     grid-template-columns: 1fr 1fr;
