@@ -7,9 +7,8 @@ use App\Models\LibraryCategory;
 use App\Models\LibraryDownloadRequest;
 use App\Models\LibraryReadingProgress;
 use App\Models\LibraryResource;
-use App\Models\User;
 use App\Services\Files\FilePreviewService;
-use App\Services\UserNotificationService;
+use App\Services\Library\LibraryDownloadRequestService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -216,31 +215,14 @@ class LibraryController extends Controller
         $this->authoriseAccess($resource);
         abort_unless($resource->file_path,404);
 
-        if($resource->canBeDownloadedBy($request->user())){
+        $data=$request->validate(['reason'=>['nullable','string','max:1000']]);
+        $result=app(LibraryDownloadRequestService::class)->request($request->user(),$resource,$data['reason']??null);
+
+        if($result===LibraryDownloadRequestService::ALREADY_ALLOWED){
             return back()->with('success','You can already download this book.');
         }
-
-        $pending=LibraryDownloadRequest::where('user_id',$request->user()->id)->where('library_resource_id',$resource->id)
-            ->where('status',LibraryDownloadRequest::PENDING)->exists();
-        if($pending){
+        if($result===LibraryDownloadRequestService::ALREADY_PENDING){
             return back()->with('warning','Your request for this book is already waiting for the library team.');
-        }
-
-        $data=$request->validate(['reason'=>['nullable','string','max:1000']]);
-        LibraryDownloadRequest::create([
-            'user_id'=>$request->user()->id,
-            'library_resource_id'=>$resource->id,
-            'reason'=>$data['reason']??null,
-            'status'=>LibraryDownloadRequest::PENDING,
-        ]);
-
-        $librarians=User::query()->where('user_type','staff')->where('status','active')
-            ->where(fn($q)=>$q->whereHas('roles.permissions',fn($p)=>$p->where('slug','library.manage'))
-                ->orWhereHas('roles',fn($r)=>$r->whereIn('slug',['super-administrator','super-admin','administrator'])))
-            ->get();
-        foreach($librarians as $librarian){
-            app(UserNotificationService::class)->send($librarian,'library_download_request','Library download request',
-                $request->user()->name.' asked to download "'.$resource->title.'".',route('admin.library.requests.index'));
         }
 
         return back()->with('success','Request sent. You will get a notification when the library team replies. You can keep reading online meanwhile.');

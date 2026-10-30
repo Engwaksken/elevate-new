@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\ItSupportTicketController;
 use App\Http\Controllers\Api\V1\Participant\AuthController as ParticipantAuthController;
 use App\Http\Controllers\Api\V1\Participant\LessonController as ParticipantLessonController;
+use App\Http\Controllers\Api\V1\Participant\LibraryController as ParticipantLibraryController;
 use App\Http\Controllers\Api\V1\Participant\ParticipantController;
 use App\Http\Controllers\Api\V1\Participant\ProfileController as ParticipantProfileController;
 use App\Http\Controllers\Api\V1\Participant\ProgressController as ParticipantProgressController;
@@ -73,8 +74,19 @@ Route::prefix('v1')->group(function () {
                 Route::get('/career/cover-letters/{letter}/download', [\App\Http\Controllers\Api\V1\Participant\CareerDocumentController::class, 'downloadLetter']);
                 Route::post('/career/documents/{type}/{id}/share', [\App\Http\Controllers\Career\DocumentShareController::class, 'share'])->where('type', 'resume|cover-letter')->whereNumber('id');
 
+                Route::prefix('library')->group(function () {
+                    Route::get('/', [ParticipantLibraryController::class, 'index']);
+                    Route::get('/mine', [ParticipantLibraryController::class, 'mine']);
+                    Route::get('/{resource}', [ParticipantLibraryController::class, 'show'])->whereNumber('resource');
+                    Route::get('/{resource}/cover', [ParticipantLibraryController::class, 'cover'])->whereNumber('resource');
+                    Route::get('/{resource}/file', [ParticipantLibraryController::class, 'file'])->whereNumber('resource')->middleware('throttle:30,1');
+                    Route::post('/{resource}/progress', [ParticipantLibraryController::class, 'progress'])->whereNumber('resource')->middleware('throttle:120,1');
+                    Route::post('/{resource}/bookmark', [ParticipantLibraryController::class, 'bookmark'])->whereNumber('resource');
+                    Route::post('/{resource}/request-download', [ParticipantLibraryController::class, 'requestDownload'])->whereNumber('resource')->middleware('throttle:10,1');
+                });
+
                 Route::get('/courses',[ParticipantController::class,'courses']);
-                Route::get('/certificates', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'index']);
+                Route::get('/certificates',[\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'index']);
                 Route::prefix('certificates')->where(['type'=>'course|event','id'=>'[0-9]+'])->group(function () {
                     Route::get('/{type}/{id}/preview', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'preview']);
                     Route::get('/{type}/{id}/download', [\App\Http\Controllers\Learning\ParticipantCertificateController::class, 'download']);
