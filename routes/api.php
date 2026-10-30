@@ -20,7 +20,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/courses',[CourseController::class,'index']);
     Route::get('/courses/{course}',[CourseController::class,'show']);
     Route::get('/jobs',[JobController::class,'index']);
-    Route::get('/library',[LibraryController::class,'index']);
+    Route::get('/library',[LibraryController::class,'index'])->middleware('auth:sanctum');
 
     Route::prefix('it-support')->name('api.v1.it-support.')->middleware('auth:sanctum')->group(function () {
         Route::get('/reports/volume', [ItSupportTicketController::class, 'volumeReport'])->name('reports.volume');

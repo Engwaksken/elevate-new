@@ -194,4 +194,16 @@ class LibraryReadingAndRequestsTest extends TestCase
             ->assertDontSee('participant-app-shell', false)
             ->assertSee('href="'.route('dashboard').'"', false);
     }
+
+    public function test_guests_must_sign_in_to_use_the_library(): void
+    {
+        $book = $this->book();
+
+        foreach ([route('library.index'), route('library.show', $book), route('library.cover', $book), route('library.download', $book)] as $url) {
+            $this->get($url)->assertRedirect(route('login'));
+        }
+        $this->getJson('/api/v1/library')->assertUnauthorized();
+
+        $this->actingAs($this->participant())->get(route('library.index'))->assertOk();
+    }
 }

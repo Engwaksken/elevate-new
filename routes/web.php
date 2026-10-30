@@ -778,12 +778,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
         ->middleware('permission:meal.manage')->name('jobs.outcomes.reject');
 });
 
-Route::get('/library',[LibraryController::class,'index'])->name('library.index');
-Route::get('/library/{resource}',[LibraryController::class,'show'])->name('library.show');
-Route::get('/library/{resource}/cover',[LibraryController::class,'cover'])->name('library.cover');
-Route::get('/library/{resource}/download',[LibraryController::class,'download'])->name('library.download');
-
 Route::middleware(['auth', 'verified'])->group(function () {
+    // The digital library is for signed-in members only; guests are sent to sign in.
+    Route::get('/library',[LibraryController::class,'index'])->name('library.index');
+    Route::get('/library/{resource}',[LibraryController::class,'show'])->name('library.show');
+    Route::get('/library/{resource}/cover',[LibraryController::class,'cover'])->name('library.cover');
+    Route::get('/library/{resource}/download',[LibraryController::class,'download'])->name('library.download');
+
     Route::get('/career/resumes',[ResumeController::class,'index'])->name('career.resume.index');
     Route::get('/career/resumes/create',[ResumeController::class,'create'])->name('career.resume.create');
     Route::post('/career/resumes',[ResumeController::class,'store'])->name('career.resume.store');
