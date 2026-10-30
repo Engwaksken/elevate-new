@@ -29,7 +29,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "org.elevateher360.elevateher360_participant"
+        // Play Store package name; the Kotlin namespace above can differ.
+        applicationId = "org.elevateher360.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

@@ -4,7 +4,9 @@ Everything needed to publish the ElevateHer360 participant app on Google Play. T
 (signing, shrinking, versioning, account deletion) is already set up; this guide covers the
 build command and the Play Console steps.
 
-App ID: `org.elevateher360.elevateher360_participant` (cannot change after the first upload).
+App ID: `org.elevateher360.app` (cannot change after the first upload). The Kotlin `namespace`
+stays `org.elevateher360.elevateher360_participant`; only `applicationId` is the Play package name.
+`android/app/google-services.json` must contain a Firebase Android app for this package.
 
 ## 1. Before every release
 

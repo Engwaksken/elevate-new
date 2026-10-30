@@ -9,7 +9,7 @@ What is already set up:
 
 | Item | Value |
 | --- | --- |
-| Bundle identifier | `org.elevateher360.elevateher360Participant` (Android uses `org.elevateher360.elevateher360_participant`, but iOS bundle IDs can't contain `_`) |
+| Bundle identifier | `org.elevateher360.elevateher360Participant` (Android uses `org.elevateher360.app`; the iOS ID is registered separately) |
 | Display name | ElevateHer360 |
 | Deployment target | iOS 13.0 (`ios/Podfile` and `IPHONEOS_DEPLOYMENT_TARGET`); this is the highest minimum among the plugins (firebase_core/messaging, shared_preferences, url_launcher) |
 | Info.plist | Photo library, camera and Apple Music usage strings (file_picker), `UIBackgroundModes` = `remote-notification`, `LSApplicationQueriesSchemes` https/http/mailto, `ITSAppUsesNonExemptEncryption` = false, no `NSAllowsArbitraryLoads` |
