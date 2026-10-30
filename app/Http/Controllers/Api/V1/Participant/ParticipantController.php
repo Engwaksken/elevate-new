@@ -596,22 +596,30 @@ class ParticipantController extends Controller
         $courseIds = $enrolments->pluck('course_id');
         $cohortIds = $enrolments->pluck('cohort_id')->filter();
 
+        // Enrolments added or changed since the last sync bring their whole
+        // course with them: an older course's own updated_at is before $since,
+        // so it would otherwise never reach the app.
+        $newEnrolments = $since ? $enrolments->filter(fn ($e) => $e->updated_at && $e->updated_at->gt($since)) : collect();
+        $newCourseIds = $newEnrolments->pluck('course_id')->unique()->values();
+        $newCohortIds = $newEnrolments->pluck('cohort_id')->filter()->unique()->values();
+        $changedOrNew = fn ($q) => $q->where(fn ($q) => $q->where('updated_at','>',$since)->orWhereIn('course_id',$newCourseIds));
+
         // A first sync (no $since) sends only what is current: deleted rows,
         // closed jobs, old events and old notifications are only needed to
         // update an existing cache, and they made first sign-in slow on
         // phones with little data.
         $courses = Course::query()
-            ->when($since, fn ($q) => $q->withTrashed()->where('updated_at','>',$since))
+            ->when($since, fn ($q) => $q->withTrashed()->where(fn ($q) => $q->where('updated_at','>',$since)->orWhereIn('id',$newCourseIds)))
             ->whereIn('id',$courseIds)
             ->get();
 
         $assignments = Assessment::whereIn('course_id',$courseIds)
             ->where('is_published',true)
-            ->when($since, fn ($q) => $q->where('updated_at','>',$since))
+            ->when($since, $changedOrNew)
             ->get();
 
         $announcements = CourseAnnouncement::query()
-            ->when($since, fn ($q) => $q->withTrashed()->where('updated_at','>',$since))
+            ->when($since, fn ($q) => $changedOrNew($q->withTrashed()))
             ->whereIn('course_id',$courseIds)
             ->get();
 
@@ -628,7 +636,9 @@ class ParticipantController extends Controller
 
         $events = DB::table('events')
             ->when($since,
-                fn ($q) => $q->where('updated_at','>',$since),
+                fn ($q) => $q->where(fn ($q) => $q->where('updated_at','>',$since)
+                    ->orWhereIn('course_id',$newCourseIds)
+                    ->orWhereIn('cohort_id',$newCohortIds)),
                 fn ($q) => $q->where('is_published',1)->whereNull('deleted_at')
                     ->where(fn ($q) => $q->where('starts_at','>=',now()->subDays(30))->orWhere('ends_at','>=',now()))
             )

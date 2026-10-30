@@ -121,6 +121,8 @@ code {
         --eh-container: 88rem;
         --eh-gutter: 32px;
         --eh-admin-sidebar-width: 16.25rem;
+        /* The admin content offset must grow with the sidebar, or the sidebar covers the page. */
+        --eh-sidebar-width: 16.25rem;
         --eh-admin-topbar-height: 4rem;
         --psw: 17rem;
     }

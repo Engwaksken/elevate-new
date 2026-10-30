@@ -78,4 +78,26 @@ class ParticipantSyncFirstLoadTest extends TestCase
         $this->assertTrue(collect($data['events'])->pluck('title')->contains('Deleted event'));
         $this->assertGreaterThan(100, count($data['notifications']), 'Later syncs are not capped.');
     }
+
+    public function test_incremental_sync_sends_a_course_enrolled_after_the_last_sync(): void
+    {
+        Sanctum::actingAs($this->participant, ['participant']);
+
+        // A course created long ago; the participant's app has synced since then.
+        $this->travel(-10)->days();
+        $course = Course::create(['title' => 'Old Course', 'status' => 'published']);
+        $assessment = \App\Models\Assessment::create(['course_id' => $course->id, 'title' => 'Week 1 quiz', 'is_published' => true]);
+        $this->travelBack();
+        $lastSync = now()->toIso8601String();
+
+        // An admin enrols the participant after that sync.
+        $this->travel(5)->minutes();
+        Enrolment::create(['user_id' => $this->participant->id, 'course_id' => $course->id, 'status' => 'enrolled']);
+
+        $data = $this->getJson(self::BASE.'/sync?last_synced_at='.urlencode($lastSync))->assertOk()->json();
+
+        $this->assertContains('Old Course', collect($data['courses'])->pluck('title')->all());
+        $this->assertContains($assessment->id, collect($data['assignments'])->pluck('id')->all());
+        $this->assertNotContains('Digital Marketing', collect($data['courses'])->pluck('title')->all(), 'Unchanged courses still stay out of incremental syncs.');
+    }
 }
