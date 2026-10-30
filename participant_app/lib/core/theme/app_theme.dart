@@ -72,6 +72,10 @@ abstract final class AppSpacing {
   /// Maximum readable line width for long-form text on tablets.
   static const double readableWidth = 720;
 
+  /// Maximum width of a top-level screen's content on tablets, so cards and
+  /// lists stay a comfortable size instead of stretching edge to edge.
+  static const double contentMaxWidth = 960;
+
   static const EdgeInsets pagePadding = EdgeInsets.all(page);
   static const EdgeInsets listPadding =
       EdgeInsets.fromLTRB(page, sm, page, xl);

@@ -10,6 +10,7 @@ import '../services/local_database.dart';
 import '../services/notification_service.dart';
 import '../services/participant_data_service.dart';
 import '../services/sync_service.dart';
+import '../widgets/adaptive_navigation.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/feedback.dart';
 import 'about_screen.dart';
@@ -22,6 +23,7 @@ import 'downloads_screen.dart';
 import 'help_support_screen.dart';
 import 'jobs_screen.dart';
 import 'learning_screen.dart';
+import 'library_screen.dart';
 import 'login_screen.dart';
 import 'mentorship_screen.dart';
 import 'notifications_screen.dart';
@@ -134,6 +136,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _push(const AppointmentsScreen());
       case AppDestination.careerDocuments:
         _push(const CareerDocumentsScreen());
+      case AppDestination.library:
+        _push(const LibraryScreen());
       case AppDestination.assignments:
         _push(const AssignmentsScreen());
       case AppDestination.progress:
@@ -240,6 +244,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final tab = _tabs[_index];
+    final destinations = [
+      for (final t in _tabs)
+        AdaptiveDestination(
+          icon: t.destination.icon,
+          selectedIcon: t.destination.selectedIcon,
+          label: t.label,
+          tooltip: t.title,
+        ),
+    ];
 
     return Scaffold(
       drawer: AppDrawer(
@@ -283,28 +296,21 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           const ConnectivityBanner(),
           Expanded(
-            child: IndexedStack(index: _index, children: _pages),
+            // Bottom bar on phones; side rail and a centred column on tablets.
+            child: AdaptiveNavigation(
+              selectedIndex: _index,
+              onSelected: _selectTab,
+              destinations: destinations,
+              body: IndexedStack(index: _index, children: _pages),
+            ),
           ),
         ],
       ),
-      // Five labels can't grow without limit on a phone-width bar; clamp
-      // like the platform navigation bars do. Screen content still scales
-      // fully, and each destination keeps its tooltip and semantics label.
-      bottomNavigationBar: MediaQuery.withClampedTextScaling(
-        maxScaleFactor: 1.3,
-        child: NavigationBar(
-          selectedIndex: _index,
-          onDestinationSelected: _selectTab,
-          destinations: [
-            for (final t in _tabs)
-              NavigationDestination(
-                icon: Icon(t.destination.icon),
-                selectedIcon: Icon(t.destination.selectedIcon),
-                label: t.label,
-                tooltip: t.title,
-              ),
-          ],
-        ),
+      bottomNavigationBar: AdaptiveNavigation.bottomBar(
+        context,
+        destinations: destinations,
+        selectedIndex: _index,
+        onSelected: _selectTab,
       ),
     );
   }

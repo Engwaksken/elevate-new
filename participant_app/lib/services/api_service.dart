@@ -418,6 +418,68 @@ class ApiService {
 
   Future<Map<String, dynamic>> course(int id) => _getMap('/courses/$id');
 
+  // =========================================================
+  // DIGITAL LIBRARY
+  // =========================================================
+
+  /// GET /library -> `{data, current_page, last_page, categories}`.
+  Future<Map<String, dynamic>> library({int page = 1, String? search, int? categoryId}) =>
+      _getMap('/library', query: {
+        'page': page,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+        if (categoryId != null) 'category': categoryId,
+      });
+
+  /// GET /library/mine -> `{continue, bookmarks}`.
+  Future<Map<String, dynamic>> libraryMine() => _getMap('/library/mine');
+
+  Future<Map<String, dynamic>> libraryBook(int id) => _getMap('/library/$id');
+
+  /// The book's PDF for the in-app reader. The server sends it base64-encoded
+  /// as text (like the website reader), which some antivirus apps leave alone.
+  Future<Uint8List> libraryBookPdf(int id, {CancelToken? cancelToken}) =>
+      _guard(() async {
+        final response = await dio.get<String>(
+          '/library/$id/file',
+          cancelToken: cancelToken,
+          options: Options(
+            responseType: ResponseType.plain,
+            headers: {'Accept': 'text/plain'},
+            receiveTimeout: const Duration(minutes: 3),
+          ),
+        );
+        return base64Decode((response.data ?? '').trim());
+      });
+
+  Future<Uint8List> libraryCover(String path) => _guard(() async {
+        final response = await dio.get<List<int>>(
+          path,
+          options: Options(responseType: ResponseType.bytes, headers: {'Accept': 'image/*'}),
+        );
+        final data = response.data ?? const <int>[];
+        return data is Uint8List ? data : Uint8List.fromList(data);
+      });
+
+  Future<Map<String, dynamic>> saveLibraryProgress(int id, {required int page, required int totalPages}) =>
+      _guard(() async {
+        final response = await dio.post('/library/$id/progress', data: {'page': page, 'total_pages': totalPages});
+        return _mapResponse(response.data);
+      });
+
+  /// Adds or removes a bookmark; returns whether the book is now bookmarked.
+  Future<bool> toggleLibraryBookmark(int id) => _guard(() async {
+        final response = await dio.post('/library/$id/bookmark');
+        return _mapResponse(response.data)['bookmarked'] == true;
+      });
+
+  /// Asks the library team for permission to save a copy. Returns the server's message.
+  Future<String> requestLibraryDownload(int id, {String? reason}) => _guard(() async {
+        final response = await dio.post('/library/$id/request-download', data: {
+          if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+        });
+        return _mapResponse(response.data)['message']?.toString() ?? 'Request sent.';
+      });
+
   /// GET /lessons/{id} -> `{"lesson": {...}}`. Also records "opened" on
   /// the server. Returns 403 for locked modules.
   Future<Map<String, dynamic>> lesson(int id) async {
