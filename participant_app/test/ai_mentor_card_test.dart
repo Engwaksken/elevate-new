@@ -19,6 +19,21 @@ void main() {
     expect(find.text('Open my chats and plan'), findsOneWidget);
   });
 
+  testWidgets('sample questions are black on white chips in light and dark themes', (tester) async {
+    for (final brightness in Brightness.values) {
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(brightness: brightness),
+        home: Scaffold(body: ListView(children: [AiMentorDashboardCard(availability: () async => true)])),
+      ));
+      await tester.pumpAndSettle();
+
+      final label = tester.widget<Text>(find.text('How do I choose a career path?'));
+      expect(label.style?.color, Colors.black87);
+      final chip = tester.widget<ActionChip>(find.widgetWithText(ActionChip, 'How do I choose a career path?'));
+      expect(chip.color?.resolve({}), Colors.white);
+    }
+  });
+
   testWidgets('dashboard card collapses to one row and remembers it', (tester) async {
     Widget card() => MaterialApp(
           home: Scaffold(body: ListView(children: [AiMentorDashboardCard(availability: () async => true)])),

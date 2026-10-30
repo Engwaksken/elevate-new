@@ -191,8 +191,10 @@ class _AiMentorDashboardCardState extends State<AiMentorDashboardCard> {
   }
 
   Widget _body(ThemeData theme, ColorScheme scheme, Color onBrand) {
-    final chipFill = Colors.white.withValues(alpha: 0.14);
-    final chipSide = BorderSide(color: onBrand.withValues(alpha: 0.45));
+    // Solid white chips with black text read the same in light and dark
+    // themes (Material 3 chips paint their own surface over backgroundColor).
+    const chipFill = WidgetStatePropertyAll<Color>(Colors.white);
+    const chipText = TextStyle(color: Colors.black87);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.sm),
@@ -234,9 +236,9 @@ class _AiMentorDashboardCardState extends State<AiMentorDashboardCard> {
                   Padding(
                     padding: const EdgeInsets.only(right: AppSpacing.sm),
                     child: ActionChip(
-                      label: Text(question, style: TextStyle(color: onBrand)),
-                      backgroundColor: chipFill,
-                      side: chipSide,
+                      label: Text(question, style: chipText),
+                      color: chipFill,
+                      side: BorderSide.none,
                       visualDensity: VisualDensity.compact,
                       onPressed: () => _open(question),
                     ),
