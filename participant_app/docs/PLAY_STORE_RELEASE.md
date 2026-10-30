@@ -115,7 +115,7 @@ phone's own fingerprint/face unlock; no biometric data leaves the device.
   You need an ElevateHer360 participant account to sign in. Register at site.elevateher360.org.
 
 - **Graphics:** app icon 512 x 512 (`assets/icon/play_store_icon_512.png`), feature graphic
-  1024 x 500 (to create), and at least 2 phone screenshots (1080 x 1920 or similar) of real screens:
+  1024 x 500 (`assets/icon/play_feature_graphic_1024x500.png`), and at least 2 phone screenshots (1080 x 1920 or similar) of real screens:
   dashboard, a course, the AI career mentor, the library reader.
 - **Category:** Education. **Contact email:** support@elevateher360.org.
 
