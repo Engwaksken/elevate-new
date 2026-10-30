@@ -180,16 +180,19 @@ class LibraryReadingAndRequestsTest extends TestCase
         $this->actingAs($librarian)->get(route('admin.library.index'))->assertOk()->assertSee('Download on request')->assertSee('Download requests');
     }
 
-    public function test_my_library_uses_the_participant_workspace_with_its_sidebar(): void
+    public function test_library_pages_use_the_participant_workspace_with_its_sidebar(): void
     {
-        $this->actingAs($this->participant())->get(route('library.mine'))
-            ->assertOk()
-            ->assertSee('participant-app-shell', false);
+        $user = $this->participant();
+        $book = $this->book();
+
+        foreach ([route('library.index'), route('library.show', $book), route('library.read', $book), route('library.mine')] as $url) {
+            $this->actingAs($user)->get($url)->assertOk()->assertSee('participant-app-shell', false);
+        }
     }
 
     public function test_signed_in_participant_can_get_back_to_the_dashboard_from_the_public_site(): void
     {
-        $this->actingAs($this->participant())->get(route('library.index'))
+        $this->actingAs($this->participant())->get(route('jobs.index'))
             ->assertOk()
             ->assertDontSee('participant-app-shell', false)
             ->assertSee('href="'.route('dashboard').'"', false);

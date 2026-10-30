@@ -64,7 +64,6 @@ class ParticipantLearningNavigationTest extends TestCase
         foreach ([
             route('learning.index'),
             route('jobs.index'),
-            route('library.index'),
             route('events.index'),
             route('legal.privacy'),
         ] as $url) {

@@ -19,7 +19,7 @@ $roleShell=\App\Support\RoleShell::roleFor(auth()->user());
 // Role-specific workspaces (including dashboards) retain the role shell.
 $publicSiteShell = request()->routeIs(
     'home', 'legal.*', 'public.*', 'learning.index', 'learning.course.show',
-    'jobs.index', 'jobs.show', 'library.index', 'library.show', 'library.read', 'events.index', 'events.show',
+    'jobs.index', 'jobs.show', 'events.index', 'events.show',
     'certificates.verify', 'career.documents.shared', 'career.portfolio.shared',
     'certificates.shared', 'events.certificates.verify',
     // Unverified users cannot use the workspace, so don't show its sidebar yet.
