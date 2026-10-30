@@ -1,7 +1,7 @@
 name: elevateher360_participant
 description: Offline-first participant mobile app for ElevateHer360.
 publish_to: "none"
-version: 1.3.2+6
+version: 1.3.3+7
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
