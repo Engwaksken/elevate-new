@@ -122,7 +122,8 @@ class CmsWebsiteManagerTest extends TestCase
             ['type' => 'text', 'title' => 'Four', 'content' => 'x', 'style' => ['bg' => 'bogus', 'padding' => ['array'], 'text_tone' => 'evil']],
         ]]);
         $styles = collect($page->settings['sections'])->pluck('style');
-        $this->assertSame('', $styles[0]['bg_image']);
+        // Quotes and brackets are percent-encoded, so the value cannot break out of url("...").
+        $this->assertDoesNotMatchRegularExpression('/["\'()\s]/', $styles[0]['bg_image']);
         $this->assertSame('', $styles[1]['bg_color']);
         $this->assertSame('', $styles[2]['bg_video']);
         $this->assertSame('', $styles[2]['anchor']);
@@ -156,6 +157,27 @@ class CmsWebsiteManagerTest extends TestCase
             ->assertSee('poster="/cms-media/cms/media/2026/11/p.jpg"', false)
             ->assertDontSee('Rejected video')
             ->assertDontSee('Empty grid');
+    }
+
+    public function test_image_urls_are_cleaned_not_dropped_and_side_image_shows(): void
+    {
+        $this->admin();
+        $own = 'http://localhost/cms-media/cms/media/2026/11/abc.webp';
+        $page = $this->publish('home', ['sections' => [
+            ['type' => 'hero', 'design' => 'classic', 'title' => 'Hero', 'image_url' => $own, 'items' => [['title' => 'Step', 'text' => 'x']], 'panel_title' => 'Steps'],
+            ['type' => 'gallery', 'items' => [
+                ['image_url' => 'https://cdn.example.com/My Photo (1).jpg'],
+                ['image_url' => $own],
+            ]],
+            ['type' => 'text', 'title' => 'Bg', 'content' => 'x', 'style' => ['bg' => 'image', 'bg_image' => 'https://cdn.example.com/a b.jpg']],
+        ]]);
+        $s = $page->settings['sections'];
+        $this->assertSame('/cms-media/cms/media/2026/11/abc.webp', $s[0]['image_url']);
+        $this->assertSame('https://cdn.example.com/My%20Photo%20%281%29.jpg', $s[1]['items'][0]['image_url']);
+        $this->assertSame('/cms-media/cms/media/2026/11/abc.webp', $s[1]['items'][1]['image_url']);
+        $this->assertSame('https://cdn.example.com/a%20b.jpg', $s[2]['style']['bg_image']);
+        // In the original hero design, a side image replaces the step card.
+        $this->get('/')->assertOk()->assertSee('<img src="/cms-media/cms/media/2026/11/abc.webp"', false)->assertDontSee('journey-card', false);
     }
 
     public function test_media_upload_is_admin_only_validated_and_served(): void
@@ -208,7 +230,7 @@ class CmsWebsiteManagerTest extends TestCase
         $this->get('/faqs')->assertOk()
             ->assertSee('Elevate Women')
             ->assertDontSee('Tech for all')
-            ->assertSee(route('cms.media', ['path' => $page->image_path]), false)
+            ->assertSee(route('cms.media', ['path' => $page->image_path], false), false)
             ->assertSee('height:60px', false)
             ->assertSee('href="#about"', false)
             ->assertSeeInOrder(['href="https://blog.example.com"', 'target="_blank" rel="noopener"'], false)
@@ -250,7 +272,7 @@ class CmsWebsiteManagerTest extends TestCase
         ]);
         auth()->logout();
         $this->get('/faqs')->assertOk()
-            ->assertSee(route('cms.media', ['path' => $page->image_path]), false)
+            ->assertSee(route('cms.media', ['path' => $page->image_path], false), false)
             ->assertSee('--site-footer-bg:#1d2939', false)
             ->assertSee('We empower women.')
             ->assertSee('mailto:info@example.org', false)

@@ -43,9 +43,46 @@ document.addEventListener('input', (event) => {
 /* ---------- Media upload ---------- */
 const uploadUrl = () => document.querySelector('[data-upload-url]')?.dataset.uploadUrl;
 
-const uploadFile = async (file) => {
+const uploadLimit = () => Number(document.querySelector('[data-upload-limit]')?.dataset.uploadLimit) || 0;
+const formatMb = (bytes) => `${(bytes / 1048576).toFixed(1)} MB`;
+
+/*
+ * Large photos are resized in the browser (max 2400px, WebP/JPEG) so they
+ * fit shared-hosting upload limits and load quickly. GIFs keep their
+ * animation and small files are sent unchanged.
+ */
+const shrinkImage = (file) => new Promise((resolve) => {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 600 * 1024) return resolve(file);
+    const img = new Image();
+    const src = URL.createObjectURL(file);
+    img.onload = () => {
+        const scale = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.naturalWidth * scale);
+        canvas.height = Math.round(img.naturalHeight * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(src);
+        const done = (blob, type, ext) => {
+            if (!blob || blob.size >= file.size) return resolve(file);
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + ext, { type }));
+        };
+        canvas.toBlob((webp) => {
+            if (webp && webp.type === 'image/webp') return done(webp, 'image/webp', '.webp');
+            canvas.toBlob((jpg) => done(jpg, 'image/jpeg', '.jpg'), 'image/jpeg', 0.85);
+        }, 'image/webp', 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(src); resolve(file); };
+    img.src = src;
+});
+
+const uploadFile = async (original) => {
     const url = uploadUrl();
-    if (!url) throw new Error('Uploads are not available on this screen.');
+    if (!url) throw new Error('Uploads are not available right now. Ask an administrator to run "php artisan optimize:clear" on the server.');
+    const file = await shrinkImage(original);
+    const limit = uploadLimit();
+    if (limit && file.size > limit) {
+        throw new Error(`${original.name} is ${formatMb(file.size)}; this server accepts files up to ${formatMb(limit)}. Use a smaller file${file.type.startsWith('video/') ? ' or a YouTube/Vimeo link' : ''}.`);
+    }
     const body = new FormData();
     body.append('file', file);
     const res = await fetch(url, {
@@ -56,7 +93,12 @@ const uploadFile = async (file) => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-        const msg = data?.errors?.file?.[0] || data?.message || (res.status === 413 ? 'The file is too large for the server.' : 'Upload failed.');
+        const msg = data?.errors?.file?.[0]
+            || (res.status === 419 ? 'Your session expired. Save your work, reload the page and try again.' : null)
+            || (res.status === 413 ? `The file is too large for the server${uploadLimit() ? ` (limit ${formatMb(uploadLimit())})` : ''}.` : null)
+            || (res.status === 403 ? 'You do not have permission to upload website media.' : null)
+            || data?.message
+            || `The server returned an error (${res.status}).`;
         throw new Error(msg);
     }
     return data;
@@ -114,7 +156,8 @@ document.addEventListener('change', async (event) => {
         status.textContent = 'Uploaded.';
     } catch (err) {
         status.classList.add('is-error');
-        status.textContent = err.message;
+        status.textContent = `Upload failed: ${err.message}`;
+        alert(`Upload failed: ${err.message}`);
     } finally {
         btn.disabled = false;
         fileInput.value = '';
@@ -165,6 +208,10 @@ document.addEventListener('click', (event) => {
 const initBuilder = (builder) => {
     const blocksEl = builder.querySelector('[data-cms-blocks]');
     const emptyEl = builder.querySelector('[data-cms-empty]');
+    // Templates are rendered next to the builder, not inside it.
+    const findTemplate = (selector) => builder.querySelector(selector)
+        || builder.parentElement?.querySelector(selector)
+        || document.querySelector(selector);
 
     const reindexNested = (block, i) => {
         block.querySelectorAll('[data-column]').forEach((column, c) => {
@@ -236,14 +283,14 @@ const initBuilder = (builder) => {
     };
 
     const addBlock = (type) => {
-        const tpl = builder.querySelector(`[data-block-template="${type}"]`);
+        const tpl = findTemplate(`[data-block-template="${type}"]`);
         if (!tpl) return;
         const node = appendBlock(tpl.content.firstElementChild.cloneNode(true));
         node.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
 
     const addItem = (block, type, values = {}) => {
-        const tpl = builder.querySelector(`[data-item-template="${type}"]`);
+        const tpl = findTemplate(`[data-item-template="${type}"]`);
         const items = block.querySelector('[data-items]');
         if (!tpl || !items) return null;
         const item = tpl.content.firstElementChild.cloneNode(true);
@@ -258,7 +305,7 @@ const initBuilder = (builder) => {
     };
 
     const addColumn = (block) => {
-        const tpl = builder.querySelector('[data-column-template]');
+        const tpl = findTemplate('[data-column-template]');
         const columns = block.querySelector('[data-columns]');
         if (!tpl || !columns) return;
         columns.appendChild(tpl.content.firstElementChild.cloneNode(true));
@@ -266,7 +313,7 @@ const initBuilder = (builder) => {
     };
 
     const addWidget = (column, type) => {
-        const tpl = builder.querySelector(`[data-widget-template="${type}"]`);
+        const tpl = findTemplate(`[data-widget-template="${type}"]`);
         const widgets = column.querySelector('[data-widgets]');
         if (!tpl || !widgets) return;
         const widget = tpl.content.firstElementChild.cloneNode(true);

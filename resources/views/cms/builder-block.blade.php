@@ -57,7 +57,7 @@
             @include('cms.fields.media', ['name' => $n('image_url'), 'value' => $section['image_url'] ?? '', 'attr' => 'data-block-field', 'field' => 'image_url'])
             <span class="cms-hint">For a full background photo or video behind the text, use <strong>Background &amp; layout</strong> below.</span>
             <fieldset class="cms-subgroup">
-                <legend>Side card with numbered steps <small>(original home style; replaces the side image)</small></legend>
+                <legend>Side card with numbered steps <small>(original home style; shown when no side image is set)</small></legend>
                 <div class="cms-grid-2">
                     <div><label>Card eyebrow</label><input name="{{ $n('panel_eyebrow') }}" value="{{ $section['panel_eyebrow'] ?? '' }}" data-block-field="panel_eyebrow"></div>
                     <div><label>Card title</label><input name="{{ $n('panel_title') }}" value="{{ $section['panel_title'] ?? '' }}" data-block-field="panel_title"></div>

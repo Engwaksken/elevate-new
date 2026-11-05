@@ -28,7 +28,10 @@
                         @if(!empty($section['secondary_label']) && !empty($section['secondary_url']))<a href="{{ $section['secondary_url'] }}" class="btn btn-outline btn-lg">{{ $section['secondary_label'] }}</a>@endif
                     </div>
                 </div>
-                @if(!empty($section['items']) || !empty($section['panel_title']))
+                {{-- An uploaded side image takes the place of the step card. --}}
+                @if(!empty($section['image_url']))
+                    <div class="cms-hero__media"><img src="{{ $section['image_url'] }}" alt="" loading="lazy"></div>
+                @elseif(!empty($section['items']) || !empty($section['panel_title']))
                     <div class="journey-card">
                         @if(!empty($section['panel_eyebrow']))<div class="eyebrow">{{ $section['panel_eyebrow'] }}</div>@endif
                         @if(!empty($section['panel_title']))<h2>{{ $section['panel_title'] }}</h2>@endif
@@ -36,8 +39,6 @@
                             <div class="journey-item"><span class="number">{{ $n + 1 }}</span><div>@if(!empty($step['title']))<strong>{{ $step['title'] }}</strong><br>@endif{{ $step['text'] ?? '' }}</div></div>
                         @endforeach
                     </div>
-                @elseif(!empty($section['image_url']))
-                    <div class="cms-hero__media"><img src="{{ $section['image_url'] }}" alt="" loading="lazy"></div>
                 @endif
             </div>
     @elseif($classic && $type === 'features')

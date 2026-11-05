@@ -145,7 +145,26 @@ class CmsContentService
     {
         $path = (string) $path;
         if (! $this->isMediaPath($path)) return null;
-        return \Illuminate\Support\Facades\Route::has('cms.media') ? route('cms.media', ['path' => $path]) : null;
+        // Relative, so images keep working whatever scheme/host Laravel sees behind the host's proxy or SSL.
+        return \Illuminate\Support\Facades\Route::has('cms.media') ? route('cms.media', ['path' => $path], false) : null;
+    }
+
+    /**
+     * Clean an image/video address before it is stored: percent-encode
+     * characters that break src/url() (spaces, quotes, brackets) instead of
+     * rejecting the whole URL, and make links to this site's own uploads relative.
+     */
+    public function normalizeMediaUrl(?string $url): string
+    {
+        $url = trim((string) $url);
+        if ($url === '') return '';
+        $url = strtr($url, [' ' => '%20', '"' => '%22', "'" => '%27', '(' => '%28', ')' => '%29', '<' => '%3C', '>' => '%3E']);
+        if (preg_match('#^https?://[^/]+(/cms-media/cms/[A-Za-z0-9/_.-]+)$#i', $url, $m)) {
+            $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+            $own = array_filter([strtolower((string) request()->getHost()), strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST))]);
+            if (in_array($host, $own, true)) return $m[1];
+        }
+        return $url;
     }
 
     public function isMediaPath(string $path): bool
@@ -281,8 +300,8 @@ class CmsContentService
         $raw = is_array($raw) ? $raw : [];
         $bg = (string) ($raw['bg'] ?? 'none');
         if (! array_key_exists($bg, self::BACKGROUNDS)) $bg = 'none';
-        $image = trim((string) ($raw['bg_image'] ?? ''));
-        $video = $this->toEmbedUrl($raw['bg_video'] ?? '');
+        $image = $this->normalizeMediaUrl($raw['bg_image'] ?? '');
+        $video = $this->toEmbedUrl($this->normalizeMediaUrl($raw['bg_video'] ?? ''));
         $style = [
             'bg' => $bg,
             'bg_color' => $this->hexColor($raw['bg_color'] ?? ''),

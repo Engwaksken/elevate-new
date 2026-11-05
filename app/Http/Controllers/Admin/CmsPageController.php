@@ -108,6 +108,10 @@ class CmsPageController extends Controller
                 $value = trim((string) ($raw[$key] ?? ''));
                 return $cms->safeUrl($value) ? $value : '';
             };
+            $mediaField = function (string $key) use ($raw, $cms) {
+                $value = $cms->normalizeMediaUrl($raw[$key] ?? '');
+                return $cms->safeMediaUrl($value) ? $value : '';
+            };
             $section = ['type' => $type];
             // Optional fields are only stored when used, so older blocks keep their exact shape.
             $extra = function (array $fields) use (&$section) {
@@ -127,7 +131,7 @@ class CmsPageController extends Controller
                     'eyebrow' => $short('eyebrow', 100), 'title' => $short('title'), 'text' => $text('text', 2000),
                     'primary_label' => $short('primary_label', 100), 'primary_url' => $url('primary_url'),
                     'secondary_label' => $short('secondary_label', 100), 'secondary_url' => $url('secondary_url'),
-                    'image_url' => $url('image_url'),
+                    'image_url' => $mediaField('image_url'),
                 ];
                 $extra([
                     'design' => $design === 'classic' ? 'classic' : '',
@@ -137,7 +141,7 @@ class CmsPageController extends Controller
             } elseif ($type === 'text') {
                 $section += ['title' => $short('title'), 'content' => $text('content')];
             } elseif ($type === 'image_text') {
-                $section += ['title' => $short('title'), 'content' => $text('content'), 'image_url' => $url('image_url'), 'reverse' => ! empty($raw['reverse'])];
+                $section += ['title' => $short('title'), 'content' => $text('content'), 'image_url' => $mediaField('image_url'), 'reverse' => ! empty($raw['reverse'])];
             } elseif ($type === 'cta') {
                 $section += ['title' => $short('title'), 'content' => $text('content', 2000), 'button_label' => $short('button_label', 100), 'button_url' => $url('button_url')];
                 $extra([
@@ -168,7 +172,7 @@ class CmsPageController extends Controller
                 $section['items'] = [];
                 foreach (array_values((array) ($raw['items'] ?? [])) as $item) {
                     if (! is_array($item)) continue;
-                    $image = trim((string) ($item['image_url'] ?? ''));
+                    $image = $cms->normalizeMediaUrl($item['image_url'] ?? '');
                     if (! $cms->safeMediaUrl($image)) continue;
                     $link = trim((string) ($item['link'] ?? ''));
                     $section['items'][] = [
@@ -180,9 +184,9 @@ class CmsPageController extends Controller
                 }
                 if ($section['items'] === []) continue;
             } elseif ($type === 'video') {
-                $video = $cms->toEmbedUrl($raw['video_url'] ?? '');
+                $video = $cms->toEmbedUrl($cms->normalizeMediaUrl($raw['video_url'] ?? ''));
                 if (! $cms->isDirectVideo($video) && ! $cms->isValidVideoEmbed($video)) continue;
-                $poster = trim((string) ($raw['poster_url'] ?? ''));
+                $poster = $cms->normalizeMediaUrl($raw['poster_url'] ?? '');
                 $section += [
                     'title' => $short('title'), 'text' => $text('text', 2000), 'video_url' => $video,
                     'poster_url' => $cms->safeMediaUrl($poster) ? $poster : '',
@@ -356,7 +360,7 @@ class CmsPageController extends Controller
                 $fields['content'] = $text('content', 10000);
                 break;
             case 'image':
-                $fields['image_url'] = $url('image_url');
+                $fields['image_url'] = $cms->safeMediaUrl($m = $cms->normalizeMediaUrl($raw['image_url'] ?? '')) ? $m : '';
                 $fields['alt'] = $short('alt', 190);
                 break;
             case 'button':
@@ -371,7 +375,7 @@ class CmsPageController extends Controller
             case 'divider':
                 return ['type' => 'divider'];
             case 'video':
-                $embed = $cms->toEmbedUrl($raw['embed_url'] ?? '');
+                $embed = $cms->toEmbedUrl($cms->normalizeMediaUrl($raw['embed_url'] ?? ''));
                 $fields['embed_url'] = ($cms->isValidVideoEmbed($embed) || $cms->isDirectVideo($embed)) ? $embed : '';
                 break;
             case 'html':

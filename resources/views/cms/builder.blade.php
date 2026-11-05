@@ -1,7 +1,7 @@
 @php($sections = is_array($sections ?? null) ? array_values($sections) : [])
 @php($blockIcons = ['hero' => 'fa-flag', 'text' => 'fa-align-left', 'image_text' => 'fa-image', 'features' => 'fa-table-cells-large', 'stats' => 'fa-chart-simple', 'cta' => 'fa-bullhorn', 'section' => 'fa-table-columns', 'gallery' => 'fa-images', 'video' => 'fa-film'])
 {{-- Guarded so a stale route cache after deploy disables uploads instead of breaking the editor. --}}
-<div class="cms-builder" data-cms-builder @if(Route::has('admin.cms.media.store')) data-upload-url="{{ route('admin.cms.media.store') }}" @endif>
+<div class="cms-builder" data-cms-builder @if(Route::has('admin.cms.media.store')) data-upload-url="{{ route('admin.cms.media.store', [], false) }}" data-upload-limit="{{ \App\Http\Controllers\Admin\CmsMediaController::serverUploadLimit() }}" @endif>
     <div class="cms-builder__bar">
         <div class="cms-builder__title"><strong>Page sections</strong><span>Add sections, then open <em>Background &amp; layout</em> on any section to give it a colour, gradient, photo or video background.</span></div>
         <div class="cms-builder__tools">
