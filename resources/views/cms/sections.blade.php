@@ -104,8 +104,8 @@
                     @if(!empty($section['text']))<p>{{ $section['text'] }}</p>@endif
                     @if(!empty($section['primary_label']) || !empty($section['secondary_label']))
                         <div class="cms-hero__actions">
-                            @if(!empty($section['primary_label']) && !empty($section['primary_url']))<a class="btn btn-primary" href="{{ $section['primary_url'] }}">{{ $section['primary_label'] }}</a>@endif
-                            @if(!empty($section['secondary_label']) && !empty($section['secondary_url']))<a class="btn btn-outline" href="{{ $section['secondary_url'] }}">{{ $section['secondary_label'] }}</a>@endif
+                            @if(!empty($section['primary_label']) && !empty($section['primary_url']))<a class="btn btn-lg cms-btn-solid" href="{{ $section['primary_url'] }}">{{ $section['primary_label'] }}</a>@endif
+                            @if(!empty($section['secondary_label']) && !empty($section['secondary_url']))<a class="btn btn-lg cms-btn-ghost" href="{{ $section['secondary_url'] }}">{{ $section['secondary_label'] }}</a>@endif
                         </div>
                     @endif
                 </div>
@@ -164,7 +164,7 @@
                 @if(!empty($section['title']))<h2>{{ $section['title'] }}</h2>@endif
                 @if(!empty($section['content']))<p>{{ $section['content'] }}</p>@endif
                 @if(!empty($section['button_label']) && !empty($section['button_url']))<a class="btn btn-gold" href="{{ $section['button_url'] }}">{{ $section['button_label'] }}</a>@endif
-                @if(!empty($section['secondary_label']) && !empty($section['secondary_url']))<a class="btn btn-outline" href="{{ $section['secondary_url'] }}">{{ $section['secondary_label'] }}</a>@endif
+                @if(!empty($section['secondary_label']) && !empty($section['secondary_url']))<a class="btn cms-btn-ghost" href="{{ $section['secondary_url'] }}">{{ $section['secondary_label'] }}</a>@endif
             </div>
     @elseif($type === 'gallery')
             <div class="{{ $wrap }}">

@@ -176,6 +176,19 @@ section.cms-align-center .cms-hero__inner:not(.cms-hero__inner--split) { align-i
 .cms-tone-light .cms-stat strong { color: #800000; }
 .cms-tone-light :is(.cms-feature p, .cms-stat span) { color: #667085; }
 
+/* Modern banner / CTA buttons in the secondary (gold) colour, so they stay
+   visible on the maroon banner. Not btn-primary: branding forces that to the
+   primary colour with !important, which made it vanish on a maroon background. */
+:root .cms-btn-solid { display: inline-flex; align-items: center; gap: 8px; border: 2px solid var(--secondary, #d4af37); background: var(--secondary, #d4af37); color: #2b2100; font-weight: 800; box-shadow: 0 8px 20px rgba(0, 0, 0, .18); }
+:root .cms-btn-solid:hover, :root .cms-btn-solid:focus-visible { border-color: var(--secondary-dark, #b8941f); background: var(--secondary-dark, #b8941f); color: #1b1400; transform: translateY(-1px); }
+:root .cms-btn-ghost { display: inline-flex; align-items: center; gap: 8px; border: 2px solid var(--secondary, #d4af37); background: transparent; color: var(--secondary, #d4af37); font-weight: 800; }
+:root .cms-btn-ghost:hover, :root .cms-btn-ghost:focus-visible { background: var(--secondary, #d4af37); color: #2b2100; }
+:root .cms-btn-solid:focus-visible, :root .cms-btn-ghost:focus-visible { outline: 3px solid #ffffff; outline-offset: 2px; }
+/* On light backgrounds gold outline text is too faint; use the primary colour there. */
+:root .cms-tone-dark .cms-btn-ghost { border-color: var(--primary, #800000); color: var(--primary, #800000); }
+:root .cms-tone-dark .cms-btn-ghost:hover, :root .cms-tone-dark .cms-btn-ghost:focus-visible { background: var(--primary, #800000); color: #ffffff; }
+:root .cms-tone-dark .cms-btn-solid:focus-visible, :root .cms-tone-dark .cms-btn-ghost:focus-visible { outline-color: var(--primary, #800000); }
+
 .cms-feature__link { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; color: #800000; font-size: .85rem; font-weight: 800; }
 .cms-eyebrow--plain { padding: 0; background: none; color: #800000; }
 .cms-cta .btn + .btn { margin-left: 8px; }
