@@ -138,6 +138,11 @@ Route::get('/brand-assets/{type}', [BrandAssetController::class, 'show'])
     ->middleware('throttle:60,1')
     ->name('branding.asset');
 
+// Images and videos uploaded through the Frontend CMS (served without the storage symlink).
+Route::get('/cms-media/{path}', [\App\Http\Controllers\Admin\CmsMediaController::class, 'show'])
+    ->where('path', 'cms/.+')
+    ->name('cms.media');
+
 Route::get('/app-manifest.webmanifest', [BrandAssetController::class, 'manifest'])
     ->middleware('throttle:60,1')
     ->name('manifest');
@@ -191,6 +196,7 @@ Route::post('/partners/logout', [\App\Http\Controllers\Auth\PartnerAuthControlle
 Route::prefix('admin/cms')->name('admin.cms.')->middleware(['auth', 'staff', 'permission:cms.manage'])->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\CmsPageController::class, 'index'])->name('index');
     Route::post('/', [\App\Http\Controllers\Admin\CmsPageController::class, 'store'])->name('store');
+    Route::post('/media', [\App\Http\Controllers\Admin\CmsMediaController::class, 'store'])->middleware('throttle:60,1')->name('media.store');
     Route::get('/{page}/edit', [\App\Http\Controllers\Admin\CmsPageController::class, 'edit'])->name('edit');
     Route::put('/{page}', [\App\Http\Controllers\Admin\CmsPageController::class, 'update'])->name('update');
     Route::get('/{page}/preview', [\App\Http\Controllers\Admin\CmsPageController::class, 'preview'])->name('preview');

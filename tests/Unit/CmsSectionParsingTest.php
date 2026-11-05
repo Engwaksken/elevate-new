@@ -8,12 +8,15 @@ use Tests\TestCase;
 
 class CmsSectionParsingTest extends TestCase
 {
-    private function parseSections(array $input): array
+    /** Parsed sections without the presentation keys (style, hidden, label) unless $withStyle. */
+    private function parseSections(array $input, bool $withStyle = false): array
     {
         $method = new ReflectionMethod(CmsPageController::class, 'parseSections');
         $method->setAccessible(true);
 
-        return $method->invoke(app(CmsPageController::class), $input);
+        $sections = $method->invoke(app(CmsPageController::class), $input);
+
+        return $withStyle ? $sections : array_map(fn ($s) => array_diff_key($s, array_flip(['style', 'hidden', 'label'])), $sections);
     }
 
     public function test_section_block_round_trips_all_widget_types(): void
@@ -37,10 +40,16 @@ class CmsSectionParsingTest extends TestCase
             ]],
         ]]);
 
+        $styled = $this->parseSections([[
+            'type' => 'section', 'background' => '#F4F4F4', 'full_width' => 1,
+            'columns' => [['widgets' => [['type' => 'divider']]]],
+        ]], true);
+        $this->assertSame('color', $styled[0]['style']['bg']);
+        $this->assertSame('#f4f4f4', $styled[0]['style']['bg_color']);
+        $this->assertTrue($styled[0]['style']['full_width']);
+
         $this->assertSame([[
             'type' => 'section',
-            'background' => '#f4f4f4',
-            'full_width' => true,
             'columns' => [[
                 'width' => '1/2',
                 'widgets' => [
@@ -66,16 +75,24 @@ class CmsSectionParsingTest extends TestCase
             ]],
         ]]);
 
-        $this->assertSame('', $result[0]['background']);
-        $this->assertSame(false, $result[0]['full_width']);
+        $result = $this->parseSections([[
+            'type' => 'section',
+            'columns' => [[
+                'widgets' => [['type' => 'divider']],
+            ]],
+        ]], true);
+        $this->assertSame('none', $result[0]['style']['bg']);
+        $this->assertSame(false, $result[0]['style']['full_width']);
+        $this->assertSame(false, $result[0]['hidden']);
         $this->assertSame('1/1', $result[0]['columns'][0]['width']);
 
         $soft = $this->parseSections([[
             'type' => 'section',
             'background' => 'soft',
             'columns' => [['widgets' => [['type' => 'divider']]]],
-        ]]);
-        $this->assertSame('soft', $soft[0]['background']);
+        ]], true);
+        $this->assertSame('color', $soft[0]['style']['bg']);
+        $this->assertSame('#fffaf5', $soft[0]['style']['bg_color']);
     }
 
     public function test_section_limits_are_enforced(): void

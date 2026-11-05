@@ -56,14 +56,23 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 </main>
 </div></div>
 @else
-<header class="site-header">
-@php($cmsHeader = app(\App\Services\CmsContentService::class)->published('site-header'))
+@php($chrome = app(\App\Services\CmsContentService::class)->siteChrome())
+@php($cmsHeader = $chrome['header'])
+@php($hdr = $chrome['h'])
+@php($announce = $chrome['announcement'])
+@if(!empty($announce['enabled']) && !empty($announce['text']))
+<div class="site-announcement" style="{{ !empty($announce['background']) ? '--announce-bg:'.$announce['background'].';' : '' }}{{ !empty($announce['text_color']) ? '--announce-fg:'.$announce['text_color'].';' : '' }}"><div class="container"><span>{{ $announce['text'] }}</span>@if(!empty($announce['link_label']) && !empty($announce['link_url']))<a href="{{ $announce['link_url'] }}">{{ $announce['link_label'] }} <i class="fas fa-arrow-right" aria-hidden="true"></i></a>@endif</div></div>
+@endif
+@php($headerStyle = (!empty($hdr['background']) ? '--site-header-bg:'.$hdr['background'].';' : '').(!empty($hdr['text_color']) ? '--site-header-fg:'.$hdr['text_color'].';' : ''))
+<header @class(['site-header', 'site-header--static' => empty($hdr['sticky']), 'site-header--custom' => !empty($hdr['background'])]) @if($headerStyle) style="{{ $headerStyle }}" @endif>
 @if($cmsHeader['body'] ?? null)<div class="container cms-content">{!! app(\App\Services\CmsContentService::class)->render($cmsHeader['body']) !!}</div>@endif
 <div class="nav">
-<a href="{{ route('home') }}" class="brand" aria-label="ElevateHer360 home">@if($brandLogoUrl)<img src="{{ $brandLogoUrl }}" alt="" style="max-width:64px;max-height:48px;object-fit:contain">@elseif($cmsHeader['image_path'] ?? null)<img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($cmsHeader['image_path']) }}" alt="" style="max-width:64px;max-height:48px">@else<span class="brand-mark">E360</span>@endif<span>{{ $cmsHeader['title'] ?? 'ElevateHer360' }}<small>{{ $cmsHeader['summary'] ?? 'Women in Technology Uganda' }}</small></span></a>
+@php($headerLogo = $chrome['header_logo'] ?: $brandLogoUrl)
+@php($logoH = (int) ($hdr['logo_height'] ?? 48))
+<a href="{{ route('home') }}" class="brand" aria-label="{{ $chrome['site_name'] }} home">@if($headerLogo)<img src="{{ $headerLogo }}" alt="" class="brand-logo" style="height:{{ $logoH }}px;max-height:{{ $logoH }}px;width:auto;max-width:{{ $logoH * 4 }}px;object-fit:contain">@else<span class="brand-mark">E360</span>@endif @if(!empty($hdr['show_name']) || (!empty($hdr['show_tagline']) && $chrome['tagline'] !== ''))<span>@if(!empty($hdr['show_name'])){{ $chrome['site_name'] }}@endif @if(!empty($hdr['show_tagline']) && $chrome['tagline'] !== '')<small>{{ $chrome['tagline'] }}</small>@endif</span>@endif</a>
 <nav class="nav-links" id="siteNav" aria-label="Main navigation">
 @if($cmsHeader)
-@foreach(data_get($cmsHeader, 'settings.links', []) as $link)<a href="{{ $link['url'] }}">{{ $link['label'] }}</a>@endforeach
+@foreach(data_get($cmsHeader, 'settings.links', []) as $link)<a href="{{ $link['url'] }}" class="{{ ($link['url'] === '/' ? request()->is('/') : (str_starts_with($link['url'], '/') && request()->is(ltrim(strtok($link['url'], '?#'), '/').'*'))) ? 'active' : '' }}" @if(!empty($link['new_tab'])) target="_blank" rel="noopener" @endif>{{ $link['label'] }}</a>@endforeach
 @else
 <a href="{{ route('home') }}" class="{{ request()->routeIs('home')?'active':'' }}">Home</a>
 @if(Route::has('learning.index'))<a href="{{ route('learning.index') }}" class="{{ request()->routeIs('learning.*')?'active':'' }}">Learning</a>@endif
@@ -82,8 +91,9 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 @endguest
 </nav>
 <div class="nav-actions">
+@if(!empty($hdr['cta_label']) && !empty($hdr['cta_url']))<a href="{{ $hdr['cta_url'] }}" class="btn btn-gold btn-sm site-header-cta"><span>{{ $hdr['cta_label'] }}</span></a>@endif
 @guest
-@if(Route::has('partners.mentor.login') || Route::has('partners.employer.login'))
+@if(!empty($hdr['show_partners']) && (Route::has('partners.mentor.login') || Route::has('partners.employer.login')))
 <details class="partner-menu" data-partner-menu>
 <summary class="btn btn-outline btn-sm" aria-label="Partner sign in and sign up"><i class="fas fa-handshake-angle" aria-hidden="true"></i><span>Partners</span><i class="fas fa-chevron-down partner-menu__caret" aria-hidden="true"></i></summary>
 <div class="partner-menu__panel">
@@ -101,8 +111,10 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 </div>
 </details>
 @endif
+@if(!empty($hdr['show_auth']))
 <a href="{{ route('login') }}" class="btn btn-outline btn-sm nav-signin"><i class="fas fa-right-to-bracket"></i><span>Sign In</span></a>
 <a href="{{ route('register') }}" class="btn btn-primary btn-sm"><i class="fas fa-user-plus"></i><span>Register</span></a>
+@endif
 @else
 {{-- Signed-in users browsing the public site need a way back to their workspace. --}}
 @php($workspaceUrl = \App\Support\RoleShell::homeUrl(auth()->user()))
@@ -114,7 +126,7 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 </div></div>
 </header>
 
-<main id="main-content" class="{{ request()->routeIs('home')?'site-main site-main-home':'site-main page-shell' }}">
+<main id="main-content" class="{{ (request()->routeIs('home') || View::hasSection('full_bleed'))?'site-main site-main-home':'site-main page-shell' }}">
 @if(request()->routeIs('login', 'register', 'partners.*', 'public.partners.*', 'password.*', 'verification.*') && ! View::hasSection('auth_back_inline'))
 <div class="eh-auth-back"><x-back-to-website /></div>
 @endif
@@ -128,9 +140,24 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 @yield('content')
 </main>
 
-<footer class="site-footer"><div class="container footer">
-@php($cmsFooter = app(\App\Services\CmsContentService::class)->published('site-footer'))
-<div class="footer-column footer-branding"><strong class="footer-brand" style="display:flex;align-items:center;gap:10px">@if($brandLogoUrl)<img src="{{ $brandLogoUrl }}" alt="" style="width:56px;height:44px;object-fit:contain">@endif<span>{{ $cmsFooter['title'] ?? 'ElevateHer360' }}</span></strong><div class="footer-copy"><i class="fas fa-copyright"></i> {{ date('Y') }} {{ $cmsFooter['summary'] ?? 'Women in Technology Uganda' }}</div>@if($cmsFooter['body'] ?? null)<div>{!! app(\App\Services\CmsContentService::class)->render($cmsFooter['body']) !!}</div>@endif</div>
+@php($cmsFooter = $chrome['footer'])
+@php($ftr = $chrome['f'])
+<footer class="site-footer" style="{{ !empty($ftr['background']) ? '--site-footer-bg:'.$ftr['background'].';' : '' }}{{ !empty($ftr['text_color']) ? '--site-footer-fg:'.$ftr['text_color'].';' : '' }}"><div class="container footer">
+@php($footerLogo = !empty($ftr['show_logo']) ? ($chrome['footer_logo'] ?: $brandLogoUrl) : null)
+@php($footerLogoH = (int) ($ftr['logo_height'] ?? 44))
+<div class="footer-column footer-branding"><strong class="footer-brand" style="display:flex;align-items:center;gap:10px">@if($footerLogo)<img src="{{ $footerLogo }}" alt="" style="height:{{ $footerLogoH }}px;width:auto;max-width:{{ $footerLogoH * 4 }}px;object-fit:contain">@endif<span>{{ $cmsFooter['title'] ?? $chrome['site_name'] }}</span></strong>
+@if($cmsFooter['body'] ?? null)<div class="footer-about">{!! app(\App\Services\CmsContentService::class)->render($cmsFooter['body']) !!}</div>@endif
+@if(!empty($ftr['email']) || !empty($ftr['phone']) || !empty($ftr['address']))
+<ul class="footer-contact">
+@if(!empty($ftr['address']))<li><i class="fas fa-location-dot" aria-hidden="true"></i><span>{{ $ftr['address'] }}</span></li>@endif
+@if(!empty($ftr['email']))<li><i class="fas fa-envelope" aria-hidden="true"></i><a href="mailto:{{ $ftr['email'] }}">{{ $ftr['email'] }}</a></li>@endif
+@if(!empty($ftr['phone']))<li><i class="fas fa-phone" aria-hidden="true"></i><a href="tel:{{ preg_replace('/[^0-9+]/', '', $ftr['phone']) }}">{{ $ftr['phone'] }}</a></li>@endif
+</ul>
+@endif
+@if(!empty($ftr['social']))
+<div class="footer-social">@foreach(\App\Services\CmsContentService::SOCIAL_NETWORKS as $net => [$netLabel, $netIcon])@if(!empty($ftr['social'][$net]))<a href="{{ $ftr['social'][$net] }}" target="_blank" rel="noopener" aria-label="{{ $netLabel }}"><i class="fab {{ $netIcon }}" aria-hidden="true"></i></a>@endif @endforeach</div>
+@endif
+<div class="footer-copy"><i class="fas fa-copyright"></i> {{ date('Y') }} {{ !empty($ftr['copyright']) ? $ftr['copyright'] : ($cmsFooter['summary'] ?? 'Women in Technology Uganda') }}</div></div>
 @if($cmsFooter)
 @php($cmsFooterLinks = is_array(data_get($cmsFooter, 'settings.links')) ? data_get($cmsFooter, 'settings.links') : [])
 @php($cmsFooterLinks = array_values(array_filter($cmsFooterLinks, static function ($link) {
@@ -158,11 +185,20 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 
     return true;
 })) )
+@if(collect($cmsFooterLinks)->contains(fn ($l) => isset($l['column'])))
+@php($cmsFooterLinkColumns = [1 => [], 2 => [], 3 => []])
+@foreach($cmsFooterLinks as $l)@php($cmsFooterLinkColumns[(int) ($l['column'] ?? 1)][] = $l)@endforeach
+@php($cmsFooterLinkColumns = array_values($cmsFooterLinkColumns))
+@else
 @php($cmsFooterLinkChunks = array_chunk($cmsFooterLinks, max(1, (int) ceil(count($cmsFooterLinks) / 3))))
 @php($cmsFooterLinkColumns = array_pad($cmsFooterLinkChunks, 3, []))
+@endif
 @php($footerColumnTitles = ['Explore', 'Resources', 'Partners'])
 @foreach($cmsFooterLinkColumns as $index => $links)
-<nav class="footer-column footer-links" aria-label="Footer navigation {{ $index + 1 }}"><h2>{{ $footerColumnTitles[$index] ?? 'Links' }}</h2>@foreach($links as $link)<a href="{{ $link['url'] }}">{{ $link['label'] }}</a>@endforeach</nav>
+@php($colTitle = trim((string) data_get($ftr, 'column_titles.'.$index, '')) ?: ($footerColumnTitles[$index] ?? 'Links'))
+@if(count($links) || ! isset($ftr['column_titles']))
+<nav class="footer-column footer-links" aria-label="{{ $colTitle }}"><h2>{{ $colTitle }}</h2>@foreach($links as $link)<a href="{{ $link['url'] }}" @if(!empty($link['new_tab'])) target="_blank" rel="noopener" @endif>{{ $link['label'] }}</a>@endforeach</nav>
+@endif
 @endforeach
 @else
 <nav class="footer-column footer-links" aria-label="Footer navigation"><h2>Explore</h2><a href="{{ route('home') }}">Home</a>@if(Route::has('learning.index'))<a href="{{ route('learning.index') }}">Learning</a>@endif @if(Route::has('jobs.index'))<a href="{{ route('jobs.index') }}">Jobs</a>@endif @if(Route::has('library.index'))<a href="{{ route('library.index') }}">Library</a>@endif</nav>

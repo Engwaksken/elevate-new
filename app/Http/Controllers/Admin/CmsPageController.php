@@ -24,7 +24,8 @@ class CmsPageController extends Controller
 
     public function edit(CmsPage $page)
     {
-        return view('admin.cms.edit', compact('page'));
+        $view = ['site-header' => 'admin.cms.header', 'site-footer' => 'admin.cms.footer'][$page->slug] ?? 'admin.cms.edit';
+        return view($view, compact('page'));
     }
 
     public function update(Request $request, CmsPage $page)
@@ -36,18 +37,13 @@ class CmsPageController extends Controller
             'button_label' => ['nullable', 'string', 'max:100'], 'signup_open' => ['nullable', 'boolean'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'], 'remove_image' => ['nullable', 'boolean'],
             'sections' => ['nullable', 'array', 'max:50'],
+            'links' => ['nullable', 'array', 'max:30'], 'header' => ['nullable', 'array'], 'announcement' => ['nullable', 'array'],
+            'footer' => ['nullable', 'array'],
         ]);
         $sections = $this->parseSections($request->input('sections', []));
-        $links = [];
-        foreach (preg_split('/\r?\n/', trim($data['links_text'] ?? '')) as $line) {
-            if (trim($line) === '') continue;
-            [$label, $url] = array_pad(array_map('trim', explode('|', $line, 2)), 2, '');
-            $safe = preg_match('#^/(?!/)[A-Za-z0-9/_.?=&%\#-]*$#', $url) || (filter_var($url, FILTER_VALIDATE_URL) && in_array(strtolower(parse_url($url, PHP_URL_SCHEME) ?? ''), ['https', 'http'], true));
-            if (! $safe || $label === '' || strlen($label) > 100 || count($links) >= 30) {
-                throw ValidationException::withMessages(['links_text' => 'Use at most 30 links, one per line: Label | /path or https://example.com.']);
-            }
-            $links[] = ['label' => $label, 'url' => $url];
-        }
+        $links = is_array($request->input('links'))
+            ? $this->parseLinkRows($request->input('links'))
+            : $this->parseLinksText($data['links_text'] ?? '');
         $labels = [];
         $allowed = ['name','email','phone','country','organisation','job_title','industry','years_experience','linkedin_url','skills','languages','mentoring_areas','professional_bio','company_name','company_type','website','contact_person','location','description'];
         foreach (preg_split('/\r?\n/', trim($data['field_labels_text'] ?? '')) as $line) {
@@ -63,6 +59,14 @@ class CmsPageController extends Controller
         }
         $attributes = collect($data)->only(['title', 'summary', 'body'])->all();
         $attributes['settings'] = ['links' => $links, 'field_labels' => $labels, 'sections' => $sections, 'button_label' => $data['button_label'] ?? null, 'signup_open' => $request->boolean('signup_open')];
+        if ($page->slug === 'site-header') {
+            $attributes['settings']['header'] = $this->parseHeader((array) $request->input('header', []), (array) ($page->settings['header'] ?? []), $request->has('header'));
+            $attributes['settings']['announcement'] = $request->has('announcement')
+                ? $this->parseAnnouncement((array) $request->input('announcement', []))
+                : (array) ($page->settings['announcement'] ?? []);
+        } elseif ($page->slug === 'site-footer') {
+            $attributes['settings']['footer'] = $this->parseFooter((array) $request->input('footer', []), (array) ($page->settings['footer'] ?? []), $request->has('footer'));
+        }
         $attributes['updated_by'] = $request->user()->id;
         if ($request->hasFile('image')) $attributes['image_path'] = $request->file('image')->store('cms', 'public');
         elseif ($request->boolean('remove_image')) $attributes['image_path'] = null;
@@ -128,11 +132,44 @@ class CmsPageController extends Controller
             } elseif ($type === 'section') {
                 $columns = $this->parseColumns($raw['columns'] ?? []);
                 if ($columns === []) continue;
-                $section['background'] = $this->parseBackground($raw['background'] ?? '');
-                $section['full_width'] = ! empty($raw['full_width']);
                 $section['columns'] = $columns;
+            } elseif ($type === 'gallery') {
+                $section['title'] = $short('title');
+                $section['intro'] = $text('intro', 2000);
+                $section['columns'] = max(2, min(6, (int) ($raw['columns'] ?? 3)));
+                $section['gap'] = CmsContentService::pick($raw, 'gap', ['none', 'sm', 'md', 'lg'], 'md');
+                $section['ratio'] = CmsContentService::pick($raw, 'ratio', ['square', 'landscape', 'portrait', 'auto'], 'square');
+                $section['captions'] = CmsContentService::pick($raw, 'captions', ['below', 'overlay', 'hidden'], 'below');
+                $section['items'] = [];
+                foreach (array_values((array) ($raw['items'] ?? [])) as $item) {
+                    if (! is_array($item)) continue;
+                    $image = trim((string) ($item['image_url'] ?? ''));
+                    if (! $cms->safeMediaUrl($image)) continue;
+                    $link = trim((string) ($item['link'] ?? ''));
+                    $section['items'][] = [
+                        'image_url' => $image,
+                        'caption' => mb_substr(strip_tags((string) ($item['caption'] ?? '')), 0, 190),
+                        'link' => $cms->safeUrl($link) ? $link : '',
+                    ];
+                    if (count($section['items']) >= 24) break;
+                }
+                if ($section['items'] === []) continue;
+            } elseif ($type === 'video') {
+                $video = $cms->toEmbedUrl($raw['video_url'] ?? '');
+                if (! $cms->isDirectVideo($video) && ! $cms->isValidVideoEmbed($video)) continue;
+                $poster = trim((string) ($raw['poster_url'] ?? ''));
+                $section += [
+                    'title' => $short('title'), 'text' => $text('text', 2000), 'video_url' => $video,
+                    'poster_url' => $cms->safeMediaUrl($poster) ? $poster : '',
+                    'autoplay' => ! empty($raw['autoplay']),
+                    'width' => CmsContentService::pick($raw, 'width', ['narrow', 'normal', 'wide'], 'normal'),
+                ];
             }
             if (! $this->isEmptySection($section)) {
+                $section['style'] = $cms->parseStyle($raw['style'] ?? [], $type === 'section' ? (string) ($raw['background'] ?? '') : '');
+                if ($type === 'section' && ! isset($raw['style']) && ! empty($raw['full_width'])) $section['style']['full_width'] = true;
+                $section['hidden'] = ! empty($raw['hidden']);
+                $section['label'] = mb_substr(strip_tags((string) ($raw['label'] ?? '')), 0, 80);
                 $sections[] = $section;
                 if (count($sections) >= 50) break;
             }
@@ -140,12 +177,106 @@ class CmsPageController extends Controller
         return $sections;
     }
 
-    private function parseBackground($value): string
+    private function parseLinksText(string $text): array
     {
-        $value = trim((string) $value);
-        if ($value === '' || $value === 'soft') return $value;
-        if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $value)) return strtolower($value);
-        return '';
+        $rows = [];
+        foreach (preg_split('/\r?\n/', trim($text)) as $line) {
+            if (trim($line) === '') continue;
+            [$label, $url] = array_pad(array_map('trim', explode('|', $line, 2)), 2, '');
+            $rows[] = ['label' => $label, 'url' => $url];
+        }
+        return $this->parseLinkRows($rows, 'links_text');
+    }
+
+    /** Validate navigation links: label + safe relative, #anchor or http(s) URL; optional new tab and footer column. */
+    private function parseLinkRows(array $rows, string $errorKey = 'links'): array
+    {
+        $links = [];
+        foreach (array_values($rows) as $row) {
+            if (! is_array($row)) continue;
+            $label = trim(strip_tags((string) ($row['label'] ?? '')));
+            $url = trim((string) ($row['url'] ?? ''));
+            if ($label === '' && $url === '') continue;
+            $safe = preg_match('#^/(?!/)[A-Za-z0-9/_.?=&%\#-]*$#', $url)
+                || preg_match('/^#[A-Za-z0-9_-]+$/', $url)
+                || (filter_var($url, FILTER_VALIDATE_URL) && in_array(strtolower(parse_url($url, PHP_URL_SCHEME) ?? ''), ['https', 'http'], true));
+            if (! $safe || $label === '' || mb_strlen($label) > 100 || count($links) >= 30) {
+                throw ValidationException::withMessages([$errorKey => 'Use at most 30 links, each with a label and a /path, #section or https:// address.']);
+            }
+            $link = ['label' => $label, 'url' => $url];
+            if (! empty($row['new_tab'])) $link['new_tab'] = true;
+            if (isset($row['column']) && $row['column'] !== '') $link['column'] = max(1, min(3, (int) $row['column']));
+            $links[] = $link;
+        }
+        return $links;
+    }
+
+    private function parseHeader(array $raw, array $previous, bool $submitted): array
+    {
+        if (! $submitted) return $previous;
+        $cms = app(CmsContentService::class);
+        $cta = trim((string) ($raw['cta_url'] ?? ''));
+        return [
+            'logo_height' => max(24, min(96, (int) ($raw['logo_height'] ?? 48))),
+            'show_name' => ! empty($raw['show_name']),
+            'show_tagline' => ! empty($raw['show_tagline']),
+            'sticky' => ! empty($raw['sticky']),
+            'show_partners' => ! empty($raw['show_partners']),
+            'show_auth' => ! empty($raw['show_auth']),
+            'background' => $cms->hexColor($raw['background'] ?? ''),
+            'text_color' => $cms->hexColor($raw['text_color'] ?? ''),
+            'cta_label' => mb_substr(strip_tags((string) ($raw['cta_label'] ?? '')), 0, 60),
+            'cta_url' => $cms->safeUrl($cta) ? $cta : '',
+        ];
+    }
+
+    private function parseAnnouncement(array $raw): array
+    {
+        $cms = app(CmsContentService::class);
+        $url = trim((string) ($raw['link_url'] ?? ''));
+        return [
+            'enabled' => ! empty($raw['enabled']),
+            'text' => mb_substr(strip_tags((string) ($raw['text'] ?? '')), 0, 300),
+            'link_label' => mb_substr(strip_tags((string) ($raw['link_label'] ?? '')), 0, 60),
+            'link_url' => $cms->safeUrl($url) ? $url : '',
+            'background' => $cms->hexColor($raw['background'] ?? ''),
+            'text_color' => $cms->hexColor($raw['text_color'] ?? ''),
+        ];
+    }
+
+    private function parseFooter(array $raw, array $previous, bool $submitted): array
+    {
+        if (! $submitted) return $previous;
+        $cms = app(CmsContentService::class);
+        $social = [];
+        foreach (array_keys(CmsContentService::SOCIAL_NETWORKS) as $network) {
+            $url = trim((string) data_get($raw, 'social.'.$network, ''));
+            if ($url === '') continue;
+            if (! filter_var($url, FILTER_VALIDATE_URL) || ! in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true)) {
+                throw ValidationException::withMessages(['footer.social.'.$network => 'Social links must be full https:// addresses.']);
+            }
+            $social[$network] = $url;
+        }
+        $email = trim((string) ($raw['email'] ?? ''));
+        if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw ValidationException::withMessages(['footer.email' => 'Enter a valid contact email address.']);
+        }
+        $titles = [];
+        foreach ([0, 1, 2] as $i) {
+            $titles[$i] = mb_substr(strip_tags((string) data_get($raw, 'column_titles.'.$i, '')), 0, 60);
+        }
+        return [
+            'show_logo' => ! empty($raw['show_logo']),
+            'logo_height' => max(24, min(120, (int) ($raw['logo_height'] ?? 44))),
+            'background' => $cms->hexColor($raw['background'] ?? ''),
+            'text_color' => $cms->hexColor($raw['text_color'] ?? ''),
+            'column_titles' => $titles,
+            'email' => $email,
+            'phone' => mb_substr(strip_tags((string) ($raw['phone'] ?? '')), 0, 60),
+            'address' => mb_substr(strip_tags((string) ($raw['address'] ?? '')), 0, 300),
+            'social' => $social,
+            'copyright' => mb_substr(strip_tags((string) ($raw['copyright'] ?? '')), 0, 190),
+        ];
     }
 
     private function parseColumns(array $input): array
@@ -215,8 +346,8 @@ class CmsPageController extends Controller
             case 'divider':
                 return ['type' => 'divider'];
             case 'video':
-                $embed = trim((string) ($raw['embed_url'] ?? ''));
-                $fields['embed_url'] = $cms->isValidVideoEmbed($embed) ? $embed : '';
+                $embed = $cms->toEmbedUrl($raw['embed_url'] ?? '');
+                $fields['embed_url'] = ($cms->isValidVideoEmbed($embed) || $cms->isDirectVideo($embed)) ? $embed : '';
                 break;
             case 'html':
                 $rawHtml = mb_substr((string) ($raw['content'] ?? ''), 0, 20000);

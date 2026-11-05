@@ -1,9 +1,21 @@
 @php($cms = app(\App\Services\CmsContentService::class))
 @foreach($sections as $section)
+    @continue(!empty($section['hidden']))
     @php($type = $section['type'] ?? 'text')
+    @php($ap = $cms->appearance($section))
+    @php($wrap = $ap['full_width'] ? 'cms-container-fluid' : 'container')
+    @php($baseClass = [
+        'hero' => 'cms-hero', 'cta' => 'cms-cta', 'features' => 'cms-section cms-section--soft',
+        'section' => 'cms-section cms-section--grid', 'gallery' => 'cms-section cms-section--gallery',
+        'video' => 'cms-section cms-section--video',
+    ][$type] ?? 'cms-section')
+    <section class="{{ $baseClass }} cms-block-{{ $type }} {{ $ap['class'] }}" @if($ap['style']) style="{{ $ap['style'] }}" @endif @if($ap['anchor']) id="{{ $ap['anchor'] }}" @endif>
+        @if($ap['video'])<video class="cms-bg-media" autoplay muted loop playsinline preload="metadata" aria-hidden="true"><source src="{{ $ap['video'] }}" type="video/{{ str_ends_with(strtolower(parse_url($ap['video'], PHP_URL_PATH) ?? ''), '.webm') ? 'webm' : 'mp4' }}"></video>@endif
+        @if($ap['iframe'])<div class="cms-bg-media cms-bg-media--embed" aria-hidden="true"><iframe src="{{ $ap['iframe'] }}" title="" tabindex="-1" allow="autoplay; encrypted-media" loading="lazy"></iframe></div>@endif
+        @if($ap['overlay'])<div class="cms-bg-overlay" style="{{ $ap['overlay'] }}" aria-hidden="true"></div>@endif
+
     @if($type === 'hero')
-        <section class="cms-hero">
-            <div class="container cms-hero__inner @if(!empty($section['image_url'])) cms-hero__inner--split @endif">
+            <div class="{{ $wrap }} cms-hero__inner @if(!empty($section['image_url'])) cms-hero__inner--split @endif">
                 <div class="cms-hero__copy">
                     @if(!empty($section['eyebrow']))<span class="cms-eyebrow">{{ $section['eyebrow'] }}</span>@endif
                     @if(!empty($section['title']))<h1>{{ $section['title'] }}</h1>@endif
@@ -17,17 +29,13 @@
                 </div>
                 @if(!empty($section['image_url']))<div class="cms-hero__media"><img src="{{ $section['image_url'] }}" alt="" loading="lazy"></div>@endif
             </div>
-        </section>
     @elseif($type === 'text')
-        <section class="cms-section">
-            <div class="container">
+            <div class="{{ $wrap }}">
                 @if(!empty($section['title']))<h2 class="cms-section__title">{{ $section['title'] }}</h2>@endif
                 @if(!empty($section['content']))<div class="cms-content">{!! $cms->render($section['content']) !!}</div>@endif
             </div>
-        </section>
     @elseif($type === 'image_text')
-        <section class="cms-section">
-            <div class="container">
+            <div class="{{ $wrap }}">
                 <div class="cms-image-text @if(!empty($section['reverse'])) cms-image-text--reverse @endif">
                     @if(!empty($section['image_url']))<div class="cms-image-text__media"><img src="{{ $section['image_url'] }}" alt="" loading="lazy"></div>@endif
                     <div class="cms-image-text__copy">
@@ -36,10 +44,8 @@
                     </div>
                 </div>
             </div>
-        </section>
     @elseif($type === 'features')
-        <section class="cms-section cms-section--soft">
-            <div class="container">
+            <div class="{{ $wrap }}">
                 @if(!empty($section['title']))<h2 class="cms-section__title">{{ $section['title'] }}</h2>@endif
                 @if(!empty($section['intro']))<p class="cms-section__intro">{{ $section['intro'] }}</p>@endif
                 @if(!empty($section['items']))
@@ -54,10 +60,8 @@
                     </div>
                 @endif
             </div>
-        </section>
     @elseif($type === 'stats')
-        <section class="cms-section">
-            <div class="container">
+            <div class="{{ $wrap }}">
                 @if(!empty($section['title']))<h2 class="cms-section__title">{{ $section['title'] }}</h2>@endif
                 @if(!empty($section['items']))
                     <div class="cms-stats">
@@ -70,20 +74,49 @@
                     </div>
                 @endif
             </div>
-        </section>
     @elseif($type === 'cta')
-        <section class="cms-cta">
-            <div class="container cms-cta__inner">
+            <div class="{{ $wrap }} cms-cta__inner">
                 @if(!empty($section['title']))<h2>{{ $section['title'] }}</h2>@endif
                 @if(!empty($section['content']))<p>{{ $section['content'] }}</p>@endif
                 @if(!empty($section['button_label']) && !empty($section['button_url']))<a class="btn btn-gold" href="{{ $section['button_url'] }}">{{ $section['button_label'] }}</a>@endif
             </div>
-        </section>
+    @elseif($type === 'gallery')
+            <div class="{{ $wrap }}">
+                @if(!empty($section['title']))<h2 class="cms-section__title">{{ $section['title'] }}</h2>@endif
+                @if(!empty($section['intro']))<p class="cms-section__intro">{{ $section['intro'] }}</p>@endif
+                <div class="cms-gallery cms-gallery--gap-{{ $section['gap'] ?? 'md' }} cms-gallery--{{ $section['ratio'] ?? 'square' }} cms-gallery--captions-{{ $section['captions'] ?? 'below' }}" style="--cms-gallery-cols: {{ max(2, min(6, (int) ($section['columns'] ?? 3))) }}">
+                    @foreach($section['items'] ?? [] as $item)
+                        @continue(!$cms->safeMediaUrl($item['image_url'] ?? ''))
+                        @php($tag = !empty($item['link']) && $cms->safeUrl($item['link']) ? 'a' : 'div')
+                        <figure class="cms-gallery__item">
+                            <{{ $tag }} class="cms-gallery__frame" @if($tag === 'a') href="{{ $item['link'] }}" @endif>
+                                <img src="{{ $item['image_url'] }}" alt="{{ $item['caption'] ?? '' }}" loading="lazy">
+                                @if(!empty($item['caption']) && ($section['captions'] ?? 'below') === 'overlay')<span class="cms-gallery__overlay">{{ $item['caption'] }}</span>@endif
+                            </{{ $tag }}>
+                            @if(!empty($item['caption']) && ($section['captions'] ?? 'below') === 'below')<figcaption>{{ $item['caption'] }}</figcaption>@endif
+                        </figure>
+                    @endforeach
+                </div>
+            </div>
+    @elseif($type === 'video')
+            @php($vurl = $section['video_url'] ?? '')
+            <div class="{{ $wrap }}">
+                <div class="cms-video cms-video--{{ $section['width'] ?? 'normal' }}">
+                    @if(!empty($section['title']))<h2 class="cms-section__title">{{ $section['title'] }}</h2>@endif
+                    @if(!empty($section['text']))<p class="cms-section__intro">{{ $section['text'] }}</p>@endif
+                    <div class="cms-widget-video">
+                        <div class="cms-widget-video__frame">
+                            @if($cms->isDirectVideo($vurl))
+                                <video src="{{ $vurl }}" controls playsinline preload="metadata" @if(!empty($section['poster_url']) && $cms->safeMediaUrl($section['poster_url'])) poster="{{ $section['poster_url'] }}" @endif @if(!empty($section['autoplay'])) autoplay muted loop @endif></video>
+                            @elseif($cms->isValidVideoEmbed($vurl))
+                                <iframe src="{{ $vurl }}{{ !empty($section['autoplay']) ? (str_contains($vurl, 'vimeo') ? '?autoplay=1&muted=1' : '?autoplay=1&mute=1') : '' }}" title="{{ $section['title'] ?? 'Video' }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
     @elseif($type === 'section')
-        @php($bg = $section['background'] ?? '')
-        @php($bgSafe = $bg !== '' && $bg !== 'soft' && (bool)preg_match('/^#[0-9a-fA-F]{3,8}$/', $bg))
-        <section class="cms-section cms-section--grid @if($bg === 'soft') cms-section--soft @endif" @if($bgSafe) style="background: {{ $bg }}" @endif>
-            <div class="@if(!empty($section['full_width'])) cms-container-fluid @else container @endif">
+            <div class="{{ $wrap }}">
                 @if(!empty($section['columns']))
                     <div class="cms-grid">
                         @foreach($section['columns'] as $column)
@@ -109,9 +142,11 @@
                                         <hr class="cms-widget-divider">
                                     @elseif($wt === 'video')
                                         @php($embed = $widget['embed_url'] ?? '')
-                                        @php($embedSafe = $embed && preg_match('#^https?://(www\.)?(youtube\.com/embed|youtube-nocookie\.com/embed|player\.vimeo\.com/video)#i', $embed))
-                                        @if($embedSafe)
-                                            <div class="cms-widget-video"><div class="cms-widget-video__frame"><iframe src="{{ $embed }}" title="Embedded video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div></div>
+                                        @if($cms->isValidVideoEmbed($embed) || $cms->isDirectVideo($embed))
+                                            <div class="cms-widget-video"><div class="cms-widget-video__frame">
+                                                @if($cms->isDirectVideo($embed))<video src="{{ $embed }}" controls playsinline preload="metadata"></video>
+                                                @else<iframe src="{{ $embed }}" title="Embedded video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>@endif
+                                            </div></div>
                                         @endif
                                     @elseif($wt === 'html')
                                         @if(!empty($widget['content']))<div class="cms-widget-html">{!! $widget['content'] !!}</div>@endif
@@ -122,6 +157,6 @@
                     </div>
                 @endif
             </div>
-        </section>
     @endif
+    </section>
 @endforeach

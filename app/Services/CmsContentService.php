@@ -16,6 +16,27 @@ class CmsContentService
         'stats' => 'Statistics',
         'cta' => 'Call to action',
         'section' => 'Section / Grid',
+        'gallery' => 'Image grid',
+        'video' => 'Video',
+    ];
+
+    /** Background modes every section can use. */
+    public const BACKGROUNDS = [
+        'none' => 'Default', 'color' => 'Solid colour', 'gradient' => 'Gradient',
+        'image' => 'Image', 'video' => 'Video',
+    ];
+
+    public const SOCIAL_NETWORKS = [
+        'facebook' => ['Facebook', 'fa-facebook-f'], 'x' => ['X (Twitter)', 'fa-x-twitter'],
+        'linkedin' => ['LinkedIn', 'fa-linkedin-in'], 'instagram' => ['Instagram', 'fa-instagram'],
+        'youtube' => ['YouTube', 'fa-youtube'], 'tiktok' => ['TikTok', 'fa-tiktok'],
+        'whatsapp' => ['WhatsApp', 'fa-whatsapp'],
+    ];
+
+    /** Uploadable media: extension => mime. SVG is excluded (it can carry script). */
+    public const MEDIA_TYPES = [
+        'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp',
+        'gif' => 'image/gif', 'mp4' => 'video/mp4', 'webm' => 'video/webm',
     ];
 
     public const WIDGETS = [
@@ -115,6 +136,201 @@ class CmsContentService
             return in_array(strtolower(parse_url($url, PHP_URL_SCHEME) ?? ''), ['https', 'http'], true);
         }
         return false;
+    }
+
+    /** Public URL for a file stored on the public disk under cms/ (served by a route, so no storage symlink is needed). */
+    public function mediaUrl(?string $path): ?string
+    {
+        $path = (string) $path;
+        if (! $this->isMediaPath($path)) return null;
+        return \Illuminate\Support\Facades\Route::has('cms.media') ? route('cms.media', ['path' => $path]) : null;
+    }
+
+    public function isMediaPath(string $path): bool
+    {
+        if ($path === '' || str_contains($path, '\\') || str_starts_with($path, '/')) return false;
+        $segments = explode('/', $path);
+        return count($segments) >= 2 && $segments[0] === 'cms'
+            && ! array_intersect($segments, ['', '.', '..'])
+            && (bool) preg_match('#^[A-Za-z0-9/_.-]+$#', $path)
+            && array_key_exists(strtolower(pathinfo($path, PATHINFO_EXTENSION)), self::MEDIA_TYPES);
+    }
+
+    /** A URL that is safe to place inside CSS url("...") and HTML src attributes. */
+    public function safeMediaUrl(?string $url): bool
+    {
+        $url = trim((string) $url);
+        return $url !== '' && $this->safeUrl($url) && ! preg_match('/["\'()\\\\\s<>]/', $url);
+    }
+
+    /** Turn YouTube watch/short links and Vimeo page links into embed URLs; anything else is returned unchanged. */
+    public function toEmbedUrl(?string $url): string
+    {
+        $url = trim((string) $url);
+        if (preg_match('#^https?://(?:www\.|m\.)?youtube\.com/watch\?(?:.*&)?v=([A-Za-z0-9_-]{6,})#', $url, $m)
+            || preg_match('#^https?://youtu\.be/([A-Za-z0-9_-]{6,})#', $url, $m)
+            || preg_match('#^https?://(?:www\.)?youtube\.com/(?:shorts|live)/([A-Za-z0-9_-]{6,})#', $url, $m)) {
+            return 'https://www.youtube.com/embed/'.$m[1];
+        }
+        if (preg_match('#^https?://(?:www\.)?vimeo\.com/([0-9]+)#', $url, $m)) {
+            return 'https://player.vimeo.com/video/'.$m[1];
+        }
+        return $url;
+    }
+
+    /** A directly playable video file (uploaded or an external .mp4/.webm). */
+    public function isDirectVideo(?string $url): bool
+    {
+        $url = trim((string) $url);
+        if (! $this->safeMediaUrl($url)) return false;
+        $ext = strtolower(pathinfo((string) parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION));
+        return in_array($ext, ['mp4', 'webm'], true);
+    }
+
+    /** Embed URL for a background video iframe: autoplay, muted, looping, no controls. */
+    public function backgroundEmbedUrl(string $embed): string
+    {
+        if (preg_match('#/embed/([A-Za-z0-9_-]+)$#', $embed, $m)) {
+            return $embed.'?autoplay=1&mute=1&loop=1&playlist='.$m[1].'&controls=0&showinfo=0&modestbranding=1&playsinline=1&rel=0';
+        }
+        return $embed.'?background=1&autoplay=1&muted=1&loop=1';
+    }
+
+    /** Return $raw[$key] when it is one of $allowed, otherwise $default. */
+    public static function pick(array $raw, string $key, array $allowed, string $default): string
+    {
+        $value = $raw[$key] ?? $default;
+        return is_string($value) && in_array($value, $allowed, true) ? $value : $default;
+    }
+
+    public function hexColor($value): string
+    {
+        $value = trim((string) $value);
+        return preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $value) ? strtolower($value) : '';
+    }
+
+    /** Normalise the "Background & layout" options posted for a section. */
+    public function parseStyle($raw, string $legacyBackground = ''): array
+    {
+        $raw = is_array($raw) ? $raw : [];
+        $bg = (string) ($raw['bg'] ?? 'none');
+        if (! array_key_exists($bg, self::BACKGROUNDS)) $bg = 'none';
+        $image = trim((string) ($raw['bg_image'] ?? ''));
+        $video = $this->toEmbedUrl($raw['bg_video'] ?? '');
+        $style = [
+            'bg' => $bg,
+            'bg_color' => $this->hexColor($raw['bg_color'] ?? ''),
+            'bg_color2' => $this->hexColor($raw['bg_color2'] ?? ''),
+            'gradient_angle' => max(0, min(360, (int) ($raw['gradient_angle'] ?? 135))),
+            'bg_image' => $this->safeMediaUrl($image) ? $image : '',
+            'bg_size' => self::pick($raw, 'bg_size', ['cover', 'contain', 'repeat'], 'cover'),
+            'bg_position' => self::pick($raw, 'bg_position', ['center', 'top', 'bottom', 'left', 'right'], 'center'),
+            'parallax' => ! empty($raw['parallax']),
+            'bg_video' => ($this->isDirectVideo($video) || $this->isValidVideoEmbed($video)) ? $video : '',
+            'overlay_color' => $this->hexColor($raw['overlay_color'] ?? ''),
+            'overlay_opacity' => max(0, min(90, (int) ($raw['overlay_opacity'] ?? 0))),
+            'text_tone' => self::pick($raw, 'text_tone', ['auto', 'light', 'dark'], 'auto'),
+            'padding' => self::pick($raw, 'padding', ['none', 'sm', 'md', 'lg', 'xl'], 'md'),
+            'align' => self::pick($raw, 'align', ['left', 'center'], 'left'),
+            'full_width' => ! empty($raw['full_width']),
+            'min_height' => max(0, min(100, (int) ($raw['min_height'] ?? 0))),
+            'anchor' => preg_match('/^[a-z][a-z0-9-]{0,40}$/', (string) ($raw['anchor'] ?? '')) ? $raw['anchor'] : '',
+        ];
+        // Older "Section / Grid" blocks stored a single background field (hex or "soft").
+        if ($bg === 'none' && $legacyBackground !== '') {
+            if ($legacyBackground === 'soft') $style['bg_color'] = '#fffaf5';
+            elseif ($hex = $this->hexColor($legacyBackground)) $style['bg_color'] = $hex;
+            if ($style['bg_color'] !== '') $style['bg'] = 'color';
+        }
+        return $style;
+    }
+
+    /**
+     * Presentation for a section's outer element: extra classes, inline style,
+     * and the optional video/overlay layers. Inputs are re-validated here so
+     * stored data that bypassed the editor still cannot inject CSS or markup.
+     */
+    public function appearance(array $section): array
+    {
+        $s = is_array($section['style'] ?? null) ? $section['style'] : [];
+        if (($section['type'] ?? '') === 'section' && empty($s) && ! empty($section['background'])) {
+            $s = $this->parseStyle([], (string) $section['background']);
+            $s['full_width'] = ! empty($section['full_width']);
+        }
+        $bg = (string) ($s['bg'] ?? 'none');
+        $css = [];
+        $classes = [];
+        $video = null;
+        $iframe = null;
+        $color = $this->hexColor($s['bg_color'] ?? '');
+        if ($bg === 'color' && $color) {
+            $css[] = 'background:'.$color;
+        } elseif ($bg === 'gradient' && $color) {
+            $color2 = $this->hexColor($s['bg_color2'] ?? '') ?: $color;
+            $css[] = 'background:linear-gradient('.((int) ($s['gradient_angle'] ?? 135)).'deg,'.$color.','.$color2.')';
+        } elseif ($bg === 'image' && $this->safeMediaUrl($s['bg_image'] ?? '')) {
+            $size = $s['bg_size'] ?? 'cover';
+            $pos = in_array($s['bg_position'] ?? 'center', ['center', 'top', 'bottom', 'left', 'right'], true) ? $s['bg_position'] : 'center';
+            $css[] = 'background-color:'.($color ?: '#222');
+            $css[] = 'background-image:url("'.$s['bg_image'].'")';
+            $css[] = 'background-position:'.$pos;
+            $css[] = $size === 'repeat' ? 'background-repeat:repeat' : 'background-repeat:no-repeat;background-size:'.($size === 'contain' ? 'contain' : 'cover');
+            if (! empty($s['parallax'])) $classes[] = 'cms-bg-parallax';
+        } elseif ($bg === 'video') {
+            $url = (string) ($s['bg_video'] ?? '');
+            if ($this->isDirectVideo($url)) $video = $url;
+            elseif ($this->isValidVideoEmbed($url)) $iframe = $this->backgroundEmbedUrl($url);
+            if ($video || $iframe) $css[] = 'background:'.($color ?: '#111');
+        }
+        $hasMedia = $video || $iframe || ($bg === 'image' && $css);
+        $tone = $s['text_tone'] ?? 'auto';
+        if ($tone === 'auto' && $hasMedia) $tone = 'light';
+        if (in_array($tone, ['light', 'dark'], true)) $classes[] = 'cms-tone-'.$tone;
+        if ($css || $video || $iframe) $classes[] = 'cms-has-bg';
+        $padding = $s['padding'] ?? 'md';
+        if (in_array($padding, ['none', 'sm', 'lg', 'xl'], true)) $classes[] = 'cms-pad-'.$padding;
+        if (($s['align'] ?? 'left') === 'center') $classes[] = 'cms-align-center';
+        if (($h = (int) ($s['min_height'] ?? 0)) > 0) {
+            $css[] = 'min-height:'.min(100, $h).'vh';
+            $classes[] = 'cms-min-height';
+        }
+        $overlayOpacity = (int) ($s['overlay_opacity'] ?? 0);
+        $overlay = $overlayOpacity > 0
+            ? 'background:'.($this->hexColor($s['overlay_color'] ?? '') ?: '#000000').';opacity:'.round(min(90, $overlayOpacity) / 100, 2)
+            : null;
+        if ($overlay) $classes[] = 'cms-has-bg';
+
+        return [
+            'class' => implode(' ', array_unique($classes)),
+            'style' => implode(';', $css),
+            'video' => $video,
+            'iframe' => $iframe,
+            'overlay' => $overlay,
+            'full_width' => ! empty($s['full_width']),
+            'anchor' => preg_match('/^[a-z][a-z0-9-]{0,40}$/', (string) ($s['anchor'] ?? '')) ? $s['anchor'] : null,
+        ];
+    }
+
+    /** Published header/footer settings merged over defaults, for the public layout. */
+    public function siteChrome(): array
+    {
+        $header = $this->published('site-header');
+        $footer = $this->published('site-footer');
+        $h = (array) data_get($header, 'settings.header', []);
+        $a = (array) data_get($header, 'settings.announcement', []);
+        $f = (array) data_get($footer, 'settings.footer', []);
+        $media = fn ($content) => ($p = $content['image_path'] ?? null) ? $this->mediaUrl($p) : null;
+        return [
+            'header' => $header,
+            'footer' => $footer,
+            'site_name' => trim((string) ($header['title'] ?? '')) ?: 'ElevateHer360',
+            'tagline' => $header ? (string) ($header['summary'] ?? '') : 'Women in Technology Uganda',
+            'header_logo' => $media($header),
+            'footer_logo' => $media($footer),
+            'h' => $h + ['logo_height' => 48, 'show_name' => true, 'show_tagline' => true, 'sticky' => true, 'show_partners' => true, 'show_auth' => true],
+            'announcement' => $a,
+            'f' => $f + ['show_logo' => true],
+        ];
     }
 
     /**

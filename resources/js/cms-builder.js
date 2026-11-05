@@ -1,7 +1,168 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const builder = document.querySelector('[data-cms-builder]');
-    if (!builder) return;
+/*
+ * Frontend CMS editors: section builder, media uploads, colour pickers,
+ * navigation link rows and the header live preview.
+ */
+const fieldName = (prefix, field) => `${prefix}[${String(field).split('.').join('][')}]`;
+const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content
+    || document.querySelector('input[name="_token"]')?.value || '';
 
+/* ---------- Colour fields ---------- */
+const initColors = (root = document) => {
+    root.querySelectorAll('[data-color]').forEach((wrap) => {
+        if (wrap.dataset.ready) return;
+        wrap.dataset.ready = '1';
+        const picker = wrap.querySelector('[data-color-picker]');
+        const text = wrap.querySelector('[data-color-text]');
+        const paint = () => wrap.classList.toggle('is-empty', !text.value);
+        picker.addEventListener('input', () => {
+            text.value = picker.value;
+            paint();
+            text.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        text.addEventListener('input', () => {
+            if (/^#[0-9a-f]{6}$/i.test(text.value)) picker.value = text.value;
+            paint();
+        });
+        wrap.querySelector('[data-color-clear]')?.addEventListener('click', () => {
+            text.value = '';
+            paint();
+            text.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        paint();
+    });
+};
+
+/* ---------- Range outputs ---------- */
+document.addEventListener('input', (event) => {
+    const range = event.target.closest?.('[data-range]');
+    if (!range) return;
+    const out = range.closest('div, .form-group')?.querySelector('[data-range-out]');
+    if (out) out.textContent = `${range.value}${range.dataset.rangeUnit || '%'}`;
+});
+
+/* ---------- Media upload ---------- */
+const uploadUrl = () => document.querySelector('[data-upload-url]')?.dataset.uploadUrl;
+
+const uploadFile = async (file) => {
+    const url = uploadUrl();
+    if (!url) throw new Error('Uploads are not available on this screen.');
+    const body = new FormData();
+    body.append('file', file);
+    const res = await fetch(url, {
+        method: 'POST',
+        body,
+        headers: { 'X-CSRF-TOKEN': csrf(), Accept: 'application/json' },
+        credentials: 'same-origin',
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const msg = data?.errors?.file?.[0] || data?.message || (res.status === 413 ? 'The file is too large for the server.' : 'Upload failed.');
+        throw new Error(msg);
+    }
+    return data;
+};
+
+const renderMediaPreview = (wrap) => {
+    const input = wrap.querySelector('[data-media-input]');
+    const preview = wrap.querySelector('[data-media-preview]');
+    if (!input || !preview) return;
+    const value = input.value.trim();
+    preview.innerHTML = '';
+    if (!value) return;
+    const path = value.split('?')[0].toLowerCase();
+    if (/\.(mp4|webm)$/.test(path)) {
+        const video = document.createElement('video');
+        video.src = value;
+        video.muted = true;
+        video.preload = 'metadata';
+        preview.appendChild(video);
+    } else if (/youtube|youtu\.be|vimeo/.test(path)) {
+        preview.innerHTML = '<span class="cms-media__chip"><i class="fas fa-circle-play"></i> Online video</span>';
+    } else {
+        const img = document.createElement('img');
+        img.src = value;
+        img.alt = '';
+        img.onerror = () => { preview.innerHTML = '<span class="cms-media__chip is-error">Image could not be loaded</span>'; };
+        preview.appendChild(img);
+    }
+};
+
+const initMedia = (root = document) => {
+    root.querySelectorAll('[data-media]').forEach(renderMediaPreview);
+};
+
+document.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-media-upload]');
+    if (!btn) return;
+    btn.closest('[data-media]')?.querySelector('[data-media-file]')?.click();
+});
+
+document.addEventListener('change', async (event) => {
+    const fileInput = event.target.closest?.('[data-media-file]');
+    if (!fileInput || !fileInput.files.length) return;
+    const wrap = fileInput.closest('[data-media]');
+    const status = wrap.querySelector('[data-media-status]');
+    const btn = wrap.querySelector('[data-media-upload]');
+    btn.disabled = true;
+    status.className = 'cms-media__status';
+    status.textContent = 'Uploading…';
+    try {
+        const data = await uploadFile(fileInput.files[0]);
+        const input = wrap.querySelector('[data-media-input]');
+        input.value = data.url;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        status.textContent = 'Uploaded.';
+    } catch (err) {
+        status.classList.add('is-error');
+        status.textContent = err.message;
+    } finally {
+        btn.disabled = false;
+        fileInput.value = '';
+    }
+});
+
+document.addEventListener('input', (event) => {
+    const input = event.target.closest?.('[data-media-input]');
+    if (input) renderMediaPreview(input.closest('[data-media]'));
+});
+
+/* ---------- Navigation link rows ---------- */
+const reindexLinks = (list) => {
+    list.querySelectorAll('[data-link-row]').forEach((row, i) => {
+        row.querySelectorAll('[data-link-field]').forEach((el) => {
+            el.name = `links[${i}][${el.dataset.linkField}]`;
+        });
+    });
+    list.dispatchEvent(new CustomEvent('links:changed', { bubbles: true }));
+};
+
+document.addEventListener('click', (event) => {
+    const list = event.target.closest('[data-links]');
+    if (!list) return;
+    const rows = list.querySelector('[data-link-rows]');
+    if (event.target.closest('[data-link-add]')) {
+        const tpl = list.querySelector('[data-link-template]');
+        const row = tpl.content.firstElementChild.cloneNode(true);
+        rows.appendChild(row);
+        reindexLinks(list);
+        row.querySelector('input')?.focus();
+        return;
+    }
+    const row = event.target.closest('[data-link-row]');
+    if (!row) return;
+    if (event.target.closest('[data-link-remove]')) {
+        row.remove();
+        reindexLinks(list);
+    } else if (event.target.closest('[data-link-move]')) {
+        const dir = event.target.closest('[data-link-move]').dataset.linkMove;
+        if (dir === 'up' && row.previousElementSibling) rows.insertBefore(row, row.previousElementSibling);
+        if (dir === 'down' && row.nextElementSibling) rows.insertBefore(row.nextElementSibling, row);
+        reindexLinks(list);
+    }
+});
+
+/* ---------- Section builder ---------- */
+const initBuilder = (builder) => {
     const blocksEl = builder.querySelector('[data-cms-blocks]');
     const emptyEl = builder.querySelector('[data-cms-empty]');
 
@@ -10,26 +171,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const width = column.querySelector('[data-column-width]');
             if (width) width.name = `sections[${i}][columns][${c}][width]`;
             column.querySelectorAll('[data-widget]').forEach((widget, w) => {
+                const prefix = `sections[${i}][columns][${c}][widgets][${w}]`;
                 const typeField = widget.querySelector('[data-widget-type-field]');
-                if (typeField) typeField.name = `sections[${i}][columns][${c}][widgets][${w}][type]`;
+                if (typeField) typeField.name = `${prefix}[type]`;
                 widget.querySelectorAll('[data-widget-field]').forEach((el) => {
-                    el.name = `sections[${i}][columns][${c}][widgets][${w}][${el.dataset.widgetField}]`;
+                    el.name = fieldName(prefix, el.dataset.widgetField);
                 });
             });
         });
     };
 
     const reindex = () => {
-        const blocks = [...blocksEl.querySelectorAll('[data-block]')];
+        const blocks = [...blocksEl.querySelectorAll(':scope > [data-block]')];
         blocks.forEach((block, i) => {
             const typeField = block.querySelector('[data-block-type-field]');
             if (typeField) typeField.name = `sections[${i}][type]`;
             block.querySelectorAll('[data-block-field]').forEach((el) => {
-                el.name = `sections[${i}][${el.dataset.blockField}]`;
+                el.name = fieldName(`sections[${i}]`, el.dataset.blockField);
             });
             block.querySelectorAll('[data-item]').forEach((item, j) => {
                 item.querySelectorAll('[data-item-field]').forEach((el) => {
-                    el.name = `sections[${i}][items][${j}][${el.dataset.itemField}]`;
+                    el.name = fieldName(`sections[${i}][items][${j}]`, el.dataset.itemField);
                 });
             });
             reindexNested(block, i);
@@ -37,19 +199,62 @@ document.addEventListener('DOMContentLoaded', () => {
         if (emptyEl) emptyEl.hidden = blocks.length > 0;
     };
 
+    const syncBackground = (block) => {
+        const panel = block.querySelector('[data-style-panel]');
+        if (!panel) return;
+        const mode = panel.querySelector('[data-bg-mode]:checked')?.value || 'none';
+        panel.querySelectorAll('[data-bg-show]').forEach((el) => {
+            el.hidden = !el.dataset.bgShow.split(' ').includes(mode);
+        });
+        const badge = panel.querySelector('[data-style-badge]');
+        const label = panel.querySelector('[data-bg-mode]:checked')?.closest('label')?.textContent.trim();
+        if (badge && label) badge.textContent = label;
+    };
+
+    const syncSummary = (block) => {
+        const summary = block.querySelector('[data-block-summary]');
+        if (!summary) return;
+        const label = block.querySelector('[data-block-label]')?.value.trim();
+        const title = block.querySelector('[data-block-field="title"]')?.value.trim();
+        summary.textContent = label || title || '';
+        block.classList.toggle('is-hidden', !!block.querySelector('[data-block-hidden]')?.checked);
+    };
+
+    const prepare = (block) => {
+        initColors(block);
+        initMedia(block);
+        syncBackground(block);
+        syncSummary(block);
+    };
+
+    const appendBlock = (node, { open = true, after = null } = {}) => {
+        if (after) after.after(node); else blocksEl.appendChild(node);
+        if (open) node.removeAttribute('data-collapsed');
+        reindex();
+        prepare(node);
+        return node;
+    };
+
     const addBlock = (type) => {
         const tpl = builder.querySelector(`[data-block-template="${type}"]`);
         if (!tpl) return;
-        blocksEl.appendChild(tpl.content.firstElementChild.cloneNode(true));
-        reindex();
+        const node = appendBlock(tpl.content.firstElementChild.cloneNode(true));
+        node.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
 
-    const addItem = (block, type) => {
+    const addItem = (block, type, values = {}) => {
         const tpl = builder.querySelector(`[data-item-template="${type}"]`);
         const items = block.querySelector('[data-items]');
-        if (!tpl || !items) return;
-        items.appendChild(tpl.content.firstElementChild.cloneNode(true));
+        if (!tpl || !items) return null;
+        const item = tpl.content.firstElementChild.cloneNode(true);
+        Object.entries(values).forEach(([field, value]) => {
+            const el = item.querySelector(`[data-item-field="${field}"]`);
+            if (el) el.value = value;
+        });
+        items.appendChild(item);
         reindex();
+        initMedia(item);
+        return item;
     };
 
     const addColumn = (block) => {
@@ -64,102 +269,192 @@ document.addEventListener('DOMContentLoaded', () => {
         const tpl = builder.querySelector(`[data-widget-template="${type}"]`);
         const widgets = column.querySelector('[data-widgets]');
         if (!tpl || !widgets) return;
-        widgets.appendChild(tpl.content.firstElementChild.cloneNode(true));
+        const widget = tpl.content.firstElementChild.cloneNode(true);
+        widgets.appendChild(widget);
+        reindex();
+        initMedia(widget);
+    };
+
+    const duplicate = (block) => {
+        // Radios keep their checked state only within a uniquely named group,
+        // so remember the selection before the clone shares the same names.
+        const checked = [...block.querySelectorAll('input[type="radio"]')].map((r) => r.checked);
+        const copy = block.cloneNode(true);
+        block.querySelectorAll('textarea, select').forEach((el, idx) => {
+            const target = copy.querySelectorAll('textarea, select')[idx];
+            if (target) target.value = el.value;
+        });
+        appendBlock(copy, { after: block });
+        [block, copy].forEach((b) => b.querySelectorAll('input[type="radio"]').forEach((r, idx) => { r.checked = checked[idx]; }));
+        copy.querySelectorAll('[data-color]').forEach((c) => delete c.dataset.ready);
+        prepare(copy);
+    };
+
+    const move = (el, dir) => {
+        const parent = el.parentElement;
+        if (dir === 'up' && el.previousElementSibling) parent.insertBefore(el, el.previousElementSibling);
+        else if (dir === 'down' && el.nextElementSibling) parent.insertBefore(el.nextElementSibling, el);
         reindex();
     };
 
-    builder.querySelectorAll('[data-add-block]').forEach((btn) => {
-        btn.addEventListener('click', () => addBlock(btn.dataset.addBlock));
+    builder.addEventListener('click', async (event) => {
+        const t = event.target;
+        const addBlockBtn = t.closest('[data-add-block]');
+        if (addBlockBtn) return addBlock(addBlockBtn.dataset.addBlock);
+
+        if (t.closest('[data-expand-all]')) return blocksEl.querySelectorAll('[data-block]').forEach((b) => b.removeAttribute('data-collapsed'));
+        if (t.closest('[data-collapse-all]')) return blocksEl.querySelectorAll('[data-block]').forEach((b) => b.setAttribute('data-collapsed', ''));
+
+        if (t.closest('[data-load-preset]')) {
+            const preset = builder.parentElement.querySelector('[data-preset]') || document.querySelector('[data-preset]');
+            if (!preset) return;
+            [...preset.content.children].forEach((node, i) => appendBlock(node.cloneNode(true), { open: i === 0 }));
+            return;
+        }
+
+        const block = t.closest('[data-block]');
+        if (!block) return;
+
+        if (t.closest('[data-block-toggle]')) return block.toggleAttribute('data-collapsed');
+        if (t.closest('[data-block-remove]')) {
+            if (confirm('Remove this section?')) { block.remove(); reindex(); }
+            return;
+        }
+        if (t.closest('[data-block-duplicate]')) return duplicate(block);
+        const blockMove = t.closest('[data-block-move]');
+        if (blockMove) return move(block, blockMove.dataset.blockMove);
+
+        const addItemBtn = t.closest('[data-add-item]');
+        if (addItemBtn) return addItem(block, addItemBtn.dataset.addItem);
+        if (t.closest('[data-item-remove]')) { t.closest('[data-item]').remove(); reindex(); return; }
+        const itemMove = t.closest('[data-item-move]');
+        if (itemMove) return move(t.closest('[data-item]'), itemMove.dataset.itemMove);
+
+        if (t.closest('[data-gallery-bulk]')) return block.querySelector('[data-gallery-files]')?.click();
+
+        if (t.closest('[data-add-column]')) return addColumn(block);
+        const addWidgetBtn = t.closest('[data-add-widget]');
+        if (addWidgetBtn) return addWidget(addWidgetBtn.closest('[data-column]'), addWidgetBtn.dataset.addWidget);
+        if (t.closest('[data-column-remove]')) { t.closest('[data-column]').remove(); reindex(); return; }
+        const columnMove = t.closest('[data-column-move]');
+        if (columnMove) return move(t.closest('[data-column]'), columnMove.dataset.columnMove);
+        if (t.closest('[data-widget-remove]')) { t.closest('[data-widget]').remove(); reindex(); return; }
+        const widgetMove = t.closest('[data-widget-move]');
+        if (widgetMove) return move(t.closest('[data-widget]'), widgetMove.dataset.widgetMove);
+        return undefined;
     });
 
-    blocksEl.addEventListener('click', (event) => {
-        const removeBlock = event.target.closest('[data-block-remove]');
-        if (removeBlock) {
-            removeBlock.closest('[data-block]').remove();
-            reindex();
-            return;
-        }
+    builder.addEventListener('change', async (event) => {
+        const block = event.target.closest('[data-block]');
+        if (!block) return;
+        if (event.target.matches('[data-bg-mode]')) syncBackground(block);
+        if (event.target.matches('[data-block-hidden]')) syncSummary(block);
 
-        const move = event.target.closest('[data-block-move]');
-        if (move) {
-            const block = move.closest('[data-block]');
-            const dir = move.dataset.blockMove;
-            if (dir === 'up' && block.previousElementSibling) {
-                blocksEl.insertBefore(block, block.previousElementSibling);
-            } else if (dir === 'down' && block.nextElementSibling) {
-                blocksEl.insertBefore(block.nextElementSibling, block);
+        if (event.target.matches('[data-gallery-files]')) {
+            const input = event.target;
+            const files = [...input.files];
+            const btn = block.querySelector('[data-gallery-bulk]');
+            // Fill an empty first row before adding new ones.
+            const emptyRows = [...block.querySelectorAll('[data-item]')].filter((row) => !row.querySelector('[data-item-field="image_url"]')?.value);
+            for (const [n, file] of files.entries()) {
+                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Uploading ${n + 1} of ${files.length}…`;
+                try {
+                    const data = await uploadFile(file);
+                    const row = emptyRows.shift();
+                    if (row) {
+                        const field = row.querySelector('[data-item-field="image_url"]');
+                        field.value = data.url;
+                        field.dispatchEvent(new Event('input', { bubbles: true }));
+                    } else {
+                        addItem(block, 'gallery', { image_url: data.url });
+                    }
+                } catch (err) {
+                    alert(`${file.name}: ${err.message}`);
+                }
             }
-            reindex();
-            return;
-        }
-
-        const addItemBtn = event.target.closest('[data-add-item]');
-        if (addItemBtn) {
-            addItem(addItemBtn.closest('[data-block]'), addItemBtn.dataset.addItem);
-            return;
-        }
-
-        const removeItem = event.target.closest('[data-item-remove]');
-        if (removeItem) {
-            removeItem.closest('[data-item]').remove();
-            reindex();
-            return;
-        }
-
-        const addColumnBtn = event.target.closest('[data-add-column]');
-        if (addColumnBtn) {
-            addColumn(addColumnBtn.closest('[data-block]'));
-            return;
-        }
-
-        const addWidgetBtn = event.target.closest('[data-add-widget]');
-        if (addWidgetBtn) {
-            addWidget(addWidgetBtn.closest('[data-column]'), addWidgetBtn.dataset.addWidget);
-            return;
-        }
-
-        const removeColumn = event.target.closest('[data-column-remove]');
-        if (removeColumn) {
-            removeColumn.closest('[data-column]').remove();
-            reindex();
-            return;
-        }
-
-        const moveColumn = event.target.closest('[data-column-move]');
-        if (moveColumn) {
-            const column = moveColumn.closest('[data-column]');
-            const columns = column.parentElement;
-            const dir = moveColumn.dataset.columnMove;
-            if (dir === 'up' && column.previousElementSibling) {
-                columns.insertBefore(column, column.previousElementSibling);
-            } else if (dir === 'down' && column.nextElementSibling) {
-                columns.insertBefore(column.nextElementSibling, column);
-            }
-            reindex();
-            return;
-        }
-
-        const removeWidget = event.target.closest('[data-widget-remove]');
-        if (removeWidget) {
-            removeWidget.closest('[data-widget]').remove();
-            reindex();
-            return;
-        }
-
-        const moveWidget = event.target.closest('[data-widget-move]');
-        if (moveWidget) {
-            const widget = moveWidget.closest('[data-widget]');
-            const widgets = widget.parentElement;
-            const dir = moveWidget.dataset.widgetMove;
-            if (dir === 'up' && widget.previousElementSibling) {
-                widgets.insertBefore(widget, widget.previousElementSibling);
-            } else if (dir === 'down' && widget.nextElementSibling) {
-                widgets.insertBefore(widget.nextElementSibling, widget);
-            }
-            reindex();
-            return;
+            btn.innerHTML = '<i class="fas fa-upload"></i> Upload several images';
+            input.value = '';
         }
     });
 
+    builder.addEventListener('input', (event) => {
+        const block = event.target.closest('[data-block]');
+        if (block && event.target.matches('[data-block-label], [data-block-field="title"]')) syncSummary(block);
+    });
+
+    blocksEl.querySelectorAll(':scope > [data-block]').forEach(prepare);
+    // Open the first section so the editor never looks empty.
+    blocksEl.querySelector(':scope > [data-block]')?.removeAttribute('data-collapsed');
     reindex();
+};
+
+/* ---------- Header editor live preview ---------- */
+const initHeaderPreview = (form) => {
+    const pv = (sel) => form.querySelector(sel);
+    const header = pv('[data-pv-header]');
+    const announce = pv('[data-pv-announce]');
+    if (!header) return;
+    const set = (key, value) => {
+        if (key === 'name') pv('[data-pv-name]').textContent = value;
+        if (key === 'tagline') pv('[data-pv-tagline]').textContent = value;
+        if (key === 'logo_height') pv('[data-pv-logo]').style.height = `${value}px`;
+        if (key === 'cta') { pv('[data-pv-cta]').textContent = value; pv('[data-pv-cta]').hidden = !value; }
+        if (key === 'announce_text') pv('[data-pv-announce-text]').textContent = value;
+        if (key === 'announce_link') pv('[data-pv-announce-link]').textContent = value;
+    };
+    form.addEventListener('input', (event) => {
+        const el = event.target;
+        if (el.dataset.pvInput) set(el.dataset.pvInput, el.value);
+        if (el.dataset.pvColor) {
+            const v = el.value;
+            if (el.dataset.pvColor === 'header-bg') header.style.background = v || '#ffffff';
+            if (el.dataset.pvColor === 'header-fg') header.style.color = v || '#800000';
+            if (el.dataset.pvColor === 'announce-bg') announce.style.background = v || '#d4af37';
+            if (el.dataset.pvColor === 'announce-fg') announce.style.color = v || '#1b1b1b';
+        }
+    });
+    form.addEventListener('change', (event) => {
+        const el = event.target;
+        if (el.dataset.pvToggle === 'name') pv('[data-pv-name]').hidden = !el.checked;
+        if (el.dataset.pvToggle === 'tagline') pv('[data-pv-tagline]').hidden = !el.checked;
+        if (el.dataset.pvToggle === 'announce') announce.hidden = !el.checked;
+        if (el.matches('[data-pv-logo-file]') && el.files[0]) {
+            const img = pv('[data-pv-logo]');
+            img.src = URL.createObjectURL(el.files[0]);
+            img.hidden = false;
+        }
+    });
+    form.addEventListener('links:changed', () => {
+        pv('[data-pv-links]').innerHTML = '';
+        form.querySelectorAll('[data-link-field="label"]').forEach((input) => {
+            if (!input.value.trim()) return;
+            const span = document.createElement('span');
+            span.textContent = input.value;
+            pv('[data-pv-links]').appendChild(span);
+        });
+    });
+    form.addEventListener('input', (event) => {
+        if (event.target.matches('[data-link-field="label"]')) form.dispatchEvent(new CustomEvent('links:changed'));
+    });
+};
+
+/* ---------- Unsaved-changes guard ---------- */
+const guardUnsaved = (form) => {
+    let dirty = false;
+    form.addEventListener('input', () => { dirty = true; });
+    form.addEventListener('change', () => { dirty = true; });
+    form.addEventListener('submit', () => { dirty = false; });
+    window.addEventListener('beforeunload', (event) => {
+        if (!dirty) return;
+        event.preventDefault();
+        event.returnValue = '';
+    });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    initColors();
+    initMedia();
+    document.querySelectorAll('[data-cms-builder]').forEach(initBuilder);
+    document.querySelectorAll('[data-chrome-editor="header"]').forEach(initHeaderPreview);
+    document.querySelectorAll('form.cms-editor').forEach(guardUnsaved);
 });
