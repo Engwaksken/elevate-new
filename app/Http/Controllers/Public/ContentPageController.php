@@ -15,20 +15,23 @@ class ContentPageController extends Controller
 
     public function privacy(CmsContentService $cms)
     {
-        $content = $cms->published('privacy-policy') ?? ['title' => 'Privacy Policy'];
-        return view('cms.page', compact('content'));
+        return view('legal.document', ['doc' => $cms->legalDocument('privacy-policy')]);
     }
 
     public function terms(CmsContentService $cms)
     {
-        $content = $cms->published('terms') ?? ['title' => 'Terms of Use'];
-        return view('cms.page', compact('content'));
+        return view('legal.document', ['doc' => $cms->legalDocument('terms')]);
     }
 
     public function faqs(CmsContentService $cms)
     {
-        $content = $cms->published('faqs') ?? ['title' => 'Frequently Asked Questions', 'body' => "## How do I access my courses?\nSign in and open My Learning.\n\n## Where can I get help?\nUse Help & Support in your participant dashboard or app."];
-        return view('cms.page', compact('content'));
+        $content = $cms->published('faqs');
+        // Published FAQ items, else the built-in starter list (unless the page was published with text only).
+        $faqs = data_get($content, 'settings.faqs');
+        if (! is_array($faqs) || $faqs === []) {
+            $faqs = filled($content['body'] ?? null) ? [] : CmsContentService::defaultFaqs();
+        }
+        return view('cms.faqs', ['content' => $content ?? ['title' => 'Frequently Asked Questions'], 'faqs' => $faqs]);
     }
 
     public function show(string $slug, CmsContentService $cms)

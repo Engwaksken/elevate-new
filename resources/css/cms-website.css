@@ -122,6 +122,20 @@
 .cms-social-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
 .cms-social-field label i { width: 16px; color: #800000; }
 
+.faq-editor__bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.faq-editor__rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.faq-editor__row { border: 1px solid #e7e0d8; border-radius: 10px; background: #fff; }
+.faq-editor__row[open] { border-color: #d9c4b2; box-shadow: 0 4px 14px rgba(16, 24, 40, .05); }
+.faq-editor__row > summary { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; list-style: none; }
+.faq-editor__row > summary::-webkit-details-marker { display: none; }
+.faq-editor__num { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #f7efe6; color: #800000; font-size: .74rem; font-weight: 800; }
+.faq-editor__q { flex: 1; min-width: 0; overflow: hidden; color: #172033; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; }
+.faq-editor__cat { flex: none; padding: 2px 10px; border-radius: 999px; background: #f3e7d6; color: #800000; font-size: .7rem; font-weight: 800; }
+.faq-editor__actions { flex: none; display: inline-flex; }
+.faq-editor__body { padding: 0 12px 12px; border-top: 1px solid #f1ebe4; }
+.faq-editor__grid { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 12px; margin-top: 12px; }
+@media (max-width: 640px) { .faq-editor__grid { grid-template-columns: 1fr; } .faq-editor__cat { display: none; } }
+
 .cms-savebar { position: sticky; bottom: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 18px; padding: 12px 16px; border: 1px solid #e7e0d8; border-radius: 12px; background: rgba(255, 255, 255, .96); box-shadow: 0 -6px 24px rgba(16, 24, 40, .08); backdrop-filter: blur(6px); }
 .cms-savebar__status { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .cms-savebar__status small { color: #848990; }
@@ -246,3 +260,5 @@ a.cms-gallery__frame:hover img, a.cms-gallery__frame:focus-visible img { transfo
 .footer-social { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
 .footer-social a { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid rgba(255, 255, 255, .3); border-radius: 50%; color: inherit; transition: background .15s; }
 .footer-social a:hover, .footer-social a:focus-visible { background: rgba(255, 255, 255, .15); }
+
+.cms-legal-textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .82rem; line-height: 1.6; }

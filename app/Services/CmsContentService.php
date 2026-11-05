@@ -281,6 +281,118 @@ class CmsContentService
         ];
     }
 
+    public const LEGAL = [
+        'privacy-policy' => [
+            'title' => 'Privacy Policy', 'route' => 'legal.privacy', 'icon' => 'fa-user-shield', 'partial' => 'legal.partials.privacy-body',
+            'intro' => 'This policy explains what personal data ElevateHer360 collects through its website and participant mobile app, why we collect it, who we share it with, how long we keep it, and the choices and rights you have.',
+        ],
+        'terms' => [
+            'title' => 'Terms of Use', 'route' => 'legal.terms', 'icon' => 'fa-file-contract', 'partial' => 'legal.partials.terms-body',
+            'intro' => 'These terms set out the rules for using the ElevateHer360 website and participant mobile app. Please read them together with our Privacy Policy.',
+        ],
+    ];
+
+    /** Starter FAQs (category, question, Markdown answer) that admins edit and publish. */
+    public static function defaultFaqs(): array
+    {
+        $email = config('legal.support_email') ?: 'support@elevateher360.org';
+        return [
+            ['category' => 'Getting started', 'question' => 'What is ElevateHer360?', 'answer' => 'ElevateHer360 is one platform for your learning, mentorship, career development and job journey. With a single account you can take courses, connect with mentors, build your resume, explore jobs and use the digital library.'],
+            ['category' => 'Getting started', 'question' => 'Who can join ElevateHer360?', 'answer' => "There are three ways to take part:\n\n- **Participants** register to learn, get mentored and find opportunities.\n- **Mentors** sign up to guide women in technology.\n- **Employers** register to post jobs and find skilled talent.\n\nChoose your path on the [home page](/#get-started)."],
+            ['category' => 'Getting started', 'question' => 'How do I create an account?', 'answer' => "Select **Register**, fill in your details and submit the form. We then send you an email with a verification link. Open it to confirm your address and activate your account."],
+            ['category' => 'Getting started', 'question' => 'I did not receive my verification email. What should I do?', 'answer' => "Check your spam or junk folder first. If it is not there, sign in and select **Resend verification email** on the verification screen. Make sure you registered with an email address you can access."],
+            ['category' => 'Account & sign-in', 'question' => 'I forgot my password. How do I reset it?', 'answer' => "Select **Sign In**, then **Forgot password?**. Enter the email address on your account and we will send you a link to choose a new password. The link expires after a short time, so use it promptly."],
+            ['category' => 'Account & sign-in', 'question' => 'How do I update my profile details?', 'answer' => 'Sign in and open **Profile** from your dashboard. Keeping your details up to date helps us match you with the right courses, mentors and opportunities.'],
+            ['category' => 'Account & sign-in', 'question' => 'How do I delete my account?', 'answer' => 'You can ask us to delete your account and personal data at any time from the [account deletion page](/account-deletion). Read our [Privacy Policy](/privacy-policy) to see what happens to your data.'],
+            ['category' => 'Learning & certificates', 'question' => 'How do I enrol in a course?', 'answer' => "Browse the [course catalogue](/learning), open a course and follow the instructions to apply or enrol. Some courses open for applications at set times; you will be told when your application is accepted. Your courses then appear under **My Learning**."],
+            ['category' => 'Learning & certificates', 'question' => 'How is my progress tracked?', 'answer' => 'Your lessons, assessments and attendance are recorded as you go. Open a course from **My Learning** to see your progress and what is left to complete.'],
+            ['category' => 'Learning & certificates', 'question' => 'Will I receive a certificate?', 'answer' => "Yes, for courses that award one, once you meet the completion requirements set by the course team. Your certificates appear in your account, where you can download or share them. Each certificate can be verified online by employers and partners."],
+            ['category' => 'Mentorship', 'question' => 'How does mentorship work?', 'answer' => "Open **Mentorship** from your dashboard to find mentors and send a request. Once a mentor accepts, you can agree goals, schedule sessions and track milestones together."],
+            ['category' => 'Mentorship', 'question' => 'How do I become a mentor?', 'answer' => 'Complete the [mentor sign-up form](/mentors/signup). Our team reviews every application and will contact you once your mentor account is approved.'],
+            ['category' => 'Careers & jobs', 'question' => 'How do I apply for jobs?', 'answer' => 'Browse open opportunities on the [jobs page](/jobs), open a job and select **Apply**. You can save jobs to come back to later and follow the status of your applications from your dashboard.'],
+            ['category' => 'Careers & jobs', 'question' => 'Can ElevateHer360 help me build a resume?', 'answer' => 'Yes. The resume builder lets you create professional resumes from templates, keep several versions and download them. Career tools can also help you strengthen your resume and prepare cover letters.'],
+            ['category' => 'Careers & jobs', 'question' => 'How can my organisation post jobs?', 'answer' => 'Register your organisation on the [employer sign-up page](/employers/signup). After approval you can post opportunities and review applicants.'],
+            ['category' => 'Digital library', 'question' => 'What is in the digital library?', 'answer' => 'The [digital library](/library) has curated learning, career and professional development resources. Many can be read online; some downloads need approval, which you can request from the resource page.'],
+            ['category' => 'Mobile app', 'question' => 'Is there a mobile app?', 'answer' => 'Yes. The ElevateHer360 participant mobile app uses the same account as the website, so you can sign in with your existing details.'],
+            ['category' => 'Mobile app', 'question' => 'Can I use the app offline?', 'answer' => 'Some content you have already opened stays available offline, and certain actions are saved on your device and sent to us automatically when you reconnect.'],
+            ['category' => 'Privacy & support', 'question' => 'How is my personal data protected?', 'answer' => 'We collect only what we need to run the platform, protect it with security controls and never sell it. Our [Privacy Policy](/privacy-policy) explains what we collect, why, who we share it with and your rights.'],
+            ['category' => 'Privacy & support', 'question' => 'How do I get help?', 'answer' => "Signed-in participants can use **Help & Support** in their dashboard. You can also email us at [{$email}](mailto:{$email}) and our team will get back to you."],
+        ];
+    }
+
+    /** The built-in (draft) text of a legal page as HTML, used until an admin publishes their own. */
+    public function legalDefaultHtml(string $slug): string
+    {
+        $partial = self::LEGAL[$slug]['partial'] ?? null;
+        return $partial && view()->exists($partial) ? trim(view($partial)->render()) : '';
+    }
+
+    /** The built-in legal text tidied for the editor textarea (no indentation, single blank lines). */
+    public function legalEditorText(string $slug): string
+    {
+        $html = preg_replace('/^[ \t]+/m', '', $this->legalDefaultHtml($slug));
+        return trim(preg_replace("/\n{3,}/", "\n\n", $html));
+    }
+
+    /**
+     * Everything the professional legal layout needs: published CMS text when
+     * there is some, otherwise the built-in draft.
+     */
+    public function legalDocument(string $slug): array
+    {
+        $meta = self::LEGAL[$slug];
+        $content = $this->published($slug);
+        $hasPublished = filled($content['body'] ?? null);
+        $html = $hasPublished ? $this->render($content['body']) : $this->legalDefaultHtml($slug);
+        [$html, $toc] = $this->withHeadingAnchors($html);
+        $publishedAt = $hasPublished ? \App\Models\CmsPage::where('slug', $slug)->value('published_at') : null;
+        return [
+            'slug' => $slug,
+            'title' => trim((string) ($content['title'] ?? '')) ?: $meta['title'],
+            'intro' => trim((string) ($content['summary'] ?? '')) ?: $meta['intro'],
+            'updated' => $publishedAt ? \Illuminate\Support\Carbon::parse($publishedAt)->format('j F Y') : config('legal.last_updated', '30 September 2026'),
+            'version' => config('app.policy_version', '1.0'),
+            'html' => $html,
+            'toc' => $toc,
+            'is_default' => ! $hasPublished,
+            'email' => config('legal.support_email') ?: 'support@elevateher360.org',
+        ];
+    }
+
+    /** Give every <h2> a stable id and return [html, [[id, label], ...]] for a table of contents. */
+    public function withHeadingAnchors(string $html): array
+    {
+        if (trim($html) === '') return ['', []];
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $prev = libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="utf-8" ?><div id="__root">'.$html.'</div>');
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        $root = $dom->getElementById('__root');
+        if (! $root) return [$html, []];
+        $toc = [];
+        $used = [];
+        foreach ($root->getElementsByTagName('h2') as $h2) {
+            $label = trim(preg_replace('/\s+/', ' ', $h2->textContent));
+            if ($label === '') continue;
+            // The built-in text wraps each heading in <section id="...">; reuse that anchor.
+            $parent = $h2->parentNode;
+            if ($parent instanceof \DOMElement && $parent->tagName === 'section' && $parent->getAttribute('id') !== '') {
+                $id = $parent->getAttribute('id');
+            } else {
+                $id = Str::slug(preg_replace('/^\d+[.)]\s*/', '', $label)) ?: 'section';
+                $base = $id;
+                for ($i = 2; isset($used[$id]); $i++) $id = $base.'-'.$i;
+                $h2->setAttribute('id', $id);
+            }
+            $used[$id] = true;
+            $toc[] = [$id, $label];
+        }
+        $out = '';
+        foreach ($root->childNodes as $child) $out .= $dom->saveHTML($child);
+        return [$out, $toc];
+    }
+
     /** Return $raw[$key] when it is one of $allowed, otherwise $default. */
     public static function pick(array $raw, string $key, array $allowed, string $default): string
     {

@@ -23,7 +23,12 @@ class DashboardController extends Controller
     {
         $user=$request->user();
 
-        // Mentors and employers have their own home; send them there.
+        // Mentors, employers and staff have their own home; send them there.
+        // Staff landing here (e.g. from a /dashboard link on the public site)
+        // would otherwise see the participant page without the admin sidebar.
+        if($user->isStaff() && \Illuminate\Support\Facades\Route::has('admin.dashboard')){
+            return redirect()->route('admin.dashboard');
+        }
         if(in_array(\App\Support\RoleShell::roleFor($user),['mentor','employer'],true)){
             return redirect(\App\Support\RoleShell::homeUrl($user) ?? route('home'));
         }

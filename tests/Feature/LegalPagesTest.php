@@ -44,7 +44,7 @@ class LegalPagesTest extends TestCase
 
         $this->get('/privacy-policy')
             ->assertOk()
-            ->assertSee('<h2>Our commitment</h2>', false)
+            ->assertSee('<h2 id="our-commitment">Our commitment</h2>', false)
             ->assertSee('We protect your data.');
     }
 

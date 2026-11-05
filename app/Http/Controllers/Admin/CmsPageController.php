@@ -24,7 +24,7 @@ class CmsPageController extends Controller
 
     public function edit(CmsPage $page)
     {
-        $view = ['site-header' => 'admin.cms.header', 'site-footer' => 'admin.cms.footer'][$page->slug] ?? 'admin.cms.edit';
+        $view = ['site-header' => 'admin.cms.header', 'site-footer' => 'admin.cms.footer', 'faqs' => 'admin.cms.faqs'][$page->slug] ?? 'admin.cms.edit';
         return view($view, compact('page'));
     }
 
@@ -38,7 +38,7 @@ class CmsPageController extends Controller
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'], 'remove_image' => ['nullable', 'boolean'],
             'sections' => ['nullable', 'array', 'max:50'],
             'links' => ['nullable', 'array', 'max:30'], 'header' => ['nullable', 'array'], 'announcement' => ['nullable', 'array'],
-            'footer' => ['nullable', 'array'],
+            'footer' => ['nullable', 'array'], 'faqs' => ['nullable', 'array', 'max:100'],
         ]);
         $sections = $this->parseSections($request->input('sections', []));
         $links = is_array($request->input('links'))
@@ -54,11 +54,15 @@ class CmsPageController extends Controller
             }
             $labels[$key] = $label;
         }
-        if ($data['action'] === 'publish' && ! in_array($page->slug, ['site-header','site-footer','learning','jobs','library','events','mentor-signup','employer-signup','register','login'], true) && blank($data['body'] ?? null) && empty($sections)) {
+        $faqs = $page->slug === 'faqs' && $request->has('faqs_submitted') ? $this->parseFaqs((array) $request->input('faqs', [])) : null;
+        if ($data['action'] === 'publish' && ! in_array($page->slug, ['site-header','site-footer','learning','jobs','library','events','mentor-signup','employer-signup','register','login'], true) && blank($data['body'] ?? null) && empty($sections) && empty($faqs)) {
             throw ValidationException::withMessages(['body' => 'Add page content before publishing.']);
         }
         $attributes = collect($data)->only(['title', 'summary', 'body'])->all();
         $attributes['settings'] = ['links' => $links, 'field_labels' => $labels, 'sections' => $sections, 'button_label' => $data['button_label'] ?? null, 'signup_open' => $request->boolean('signup_open')];
+        if ($page->slug === 'faqs') {
+            $attributes['settings']['faqs'] = $faqs ?? (array) ($page->settings['faqs'] ?? []);
+        }
         if ($page->slug === 'site-header') {
             $attributes['settings']['header'] = $this->parseHeader((array) $request->input('header', []), (array) ($page->settings['header'] ?? []), $request->has('header'));
             $attributes['settings']['announcement'] = $request->has('announcement')
@@ -84,7 +88,18 @@ class CmsPageController extends Controller
 
     public function preview(CmsPage $page)
     {
-        return view('cms.page', ['content' => $page->draft(), 'preview' => true]);
+        $cms = app(CmsContentService::class);
+        $draft = $page->draft();
+        if ($page->slug === 'faqs') {
+            return view('cms.faqs', ['content' => $draft, 'faqs' => (array) data_get($draft, 'settings.faqs', []), 'preview' => true]);
+        }
+        if (array_key_exists($page->slug, CmsContentService::LEGAL)) {
+            $doc = $cms->legalDocument($page->slug);
+            [$html, $toc] = $cms->withHeadingAnchors(filled($draft['body'] ?? null) ? $cms->render($draft['body']) : $cms->legalDefaultHtml($page->slug));
+            $doc = ['html' => $html, 'toc' => $toc, 'title' => $draft['title'] ?: $doc['title'], 'intro' => ($draft['summary'] ?? null) ?: $doc['intro'], 'updated' => 'Draft preview'] + $doc;
+            return view('legal.document', ['doc' => $doc, 'preview' => true]);
+        }
+        return view('cms.page', ['content' => $draft, 'preview' => true]);
     }
 
     public function destroy(CmsPage $page)
@@ -204,6 +219,24 @@ class CmsPageController extends Controller
             }
         }
         return $sections;
+    }
+
+    /** FAQ rows: category, question, Markdown answer. Empty rows are skipped. */
+    private function parseFaqs(array $rows): array
+    {
+        $faqs = [];
+        foreach (array_values($rows) as $row) {
+            if (! is_array($row)) continue;
+            $question = trim(mb_substr(strip_tags((string) ($row['question'] ?? '')), 0, 300));
+            $answer = trim(mb_substr(strip_tags((string) ($row['answer'] ?? '')), 0, 5000));
+            if ($question === '' && $answer === '') continue;
+            if ($question === '' || $answer === '') {
+                throw ValidationException::withMessages(['faqs' => 'Every FAQ needs both a question and an answer.']);
+            }
+            $faqs[] = ['category' => trim(mb_substr(strip_tags((string) ($row['category'] ?? '')), 0, 80)), 'question' => $question, 'answer' => $answer];
+            if (count($faqs) >= 100) break;
+        }
+        return $faqs;
     }
 
     private function parseLinksText(string $text): array
