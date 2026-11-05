@@ -32,6 +32,15 @@
         <label>Admin label <small>(only shown here, helps you find sections)</small></label>
         <input name="{{ $n('label') }}" value="{{ $section['label'] ?? '' }}" data-block-field="label" data-block-label maxlength="80" placeholder="e.g. Main banner">
 
+        @if(in_array($type, ['hero', 'features', 'stats', 'cta'], true))
+            <div class="cms-design">
+                <label>Design</label>
+                <select name="{{ $n('design') }}" data-block-field="design">
+                    <option value="default" @selected(($section['design'] ?? 'default') !== 'classic')>Modern</option>
+                    <option value="classic" @selected(($section['design'] ?? '') === 'classic')>Original home style</option>
+                </select>
+            </div>
+        @endif
         @if($type === 'hero')
             <div class="cms-grid-2">
                 <div><label>Eyebrow</label><input name="{{ $n('eyebrow') }}" value="{{ $section['eyebrow'] ?? '' }}" data-block-field="eyebrow"></div>
@@ -47,6 +56,19 @@
             <label>Side image (optional)</label>
             @include('cms.fields.media', ['name' => $n('image_url'), 'value' => $section['image_url'] ?? '', 'attr' => 'data-block-field', 'field' => 'image_url'])
             <span class="cms-hint">For a full background photo or video behind the text, use <strong>Background &amp; layout</strong> below.</span>
+            <fieldset class="cms-subgroup">
+                <legend>Side card with numbered steps <small>(original home style; replaces the side image)</small></legend>
+                <div class="cms-grid-2">
+                    <div><label>Card eyebrow</label><input name="{{ $n('panel_eyebrow') }}" value="{{ $section['panel_eyebrow'] ?? '' }}" data-block-field="panel_eyebrow"></div>
+                    <div><label>Card title</label><input name="{{ $n('panel_title') }}" value="{{ $section['panel_title'] ?? '' }}" data-block-field="panel_title"></div>
+                </div>
+                <div class="cms-items" data-items>
+                    @foreach($section['items'] ?? [] as $j => $item)
+                        @include('cms.builder-item', ['kind' => 'steps', 'item' => $item, 'ipath' => "sections[{$index}][items][{$j}]"])
+                    @endforeach
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" data-add-item="steps"><i class="fas fa-plus"></i> Add step</button>
+            </fieldset>
         @elseif($type === 'text')
             <label>Heading</label><input name="{{ $n('title') }}" value="{{ $section['title'] ?? '' }}" data-block-field="title">
             <label>Content (Markdown)</label><textarea name="{{ $n('content') }}" data-block-field="content" rows="6">{{ $section['content'] ?? '' }}</textarea>
@@ -57,6 +79,7 @@
             @include('cms.fields.media', ['name' => $n('image_url'), 'value' => $section['image_url'] ?? '', 'attr' => 'data-block-field', 'field' => 'image_url'])
             <label class="cms-check"><input type="checkbox" name="{{ $n('reverse') }}" value="1" data-block-field="reverse" @checked(!empty($section['reverse']))> Image on the right</label>
         @elseif($type === 'features')
+            <label>Eyebrow (small text above the heading)</label><input name="{{ $n('eyebrow') }}" value="{{ $section['eyebrow'] ?? '' }}" data-block-field="eyebrow">
             <label>Heading</label><input name="{{ $n('title') }}" value="{{ $section['title'] ?? '' }}" data-block-field="title">
             <label>Intro</label><textarea name="{{ $n('intro') }}" data-block-field="intro" rows="2">{{ $section['intro'] ?? '' }}</textarea>
             <div class="cms-items" data-items>
@@ -66,7 +89,9 @@
             </div>
             <button type="button" class="btn btn-outline btn-sm" data-add-item="features"><i class="fas fa-plus"></i> Add feature</button>
         @elseif($type === 'stats')
+            <label>Eyebrow (small text above the heading)</label><input name="{{ $n('eyebrow') }}" value="{{ $section['eyebrow'] ?? '' }}" data-block-field="eyebrow">
             <label>Heading</label><input name="{{ $n('title') }}" value="{{ $section['title'] ?? '' }}" data-block-field="title">
+            <label>Intro</label><textarea name="{{ $n('intro') }}" data-block-field="intro" rows="2">{{ $section['intro'] ?? '' }}</textarea>
             <div class="cms-items" data-items>
                 @foreach($section['items'] ?? [['value' => '', 'label' => '']] as $j => $item)
                     @include('cms.builder-item', ['kind' => 'stats', 'item' => $item, 'ipath' => "sections[{$index}][items][{$j}]"])
@@ -74,11 +99,14 @@
             </div>
             <button type="button" class="btn btn-outline btn-sm" data-add-item="stats"><i class="fas fa-plus"></i> Add statistic</button>
         @elseif($type === 'cta')
+            <label>Eyebrow (small text above the heading)</label><input name="{{ $n('eyebrow') }}" value="{{ $section['eyebrow'] ?? '' }}" data-block-field="eyebrow">
             <label>Heading</label><input name="{{ $n('title') }}" value="{{ $section['title'] ?? '' }}" data-block-field="title">
             <label>Text</label><textarea name="{{ $n('content') }}" data-block-field="content" rows="2">{{ $section['content'] ?? '' }}</textarea>
             <div class="cms-grid-2">
                 <div><label>Button label</label><input name="{{ $n('button_label') }}" value="{{ $section['button_label'] ?? '' }}" data-block-field="button_label"></div>
                 <div><label>Button URL</label><input name="{{ $n('button_url') }}" value="{{ $section['button_url'] ?? '' }}" data-block-field="button_url"></div>
+                <div><label>Second button label</label><input name="{{ $n('secondary_label') }}" value="{{ $section['secondary_label'] ?? '' }}" data-block-field="secondary_label"></div>
+                <div><label>Second button URL</label><input name="{{ $n('secondary_url') }}" value="{{ $section['secondary_url'] ?? '' }}" data-block-field="secondary_url"></div>
             </div>
         @elseif($type === 'gallery')
             <label>Heading (optional)</label><input name="{{ $n('title') }}" value="{{ $section['title'] ?? '' }}" data-block-field="title">

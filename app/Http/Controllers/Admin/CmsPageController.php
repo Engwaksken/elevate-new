@@ -109,6 +109,19 @@ class CmsPageController extends Controller
                 return $cms->safeUrl($value) ? $value : '';
             };
             $section = ['type' => $type];
+            // Optional fields are only stored when used, so older blocks keep their exact shape.
+            $extra = function (array $fields) use (&$section) {
+                foreach ($fields as $key => $value) {
+                    if ($value !== '' && $value !== [] && $value !== null) $section[$key] = $value;
+                }
+            };
+            $design = CmsContentService::pick($raw, 'design', ['default', 'classic'], 'default');
+            $safeItemUrls = function (array $items) use ($cms) {
+                return array_map(function ($item) use ($cms) {
+                    if (isset($item['url']) && ! $cms->safeUrl($item['url'])) $item['url'] = '';
+                    return array_filter($item, fn ($v, $k) => ! in_array($k, ['url', 'link_label'], true) || $v !== '', ARRAY_FILTER_USE_BOTH);
+                }, $items);
+            };
             if ($type === 'hero') {
                 $section += [
                     'eyebrow' => $short('eyebrow', 100), 'title' => $short('title'), 'text' => $text('text', 2000),
@@ -116,19 +129,31 @@ class CmsPageController extends Controller
                     'secondary_label' => $short('secondary_label', 100), 'secondary_url' => $url('secondary_url'),
                     'image_url' => $url('image_url'),
                 ];
+                $extra([
+                    'design' => $design === 'classic' ? 'classic' : '',
+                    'panel_eyebrow' => $short('panel_eyebrow', 100), 'panel_title' => $short('panel_title'),
+                    'items' => $this->parseItems($raw['items'] ?? [], ['title' => 100, 'text' => 300], 8),
+                ]);
             } elseif ($type === 'text') {
                 $section += ['title' => $short('title'), 'content' => $text('content')];
             } elseif ($type === 'image_text') {
                 $section += ['title' => $short('title'), 'content' => $text('content'), 'image_url' => $url('image_url'), 'reverse' => ! empty($raw['reverse'])];
             } elseif ($type === 'cta') {
                 $section += ['title' => $short('title'), 'content' => $text('content', 2000), 'button_label' => $short('button_label', 100), 'button_url' => $url('button_url')];
+                $extra([
+                    'design' => $design === 'classic' ? 'classic' : '', 'eyebrow' => $short('eyebrow', 100),
+                    'secondary_label' => $short('secondary_label', 100), 'secondary_url' => $url('secondary_url'),
+                ]);
             } elseif ($type === 'features') {
                 $section['title'] = $short('title');
                 $section['intro'] = $text('intro', 2000);
-                $section['items'] = $this->parseItems($raw['items'] ?? [], ['icon' => 80, 'title' => 190, 'text' => 1000], 12);
+                $section['items'] = $safeItemUrls($this->parseItems($raw['items'] ?? [], ['icon' => 80, 'title' => 190, 'text' => 1000, 'url' => 500, 'link_label' => 100], 12));
+                $extra(['design' => $design === 'classic' ? 'classic' : '', 'eyebrow' => $short('eyebrow', 100)]);
             } elseif ($type === 'stats') {
                 $section['title'] = $short('title');
-                $section['items'] = $this->parseItems($raw['items'] ?? [], ['value' => 80, 'label' => 190], 8);
+                $section['items'] = array_map(fn ($i) => array_filter($i, fn ($v, $k) => in_array($k, ['value', 'label'], true) || $v !== '', ARRAY_FILTER_USE_BOTH),
+                    $this->parseItems($raw['items'] ?? [], ['value' => 80, 'label' => 190, 'icon' => 80, 'text' => 300], 8));
+                $extra(['design' => $design === 'classic' ? 'classic' : '', 'eyebrow' => $short('eyebrow', 100), 'intro' => $text('intro', 2000)]);
             } elseif ($type === 'section') {
                 $columns = $this->parseColumns($raw['columns'] ?? []);
                 if ($columns === []) continue;

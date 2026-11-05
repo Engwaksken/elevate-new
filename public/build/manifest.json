@@ -20,7 +20,7 @@
     "src": "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs"
   },
   "resources/css/app.css": {
-    "file": "assets/app-B-_JmgAG.css",
+    "file": "assets/app-DiFtCOht.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -29,7 +29,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-CLrsYFRV.js",
+    "file": "assets/app-udlxAi7x.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

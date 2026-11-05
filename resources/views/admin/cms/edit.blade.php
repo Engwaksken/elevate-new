@@ -12,7 +12,7 @@
     </div>
     <div class="admin-page-actions">@if($liveUrl)<a href="{{ $liveUrl }}" class="btn btn-outline" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i> View live page</a>@endif</div>
 </div>
-@if(in_array($page->slug, ['home','privacy-policy','terms'], true) && ! $page->published_at)<div class="warning-box">Publishing this page replaces its built-in content. Add the complete page before publishing.</div>@endif
+@if(in_array($page->slug, ['privacy-policy','terms'], true) && ! $page->published_at)<div class="warning-box">Publishing this page replaces its built-in content. Add the complete page before publishing.</div>@endif
 
 <form method="POST" action="{{ route('admin.cms.update', $page) }}" enctype="multipart/form-data" class="cms-editor">@csrf @method('PUT')
 <div class="admin-panel">
@@ -25,6 +25,12 @@
 
 <div class="admin-panel">
     @php($sections = old('sections', data_get($page->settings, 'sections', [])))
+    {{-- A home page without sections starts from the built-in page, so publishing keeps the existing content. --}}
+    @php($loadedOriginal = $isHome && empty($sections) && ! old('sections'))
+    @if($loadedOriginal)
+        @php($sections = \App\Services\CmsContentService::defaultHomeSections())
+        <div class="info-box" style="margin-bottom:12px">The original home page content and layout have been loaded below. Edit anything, then save or publish.</div>
+    @endif
     @include('cms.builder', ['sections' => $sections, 'starter' => $isHome])
 </div>
 

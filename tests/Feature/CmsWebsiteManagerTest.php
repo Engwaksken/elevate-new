@@ -38,9 +38,52 @@ class CmsWebsiteManagerTest extends TestCase
             $this->get(route('admin.cms.edit', CmsPage::where('slug', $slug)->first()))->assertOk();
         }
         $this->get(route('admin.cms.edit', CmsPage::where('slug', 'home')->first()))
-            ->assertSee('Background &amp; layout', false)->assertSee('Image grid')->assertSee('Load starter home page');
+            ->assertSee('Background &amp; layout', false)->assertSee('Image grid')->assertSee('Load original home page');
         $this->get(route('admin.cms.edit', CmsPage::where('slug', 'site-header')->first()))->assertSee('Announcement bar')->assertSee('Header logo');
         $this->get(route('admin.cms.edit', CmsPage::where('slug', 'site-footer')->first()))->assertSee('Social media')->assertSee('Link columns');
+    }
+
+    public function test_original_home_page_loads_into_editor_and_publishes_unchanged(): void
+    {
+        $this->admin();
+        $home = CmsPage::where('slug', 'home')->first();
+        $this->get(route('admin.cms.edit', $home))->assertOk()
+            ->assertSee('The original home page content and layout have been loaded')
+            ->assertSee('value="One participant. One platform."', false)
+            ->assertSee('value="From registration to outcomes"', false)
+            ->assertSee('Load original home page');
+
+        // Publishing exactly what the editor shows reproduces the built-in page.
+        $published = $this->publish('home', ['sections' => \App\Services\CmsContentService::defaultHomeSections()]);
+        $sections = $published->published_data['settings']['sections'];
+        $this->assertCount(4, $sections);
+        foreach (\App\Services\CmsContentService::defaultHomeSections() as $i => $expected) {
+            foreach (array_intersect(['type', 'design', 'title', 'items'], array_keys($expected)) as $key) {
+                $this->assertSame($expected[$key], $sections[$i][$key], "section {$i} {$key}");
+            }
+        }
+        $this->assertSame('platform', $sections[1]['style']['anchor']);
+
+        auth()->logout();
+        $this->get('/')->assertOk()
+            ->assertSee('class="hero full-width-section', false)
+            ->assertSee('Learn, connect, build your career and move into opportunity.')
+            ->assertSee('<a href="#get-started" class="btn btn-primary btn-lg">Get Started</a>', false)
+            ->assertSee('<div class="journey-card">', false)
+            ->assertSee('Career coaching, skills and resume building')
+            ->assertSee('id="get-started"', false)
+            ->assertSee('id="platform"', false)
+            ->assertSee('<a href="/mentorship" class="feature-link">', false)
+            ->assertSee('Browse Library')
+            ->assertSee('impact-card-value', false)
+            ->assertSee('M&amp;E', false)
+            ->assertSee('<div class="cta-box">', false)
+            ->assertSee('Create Account');
+
+        // Once sections are saved the editor shows them instead of reloading the original.
+        $this->admin();
+        $this->publish('home', ['sections' => [['type' => 'text', 'title' => 'Only this', 'content' => 'x']]]);
+        $this->get(route('admin.cms.edit', $home))->assertOk()->assertDontSee('have been loaded')->assertSee('value="Only this"', false);
     }
 
     public function test_sections_render_image_video_colour_and_gradient_backgrounds(): void

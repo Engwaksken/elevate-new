@@ -132,6 +132,8 @@ class CmsContentService
         $url = trim((string) $url);
         if ($url === '') return true;
         if (preg_match('#^/(?!/)[A-Za-z0-9/_.?=&%\#-]*$#', $url)) return true;
+        // In-page anchors such as #platform (section anchor IDs).
+        if (preg_match('/^#[A-Za-z][A-Za-z0-9_-]*$/', $url)) return true;
         if (filter_var($url, FILTER_VALIDATE_URL)) {
             return in_array(strtolower(parse_url($url, PHP_URL_SCHEME) ?? ''), ['https', 'http'], true);
         }
@@ -194,6 +196,70 @@ class CmsContentService
             return $embed.'?autoplay=1&mute=1&loop=1&playlist='.$m[1].'&controls=0&showinfo=0&modestbranding=1&playsinline=1&rel=0';
         }
         return $embed.'?background=1&autoplay=1&muted=1&loop=1';
+    }
+
+    /**
+     * The built-in home page (resources/views/home.blade.php) as editable
+     * sections, so admins start from the existing content and layout.
+     */
+    public static function defaultHomeSections(): array
+    {
+        $none = ['bg' => 'none'];
+        return [
+            [
+                'type' => 'hero', 'design' => 'classic', 'label' => 'Main banner',
+                'eyebrow' => 'Your complete growth journey',
+                'title' => 'Learn, connect, build your career and move into opportunity.',
+                'text' => 'ElevateHer360 brings training, mentorship, career development, employment opportunities and digital resources together under one account.',
+                'primary_label' => 'Get Started', 'primary_url' => '#get-started',
+                'secondary_label' => 'Explore the Platform', 'secondary_url' => '#platform',
+                'image_url' => '',
+                'panel_eyebrow' => 'One connected journey', 'panel_title' => 'From registration to outcomes',
+                'items' => [
+                    ['title' => 'Learn', 'text' => 'Courses, assessments, attendance and certificates'],
+                    ['title' => 'Connect', 'text' => 'Mentors, goals, sessions and milestones'],
+                    ['title' => 'Prepare', 'text' => 'Career coaching, skills and resume building'],
+                    ['title' => 'Progress', 'text' => 'Job applications, employment and outcome tracking'],
+                ],
+                'style' => $none,
+            ],
+            [
+                'type' => 'features', 'design' => 'classic', 'label' => 'Platform features',
+                'eyebrow' => 'Everything in one place', 'title' => 'One participant. One platform.',
+                'intro' => 'Your learning, mentorship, career and employment journey stays connected to one profile.',
+                'items' => [
+                    ['icon' => 'fa-graduation-cap', 'title' => 'Learning', 'text' => 'Explore courses, lessons, assessments, attendance, progress tracking and certificates.', 'url' => '/learning', 'link_label' => 'Explore Learning'],
+                    ['icon' => 'fa-handshake', 'title' => 'Mentorship', 'text' => 'Connect with mentors, manage goals, sessions, milestones and action plans.', 'url' => '/mentorship', 'link_label' => 'Open Mentorship'],
+                    ['icon' => 'fa-briefcase', 'title' => 'Jobs', 'text' => 'Discover opportunities, save jobs, apply and track your application journey.', 'url' => '/jobs', 'link_label' => 'View Jobs'],
+                    ['icon' => 'fa-book-open', 'title' => 'Digital Library', 'text' => 'Access curated learning, career and professional development resources.', 'url' => '/library', 'link_label' => 'Browse Library'],
+                    ['icon' => 'fa-compass', 'title' => 'Career Development', 'text' => 'Strengthen career readiness, interview skills and workplace preparation.', 'url' => '/career/resumes', 'link_label' => 'Build Your Career'],
+                    ['icon' => 'fa-file-lines', 'title' => 'Resume Builder', 'text' => 'Build and manage professional resumes for job and career opportunities.', 'url' => '/career/resumes', 'link_label' => 'Build Resume'],
+                    ['icon' => 'fa-calendar-days', 'title' => 'Calendar', 'text' => 'Keep training, mentorship, deadlines and interview dates organised.', 'url' => '/dashboard', 'link_label' => 'View Calendar'],
+                    ['icon' => 'fa-chart-line', 'title' => 'Your Progress', 'text' => 'Follow achievements across learning, mentorship, jobs and employment outcomes.', 'url' => '/dashboard', 'link_label' => 'View Progress'],
+                ],
+                'style' => $none + ['anchor' => 'platform'],
+            ],
+            [
+                'type' => 'stats', 'design' => 'classic', 'label' => 'Impact',
+                'eyebrow' => 'Designed for measurable impact', 'title' => 'Connecting programme delivery to participant outcomes.',
+                'intro' => 'ElevateHer360 provides a connected view from participant registration and training through mentorship, career development, employment and self-employment outcomes.',
+                'items' => [
+                    ['value' => 'One', 'label' => 'Identity', 'icon' => 'fa-user', 'text' => 'One participant profile across the platform.'],
+                    ['value' => '360', 'label' => 'Journey', 'icon' => 'fa-arrows-rotate', 'text' => 'Connected learning-to-opportunity journey.'],
+                    ['value' => 'RBAC', 'label' => 'Access', 'icon' => 'fa-shield-halved', 'text' => 'Secure role-based access control.'],
+                    ['value' => 'M&E', 'label' => 'Results', 'icon' => 'fa-chart-column', 'text' => 'Outcome tracking.'],
+                ],
+                'style' => $none + ['anchor' => 'impact'],
+            ],
+            [
+                'type' => 'cta', 'design' => 'classic', 'label' => 'Closing call to action',
+                'eyebrow' => 'Take the next step', 'title' => 'Ready to begin your ElevateHer360 journey?',
+                'content' => 'Create one participant account for learning, mentorship, careers, jobs and digital resources.',
+                'button_label' => 'Create Account', 'button_url' => '/register',
+                'secondary_label' => 'Sign In', 'secondary_url' => '/login',
+                'style' => $none,
+            ],
+        ];
     }
 
     /** Return $raw[$key] when it is one of $allowed, otherwise $default. */

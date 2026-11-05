@@ -305,9 +305,15 @@ const initBuilder = (builder) => {
         if (t.closest('[data-expand-all]')) return blocksEl.querySelectorAll('[data-block]').forEach((b) => b.removeAttribute('data-collapsed'));
         if (t.closest('[data-collapse-all]')) return blocksEl.querySelectorAll('[data-block]').forEach((b) => b.setAttribute('data-collapsed', ''));
 
-        if (t.closest('[data-load-preset]')) {
+        const presetBtn = t.closest('[data-load-preset]');
+        if (presetBtn) {
             const preset = builder.parentElement.querySelector('[data-preset]') || document.querySelector('[data-preset]');
             if (!preset) return;
+            const existing = blocksEl.querySelectorAll(':scope > [data-block]');
+            if (existing.length) {
+                if (!confirm('Replace the current sections with the original home page content and layout? Nothing changes on the live site until you save or publish.')) return;
+                existing.forEach((b) => b.remove());
+            }
             [...preset.content.children].forEach((node, i) => appendBlock(node.cloneNode(true), { open: i === 0 }));
             return;
         }
