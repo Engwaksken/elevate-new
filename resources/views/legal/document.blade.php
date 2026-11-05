@@ -38,16 +38,17 @@
 
     <div class="legal-doc__wrap legal-doc__layout">
         @if(count($doc['toc']) > 1)
-            <aside class="legal-doc__toc" aria-label="On this page">
-                <details open data-legal-toc>
-                    <summary>On this page</summary>
+            {{-- Contents sit above the text (collapsed) so the document uses the full width. --}}
+            <nav class="legal-doc__toc" aria-label="On this page">
+                <details data-legal-toc>
+                    <summary><i class="fas fa-list-ol" aria-hidden="true"></i> On this page <span>{{ count($doc['toc']) }} sections</span></summary>
                     <ol>
                         @foreach($doc['toc'] as [$id, $label])
                             <li><a href="#{{ $id }}" data-toc-link="{{ $id }}">{{ preg_replace('/^\d+[.)]\s*/', '', $label) }}</a></li>
                         @endforeach
                     </ol>
                 </details>
-            </aside>
+            </nav>
         @endif
 
         <article class="legal-doc__body" data-legal-body>
@@ -85,8 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const links = [...document.querySelectorAll('[data-toc-link]')];
     const top = document.querySelector('[data-legal-top]');
     const toc = document.querySelector('[data-legal-toc]');
-    // Small screens: start the contents list collapsed.
-    if (toc && window.matchMedia('(max-width: 960px)').matches) toc.removeAttribute('open');
+    // Jumping to a section closes the contents box so the text is in view.
+    links.forEach((a) => a.addEventListener('click', () => toc?.removeAttribute('open')));
     if (links.length && 'IntersectionObserver' in window) {
         const targets = links.map((a) => document.getElementById(a.dataset.tocLink)).filter(Boolean);
         const observer = new IntersectionObserver((entries) => {
