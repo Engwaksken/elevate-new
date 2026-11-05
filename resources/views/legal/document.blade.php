@@ -14,8 +14,7 @@
 <div class="legal-doc">
     @if($preview ?? false)<div class="container"><div class="warning-box" style="margin:16px 0">Draft preview - this content is not necessarily published.</div></div>@endif
     <header class="legal-doc__hero">
-        <div class="container">
-            <nav class="legal-doc__crumbs" aria-label="Breadcrumb"><a href="{{ route('home') }}">Home</a><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Legal</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span aria-current="page">{{ $doc['title'] }}</span></nav>
+        <div class="legal-doc__wrap">
             <div class="legal-doc__hero-row">
                 <span class="legal-doc__icon" aria-hidden="true"><i class="fas {{ $meta['icon'] }}"></i></span>
                 <div>
@@ -37,7 +36,7 @@
         </div>
     </header>
 
-    <div class="container legal-doc__layout">
+    <div class="legal-doc__wrap legal-doc__layout">
         @if(count($doc['toc']) > 1)
             <aside class="legal-doc__toc" aria-label="On this page">
                 <details open data-legal-toc>
