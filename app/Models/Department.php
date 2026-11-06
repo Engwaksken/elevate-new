@@ -4,6 +4,7 @@ namespace App\Models;
 use App\Models\Concerns\SelectableListValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Department extends Model
@@ -26,6 +27,11 @@ class Department extends Model
     public function head(): BelongsTo
     {
         return $this->belongsTo(User::class,'head_user_id');
+    }
+
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class);
     }
 
     public function employees(): HasMany

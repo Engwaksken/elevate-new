@@ -6,4 +6,5 @@ class Branch extends Model {
     protected $fillable=['name','code','district','country','is_active'];
     protected $casts=['is_active'=>'boolean'];
     public function cohorts(): BelongsToMany { return $this->belongsToMany(Cohort::class); }
+    public function departments(): BelongsToMany { return $this->belongsToMany(Department::class); }
 }
