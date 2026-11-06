@@ -43,6 +43,9 @@
                 </div>
 
                 @include('partials.cms-intro', ['slug' => 'login'])
+                @if(session('success'))
+                    <div class="alert alert-success" role="status">{{ session('success') }}</div>
+                @endif
                 @if(session('status'))
                     <div class="alert alert-success">{{ session('status') }}</div>
                 @endif
