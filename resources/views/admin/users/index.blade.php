@@ -28,15 +28,60 @@
 </div>
 </div>
 
+@php
+    $selectedBranch = $isParticipantsView && request('branch_id')
+        ? $branches->firstWhere('id', (int) request('branch_id'))
+        : null;
+    $scopeLabel = $selectedBranch ? ' · '.$selectedBranch->name : '';
+    $statCards = $isParticipantsView
+        ? [
+            ['total', 'Total Participants', 'fa-user-graduate'],
+            ['today', 'Registered Today', 'fa-calendar-day'],
+            ['month', 'Registered This Month ('.now()->format('M Y').')', 'fa-calendar-week'],
+            ['year', 'Registered This Year ('.now()->format('Y').')', 'fa-calendar'],
+            ['active', 'Active', 'fa-user-check'],
+            ['inactive', 'Inactive / Pending', 'fa-user-clock'],
+        ]
+        : [
+            ['total','Total Users','fa-users'],
+            ['participants','Participants','fa-user-graduate'],
+            ['staff','Staff','fa-user-tie'],
+            ['mentors','Mentors','fa-handshake-angle'],
+            ['employers','Employers','fa-building'],
+            ['inactive','Inactive / Pending','fa-user-clock'],
+        ];
+@endphp
+
+@if($isParticipantsView && !empty($branchStats))
+@php
+    $branchLink = fn ($id) => route('admin.participants.index', array_filter(
+        array_merge(request()->except(['page', 'branch_id']), ['branch_id' => $id]),
+        fn ($v) => $v !== null && $v !== ''
+    ));
+    $activeStyle = 'border-color:var(--admin-primary,#b42318);box-shadow:0 0 0 2px rgba(180,35,24,.15);';
+@endphp
+<div style="margin:6px 0 10px;color:#475467;font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em">Participants by Branch</div>
 <div class="admin-stats-grid compact">
-@foreach([
-['total','Total Users','fa-users'],
-['participants','Participants','fa-user-graduate'],
-['staff','Staff','fa-user-tie'],
-['mentors','Mentors','fa-handshake-angle'],
-['employers','Employers','fa-building'],
-['inactive','Inactive / Pending','fa-user-clock']
-] as [$key,$label,$icon])
+    <a href="{{ $branchLink(null) }}" class="admin-stat" style="text-decoration:none;color:inherit;{{ $selectedBranch ? '' : $activeStyle }}">
+        <span class="admin-stat-icon"><i class="fas fa-sitemap"></i></span>
+        <div><small>All Branches</small><strong>{{ number_format($branchStats['all']) }}</strong></div>
+    </a>
+    @foreach($branchStats['items'] as $item)
+        @continue($selectedBranch && $selectedBranch->id !== $item['branch']->id)
+        <a href="{{ $branchLink($item['branch']->id) }}" class="admin-stat" style="text-decoration:none;color:inherit;{{ $selectedBranch ? $activeStyle : '' }}" title="Show participants in {{ $item['branch']->name }}">
+            <span class="admin-stat-icon"><i class="fas fa-location-dot"></i></span>
+            <div>
+                <small>{{ $item['branch']->name }}@unless($item['branch']->is_active) (inactive)@endunless</small>
+                <strong>{{ number_format($item['count']) }}</strong>
+            </div>
+        </a>
+    @endforeach
+</div>
+<div style="margin:6px 0 10px;color:#475467;font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em">Registrations{{ $scopeLabel }}</div>
+@endif
+
+<div class="admin-stats-grid compact">
+@foreach($statCards as [$key,$label,$icon])
 <div class="admin-stat">
     <span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span>
     <div><small>{{ $label }}</small><strong>{{ number_format($stats[$key] ?? 0) }}</strong></div>

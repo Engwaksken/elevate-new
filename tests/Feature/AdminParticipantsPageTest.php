@@ -130,4 +130,48 @@ class AdminParticipantsPageTest extends TestCase
             ->assertOk()
             ->assertSee('Course Calls');
     }
+
+    public function test_participants_page_shows_registration_and_branch_statistics(): void
+    {
+        $kampala = \App\Models\Branch::create(['name' => 'Kampala Hub', 'code' => 'KLA', 'is_active' => true]);
+        $gulu = \App\Models\Branch::create(['name' => 'Gulu Hub', 'code' => 'GUL', 'is_active' => true]);
+
+        $today = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
+        $today->branches()->attach($kampala);
+
+        $lastYear = User::factory()->create(['user_type' => 'participant', 'status' => 'pending']);
+        $lastYear->forceFill(['created_at' => now()->subYear()])->save();
+        $lastYear->branches()->attach($gulu);
+
+        User::factory()->create(['user_type' => 'employer', 'status' => 'active']);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('admin.participants.index'))
+            ->assertOk()
+            ->assertSee('Participants by Branch')
+            ->assertSee('Kampala Hub')
+            ->assertSee('Gulu Hub')
+            ->assertSee('Registered Today')
+            ->assertSee('Registered This Month')
+            ->assertSee('Registered This Year')
+            ->assertDontSee('Employers');
+
+        $stats = $response->viewData('stats');
+        $this->assertSame(2, $stats['total']);
+        $this->assertSame(1, $stats['today']);
+        $this->assertSame(1, $stats['year']);
+        $this->assertSame(1, $stats['inactive']);
+
+        $branchStats = $response->viewData('branchStats');
+        $this->assertSame(2, $branchStats['all']);
+        $this->assertSame([1, 1], $branchStats['items']->pluck('count')->all());
+
+        $filtered = $this->actingAs($this->admin())
+            ->get(route('admin.participants.index', ['branch_id' => $gulu->id]))
+            ->assertOk();
+
+        $this->assertSame(1, $filtered->viewData('stats')['total']);
+        $this->assertSame(0, $filtered->viewData('stats')['today']);
+        $this->assertSame(['Gulu Hub', 'Kampala Hub'], $filtered->viewData('branchStats')['items']->pluck('branch.name')->all());
+    }
 }

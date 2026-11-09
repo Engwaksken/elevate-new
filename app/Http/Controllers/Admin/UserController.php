@@ -59,9 +59,7 @@ class UserController extends Controller
         }
 
         if ($branchId = $request->integer('branch_id')) {
-            $query->where(fn ($q) => $q
-                ->whereHas('branches', fn ($b) => $b->whereKey($branchId))
-                ->orWhereHas('profile', fn ($p) => $p->where('branch_id', $branchId)));
+            $this->scopeToBranch($query, $branchId);
         }
 
         if ($courseId = $request->integer('course_id')) {
@@ -96,22 +94,77 @@ class UserController extends Controller
             ? (int) $request->get('per_page')
             : 20;
 
-        return view('admin.users.index', [
-            'forcedType' => $forcedType,
-            'users' => $query->paginate($perPage)->withQueryString(),
-            'roles' => Role::orderBy('name')->get(),
-            'branches' => Branch::orderBy('name')->get(['id','name','code','is_active']),
-            'courses' => Course::orderBy('title')->get(['id','title','code']),
-            'cohorts' => Cohort::orderBy('name')->get(['id','name']),
-            'stats' => [
+        $branches = Branch::orderBy('name')->get(['id','name','code','is_active']);
+
+        if ($forcedType === 'participant') {
+            [$stats, $branchStats] = $this->participantStats($branches, $branchId ?: null);
+        } else {
+            $branchStats = null;
+            $stats = [
                 'total' => User::count(),
                 'participants' => User::where('user_type','participant')->count(),
                 'staff' => User::where('user_type','staff')->count(),
                 'mentors' => User::where('user_type','mentor')->count(),
                 'employers' => User::where('user_type','employer')->count(),
                 'inactive' => User::whereIn('status',['inactive','suspended','pending'])->count(),
-            ],
+            ];
+        }
+
+        return view('admin.users.index', [
+            'forcedType' => $forcedType,
+            'users' => $query->paginate($perPage)->withQueryString(),
+            'roles' => Role::orderBy('name')->get(),
+            'branches' => $branches,
+            'courses' => Course::orderBy('title')->get(['id','title','code']),
+            'cohorts' => Cohort::orderBy('name')->get(['id','name']),
+            'stats' => $stats,
+            'branchStats' => $branchStats,
         ]);
+    }
+
+    /**
+     * A participant belongs to a branch through their profile, or (for older
+     * accounts) through the branch pivot. Keep this in one place so the list
+     * filter and the statistics cards always agree.
+     */
+    private function scopeToBranch($query, int $branchId)
+    {
+        return $query->where(fn ($q) => $q
+            ->whereHas('branches', fn ($b) => $b->whereKey($branchId))
+            ->orWhereHas('profile', fn ($p) => $p->where('branch_id', $branchId)));
+    }
+
+    /**
+     * Statistics for the Participants page. The headline cards follow the
+     * branch filter; the branch cards always show every branch's total.
+     */
+    private function participantStats($branches, ?int $branchId): array
+    {
+        $base = function () use ($branchId) {
+            $q = User::where('user_type', 'participant');
+            return $branchId ? $this->scopeToBranch($q, $branchId) : $q;
+        };
+
+        $now = now();
+
+        $stats = [
+            'total' => $base()->count(),
+            'today' => $base()->whereDate('created_at', $now->toDateString())->count(),
+            'month' => $base()->whereBetween('created_at', [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()])->count(),
+            'year' => $base()->whereBetween('created_at', [$now->copy()->startOfYear(), $now->copy()->endOfYear()])->count(),
+            'active' => $base()->where('status', 'active')->count(),
+            'inactive' => $base()->whereIn('status', ['inactive','suspended','pending'])->count(),
+        ];
+
+        $branchStats = [
+            'all' => User::where('user_type', 'participant')->count(),
+            'items' => $branches->map(fn ($branch) => [
+                'branch' => $branch,
+                'count' => $this->scopeToBranch(User::where('user_type', 'participant'), $branch->id)->count(),
+            ]),
+        ];
+
+        return [$stats, $branchStats];
     }
 
     public function bulkDestroy(Request $request, AuditService $audit)
