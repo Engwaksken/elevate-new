@@ -14,6 +14,9 @@
     <button type="button" class="btn btn-primary" data-modal-open="createLibraryResource">
         <i class="fas fa-plus"></i> Add Resource
     </button>
+    <button type="button" class="btn btn-outline" data-modal-open="bulkLibraryResources">
+        <i class="fas fa-layer-group"></i> Add Multiple
+    </button>
 </div>
 </div>
 
@@ -144,6 +147,120 @@ $bulkTableId = 'libraryTable';
 </div>
 </div>
 
+@php($bulkMax=\App\Http\Controllers\Admin\Library\LibraryResourceController::BULK_MAX_FILES)
+<div class="eh-modal" id="bulkLibraryResources" aria-hidden="true">
+<div class="eh-modal-dialog eh-modal-lg">
+<div class="eh-modal-header">
+<div><h2>Add Multiple Resources</h2><p>Each file becomes its own resource. The settings below apply to all of them.</p></div>
+<button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button>
+</div>
+<form method="POST" enctype="multipart/form-data" action="{{ route('admin.library.bulk-store') }}">
+@csrf
+<input type="hidden" name="_library_modal" value="bulk">
+<div class="eh-modal-body">
+<div class="modal-grid">
+<div class="form-group full">
+    <label>Files * <small class="form-hint" style="display:inline">(up to {{ $bulkMax }}, 50 MB each)</small></label>
+    <input type="file" name="files[]" multiple required data-library-bulk-files data-max="{{ $bulkMax }}" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4,.mp3,.zip">
+    <small class="form-hint" data-library-bulk-warning style="display:none;color:#b42318"></small>
+</div>
+
+<div class="form-group full" data-library-bulk-list style="display:none">
+    <label>Titles <small class="form-hint" style="display:inline">(taken from file names; edit as needed)</small></label>
+    <div data-library-bulk-rows style="display:grid;gap:8px"></div>
+</div>
+
+<div class="form-group"><label>Category</label>
+<select name="library_category_id">
+<option value="">None</option>
+@foreach($categories as $category)
+<option value="{{ $category->id }}" @selected((string)old('library_category_id')===(string)$category->id)>{{ $category->name }}</option>
+@endforeach
+</select>
+</div>
+
+<div class="form-group"><label>Language *</label><input name="language" value="{{ old('language','English') }}" required></div>
+
+<div class="form-group"><label>Author</label><input name="author" value="{{ old('author') }}"></div>
+
+<div class="form-group"><label>Publication Date</label><input type="date" name="publication_date" value="{{ old('publication_date') }}"></div>
+
+<div class="form-group full"><label>Tags</label><input name="tags_text" value="{{ old('tags_text') }}" placeholder="career, entrepreneurship, digital skills"></div>
+
+<div class="form-group"><label>Access *</label>
+<select name="access_level" required>
+@foreach(['public'=>'Public','authenticated'=>'Authenticated','staff'=>'Staff'] as $value=>$label)
+<option value="{{ $value }}" @selected(old('access_level','authenticated')===$value)>{{ $label }}</option>
+@endforeach
+</select>
+</div>
+
+<div class="form-group"><label>Downloading *</label>
+<select name="download_policy" required>
+<option value="free" @selected(old('download_policy','free')==='free')>Free to download</option>
+<option value="request" @selected(old('download_policy')==='request')>Download on request (staff approve)</option>
+</select>
+</div>
+
+<div class="form-group"><label class="modal-check"><input type="checkbox" name="is_active" value="1" @checked((bool)old('is_active',true))><span>Active</span></label></div>
+</div>
+</div>
+<div class="eh-modal-footer">
+<button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+<button class="btn btn-primary" data-library-bulk-submit>Create Resources</button>
+</div>
+</form>
+</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+    const input=document.querySelector('[data-library-bulk-files]');
+    if(!input) return;
+    const form=input.closest('form');
+    const list=form.querySelector('[data-library-bulk-list]');
+    const rows=form.querySelector('[data-library-bulk-rows]');
+    const warning=form.querySelector('[data-library-bulk-warning]');
+    const submit=form.querySelector('[data-library-bulk-submit]');
+    const max=parseInt(input.dataset.max,10)||20;
+    const maxBytes=50*1024*1024;
+
+    const titleFrom=name=>{
+        const t=name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+        return t ? t.charAt(0).toUpperCase()+t.slice(1) : 'Untitled resource';
+    };
+    const size=b=>b>=1048576 ? (b/1048576).toFixed(1)+' MB' : Math.max(1,Math.round(b/1024))+' KB';
+
+    input.addEventListener('change',function(){
+        rows.innerHTML='';
+        const files=Array.from(input.files||[]);
+        const problems=[];
+        if(files.length>max) problems.push(`You selected ${files.length} files; the limit is ${max} per upload.`);
+        files.forEach((file,i)=>{
+            if(file.size>maxBytes) problems.push(`${file.name} is larger than 50 MB.`);
+            const row=document.createElement('div');
+            row.style.cssText='display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center';
+            const title=document.createElement('input');
+            title.name=`titles[${i}]`;
+            title.maxLength=190;
+            title.value=titleFrom(file.name);
+            const meta=document.createElement('small');
+            meta.className='form-hint';
+            meta.style.whiteSpace='nowrap';
+            meta.textContent=size(file.size);
+            meta.title=file.name;
+            row.append(title,meta);
+            rows.append(row);
+        });
+        list.style.display=files.length ? '' : 'none';
+        warning.textContent=problems.join(' ');
+        warning.style.display=problems.length ? '' : 'none';
+        submit.disabled=problems.length>0;
+        submit.textContent=files.length>1 ? `Create ${files.length} Resources` : 'Create Resources';
+    });
+});
+</script>
+
 @foreach($resources as $resource)
 <div class="eh-modal" id="editLibrary{{ $resource->id }}" aria-hidden="true">
 <div class="eh-modal-dialog eh-modal-lg">
@@ -187,7 +304,7 @@ $bulkTableId = 'libraryTable';
 <script>
 document.addEventListener('DOMContentLoaded',function(){
     const value=@json($libraryModal);
-    const id=value==='create' ? 'createLibraryResource' : (value.startsWith('edit-') ? 'editLibrary'+value.substring(5) : null);
+    const id=value==='create' ? 'createLibraryResource' : value==='bulk' ? 'bulkLibraryResources' :(value.startsWith('edit-') ? 'editLibrary'+value.substring(5) : null);
     if(id) document.querySelector(`[data-modal-open="${id}"]`)?.click();
 });
 </script>

@@ -16,6 +16,9 @@ class LibraryResourceController extends Controller
     use ExportsTables;
     use BulkDeletesRecords;
 
+    /** Shared hosts commonly cap max_file_uploads at 20. */
+    public const BULK_MAX_FILES=20;
+
     protected function bulkDeleteModel(): string
     {
         return LibraryResource::class;
@@ -113,6 +116,68 @@ class LibraryResourceController extends Controller
         ]);
 
         return back()->with('success','Library resource created.');
+    }
+
+    /**
+     * Add several resources in one go: one resource per uploaded file, all
+     * sharing the same category, language, access and download settings.
+     */
+    public function bulkStore(Request $request)
+    {
+        $data=$request->validate([
+            'files'=>['required','array','min:1','max:'.self::BULK_MAX_FILES],
+            'files.*'=>['required','file','max:51200','mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png,mp4,mp3,zip'],
+            'titles'=>['nullable','array'],
+            'titles.*'=>['nullable','string','max:190'],
+            'library_category_id'=>['nullable','exists:library_categories,id'],
+            'author'=>['nullable','string','max:190'],
+            'tags_text'=>['nullable','string','max:2000'],
+            'language'=>['required','string','max:50'],
+            'publication_date'=>['nullable','date'],
+            'access_level'=>['required',Rule::in(['public','authenticated','staff'])],
+            'download_policy'=>['nullable',Rule::in([LibraryResource::DOWNLOAD_FREE,LibraryResource::DOWNLOAD_ON_REQUEST])],
+            'is_active'=>['nullable','boolean'],
+        ],[
+            'files.required'=>'Choose at least one file to upload.',
+            'files.max'=>'You can upload up to '.self::BULK_MAX_FILES.' files at a time.',
+            'files.*.max'=>'Each file must be 50 MB or smaller.',
+            'files.*.mimes'=>'Each file must be a PDF, Word, PowerPoint, Excel, image, MP4, MP3 or ZIP file.',
+        ]);
+
+        $tags=$this->tags($data['tags_text'] ?? null);
+        $titles=$data['titles'] ?? [];
+        $created=0;
+
+        foreach($request->file('files') as $index=>$upload){
+            $title=trim((string)($titles[$index] ?? ''));
+            if($title===''){
+                $title=$this->titleFromFilename($upload->getClientOriginalName());
+            }
+
+            LibraryResource::create([
+                'library_category_id'=>$data['library_category_id'] ?? null,
+                'title'=>Str::limit($title,190,''),
+                'author'=>$data['author'] ?? null,
+                'tags'=>$tags,
+                'file_path'=>$upload->storeAs('library',Str::uuid().'.'.$upload->getClientOriginalExtension(),'local'),
+                'language'=>$data['language'],
+                'publication_date'=>$data['publication_date'] ?? null,
+                'access_level'=>$data['access_level'],
+                'download_policy'=>$data['download_policy'] ?? LibraryResource::DOWNLOAD_FREE,
+                'is_active'=>$request->boolean('is_active',true),
+                'created_by'=>auth()->id(),
+            ]);
+            $created++;
+        }
+
+        return back()->with('success',$created.' library '.Str::plural('resource',$created).' created.');
+    }
+
+    private function titleFromFilename(string $name): string
+    {
+        $title=trim(preg_replace('/\s+/',' ',str_replace(['_','-'],' ',pathinfo($name,PATHINFO_FILENAME))));
+
+        return $title!=='' ? Str::ucfirst($title) : 'Untitled resource';
     }
 
     public function update(Request $request, LibraryResource $resource)
