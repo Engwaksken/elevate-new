@@ -33,7 +33,7 @@ main.page-shell > .eh-learning-hero{border-radius:0;padding:56px max(var(--eh-gu
 .eh-learning-search .btn:focus-visible{background:#e6c55a;border-color:#e6c55a;color:#3a2c00}
 
 .eh-learning-actions{margin:0 0 24px}
-.eh-course-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.eh-course-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
 .eh-course-card{display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid #e5e7eb;border-radius:16px;text-decoration:none;color:inherit;box-shadow:0 1px 2px rgba(16,24,40,.04);transition:transform .18s ease,box-shadow .18s ease}
 .eh-course-card:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(16,24,40,.12)}
 .eh-course-thumb{position:relative;aspect-ratio:16/9;background:#f3f4f6;overflow:hidden}
@@ -45,8 +45,8 @@ main.page-shell > .eh-learning-hero{border-radius:0;padding:56px max(var(--eh-gu
 .eh-course-meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;color:#98a2b3;font-size:.75rem}
 .eh-course-meta span{display:inline-flex;align-items:center;gap:5px}
 .eh-course-meta i{color:#800000}
-/* --eh-container widens on large screens (responsive-global.css); add columns to match */
-@media(min-width:1920px){.eh-course-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* Four per row; fewer as the screen narrows. */
+@media(max-width:1200px){.eh-course-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:980px){.eh-course-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){
     main.page-shell:has(> .eh-learning-hero){--eh-gutter:16px}

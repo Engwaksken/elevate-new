@@ -11,7 +11,8 @@ class CourseCatalogueController extends Controller
 {
     public function index(Request $request)
     {
-        $query=Course::where('status','published')->select(['id','title','code','summary','description','thumbnail_path','delivery_mode','start_date','duration_hours']);
+        // Compulsory courses are enrolled automatically, so they are not offered here.
+        $query=Course::selectable()->select(['id','title','code','summary','description','thumbnail_path','delivery_mode','start_date','duration_hours']);
 
         if($search=trim((string)$request->get('search'))){
             $query->where(fn($q)=>$q

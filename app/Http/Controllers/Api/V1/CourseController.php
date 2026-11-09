@@ -9,7 +9,7 @@ class CourseController extends Controller
     public function index()
     {
         return response()->json([
-            'data'=>Course::where('status','published')
+            'data'=>Course::selectable()
                 ->with('branches')
                 ->select('id','title','code','summary','description','thumbnail_path','delivery_mode','start_date','end_date')
                 ->latest()
