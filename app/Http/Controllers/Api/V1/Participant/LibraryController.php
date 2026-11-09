@@ -26,7 +26,8 @@ class LibraryController extends Controller
 
     public function index(Request $request)
     {
-        $query = LibraryResource::with('category')->where('is_active', true)->whereIn('access_level', self::VISIBLE_LEVELS);
+        $query = LibraryResource::with('category')->where('is_active', true)->whereIn('access_level', self::VISIBLE_LEVELS)
+            ->availableTo($request->user());
 
         if ($search = trim((string) $request->get('search'))) {
             $query->where(fn ($q) => $q->where('title', 'like', "%{$search}%")
@@ -53,7 +54,7 @@ class LibraryController extends Controller
     public function mine(Request $request)
     {
         $userId = $request->user()->id;
-        $visible = fn ($q) => $q->where('is_active', true)->whereIn('access_level', self::VISIBLE_LEVELS);
+        $visible = fn ($q) => $q->where('is_active', true)->whereIn('access_level', self::VISIBLE_LEVELS)->availableTo($request->user());
 
         $reading = LibraryResource::with('category')->where($visible)
             ->join('library_reading_progress', 'library_reading_progress.library_resource_id', '=', 'library_resources.id')
@@ -183,6 +184,8 @@ class LibraryController extends Controller
     private function authorise(LibraryResource $resource): void
     {
         abort_unless($resource->is_active && in_array($resource->access_level, self::VISIBLE_LEVELS, true), 404);
+        // Books linked to courses are only for participants enrolled in one of them.
+        abort_unless($resource->isAvailableTo(request()->user()), 403, 'This book is only available to participants enrolled in its course.');
     }
 
     /** @param Collection<int, LibraryResource> $resources */

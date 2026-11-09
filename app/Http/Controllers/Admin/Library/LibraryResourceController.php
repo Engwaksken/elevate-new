@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Library;
 use App\Http\Controllers\Admin\Concerns\BulkDeletesRecords;
 use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
+use App\Models\Course;
 use App\Models\LibraryCategory;
 use App\Models\LibraryResource;
 use Illuminate\Http\Request;
@@ -26,7 +27,7 @@ class LibraryResourceController extends Controller
 
     public function index(Request $request)
     {
-        $query=LibraryResource::with('category')->latest();
+        $query=LibraryResource::with(['category','courses:id,title'])->latest();
 
         if($search=trim((string)$request->get('search'))){
             $query->where(function($q) use($search){
@@ -38,6 +39,10 @@ class LibraryResourceController extends Controller
 
         if($category=$request->get('category')){
             $query->where('library_category_id',$category);
+        }
+
+        if($courseId=$request->integer('course_id')){
+            $query->whereHas('courses',fn($q)=>$q->whereKey($courseId));
         }
 
         if($access=$request->get('access_level')){
@@ -57,6 +62,7 @@ class LibraryResourceController extends Controller
                 'Resource'=>'title',
                 'Author'=>'author',
                 'Category'=>'category.name',
+                'Courses'=>fn($r)=>$r->courses->pluck('title')->implode(', ') ?: 'All participants',
                 'Language'=>'language',
                 'Access'=>'access_level',
                 'Publication date'=>'publication_date',
@@ -75,6 +81,7 @@ class LibraryResourceController extends Controller
         return view('admin.library.index',[
             'resources'=>$query->paginate($perPage)->withQueryString(),
             'categories'=>LibraryCategory::where('is_active',true)->orderBy('name')->get(),
+            'courses'=>Course::orderBy('title')->get(['id','title','code']),
             'languages'=>LibraryResource::query()
                 ->whereNotNull('language')
                 ->select('language')
@@ -98,7 +105,7 @@ class LibraryResourceController extends Controller
         $filePath=$this->storeFile($request,'file','library');
         $coverPath=$this->storeFile($request,'cover_image','library/covers');
 
-        LibraryResource::create([
+        $resource=LibraryResource::create([
             'library_category_id'=>$data['library_category_id'] ?? null,
             'title'=>$data['title'],
             'author'=>$data['author'] ?? null,
@@ -114,6 +121,8 @@ class LibraryResourceController extends Controller
             'is_active'=>$request->boolean('is_active',true),
             'created_by'=>auth()->id(),
         ]);
+
+        $resource->courses()->sync($data['course_ids'] ?? []);
 
         return back()->with('success','Library resource created.');
     }
@@ -137,6 +146,8 @@ class LibraryResourceController extends Controller
             'access_level'=>['required',Rule::in(['public','authenticated','staff'])],
             'download_policy'=>['nullable',Rule::in([LibraryResource::DOWNLOAD_FREE,LibraryResource::DOWNLOAD_ON_REQUEST])],
             'is_active'=>['nullable','boolean'],
+            'course_ids'=>['nullable','array'],
+            'course_ids.*'=>['integer','distinct','exists:courses,id'],
         ],[
             'files.required'=>'Choose at least one file to upload.',
             'files.max'=>'You can upload up to '.self::BULK_MAX_FILES.' files at a time.',
@@ -154,7 +165,7 @@ class LibraryResourceController extends Controller
                 $title=$this->titleFromFilename($upload->getClientOriginalName());
             }
 
-            LibraryResource::create([
+            $resource=LibraryResource::create([
                 'library_category_id'=>$data['library_category_id'] ?? null,
                 'title'=>Str::limit($title,190,''),
                 'author'=>$data['author'] ?? null,
@@ -167,6 +178,7 @@ class LibraryResourceController extends Controller
                 'is_active'=>$request->boolean('is_active',true),
                 'created_by'=>auth()->id(),
             ]);
+            $resource->courses()->sync($data['course_ids'] ?? []);
             $created++;
         }
 
@@ -211,6 +223,10 @@ class LibraryResourceController extends Controller
             'is_active'=>$request->boolean('is_active'),
         ]);
 
+        if($request->has('course_ids') || $request->boolean('sync_courses')){
+            $resource->courses()->sync($data['course_ids'] ?? []);
+        }
+
         return back()->with('success','Library resource updated.');
     }
 
@@ -237,6 +253,8 @@ class LibraryResourceController extends Controller
             'is_active'=>['nullable','boolean'],
             'file'=>['nullable','file','max:51200','mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png,mp4,mp3,zip'],
             'cover_image'=>['nullable','image','max:5120','mimes:jpg,jpeg,png,webp'],
+            'course_ids'=>['nullable','array'],
+            'course_ids.*'=>['integer','distinct','exists:courses,id'],
         ]);
     }
 

@@ -2,7 +2,7 @@
 $editing = isset($resource) && $resource;
 $formTabsConfig = [
     'details' => ['label' => 'Details', 'icon' => 'fa-circle-info', 'fields' => ['title', 'author', 'library_category_id', 'language', 'publication_date', 'description', 'tags_text']],
-    'access' => ['label' => 'Access', 'icon' => 'fa-lock-open', 'fields' => ['access_level', 'download_policy', 'is_active']],
+    'access' => ['label' => 'Access', 'icon' => 'fa-lock-open', 'fields' => ['course_ids', 'access_level', 'download_policy', 'is_active']],
     'files' => ['label' => 'Files & Links', 'icon' => 'fa-paperclip', 'fields' => ['external_url', 'file', 'cover_image']],
 ];
 @endphp
@@ -33,6 +33,8 @@ $formTabsConfig = [
 </x-form-tab>
 <x-form-tab name="access">
 <div class="modal-grid">
+@include('admin.library.course-picker', ['selected' => $editing ? $resource->courses->pluck('id')->all() : []])
+
 <div class="form-group"><label>Access *</label>
 <select name="access_level" required>
 @foreach(['public'=>'Public','authenticated'=>'Authenticated','staff'=>'Staff'] as $value=>$label)

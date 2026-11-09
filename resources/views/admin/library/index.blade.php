@@ -52,6 +52,12 @@
 @endforeach
 </select>
 
+<select name="course_id">
+<option value="">All courses</option>
+@foreach($courses as $course)
+<option value="{{ $course->id }}" @selected((int) request('course_id')===$course->id)>{{ $course->title }}</option>
+@endforeach
+</select>
 <select name="access_level">
 <option value="">All access levels</option>
 @foreach(['public'=>'Public','authenticated'=>'Authenticated','staff'=>'Staff'] as $value=>$label)
@@ -92,7 +98,7 @@ $bulkTableId = 'libraryTable';
 <table class="admin-table" id="{{ $bulkTableId }}">
 <thead>
 <tr>
-<th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Resource</th><th>Category</th><th>Language</th><th>Access</th><th>Views</th><th>Downloads</th><th>Status</th><th class="table-actions">Actions</th>
+<th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Resource</th><th>Courses</th><th>Category</th><th>Language</th><th>Access</th><th>Views</th><th>Downloads</th><th>Status</th><th class="table-actions">Actions</th>
 </tr>
 </thead>
 <tbody>
@@ -103,6 +109,7 @@ $bulkTableId = 'libraryTable';
 <strong>{{ $resource->title }}</strong>
 <small class="admin-cell-hint">{{ $resource->author ?: 'No author' }}</small>
 </td>
+<td>@if($resource->courses->isNotEmpty()){{ $resource->courses->pluck('title')->implode(', ') }}@else<small class="admin-cell-hint">All participants</small>@endif</td>
 <td>{{ $resource->category?->name ?: '-' }}</td>
 <td>{{ $resource->language }}</td>
 <td>{{ ucfirst($resource->access_level) }}@if($resource->requiresDownloadApproval())<small class="admin-cell-hint">Download on request</small>@endif</td>
@@ -118,7 +125,7 @@ $bulkTableId = 'libraryTable';
 </td>
 </tr>
 @empty
-<tr><td colspan="9"><div class="admin-empty">No library resources found.</div></td></tr>
+<tr><td colspan="10"><div class="admin-empty">No library resources found.</div></td></tr>
 @endforelse
 </tbody>
 </table>
@@ -186,6 +193,8 @@ $bulkTableId = 'libraryTable';
 <div class="form-group"><label>Publication Date</label><input type="date" name="publication_date" value="{{ old('publication_date') }}"></div>
 
 <div class="form-group full"><label>Tags</label><input name="tags_text" value="{{ old('tags_text') }}" placeholder="career, entrepreneurship, digital skills"></div>
+
+@include('admin.library.course-picker', ['selected' => []])
 
 <div class="form-group"><label>Access *</label>
 <select name="access_level" required>

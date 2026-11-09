@@ -20,6 +20,50 @@ class LibraryResource extends Model
 
     public function category(){ return $this->belongsTo(LibraryCategory::class,'library_category_id'); }
 
+    /** Courses this book belongs to. None means it is open to every participant. */
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class)->withTimestamps();
+    }
+
+    /**
+     * Books the user may see as far as courses go: staff see everything;
+     * everyone else sees books with no course, plus books of courses they
+     * are actively enrolled in. Access level is checked separately.
+     */
+    public function scopeAvailableTo($query, ?User $user)
+    {
+        if ($user?->isStaff()) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($user) {
+            $q->whereDoesntHave('courses');
+
+            if ($user) {
+                $q->orWhereHas('courses', fn ($c) => $c->whereIn('courses.id', self::activeCourseIdsQuery($user)));
+            }
+        });
+    }
+
+    public function isAvailableTo(?User $user): bool
+    {
+        if ($user?->isStaff() || ! $this->courses()->exists()) {
+            return true;
+        }
+
+        return $user !== null
+            && $this->courses()->whereIn('courses.id', self::activeCourseIdsQuery($user))->exists();
+    }
+
+    private static function activeCourseIdsQuery(User $user)
+    {
+        return Enrolment::query()
+            ->select('course_id')
+            ->where('user_id', $user->id)
+            ->where(fn ($q) => $q->whereNull('status')->orWhereNotIn('status', \App\Services\EnrolmentService::INACTIVE_STATUSES));
+    }
+
     public function requiresDownloadApproval(): bool { return $this->download_policy===self::DOWNLOAD_ON_REQUEST; }
 
     /** Whether this user may save a copy: free books, staff, or an unexpired approved request. */
