@@ -8,6 +8,7 @@ use App\Models\Cohort;
 use App\Models\Course;
 use App\Models\Enrolment;
 use App\Models\User;
+use App\Services\EnrolmentService;
 use Illuminate\Http\Request;
 
 class EnrolmentAdminController extends Controller
@@ -64,7 +65,7 @@ class EnrolmentAdminController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, EnrolmentService $enrolments)
     {
         $data=$request->validate([
             'course_id'=>['required','exists:courses,id'],
@@ -73,24 +74,46 @@ class EnrolmentAdminController extends Controller
             'status'=>['nullable','in:enrolled,active,in_progress,completed,withdrawn,cancelled'],
         ]);
 
-        Enrolment::updateOrCreate(
-            ['course_id'=>$data['course_id'],'user_id'=>$data['user_id']],
-            [
-                'cohort_id'=>$data['cohort_id'] ?? null,
-                'status'=>$data['status'] ?? 'enrolled',
-                'enrolled_at'=>now(),
-            ]
+        $cohortId=isset($data['cohort_id']) ? (int)$data['cohort_id'] : null;
+        $status=$data['status'] ?? 'enrolled';
+        $existing=Enrolment::where('course_id',$data['course_id'])->where('user_id',$data['user_id'])->first();
+
+        if($existing){
+            // Moving an existing enrolment must still respect one course per cohort.
+            if(!in_array($status,EnrolmentService::INACTIVE_STATUSES,true)){
+                $enrolments->assertCanEnrol((int)$data['user_id'],(int)$data['course_id'],$cohortId,$existing->id);
+            }
+            $existing->update(['cohort_id'=>$cohortId,'status'=>$status,'enrolled_at'=>now()]);
+
+            return back()->with('success','Learner enrolment saved.');
+        }
+
+        // The service enforces one course per cohort and adds compulsory courses.
+        $enrolments->enrol(
+            User::findOrFail($data['user_id']),
+            Course::findOrFail($data['course_id']),
+            ['cohort_id'=>$cohortId,'status'=>$status,'enrolled_at'=>now()]
         );
 
-        return back()->with('success','Learner enrolment saved.');
+        return back()->with('success','Learner enrolment saved. Any compulsory courses were added automatically.');
     }
 
-    public function update(Request $request,Enrolment $enrolment)
+    public function update(Request $request,Enrolment $enrolment,EnrolmentService $enrolments)
     {
         $data=$request->validate([
             'cohort_id'=>['nullable','exists:cohorts,id'],
             'status'=>['required','in:enrolled,active,in_progress,completed,withdrawn,cancelled'],
         ]);
+
+        if(!in_array($data['status'],EnrolmentService::INACTIVE_STATUSES,true)){
+            $enrolments->assertCanEnrol(
+                $enrolment->user_id,
+                $enrolment->course_id,
+                isset($data['cohort_id']) ? (int)$data['cohort_id'] : null,
+                $enrolment->id,
+                'cohort_id'
+            );
+        }
 
         $enrolment->update($data);
 

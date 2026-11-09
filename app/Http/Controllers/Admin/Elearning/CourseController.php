@@ -11,6 +11,7 @@ use App\Models\Course;
 use App\Models\Programme;
 use App\Models\Project;
 use App\Services\AuditService;
+use App\Services\EnrolmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -135,7 +136,8 @@ class CourseController extends Controller
         $oldImage = $course->thumbnail_path;
         $data = $this->withImage($request, $this->validated($request, $course->id));
         try {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($data, $course, $request) {
+            $compulsoryAdded = false;
+            \Illuminate\Support\Facades\DB::transaction(function () use ($data, $course, $request, &$compulsoryAdded) {
                 $sync = $request->has('branch_ids') || $request->boolean('sync_branches') || $request->has('branch_id');
                 $ids = $data['branch_ids'] ?? [];
                 $compulsoryIds = $data['compulsory_course_ids'] ?? [];
@@ -146,7 +148,8 @@ class CourseController extends Controller
                     $course->branches()->sync($ids);
                 }
                 if ($syncCompulsory) {
-                    $course->compulsoryCourses()->sync($this->withoutSelf($compulsoryIds, $course->id));
+                    $changes = $course->compulsoryCourses()->sync($this->withoutSelf($compulsoryIds, $course->id));
+                    $compulsoryAdded = ! empty($changes['attached']);
                 }
                 $course->update($data);
             });
@@ -166,9 +169,14 @@ class CourseController extends Controller
             $course->fresh()->toArray()
         );
 
+        // Participants already on this course get any newly added compulsory courses.
+        $caughtUp = $compulsoryAdded ? app(EnrolmentService::class)->syncCompulsoryFor($course) : 0;
+
         return redirect()
             ->route('admin.elearning.courses.index')
-            ->with('success','Course updated.');
+            ->with('success', $caughtUp
+                ? "Course updated. {$caughtUp} compulsory course ".\Illuminate\Support\Str::plural('enrolment', $caughtUp).' added for existing participants.'
+                : 'Course updated.');
     }
 
     private function validated(Request $request, ?int $id=null): array

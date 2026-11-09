@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cohort;
 use App\Models\Course;
 use App\Models\Enrolment;
+use App\Services\EnrolmentService;
 use App\Models\User;
 use App\Observers\LearningNotificationObserver;
 use App\Services\UserNotificationService;
@@ -97,10 +98,14 @@ class BulkEnrolmentController extends Controller
         ]);
 
         $userIds = collect($data['user_ids'])->unique()->values();
+        $service = app(EnrolmentService::class);
+        $course = Course::findOrFail($data['course_id']);
+        $cohortId = $data['cohort_id'] ? (int) $data['cohort_id'] : null;
 
-        [$created, $updated] = DB::transaction(function () use ($data, $userIds) {
+        [$created, $updated, $conflicts] = DB::transaction(function () use ($data, $userIds, $service, $course, $cohortId) {
             $created = 0;
             $updated = 0;
+            $conflicts = [];
 
             foreach ($userIds as $userId) {
                 $enrolment = Enrolment::query()->firstOrNew([
@@ -109,6 +114,13 @@ class BulkEnrolmentController extends Controller
                 ]);
 
                 $wasNew = ! $enrolment->exists;
+
+                // One chosen course per cohort: skip participants already on another course.
+                $targetCohort = $cohortId ?? $enrolment->cohort_id;
+                if ($service->conflictingEnrolment((int) $userId, $course, $targetCohort, $enrolment->id)) {
+                    $conflicts[] = $userId;
+                    continue;
+                }
 
                 $payload = ['status' => 'enrolled'];
 
@@ -124,16 +136,24 @@ class BulkEnrolmentController extends Controller
                 $enrolment->fill($payload);
                 $enrolment->save();
 
+                if ($wasNew && $enrolment->user) {
+                    $service->enrolCompulsory($enrolment->user, $course, $enrolment->cohort_id);
+                }
+
                 $wasNew ? $created++ : $updated++;
             }
 
-            return [$created, $updated];
+            return [$created, $updated, $conflicts];
         });
 
         $message = "{$created} participant(s) enrolled.";
 
         if ($updated > 0) {
             $message .= " {$updated} existing enrolment(s) updated.";
+        }
+
+        if ($conflicts) {
+            $message .= ' '.count($conflicts).' skipped because they are already enrolled in another course in this cohort (only one course per cohort; compulsory courses excepted).';
         }
 
         return back()->with('success', $message);
@@ -319,8 +339,17 @@ class BulkEnrolmentController extends Controller
 
                     $wasNew = ! $enrolment->exists;
 
+                    // One chosen course per cohort (compulsory courses excepted).
+                    if (! in_array($status, EnrolmentService::INACTIVE_STATUSES, true)) {
+                        app(EnrolmentService::class)->assertCanEnrol($user, (int) $courseId, $cohortId, $enrolment->id);
+                    }
+
                     $enrolment->fill($payload);
                     $enrolment->save();
+
+                    if ($wasNew) {
+                        app(EnrolmentService::class)->enrolCompulsory($user, Course::find($courseId), $cohortId);
+                    }
 
                     return [$wasNew ? 'created' : 'updated', $enrolment];
                 }));

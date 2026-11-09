@@ -20,7 +20,15 @@ class EnrolmentController extends Controller
                 ->with('error', 'Pass the entry assessment before you can enrol in this course.');
         }
 
-        $enrolments->enrol(auth()->user(), $course);
+        try {
+            $enrolments->enrol(auth()->user(), $course);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // One chosen course at a time; compulsory courses are added automatically.
+            $conflict = $enrolments->conflictingEnrolment(auth()->user(), $course, null);
+
+            return redirect()->route('learning.course.show', $course)->with('error',
+                'You are already enrolled in "'.($conflict?->course?->title ?? 'another course').'". You can only take one course at a time; compulsory courses are added for you automatically.');
+        }
 
         return redirect()->route('learning.my-courses')->with('success','You have been enrolled successfully.');
     }
