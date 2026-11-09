@@ -866,6 +866,9 @@ Route::prefix('admin/library')->name('admin.library.')->middleware(['auth','staf
     Route::post('/requests/{downloadRequest}/decline',[\App\Http\Controllers\Admin\Library\LibraryDownloadRequestController::class,'decline'])->whereNumber('downloadRequest')->name('requests.decline');
     Route::post('/',[LibraryResourceController::class,'store'])->name('store');
     Route::post('/bulk',[LibraryResourceController::class,'bulkStore'])->name('bulk-store');
+    Route::post('/categories',[\App\Http\Controllers\Admin\Library\LibraryCategoryController::class,'store'])->name('categories.store');
+    Route::put('/categories/{category}',[\App\Http\Controllers\Admin\Library\LibraryCategoryController::class,'update'])->whereNumber('category')->name('categories.update');
+    Route::delete('/categories/{category}',[\App\Http\Controllers\Admin\Library\LibraryCategoryController::class,'destroy'])->whereNumber('category')->name('categories.destroy');
     Route::put('/{resource}',[LibraryResourceController::class,'update'])->name('update');
     Route::delete('/{resource}',[LibraryResourceController::class,'destroy'])->name('destroy');
 });

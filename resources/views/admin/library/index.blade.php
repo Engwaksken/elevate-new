@@ -17,6 +17,9 @@
     <button type="button" class="btn btn-outline" data-modal-open="bulkLibraryResources">
         <i class="fas fa-layer-group"></i> Add Multiple
     </button>
+    <button type="button" class="btn btn-outline" data-modal-open="manageLibraryCategories">
+        <i class="fas fa-tags"></i> Categories
+    </button>
 </div>
 </div>
 
@@ -177,14 +180,7 @@ $bulkTableId = 'libraryTable';
     <div data-library-bulk-rows style="display:grid;gap:8px"></div>
 </div>
 
-<div class="form-group"><label>Category</label>
-<select name="library_category_id">
-<option value="">None</option>
-@foreach($categories as $category)
-<option value="{{ $category->id }}" @selected((string)old('library_category_id')===(string)$category->id)>{{ $category->name }}</option>
-@endforeach
-</select>
-</div>
+@include('admin.library.category-select', ['selected' => ''])
 
 <div class="form-group"><label>Language *</label><input name="language" value="{{ old('language','English') }}" required></div>
 
@@ -308,12 +304,120 @@ document.addEventListener('DOMContentLoaded',function(){
 </div>
 @endforeach
 
-@php($libraryModal=old('_library_modal'))
+<div class="eh-modal" id="manageLibraryCategories" aria-hidden="true">
+<div class="eh-modal-dialog eh-modal-lg">
+<div class="eh-modal-header">
+<div><h2>Library Categories</h2><p>Categories group books in the library. Turned-off categories are hidden from the forms and the participant filters.</p></div>
+<button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button>
+</div>
+<div class="eh-modal-body">
+@if((old('_library_modal') ?: session('open_library_modal'))==='categories' && ($errors->has('name') || $errors->has('category') || $errors->has('description')))
+<div class="alert alert-error">{{ $errors->first('category') ?: ($errors->first('name') ?: $errors->first('description')) }}</div>
+@endif
+<form method="POST" action="{{ route('admin.library.categories.store') }}" class="modal-grid" style="align-items:end;margin-bottom:18px">
+@csrf
+<input type="hidden" name="_library_modal" value="categories">
+<div class="form-group"><label>New category *</label><input name="name" maxlength="120" required placeholder="e.g. Entrepreneurship"></div>
+<div class="form-group"><label>Description</label><input name="description" maxlength="1000"></div>
+<div class="form-group full"><button class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Category</button></div>
+</form>
+
+<div class="admin-table-wrap">
+<table class="admin-table">
+<thead><tr><th>Name</th><th>Description</th><th>Books</th><th>Active</th><th class="table-actions">Actions</th></tr></thead>
+<tbody>
+@forelse($allCategories as $cat)
+<tr>
+<td><input form="libraryCategory{{ $cat->id }}" name="name" value="{{ $cat->name }}" maxlength="120" required aria-label="Category name" style="width:100%;min-width:140px"></td>
+<td><input form="libraryCategory{{ $cat->id }}" name="description" value="{{ $cat->description }}" maxlength="1000" aria-label="Description" style="width:100%;min-width:140px"></td>
+<td>{{ number_format($cat->resources_count) }}</td>
+<td><input form="libraryCategory{{ $cat->id }}" type="checkbox" name="is_active" value="1" @checked($cat->is_active) aria-label="Active"></td>
+<td class="table-actions">
+<div class="action-group">
+<form id="libraryCategory{{ $cat->id }}" method="POST" action="{{ route('admin.library.categories.update',$cat) }}">@csrf @method('PUT')<input type="hidden" name="_library_modal" value="categories"><button class="btn-icon" title="Save"><i class="fas fa-floppy-disk"></i></button></form>
+@if($cat->resources_count===0)
+<form method="POST" action="{{ route('admin.library.categories.destroy',$cat) }}">@csrf @method('DELETE')<button class="btn-icon danger" title="Delete"><i class="fas fa-trash"></i></button></form>
+@endif
+</div>
+</td>
+</tr>
+@empty
+<tr><td colspan="5"><div class="admin-empty">No categories yet. Add the first one above.</div></td></tr>
+@endforelse
+</tbody>
+</table>
+</div>
+</div>
+<div class="eh-modal-footer">
+<button type="button" class="btn btn-outline" data-modal-close>Close</button>
+</div>
+</div>
+</div>
+
+<script>
+// "+ New category" inside any Category dropdown: create it without leaving the form.
+document.addEventListener('DOMContentLoaded',function(){
+    const url=@json(route('admin.library.categories.store'));
+    const token=@json(csrf_token());
+    const selects=()=>document.querySelectorAll('[data-library-category-select]');
+
+    selects().forEach(function(select){
+        const group=select.closest('.form-group');
+        const box=group.querySelector('[data-library-category-new]');
+        const input=group.querySelector('[data-library-category-name]');
+        const error=group.querySelector('[data-library-category-error]');
+        const addButton=group.querySelector('[data-library-category-add]');
+        let previous=select.value==='__new__' ? '' : select.value;
+
+        const close=()=>{ box.style.display='none'; error.style.display='none'; input.value=''; };
+        const fail=msg=>{ error.textContent=msg; error.style.display=''; };
+
+        select.addEventListener('change',function(){
+            if(select.value!=='__new__'){ previous=select.value; close(); return; }
+            select.value=previous;
+            box.style.display='';
+            input.focus();
+        });
+
+        group.querySelector('[data-library-category-cancel]').addEventListener('click',close);
+        input.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addButton.click(); } });
+
+        addButton.addEventListener('click',async function(){
+            const name=input.value.trim();
+            if(!name){ fail('Enter a category name.'); return; }
+            addButton.disabled=true;
+            try{
+                const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':token,'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({name})});
+                const body=await response.json().catch(()=>({}));
+                if(!response.ok){ fail(body?.errors?.name?.[0] || body?.message || 'The category could not be added.'); return; }
+                // Add it to every Category dropdown on the page, then select it here.
+                selects().forEach(function(other){
+                    const option=new Option(body.name,body.id);
+                    const sentinel=other.querySelector('option[value="__new__"]');
+                    other.insertBefore(option,sentinel);
+                });
+                select.value=String(body.id);
+                previous=select.value;
+                close();
+            }catch(e){
+                fail('The category could not be added. Check your connection and try again.');
+            }finally{
+                addButton.disabled=false;
+            }
+        });
+
+        // Never submit the "+ New category" placeholder.
+        select.form?.addEventListener('submit',()=>{ if(select.value==='__new__') select.value=previous; });
+    });
+});
+</script>
+
+@php($libraryModal=old('_library_modal') ?: session('open_library_modal'))
 @if($libraryModal)
 <script>
 document.addEventListener('DOMContentLoaded',function(){
     const value=@json($libraryModal);
-    const id=value==='create' ? 'createLibraryResource' : value==='bulk' ? 'bulkLibraryResources' :(value.startsWith('edit-') ? 'editLibrary'+value.substring(5) : null);
+    const id=value==='create' ? 'createLibraryResource' : value==='bulk' ? 'bulkLibraryResources' : value==='categories' ? 'manageLibraryCategories' :(value.startsWith('edit-') ? 'editLibrary'+value.substring(5) : null);
     if(id) document.querySelector(`[data-modal-open="${id}"]`)?.click();
 });
 </script>

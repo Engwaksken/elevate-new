@@ -81,6 +81,7 @@ class LibraryResourceController extends Controller
         return view('admin.library.index',[
             'resources'=>$query->paginate($perPage)->withQueryString(),
             'categories'=>LibraryCategory::where('is_active',true)->orderBy('name')->get(),
+            'allCategories'=>LibraryCategory::withCount(['resources'=>fn($q)=>$q->withTrashed()])->orderBy('name')->get(),
             'courses'=>Course::orderBy('title')->get(['id','title','code']),
             'languages'=>LibraryResource::query()
                 ->whereNotNull('language')

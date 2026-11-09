@@ -13,14 +13,7 @@ $formTabsConfig = [
 
 <div class="form-group"><label>Author</label><input name="author" value="{{ old('author',$editing ? $resource->author : '') }}"></div>
 
-<div class="form-group"><label>Category</label>
-<select name="library_category_id">
-<option value="">None</option>
-@foreach($categories as $category)
-<option value="{{ $category->id }}" @selected((string)old('library_category_id',$editing ? $resource->library_category_id : '')===(string)$category->id)>{{ $category->name }}</option>
-@endforeach
-</select>
-</div>
+@include('admin.library.category-select', ['selected' => $editing ? $resource->library_category_id : '', 'current' => $editing ? $resource->category : null])
 
 <div class="form-group"><label>Language *</label><input name="language" value="{{ old('language',$editing ? $resource->language : 'English') }}" required></div>
 
