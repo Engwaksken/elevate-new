@@ -181,7 +181,12 @@ class Course extends Model
     {
         $path = $this->thumbnail_path;
         if (is_string($path) && preg_match('#^https?://#i', $path) && filter_var($path, FILTER_VALIDATE_URL)) return $path;
-        if ($path && \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) return \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+        if ($path && \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            // Uploaded images go through a route: the shared host has no public/storage symlink.
+            return str_starts_with($path, 'course-thumbnails/')
+                ? route('course.image', ['path' => $path])
+                : \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+        }
         return asset('images/course-placeholder.svg');
     }
 

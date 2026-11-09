@@ -143,6 +143,11 @@ Route::get('/cms-media/{path}', [\App\Http\Controllers\Admin\CmsMediaController:
     ->where('path', 'cms/.+')
     ->name('cms.media');
 
+// Course images (served without the storage symlink).
+Route::get('/course-images/{path}', [\App\Http\Controllers\Learning\CourseImageController::class, 'show'])
+    ->where('path', 'course-thumbnails/[^/]+')
+    ->name('course.image');
+
 Route::get('/app-manifest.webmanifest', [BrandAssetController::class, 'manifest'])
     ->middleware('throttle:60,1')
     ->name('manifest');
