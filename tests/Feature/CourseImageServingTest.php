@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CmsPage;
 use App\Models\Course;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -34,6 +35,18 @@ class CourseImageServingTest extends TestCase
         $this->get('/course-images/course-thumbnails/missing.png')->assertNotFound();
         $this->get('/course-images/course-thumbnails/notes.txt')->assertNotFound();
         $this->get('/course-images/cms/other.png')->assertNotFound();
+    }
+
+    public function test_cms_intro_image_on_learning_uses_the_cms_media_route(): void
+    {
+        Storage::fake('public');
+        $path = UploadedFile::fake()->image('banner.png', 40, 20)->store('cms', 'public');
+        CmsPage::updateOrCreate(['slug' => 'learning'], ['title' => 'Courses', 'published_data' => ['title' => 'Courses', 'image_path' => $path]]);
+
+        $this->get(route('learning.index'))
+            ->assertOk()
+            ->assertSee(route('cms.media', ['path' => $path], false), false)
+            ->assertDontSee('/storage/'.$path, false);
     }
 
     public function test_course_without_image_uses_the_placeholder(): void
