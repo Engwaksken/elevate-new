@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ParticipantConversation extends Model
 {
@@ -27,8 +28,8 @@ class ParticipantConversation extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function latestMessage(): HasMany
+    public function latestMessage(): HasOne
     {
-        return $this->hasMany(ParticipantMessage::class, 'conversation_id')->latestOfMany();
+        return $this->hasOne(ParticipantMessage::class, 'conversation_id')->latestOfMany();
     }
 }

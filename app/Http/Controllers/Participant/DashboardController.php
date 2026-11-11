@@ -75,6 +75,15 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Recent participant chats, so the dashboard offers a direct route into messaging.
+        $conversations=\App\Models\ParticipantConversation::query()
+            ->whereHas('members',fn($query)=>$query->where('users.id',$user->id))
+            ->with(['members:id,name','latestMessage.sender:id,name'])
+            ->withCount('messages')
+            ->orderByDesc('updated_at')
+            ->limit(4)
+            ->get();
+
         $resumes=Resume::query()
             ->where('user_id',$user->id)
             ->latest()
@@ -140,6 +149,7 @@ class DashboardController extends Controller
             'jobApplications'=>$jobApplications,
             'upcomingEvents'=>$upcomingEvents,
             'notifications'=>$notifications,
+            'conversations'=>$conversations,
             'unreadNotifications'=>UserNotification::query()
                 ->where('user_id',$user->id)
                 ->whereNull('read_at')

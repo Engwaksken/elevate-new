@@ -83,6 +83,9 @@ document.querySelector('[data-ai-hero-form]')?.addEventListener('submit', functi
     <button class="eh-tab-button active" data-eh-tab="overview"><i class="fas fa-house"></i> Overview</button>
     <button class="eh-tab-button" data-eh-tab="learning"><i class="fas fa-graduation-cap"></i> Learning</button>
     <button class="eh-tab-button" data-eh-tab="mentorship"><i class="fas fa-user-group"></i> Mentorship</button>
+    @if(Route::has('participant.chat.index'))
+    <button class="eh-tab-button" data-eh-tab="chat"><i class="fas fa-comments"></i> Chat</button>
+    @endif
     <button class="eh-tab-button" data-eh-tab="career"><i class="fas fa-file-lines"></i> Career</button>
     <button class="eh-tab-button" data-eh-tab="opportunities"><i class="fas fa-briefcase"></i> Opportunities</button>
     <button class="eh-tab-button" data-eh-tab="calendar"><i class="fas fa-calendar-days"></i> Calendar</button>
@@ -95,6 +98,7 @@ document.querySelector('[data-ai-hero-form]')?.addEventListener('submit', functi
 @php($quickLinks = collect([
     ['learning.my-courses', 'fa-graduation-cap', 'Learning', 'Continue your courses and track progress.'],
     ['mentorship.dashboard', 'fa-user-group', 'Mentorship', 'Review mentor relationships, sessions and goals.'],
+    ['participant.chat.index', 'fa-comments', 'Chat', 'Message other participants or start a group conversation.'],
     ['career.resume.index', 'fa-file-lines', 'Resume Builder', 'Create and manage your professional resume.'],
     ['jobs.index', 'fa-briefcase', 'Jobs', 'Browse career opportunities and applications.'],
     ['library.index', 'fa-book-open', 'Library', 'Access digital learning and career resources.'],
@@ -130,6 +134,29 @@ document.querySelector('[data-ai-hero-form]')?.addEventListener('submit', functi
 @endif
 </tbody></table></div></div></div>
 </section>
+
+@if(Route::has('participant.chat.index'))
+<section class="eh-tab-pane" data-eh-pane="chat">
+<div class="eh-tab-section"><div class="admin-panel">
+<div class="admin-table-wrap"><table class="admin-table">
+<thead><tr><th>Conversation</th><th>Last message</th><th class="table-actions">Actions</th></tr></thead><tbody>
+@forelse($conversations as $conversation)
+@php($otherMembers=$conversation->members->where('id','!=',$user->id))
+@php($conversationTitle=$conversation->type==='group' ? ($conversation->title ?: 'Group conversation') : ($otherMembers->first()?->name ?? 'Direct conversation'))
+@php($lastMessage=$conversation->latestMessage)
+<tr>
+<td><strong><i class="fas {{ $conversation->type==='group' ? 'fa-user-group' : 'fa-user' }}" style="color:#800000;margin-right:6px"></i>{{ $conversationTitle }}</strong><small class="admin-cell-hint">{{ $conversation->messages_count }} {{ Str::plural('message',$conversation->messages_count) }}</small></td>
+<td>{{ $lastMessage?->sender?->name ? $lastMessage->sender->name.': ' : '' }}{{ Str::limit($lastMessage?->body ?? 'No messages yet',80) }}</td>
+<td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('participant.chat.show',$conversation) }}"><i class="fas fa-arrow-right"></i> Open</a></td>
+</tr>
+@empty
+<tr><td colspan="3"><div class="admin-empty"><i class="fas fa-comments"></i><strong>No conversations yet</strong><span>Message another participant or start a group conversation.</span><a class="btn btn-primary btn-sm" href="{{ route('participant.chat.index') }}">Open chat</a></div></td></tr>
+@endforelse
+</tbody></table></div>
+<div style="display:flex;justify-content:flex-end;margin-top:12px"><a class="btn btn-outline btn-sm" href="{{ route('participant.chat.index') }}"><i class="fas fa-comments"></i> All conversations</a></div>
+</div></div>
+</section>
+@endif
 
 <section class="eh-tab-pane" data-eh-pane="career">
 <div class="eh-tab-section"><div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">

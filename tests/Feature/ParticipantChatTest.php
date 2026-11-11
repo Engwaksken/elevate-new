@@ -79,6 +79,30 @@ class ParticipantChatTest extends TestCase
         $this->post(route('participant.chat.messages.store', $conversation), ['body' => 'Intrusion'])->assertForbidden();
     }
 
+    public function test_participant_can_open_the_chat_page(): void
+    {
+        $this->actingAs($this->participant('Amina'))
+            ->get(route('participant.chat.index'))
+            ->assertOk()
+            ->assertSee('Participant Chat');
+    }
+
+    public function test_dashboard_links_to_chat_and_lists_recent_conversations(): void
+    {
+        $user = $this->participant('Amina');
+        $friend = $this->participant('Naki');
+        $conversation = ParticipantConversation::create(['type' => 'direct', 'created_by' => $user->id]);
+        $conversation->members()->attach([$user->id, $friend->id]);
+        $conversation->messages()->create(['sender_id' => $friend->id, 'body' => 'See you at the workshop']);
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-eh-tab="chat"', false)
+            ->assertSee(route('participant.chat.index'), false)
+            ->assertSee('Naki')
+            ->assertSee('See you at the workshop');
+    }
+
     public function test_inactive_and_non_participant_accounts_cannot_be_invited(): void
     {
         $creator = $this->participant('Amina');
