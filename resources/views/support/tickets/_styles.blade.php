@@ -24,6 +24,24 @@
 @media(max-width:1279px){.itq-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:1000px){.itq-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.itq-grid{grid-template-columns:1fr}.itq-filters select{flex:1 1 45%}}
+/* Collapsible queue list */
+.itq-list-tools{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;color:#667085;font-size:.78rem}
+.itq-list{display:flex;flex-direction:column;gap:6px}
+.itq-row{border:1px solid #e4e7ec;border-left:3px solid #d0d5dd;border-radius:10px;background:#fff}
+.itq-row.itq-open{border-left-color:#2e90fa}.itq-row.itq-in_progress{border-left-color:#f79009}
+.itq-row.itq-awaiting_requester{border-left-color:#7a5af8}.itq-row.itq-resolved{border-left-color:#12b76a}
+.itq-row>summary{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;list-style:none;min-width:0;font-size:.8rem;color:#475467}
+.itq-row>summary::-webkit-details-marker{display:none}
+.itq-row>summary:hover{background:#f9fafb;border-radius:10px}
+.itq-row>summary:focus-visible{outline:2px solid #800000;outline-offset:2px;border-radius:10px}
+.itq-row .itq-caret{color:#98a2b3;font-size:.7rem;transition:transform .15s ease;flex:none}
+.itq-row[open] .itq-caret{transform:rotate(90deg)}
+.itq-row .itq-subject{flex:1 1 auto;min-width:0;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-line-clamp:unset}
+.itq-row-who,.itq-row-when{white-space:nowrap;font-size:.74rem}.itq-row-who i{margin-right:4px;color:#98a2b3}
+.itq-row .itq-pri{white-space:nowrap;font-size:.72rem}
+.itq-row-body{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:4px 14px 14px 34px;border-top:1px dashed #eef0f3}
+.itq-row-body .itq-desc{padding-top:10px;white-space:pre-line}
+@media(max-width:760px){.itq-row-who,.itq-row-when{display:none}.itq-row>summary{flex-wrap:wrap}.itq-row .itq-subject{flex-basis:calc(100% - 120px)}.itq-row-body{padding-left:14px}}
 /* Detail page */
 .itq-detail{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
 .itq-dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;margin:0 0 16px}

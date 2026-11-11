@@ -38,7 +38,9 @@ class ItSupportQueuePageTest extends TestCase
         $this->actingAs($lead)->get(route('it-support.tickets.index'))
             ->assertOk()
             ->assertSee('eh-admin', false)          // staff layout
-            ->assertSee('class="itq-grid"', false)
+            ->assertSee('class="itq-list"', false)      // collapsible ticket rows
+            ->assertSee('<details class="itq-row', false)
+            ->assertSee('data-itq-toggle-all', false)
             ->assertSee('Wi-Fi keeps dropping');
 
         // Empty filter values (the "All …" options) must not be rejected.

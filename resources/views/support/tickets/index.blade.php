@@ -62,25 +62,36 @@
         <a class="btn btn-outline btn-sm" href="{{ route('it-support.tickets.index') }}">Reset</a>
     </form>
 
-    <div class="itq-grid" aria-label="Tickets">
+    @if($tickets->isNotEmpty())
+        <div class="itq-list-tools">
+            <span>{{ number_format($tickets->total()) }} {{ \Illuminate\Support\Str::plural('ticket', $tickets->total()) }} · click a ticket to show its details</span>
+            <button type="button" class="btn btn-outline btn-sm" data-itq-toggle-all aria-expanded="false"><i class="fas fa-up-right-and-down-left-from-center"></i> <span>Expand all</span></button>
+        </div>
+    @endif
+    <div class="itq-list" aria-label="Tickets">
         @forelse($tickets as $ticket)
-            <a class="itq-card itq-{{ $ticket->status }}" href="{{ route('it-support.tickets.show', $ticket) }}">
-                <div class="itq-card-top">
+            <details class="itq-row itq-{{ $ticket->status }}">
+                <summary>
+                    <i class="fas fa-chevron-right itq-caret" aria-hidden="true"></i>
                     <span class="itq-id">#{{ $ticket->id }}</span>
+                    <strong class="itq-subject">{{ $ticket->subject }}</strong>
+                    @if(in_array($ticket->priority, ['urgent', 'high'], true))<span class="itq-pri itq-pri--{{ $ticket->priority }}"><i class="fas fa-flag"></i> {{ $priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority) }}</span>@endif
+                    <span class="itq-row-who"><i class="fas fa-user"></i> {{ $ticket->requester?->name ?? 'Unknown' }}</span>
+                    <span class="itq-row-when">{{ $ticket->created_at?->diffForHumans() ?? '-' }}</span>
                     <span class="itq-chip itq-chip--{{ $ticket->status }}">{{ $ticket->status === 'awaiting_requester' ? 'Awaiting requester' : (ItSupportTicket::STATUSES[$ticket->status] ?? ucfirst(str_replace('_', ' ', $ticket->status))) }}</span>
+                </summary>
+                <div class="itq-row-body">
+                    <p class="itq-desc">{{ \Illuminate\Support\Str::limit($ticket->description, 400) }}</p>
+                    <div class="itq-meta">
+                        <span><i class="fas fa-tag"></i> {{ ItSupportTicket::categoryLabel($ticket->category) ?: 'Uncategorised' }}</span>
+                        @if($ticket->priority)<span class="itq-pri itq-pri--{{ $ticket->priority }}"><i class="fas fa-flag"></i> {{ $priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority) }}</span>@endif
+                        <span><i class="fas fa-user"></i> {{ $ticket->requester?->name ?? 'Unknown' }}</span>
+                        <span><i class="fas fa-user-gear"></i> {{ $ticket->assignee?->name ?? 'Unassigned' }}</span>
+                        <span><i class="fas fa-clock"></i> {{ $ticket->created_at?->format('d M Y, H:i') ?? '-' }}</span>
+                    </div>
+                    <a class="btn btn-primary btn-sm" href="{{ route('it-support.tickets.show', $ticket) }}"><i class="fas fa-arrow-up-right-from-square"></i> Open ticket</a>
                 </div>
-                <strong class="itq-subject">{{ $ticket->subject }}</strong>
-                <p class="itq-desc">{{ \Illuminate\Support\Str::limit($ticket->description, 110) }}</p>
-                <div class="itq-meta">
-                    <span><i class="fas fa-tag"></i> {{ ItSupportTicket::categoryLabel($ticket->category) ?: 'Uncategorised' }}</span>
-                    @if($ticket->priority)<span class="itq-pri itq-pri--{{ $ticket->priority }}"><i class="fas fa-flag"></i> {{ $priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority) }}</span>@endif
-                </div>
-                <div class="itq-foot">
-                    <span><i class="fas fa-user"></i> {{ $ticket->requester?->name ?? 'Unknown' }}</span>
-                    <span><i class="fas fa-user-gear"></i> {{ $ticket->assignee?->name ?? 'Unassigned' }}</span>
-                    <span><i class="fas fa-clock"></i> {{ $ticket->created_at?->diffForHumans() ?? '-' }}</span>
-                </div>
-            </a>
+            </details>
         @empty
             <div class="admin-empty itq-empty"><i class="fas fa-mug-hot"></i><strong>No tickets found</strong><span>{{ request()->hasAny(['status','priority','category','assignee_id','search']) ? 'Try changing or clearing the filters.' : 'Nothing in the queue right now.' }}</span></div>
         @endforelse
@@ -89,4 +100,23 @@
 </section>
 
 @include('support.tickets._styles')
+<script>
+(() => {
+    const toggle = document.querySelector('[data-itq-toggle-all]');
+    const rows = () => [...document.querySelectorAll('.itq-list .itq-row')];
+    if (!toggle) return;
+    const sync = () => {
+        const allOpen = rows().length && rows().every(r => r.open);
+        toggle.setAttribute('aria-expanded', allOpen ? 'true' : 'false');
+        toggle.querySelector('span').textContent = allOpen ? 'Collapse all' : 'Expand all';
+        toggle.querySelector('i').className = 'fas ' + (allOpen ? 'fa-down-left-and-up-right-to-center' : 'fa-up-right-and-down-left-from-center');
+    };
+    toggle.addEventListener('click', () => {
+        const open = toggle.getAttribute('aria-expanded') !== 'true';
+        rows().forEach(r => { r.open = open; });
+        sync();
+    });
+    rows().forEach(r => r.addEventListener('toggle', sync));
+})();
+</script>
 @endsection
