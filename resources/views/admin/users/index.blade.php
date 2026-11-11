@@ -363,7 +363,7 @@
         <div class="permission-check-grid">
             @foreach($roles as $role)
             <label class="permission-check">
-                <input type="checkbox" name="roles[]" value="{{ $role->id }}" @checked($user->roles->contains($role->id))>
+                <input type="checkbox" name="roles[]" value="{{ $role->id }}" @checked($user->roles->contains('id', (int) $role->id))>
                 <span>{{ $role->name }}</span>
             </label>
             @endforeach

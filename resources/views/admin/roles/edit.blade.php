@@ -7,7 +7,7 @@
 <div class="card"><h3>{{ ucfirst($module ?: 'General') }}</h3>
 @foreach($items as $permission)
 <label style="display:block;margin:8px 0">
-<input style="width:auto" type="checkbox" name="permissions[]" value="{{ $permission->id }}" @checked($role->permissions->contains($permission->id))>
+<input style="width:auto" type="checkbox" name="permissions[]" value="{{ $permission->id }}" @checked($role->permissions->contains('id', (int) $permission->id))>
 {{ $permission->name }}
 </label>
 @endforeach

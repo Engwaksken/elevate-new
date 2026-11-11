@@ -63,4 +63,19 @@ class RolePermissionAdministrationTest extends TestCase
         $this->assertFalse($role->is_system);
         $this->assertTrue($role->permissions->contains('slug', 'plans.review'));
     }
+
+    public function test_saved_role_permissions_render_as_checked_in_the_edit_form(): void
+    {
+        $admin = $this->administrator();
+        $role = Role::create(['name' => 'Permission checkbox test', 'slug' => 'permission-checkbox-test']);
+        $permission = Permission::create(['name' => 'Permission checkbox test', 'slug' => 'permission.checkbox.test', 'module' => 'test']);
+        $role->permissions()->attach($permission);
+
+        $html = $this->actingAs($admin)->get(route('admin.roles.index'))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/<input type="checkbox" name="permissions\[\]" value="'.preg_quote((string) $permission->id, '/').'" checked/',
+            $html
+        );
+    }
 }

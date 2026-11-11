@@ -47,6 +47,23 @@ class AdminParticipantsPageTest extends TestCase
             ->assertDontSee('Sam Staff');
     }
 
+    public function test_saved_user_roles_render_as_checked_in_the_edit_form(): void
+    {
+        $participant = User::factory()->create(['name' => 'Ada Participant', 'user_type' => 'participant', 'status' => 'active']);
+        $role = Role::firstOrCreate(['slug' => 'learner-role-checkbox-test'], ['name' => 'Learner role checkbox test']);
+        $participant->roles()->attach($role);
+
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.participants.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/<input type="checkbox" name="roles\[\]" value="'.preg_quote((string) $role->id, '/').'" checked/',
+            $html
+        );
+    }
+
     public function test_participants_page_ignores_the_user_type_filter(): void
     {
         User::factory()->create(['name' => 'Grace Learner', 'user_type' => 'participant', 'status' => 'active']);
