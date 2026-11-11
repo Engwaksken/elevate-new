@@ -50,6 +50,10 @@ class CourseController extends Controller
             $query->where('delivery_mode',$mode);
         }
 
+        if ($courseId = $request->integer('course_id')) {
+            $query->whereKey($courseId);
+        }
+
         if ($branchId = $request->integer('branch_id')) {
             $query->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId));
         }
@@ -66,7 +70,11 @@ class CourseController extends Controller
                 'Enrolments'=>'enrolments_count',
                 'Assessments'=>'assessments_count',
                 'Status'=>'status',
-            ],null,['branch_id'=>'Branch','delivery_mode'=>'Delivery mode']);
+            ],null,[
+                'course_id' => 'Course',
+                'branch_id' => 'Branch',
+                'delivery_mode' => 'Delivery mode',
+            ]);
         }
 
         $perPage=in_array((int)$request->get('per_page'),[10,20,25,50,100],true)

@@ -44,6 +44,13 @@
         @endforeach
     </select>
 
+    <select name="course_id" aria-label="Filter by course">
+        <option value="">All courses</option>
+        @foreach($courseOptions as $courseOption)
+        <option value="{{ $courseOption->id }}" @selected((int) request('course_id') === (int) $courseOption->id)>{{ $courseOption->title }}</option>
+        @endforeach
+    </select>
+
     <select name="branch_id"><option value="">All branches</option>@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected(request('branch_id') == $branch->id)>{{ $branch->name }}</option>@endforeach</select>
 
     <select name="delivery_mode">

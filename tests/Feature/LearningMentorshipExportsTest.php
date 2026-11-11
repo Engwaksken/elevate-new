@@ -55,6 +55,19 @@ class LearningMentorshipExportsTest extends TestCase
             ->assertSee('status=draft', false);
     }
 
+    public function test_admin_courses_page_can_filter_to_one_course(): void
+    {
+        $selected = Course::create(['title' => 'Selected course', 'status' => 'published']);
+        Course::create(['title' => 'Other course', 'status' => 'published']);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.elearning.courses.index', ['course_id' => $selected->id]))
+            ->assertOk()
+            ->assertViewHas('courses', fn ($courses) => $courses->count() === 1 && $courses->first()->id === $selected->id)
+            ->assertSee('name="course_id"', false)
+            ->assertSee('value="'.$selected->id.'" selected', false);
+    }
+
     public function test_admin_enrolments_pdf_export_returns_a_pdf(): void
     {
         $course = Course::create(['title' => 'Digital Skills', 'status' => 'published']);
