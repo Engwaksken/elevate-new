@@ -268,6 +268,36 @@ class ParticipantIdentityTest extends TestCase
             ->assertSee('Gulu');
     }
 
+    public function test_user_assignment_selections_are_not_discarded_for_non_staff_account_types(): void
+    {
+        $participant = $this->participant();
+        $branch = Branch::create(['name' => 'Jinja', 'code' => 'JIN', 'is_active' => true]);
+        $course = Course::create(['title' => 'Digital Skills', 'status' => 'published']);
+
+        $this->actingAs($this->admin)->put(route('admin.users.update', $participant), [
+            'name' => $participant->name,
+            'email' => $participant->email,
+            'user_type' => 'participant',
+            'status' => 'active',
+            'sync_assignments' => 1,
+            'branches' => [$branch->id],
+            'courses' => [$course->id],
+        ])->assertSessionHas('success');
+
+        $this->assertTrue($participant->branches()->whereKey($branch->id)->exists());
+        $this->assertTrue($participant->instructedCourses()->whereKey($course->id)->exists());
+
+        $html = $this->actingAs($this->admin)->get(route('admin.users.index'))->assertOk()->getContent();
+        $this->assertMatchesRegularExpression(
+            '/id="edit-'.preg_quote((string) $participant->id, '/').'-branch-'.preg_quote((string) $branch->id, '/').'" type="checkbox" name="branches\[\]" value="'.preg_quote((string) $branch->id, '/').'" checked/',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/id="edit-'.preg_quote((string) $participant->id, '/').'-course-'.preg_quote((string) $course->id, '/').'" type="checkbox" name="courses\[\]" value="'.preg_quote((string) $course->id, '/').'" checked/',
+            $html
+        );
+    }
+
     public function test_instructor_participants_tab_shows_id_and_returning_status(): void
     {
         $instructor = $this->instructor();

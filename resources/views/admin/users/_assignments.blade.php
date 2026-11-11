@@ -1,6 +1,6 @@
 {{-- Staff branch and course assignments. Expects $branches, $courses, $assignedBranches, $assignedCourses, $prefix. --}}
 <input type="hidden" name="sync_assignments" value="1">
-<p class="form-hint" style="margin-top:0">For staff such as instructors and trainers, who may work across several branches and teach several courses. Participants belong to the single branch on their profile, so these choices are ignored for participant accounts.</p>
+<p class="form-hint" style="margin-top:0">Select the branches and courses associated with this user. These selections are retained if the user's account type changes; participant learning enrolments and profile branch remain managed separately.</p>
 <div class="modal-grid">
     <div class="form-group full">
         <label>Branches</label>

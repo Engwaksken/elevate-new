@@ -377,20 +377,14 @@ class UserController extends Controller
     }
 
     /**
-     * Staff (instructors, trainers) can work across several branches and courses.
-     * Participant accounts keep their single branch on the profile and teach no courses.
+     * Persist the branch/course selections whenever the assignments tab is submitted.
+     * The user type controls which areas can act on those associations; changing a
+     * user's type must not silently discard the administrator's saved selections.
      */
     private function syncAssignments(User $user, array $data, bool $submitted): void
     {
         // Forms without the Assignments tab must not wipe existing assignments.
-        if (! $submitted && $data['user_type'] === 'staff') {
-            return;
-        }
-
-        if ($data['user_type'] !== 'staff') {
-            $user->branches()->sync([]);
-            $user->instructedCourses()->sync([]);
-
+        if (! $submitted) {
             return;
         }
 
