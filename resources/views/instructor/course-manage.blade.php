@@ -63,6 +63,14 @@
 .icm-maxfiles{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:12px}
 .icm-form-grid .icm-maxfiles input{width:110px}
 .icm-maxfiles small{flex-basis:100%}
+.icm-zip-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:4px 0 12px;padding:10px 12px;border:1px solid #eaecf0;border-radius:10px;background:#fcfcfd}
+.icm-zip-bar label{font-weight:700;color:#101828}
+.icm-zip-bar select{flex:0 1 340px;min-width:0;padding:8px 10px;border:1px solid #d0d5dd;border-radius:8px;background:#fff}
+.icm-zip-bar small{flex-basis:100%}
+.icm-earlier{margin-bottom:16px;border:1px solid #eaecf0;border-radius:10px;padding:8px 12px}
+.icm-earlier summary{cursor:pointer;font-weight:700}
+.icm-earlier-item{padding:10px 0;border-top:1px dashed #eaecf0}
+.icm-earlier-item:first-of-type{border-top:0}
 .icm-publish-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding-top:4px}
 .icm-progress{height:8px;background:#eaecf0;border-radius:999px;overflow:hidden}
 .icm-progress span{display:block;height:100%;background:#800000}
@@ -354,6 +362,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <p class="icm-muted">
                 @if($assessmentType !== 'assignment'){{ $assessment->questions_count }} question(s) · @endif{{ $assessment->attempts_count }} {{ $assessmentType === 'assignment' ? 'submission(s)' : 'attempt(s)' }}
             </p>
+            @if($assessment->attempts_count > 0)<p><a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.download', [$course, 'assessment_id' => $assessment->id]) }}"><i class="fas fa-file-zipper"></i> Download submissions (ZIP)</a></p>@endif
             @if($assessmentType === 'assignment')<p><strong>Accepts:</strong> {{ $assessment->submissionFormatLabels() }} · up to {{ $assessment->maxSubmissionFiles() }} {{ \Illuminate\Support\Str::plural('file', $assessment->maxSubmissionFiles()) }}</p>@endif
             @unless($assessment->is_published)
                 <form method="POST" action="{{ route('instructor.courses.assessments.publish',[$course,$assessment]) }}" style="margin:8px 0">@csrf
@@ -418,7 +427,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
 @if($activeTab === 'submissions')
 <section class="icm-panel">
-    <div class="icm-panel-head"><div><h2>Submissions</h2><p class="icm-muted">Review participant submissions and record marks and feedback.</p></div><x-export-buttons :params="['tab' => 'submissions', 'list' => 'submissions']" /></div>
+    <div class="icm-panel-head"><div><h2>Submissions</h2><p class="icm-muted">One row per participant and assessment, showing their latest attempt. Earlier attempts are listed in Grade / feedback.</p></div><x-export-buttons :params="['tab' => 'submissions', 'list' => 'submissions']" /></div>
+    @if($downloadableAssessments->isNotEmpty())
+        <form method="GET" action="{{ route('instructor.courses.submissions.download', $course) }}" class="icm-zip-bar">
+            <label for="zip-assessment"><i class="fas fa-file-zipper"></i> Download submissions</label>
+            <select id="zip-assessment" name="assessment_id">
+                <option value="">All assessments (a folder each)</option>
+                @foreach($downloadableAssessments as $downloadable)
+                    <option value="{{ $downloadable->id }}">{{ $downloadable->title }} · {{ ucfirst($downloadable->type) }} ({{ $downloadable->attempts_count }} {{ \Illuminate\Support\Str::plural('attempt', $downloadable->attempts_count) }})</option>
+                @endforeach
+            </select>
+            <button class="btn btn-primary btn-sm"><i class="fas fa-download"></i> Download ZIP</button>
+            <small class="icm-muted">One folder per participant with their files. Earlier attempts are in an "Earlier attempts" subfolder.</small>
+        </form>
+    @endif
     <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">
         <form method="POST" action="{{ route('instructor.courses.submissions.ai-mark', $course) }}" data-ai-selection-form>@csrf<button class="btn btn-outline"><i class="fas fa-wand-magic-sparkles"></i> AI mark selected</button></form>
         <form method="POST" action="{{ route('instructor.courses.submissions.ai-approve', $course) }}" data-ai-selection-form>@csrf<button class="btn btn-primary"><i class="fas fa-check-double"></i> Approve selected AI marks</button></form>
@@ -431,13 +453,14 @@ document.addEventListener('DOMContentLoaded', function () {
     @endif
     <div class="table-responsive">
         <table class="admin-table">
-            <thead><tr><th><input type="checkbox" data-ai-mark-select-all aria-label="Select submissions for AI marking"></th><th>Participant</th><th>Assessment</th><th>Status</th><th>Submitted</th><th>Review</th></tr></thead>
+            <thead><tr><th><input type="checkbox" data-ai-mark-select-all aria-label="Select submissions for AI marking"></th><th>Participant</th><th>Assessment</th><th>Attempts</th><th>Status</th><th>Latest submission</th><th>Review</th></tr></thead>
             <tbody>
             @forelse($submissions as $attempt)
                 <tr>
                     <td><input type="checkbox" value="{{ $attempt->id }}" data-ai-mark-select @if($attempt->status !== 'submitted') disabled @endif aria-label="Select {{ $attempt->user?->name }} submission"></td>
                     <td>{{ $attempt->user?->name }}<br><small>{{ $attempt->user?->email }}</small></td>
                     <td>{{ $attempt->assessment?->title }}<br><small>{{ ucfirst($attempt->assessment?->type ?? '') }}</small></td>
+                    <td><span class="icm-chip" title="Attempt {{ $attempt->attempt_number }} is shown">{{ (int) $attempt->attempts_total }}{{ $attempt->assessment?->max_attempts ? ' of '.$attempt->assessment->max_attempts : '' }}</span></td>
                     <td>{{ ucfirst($attempt->status) }}</td>
                     <td>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '-' }}</td>
                     <td>
@@ -452,7 +475,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6">No submissions found.</td></tr>
+                <tr><td colspan="7">No submissions found.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -480,6 +503,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <dl class="audit-meta">
                             <div><dt>Type</dt><dd>{{ ucfirst($attempt->assessment?->type ?? '-') }}</dd></div>
                             <div><dt>Submitted</dt><dd>{{ $attempt->submitted_at?->format('d M Y H:i') ?? '-' }}</dd></div>
+                            <div><dt>Attempt</dt><dd>{{ $attempt->attempt_number }} of {{ (int) $attempt->attempts_total }} made{{ $attempt->assessment?->max_attempts ? ' (max '.$attempt->assessment->max_attempts.')' : '' }}</dd></div>
                             <div><dt>Total marks</dt><dd>{{ $attempt->assessment?->total_marks ?? '-' }}</dd></div>
                             <div><dt>Pass mark</dt><dd>{{ $attempt->assessment?->pass_mark ?? '-' }}</dd></div>
                         </dl>
@@ -493,6 +517,20 @@ document.addEventListener('DOMContentLoaded', function () {
                             <div style="margin-bottom:16px">
                                 <x-learning.file-list :files="$attempt->files" :title="'Submitted files ('.$attempt->files->count().')'" />
                             </div>
+                        @endif
+                        @if($attempt->earlierAttempts?->isNotEmpty())
+                            <details class="icm-earlier">
+                                <summary>Earlier attempts ({{ $attempt->earlierAttempts->count() }})</summary>
+                                @foreach($attempt->earlierAttempts as $earlier)
+                                    <div class="icm-earlier-item">
+                                        <strong>Attempt {{ $earlier->attempt_number }}</strong>
+                                        <small class="icm-muted"> · {{ $earlier->submitted_at?->format('d M Y H:i') ?? '-' }} · {{ ucfirst($earlier->status) }}@if($earlier->percentage !== null) · {{ number_format((float) $earlier->percentage, 1) }}%@endif</small>
+                                        @if($earlier->submission_text)<div class="admin-readonly" style="max-height:120px;overflow:auto;white-space:pre-wrap;margin-top:6px">{{ $earlier->submission_text }}</div>@endif
+                                        @if($earlier->instructor_feedback)<p class="icm-muted" style="margin:6px 0 0"><strong>Feedback:</strong> {{ $earlier->instructor_feedback }}</p>@endif
+                                        @if($earlier->files->isNotEmpty())<x-learning.file-list compact :files="$earlier->files" />@endif
+                                    </div>
+                                @endforeach
+                            </details>
                         @endif
                         <div class="modal-grid">
                             <div class="form-group">

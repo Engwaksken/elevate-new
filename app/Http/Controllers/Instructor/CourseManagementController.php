@@ -122,9 +122,16 @@ class CourseManagementController extends Controller
             )
             ->latest();
 
+        // One row per participant per assessment: the latest attempt, with the
+        // number of attempts. Earlier attempts are shown inside its review window.
         $submissionQuery = AssessmentAttempt::query()
             ->with(['assessment', 'user', 'files'])
-            ->whereHas('assessment', fn ($query) => $query->where('course_id', $course->id))
+            ->latestPerParticipant($course->assessments()->select('id'))
+            ->withAttemptsTotal()
+            ->when(
+                $request->filled('submission_assessment_id'),
+                fn ($query) => $query->where('assessment_id', (int) $request->get('submission_assessment_id'))
+            )
             ->when($request->filled('submission_search'), function ($query) use ($request) {
                 $term = trim((string) $request->get('submission_search'));
 
@@ -153,7 +160,8 @@ class CourseManagementController extends Controller
                     'Email' => 'user.email',
                     'Assessment' => 'assessment.title',
                     'Type' => 'assessment.type',
-                    'Attempt' => 'attempt_number',
+                    'Latest attempt' => 'attempt_number',
+                    'Attempts' => fn ($attempt) => (int) $attempt->attempts_total,
                     'Submitted' => 'submitted_at',
                     'Score' => 'score',
                     'Percentage' => 'percentage',
@@ -191,6 +199,8 @@ class CourseManagementController extends Controller
             ->paginate(20, ['*'], 'submissions_page')
             ->withQueryString();
 
+        $this->attachEarlierAttempts($submissions->getCollection());
+
         $extensionRequests = AssignmentExtensionRequest::query()
             ->with(['assessment', 'user', 'reviewer'])
             ->whereHas('assessment', fn ($query) => $query->where('course_id', $course->id))
@@ -221,6 +231,7 @@ class CourseManagementController extends Controller
             'participantHistory' => app(\App\Services\ParticipantHistoryService::class)
                 ->summaries($participants->getCollection()->pluck('user_id'), $course->id),
             'submissions' => $submissions,
+            'downloadableAssessments' => app(\App\Services\Learning\SubmissionArchiveService::class)->assessmentsWithSubmissions($course),
             'aiMarkDrafts' => $request->session()->get('ai_mark_drafts.'.$course->id, []),
             'announcements' => $announcements,
             'timeSlots' => $course->timeSlots()->orderBy('starts_at')->paginate(20, ['*'], 'timetable_page')->withQueryString(),
@@ -824,6 +835,53 @@ class CourseManagementController extends Controller
         $assignments->reject($extensionRequest, $request->user(), $data['reviewer_note'] ?? null);
 
         return back()->with('success', 'Extension request rejected. The participant has been notified.');
+    }
+
+    /**
+     * ZIP of submissions, one folder per participant (and per assessment when
+     * downloading the whole course). ?assessment_id= limits it to one assessment.
+     */
+    public function downloadSubmissions(Request $request, Course $course, \App\Services\Learning\SubmissionArchiveService $archives)
+    {
+        $this->authorise($course);
+
+        $assessment = null;
+        if ($request->filled('assessment_id')) {
+            $assessment = $course->assessments()->findOrFail((int) $request->get('assessment_id'));
+        }
+
+        try {
+            $archive = $archives->build($course, $assessment);
+        } catch (\RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return response()->download($archive['path'], $archive['name'], ['Content-Type' => 'application/zip'])
+            ->deleteFileAfterSend(true);
+    }
+
+    /** Give each listed (latest) attempt its earlier attempts, newest first, as "earlierAttempts". */
+    private function attachEarlierAttempts(Collection $latest): void
+    {
+        if ($latest->isEmpty()) {
+            return;
+        }
+
+        $earlier = AssessmentAttempt::query()
+            ->with('files')
+            ->whereIn('assessment_id', $latest->pluck('assessment_id')->unique())
+            ->whereIn('user_id', $latest->pluck('user_id')->unique())
+            ->whereNotIn('id', $latest->pluck('id'))
+            ->orderByDesc('attempt_number')->orderByDesc('id')
+            ->get();
+
+        $this->files()->syncAttempts($earlier);
+        $earlier->load('files');
+        $grouped = $earlier->groupBy(fn ($attempt) => $attempt->user_id.'-'.$attempt->assessment_id);
+
+        foreach ($latest as $attempt) {
+            $attempt->setRelation('earlierAttempts', $grouped->get($attempt->user_id.'-'.$attempt->assessment_id, collect())->values());
+        }
     }
 
     public function downloadSubmissionFile(Course $course, AssessmentAttempt $attempt)

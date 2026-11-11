@@ -45,4 +45,30 @@ class AssessmentAttempt extends Model
     {
         return $this->hasMany(AssessmentAnswer::class);
     }
+
+    /**
+     * Only each participant's latest attempt per assessment (one row per
+     * participant and assessment), limited to the given assessment ids.
+     *
+     * @param  \Illuminate\Contracts\Database\Query\Builder|array<int,int>  $assessmentIds
+     */
+    public function scopeLatestPerParticipant($query, $assessmentIds)
+    {
+        return $query
+            ->whereIn('assessment_id', $assessmentIds)
+            ->whereIn('id', static::query()
+                ->selectRaw('MAX(id)')
+                ->whereIn('assessment_id', $assessmentIds)
+                ->groupBy('user_id', 'assessment_id'));
+    }
+
+    /** Adds "attempts_total": how many attempts the participant made at this assessment. */
+    public function scopeWithAttemptsTotal($query)
+    {
+        return $query->addSelect(['attempts_total' => static::query()
+            ->from('assessment_attempts as history')
+            ->selectRaw('COUNT(*)')
+            ->whereColumn('history.user_id', 'assessment_attempts.user_id')
+            ->whereColumn('history.assessment_id', 'assessment_attempts.assessment_id')]);
+    }
 }

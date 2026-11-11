@@ -26,13 +26,13 @@
 </form>
 
 <div class="admin-table-wrap"><table class="admin-table">
-<thead><tr><th>Learner</th><th>Assessment</th><th>Attempt</th><th>Submitted</th><th>Score</th><th>Percentage</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
+<thead><tr><th>Learner</th><th>Assessment</th><th>Attempts</th><th>Submitted</th><th>Score</th><th>Percentage</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
 <tbody>
 @forelse($attempts as $attempt)
 <tr>
 <td><strong>{{ data_get($attempt,'user.name','-') }}</strong><small class="admin-cell-hint">{{ data_get($attempt,'user.email','') }}</small></td>
 <td>{{ data_get($attempt,'assessment.title','-') }}</td>
-<td>#{{ $attempt->attempt_number }}</td>
+<td>{{ (int) $attempt->attempts_total }}{{ $attempt->assessment?->max_attempts ? ' of '.$attempt->assessment->max_attempts : '' }}<small class="admin-cell-hint">Latest: #{{ $attempt->attempt_number }}</small></td>
 <td>{{ optional($attempt->submitted_at)->format('d M Y H:i') ?: '-' }}</td>
 <td>{{ $attempt->score !== null ? number_format((float)$attempt->score,1) : '-' }}</td>
 <td>{{ $attempt->percentage !== null ? number_format((float)$attempt->percentage,1).'%' : '-' }}</td>

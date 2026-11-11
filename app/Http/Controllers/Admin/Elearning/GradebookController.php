@@ -15,8 +15,10 @@ class GradebookController extends Controller
     use ExportsTables;
     public function index(Request $request, Course $course)
     {
+        // One row per learner and assessment: their latest attempt and how many they made.
         $query=AssessmentAttempt::with(['assessment','assessment.questions','user'])
-            ->whereHas('assessment',fn($q)=>$q->where('course_id',$course->id))
+            ->latestPerParticipant($course->assessments()->select('id'))
+            ->withAttemptsTotal()
             ->latest();
 
         if($search=trim((string)$request->get('search'))){
@@ -35,7 +37,8 @@ class GradebookController extends Controller
                 'Learner'=>'user.name',
                 'Email'=>'user.email',
                 'Assessment'=>'assessment.title',
-                'Attempt'=>'attempt_number',
+                'Latest attempt'=>'attempt_number',
+                'Attempts'=>fn($a)=>(int)$a->attempts_total,
                 'Submitted'=>'submitted_at',
                 'Score'=>'score',
                 'Percentage'=>'percentage',

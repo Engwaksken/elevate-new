@@ -1503,6 +1503,11 @@ Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-a
         Route::post('/{course}/submissions/ai-approve', [\App\Http\Controllers\Instructor\CourseManagementController::class, 'approveAiMarks'])->name('instructor.courses.submissions.ai-approve');
 
         Route::get(
+            '/{course}/submissions/download',
+            [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadSubmissions']
+        )->name('instructor.courses.submissions.download');
+
+        Route::get(
             '/{course}/submissions/{attempt}/file',
             [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadSubmissionFile']
         )->name('instructor.courses.submissions.file');
