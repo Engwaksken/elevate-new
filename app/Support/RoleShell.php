@@ -125,6 +125,7 @@ class RoleShell
                 'Overview' => [
                     ['route' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'fa-gauge-high', 'active' => ['dashboard']],
                     ['route' => 'mentorship.dashboard', 'fragment' => '#ai', 'label' => 'AI Career Mentor', 'icon' => 'fa-wand-magic-sparkles', 'active' => []],
+                    ['route' => 'participant.chat.index', 'label' => 'Chat', 'icon' => 'fa-comments', 'active' => ['participant.chat.*']],
                     ['route' => 'calendar.index', 'label' => 'Calendar', 'icon' => 'fa-calendar-days', 'active' => ['calendar.*']],
                     ['route' => 'certificates.mine', 'label' => 'My Certificates', 'icon' => 'fa-award', 'active' => ['certificates.mine']],
                     ['route' => 'notifications.index', 'label' => 'Notifications', 'icon' => 'fa-bell', 'active' => ['notifications.*']],
@@ -135,7 +136,6 @@ class RoleShell
                     ['route' => 'mentorship.dashboard', 'label' => 'Mentorship', 'icon' => 'fa-user-group', 'active' => ['mentorship.*']],
                     ['route' => 'mentorship.dashboard', 'fragment' => '#goals', 'label' => 'Goals', 'icon' => 'fa-flag', 'active' => []],
                     ['route' => 'appointments.index', 'label' => 'Appointments', 'icon' => 'fa-calendar-check', 'active' => ['appointments.*']],
-                    ['route' => 'participant.chat.index', 'label' => 'Participant Chat', 'icon' => 'fa-comments', 'active' => ['participant.chat.*']],
                     ['route' => 'career.resume.index', 'label' => 'Resume Builder', 'icon' => 'fa-file-lines', 'active' => ['career.*']],
                 ],
                 'Opportunities' => [

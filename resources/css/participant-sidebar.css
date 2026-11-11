@@ -313,18 +313,69 @@
    ========================================================= */
 
 .ps-label {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
 
-    padding: 17px 12px 7px;
+    width: 100%;
+
+    margin: 0;
+    padding: 13px 11px 7px;
+
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
 
     color: rgba(255, 255, 255, 0.82);
 
-    font-size: 1rem;
+    font: inherit;
+    font-size: 0.82rem;
     font-weight: 800;
 
     letter-spacing: 0.09em;
 
+    text-align: left;
     text-transform: uppercase;
+
+    cursor: pointer;
+}
+
+.ps-label:hover,
+.ps-label:focus-visible {
+    color: #ffffff;
+}
+
+.ps-label:focus-visible {
+    outline: 2px solid var(--secondary, #d4af37);
+    outline-offset: -2px;
+}
+
+.ps-group + .ps-group {
+    margin-top: 3px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ps-group-chevron {
+    flex: 0 0 auto;
+
+    color: rgba(255, 255, 255, 0.62);
+
+    font-size: 0.68rem;
+
+    transition: transform 0.2s ease;
+}
+
+.ps-group-toggle[aria-expanded="true"] .ps-group-chevron {
+    transform: rotate(180deg);
+}
+
+.ps-group-links {
+    padding-bottom: 4px;
+}
+
+.ps-group-links[hidden] {
+    display: none;
 }
 
 

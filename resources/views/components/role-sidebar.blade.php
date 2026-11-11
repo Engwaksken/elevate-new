@@ -37,14 +37,34 @@
     </div>
 
     <nav class="ps-nav" aria-label="{{ $rsMeta['label'] }} menu">
+        @php
+            $rsOpenGroup = array_key_first($rsNav);
+            foreach ($rsNav as $rsGroupName => $rsGroupItems) {
+                if (collect($rsGroupItems)->contains(fn (array $item) => $item['is_active'])) {
+                    $rsOpenGroup = $rsGroupName;
+                    break;
+                }
+            }
+        @endphp
         @foreach($rsNav as $group => $items)
-            <span class="ps-label">{{ $group }}</span>
-            @foreach($items as $item)
-                <a href="{{ $item['url'] }}" class="ps-link {{ $item['is_active'] ? 'active' : '' }}" @if($item['is_active']) aria-current="page" @endif>
-                    <i class="fas {{ $item['icon'] }}" aria-hidden="true"></i>
-                    <span>{{ $item['label'] }}</span>
-                </a>
-            @endforeach
+            @php
+                $rsGroupId = 'ps-group-'.\Illuminate\Support\Str::slug($group);
+                $rsGroupOpen = $group === $rsOpenGroup;
+            @endphp
+            <div class="ps-group {{ $rsGroupOpen ? 'is-open' : '' }}" data-ps-group>
+                <button type="button" class="ps-label ps-group-toggle" aria-expanded="{{ $rsGroupOpen ? 'true' : 'false' }}" aria-controls="{{ $rsGroupId }}" data-ps-group-toggle>
+                    <span>{{ $group }}</span>
+                    <i class="fas fa-chevron-down ps-group-chevron" aria-hidden="true"></i>
+                </button>
+                <div id="{{ $rsGroupId }}" class="ps-group-links" @if(! $rsGroupOpen) hidden @endif>
+                    @foreach($items as $item)
+                        <a href="{{ $item['url'] }}" class="ps-link {{ $item['is_active'] ? 'active' : '' }}" @if($item['is_active']) aria-current="page" @endif>
+                            <i class="fas {{ $item['icon'] }}" aria-hidden="true"></i>
+                            <span>{{ $item['label'] }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
         @endforeach
     </nav>
 

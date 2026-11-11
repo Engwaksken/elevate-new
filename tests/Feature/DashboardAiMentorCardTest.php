@@ -30,9 +30,14 @@ class DashboardAiMentorCardTest extends TestCase
         $html = $this->actingAs($user)->get(route('dashboard'))->assertOk()
             ->assertSee('Your AI Career Mentor')
             ->assertSee('Ask my mentor')
+            ->assertSee('Tap to ask about jobs', false)
             ->assertSee(route('mentorship.dashboard', ['ask' => 'How do I choose a career path?']), false)
             ->assertSee('Your next step:')->assertSee('Polish my CV')
             ->getContent();
+
+        // The mentor card is a collapsed <details> panel that the participant expands on click.
+        $this->assertStringContainsString('<details class="ai-hero" data-ai-hero data-no-career-ai-fix>', $html);
+        $this->assertStringContainsString('class="ai-hero-summary"', $html);
 
         // The card comes before the statistics, i.e. first after the welcome header.
         $this->assertLessThan(strpos($html, 'class="eh-stats"'), strpos($html, 'class="ai-hero"'));

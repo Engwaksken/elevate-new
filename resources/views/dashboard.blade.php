@@ -26,9 +26,17 @@
 <style>
 .ai-hero{position:relative;overflow:hidden;margin:0 0 20px;padding:20px 22px;border-radius:16px;background:linear-gradient(135deg,#800000 0%,#a8323a 100%);color:#fff;box-shadow:0 10px 26px rgba(128,0,0,.22)}
 .ai-hero:after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.07)}
-.ai-hero-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.ai-hero-summary{position:relative;z-index:1;display:flex;align-items:center;gap:12px;cursor:pointer;list-style:none}
+.ai-hero-summary::-webkit-details-marker{display:none}
+.ai-hero-summary:focus-visible{outline:2px solid #d4af37;outline-offset:4px;border-radius:10px}
+.ai-hero-summary-copy{flex:1;min-width:0}
+.ai-hero-title{display:block;color:#fff;font-size:1.25rem;font-weight:700;line-height:1.3}
+.ai-hero-summary-hint{display:block;margin-top:2px;color:#fde8e8;font-size:.85rem}
+.ai-hero[open] .ai-hero-summary-hint{display:none}
+.ai-hero-chevron{flex:0 0 auto;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.14);transition:transform .2s ease}
+.ai-hero[open] .ai-hero-chevron{transform:rotate(180deg)}
+.ai-hero-body{position:relative;z-index:1;padding-top:12px}
 .ai-hero-icon{flex:0 0 44px;width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:#d4af37;color:#5b0000;font-size:1.2rem}
-.ai-hero h2{margin:0;color:#fff;font-size:1.25rem}
 .ai-hero p{margin:0 0 12px;color:#fde8e8}
 .ai-hero-form{position:relative;z-index:1;display:flex;gap:8px}
 .ai-hero-form input{flex:1;min-width:0;border:0!important;background:#fff!important}
@@ -40,27 +48,41 @@
 .ai-hero-step a{color:#fff;font-weight:700}
 @media(max-width:640px){.ai-hero{padding:16px}.ai-hero-form{flex-direction:column}}
 </style>
-<section class="ai-hero" aria-labelledby="ai-hero-title" data-no-career-ai-fix>
-    <div class="ai-hero-head">
-        <span class="ai-hero-icon"><i class="fas fa-wand-magic-sparkles"></i></span>
-        <h2 id="ai-hero-title">Your AI Career Mentor</h2>
+<details class="ai-hero" data-ai-hero data-no-career-ai-fix>
+    <summary class="ai-hero-summary">
+        <span class="ai-hero-icon" aria-hidden="true"><i class="fas fa-wand-magic-sparkles"></i></span>
+        <span class="ai-hero-summary-copy">
+            <span class="ai-hero-title" id="ai-hero-title">Your AI Career Mentor</span>
+            <span class="ai-hero-summary-hint">Tap to ask about jobs, CVs, interviews and your next step.</span>
+        </span>
+        <span class="ai-hero-chevron" aria-hidden="true"><i class="fas fa-chevron-down"></i></span>
+    </summary>
+    <div class="ai-hero-body">
+        <p>Ask anything about jobs, CVs, interviews or your next career step. Answers are based on your own goals.</p>
+        <form class="ai-hero-form" method="GET" action="{{ route('mentorship.dashboard') }}" data-ai-hero-form>
+            <label for="ai-hero-question" class="sr-only">Your career question</label>
+            <input id="ai-hero-question" name="ask" maxlength="1500" required placeholder="Ask a career question…" autocomplete="off">
+            <button class="btn"><i class="fas fa-paper-plane"></i> Ask my mentor</button>
+        </form>
+        <div class="ai-hero-chips">
+            @foreach(['How do I choose a career path?', 'How should I prepare for an interview?', 'What skills should I build next?'] as $question)
+                <a href="{{ route('mentorship.dashboard', ['ask' => $question]) }}#ai">{{ $question }}</a>
+            @endforeach
+        </div>
+        @if($nextCareerStep)
+            <div class="ai-hero-step"><i class="fas fa-flag-checkered"></i> Your next step: <strong>{{ $nextCareerStep->title }}</strong>, due {{ $nextCareerStep->due_on->format('d M') }}. <a href="{{ route('mentorship.dashboard') }}#action-plan">See my plan</a></div>
+        @endif
     </div>
-    <p>Ask anything about jobs, CVs, interviews or your next career step. Answers are based on your own goals.</p>
-    <form class="ai-hero-form" method="GET" action="{{ route('mentorship.dashboard') }}" data-ai-hero-form>
-        <label for="ai-hero-question" class="sr-only">Your career question</label>
-        <input id="ai-hero-question" name="ask" maxlength="1500" required placeholder="Ask a career question…" autocomplete="off">
-        <button class="btn"><i class="fas fa-paper-plane"></i> Ask my mentor</button>
-    </form>
-    <div class="ai-hero-chips">
-        @foreach(['How do I choose a career path?', 'How should I prepare for an interview?', 'What skills should I build next?'] as $question)
-            <a href="{{ route('mentorship.dashboard', ['ask' => $question]) }}#ai">{{ $question }}</a>
-        @endforeach
-    </div>
-    @if($nextCareerStep)
-        <div class="ai-hero-step"><i class="fas fa-flag-checkered"></i> Your next step: <strong>{{ $nextCareerStep->title }}</strong>, due {{ $nextCareerStep->due_on->format('d M') }}. <a href="{{ route('mentorship.dashboard') }}#action-plan">See my plan</a></div>
-    @endif
-</section>
+</details>
 <script>
+// Open the card when a question or the #ai fragment is already in the URL.
+(function () {
+    var hero = document.querySelector('[data-ai-hero]');
+    if (!hero) return;
+    if (new URLSearchParams(window.location.search).has('ask') || window.location.hash === '#ai') {
+        hero.open = true;
+    }
+})();
 // Keep the #ai fragment so the mentor tab opens with the question.
 document.querySelector('[data-ai-hero-form]')?.addEventListener('submit', function (event) {
     event.preventDefault();

@@ -30,6 +30,19 @@ class ParticipantLearningNavigationTest extends TestCase
             ->assertSee('Browse Courses');
     }
 
+    public function test_participant_sidebar_groups_collapse_and_include_chat(): void
+    {
+        $this->actingAs($this->participant());
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-ps-group-toggle', false)
+            ->assertSee('aria-controls="ps-group-overview"', false)
+            ->assertSee('id="ps-group-growth" class="ps-group-links"', false)
+            ->assertSee('aria-expanded="false"', false)
+            ->assertSee(route('participant.chat.index'), false);
+    }
+
     public function test_home_learning_card_links_participants_to_my_learning(): void
     {
         $this->actingAs($this->participant());
