@@ -10,6 +10,7 @@ use App\Models\Course;
 use App\Models\Event;
 use App\Services\CertificatePdfService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class CertificateAdminController extends Controller
@@ -54,22 +55,56 @@ class CertificateAdminController extends Controller
 
     public function templates(Request $request)
     {
+        $query = CertificateTemplate::with(['course', 'courses', 'event', 'creator'])->withCount('certificates')->latest();
+
+        if ($search = trim((string) $request->get('search'))) {
+            $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")
+                ->orWhereHas('courses', fn ($c) => $c->where('title', 'like', "%{$search}%"))
+                ->orWhereHas('course', fn ($c) => $c->where('title', 'like', "%{$search}%"))
+                ->orWhereHas('event', fn ($e) => $e->where('title', 'like', "%{$search}%")));
+        }
+
+        if (in_array($context = $request->get('context'), ['course', 'event', 'default'], true)) {
+            $query->where('context_type', $context);
+        }
+
+        if (in_array($status = $request->get('status'), ['active', 'inactive'], true)) {
+            $query->where('is_active', $status === 'active');
+        }
+
         if ($format = $this->exportFormat($request)) {
-            return $this->exportTable($format, 'Certificate Templates', CertificateTemplate::with(['course','courses','event'])->latest(), [
+            return $this->exportTable($format, 'Certificate Templates', $query, [
                 'Name' => 'name',
                 'Context' => fn ($t) => $t->context_type === 'default' ? 'Default template' : ucfirst((string) $t->context_type),
                 'Course(s)' => fn ($t) => $t->courses->pluck('title')->push($t->course?->title)->filter()->unique()->join(', '),
                 'Event' => 'event.title',
                 'Orientation' => 'orientation',
                 'Status' => fn ($t) => $t->is_active ? 'Active' : 'Inactive',
+                'Certificates generated' => 'certificates_count',
                 'Created' => 'created_at',
             ]);
         }
 
+        $active = CertificateTemplate::where('is_active', true);
+        $coursesCovered = DB::table('certificate_template_course as tc')
+            ->join('certificate_templates as t', 't.id', '=', 'tc.certificate_template_id')
+            ->where('t.is_active', true)
+            ->distinct()->count('tc.course_id');
+
         return view('admin.elearning.certificates.templates', [
-            'templates' => CertificateTemplate::with(['course','courses','event'])->latest()->paginate(20),
+            'templates' => $query->paginate(20)->withQueryString(),
             'courses' => Course::orderBy('title')->get(),
             'events' => Event::latest('starts_at')->get(),
+            'stats' => [
+                'total' => CertificateTemplate::count(),
+                'active' => (clone $active)->count(),
+                'inactive' => CertificateTemplate::where('is_active', false)->count(),
+                'courses_covered' => $coursesCovered,
+                'courses_total' => Course::count(),
+                'events' => (clone $active)->where('context_type', 'event')->count(),
+                'has_default' => (clone $active)->where('context_type', 'default')->exists(),
+                'certificates' => Certificate::whereNotNull('certificate_template_id')->count(),
+            ],
         ]);
     }
 

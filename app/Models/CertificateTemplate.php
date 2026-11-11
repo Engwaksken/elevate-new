@@ -115,6 +115,12 @@ class CertificateTemplate extends Model
         return $this->belongsTo(Event::class);
     }
 
+    /** Course certificates generated with this template. */
+    public function certificates(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Certificate::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

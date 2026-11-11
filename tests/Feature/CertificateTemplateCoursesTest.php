@@ -60,4 +60,32 @@ class CertificateTemplateCoursesTest extends TestCase
         $this->assertDatabaseCount('certificate_templates', 0);
         $this->assertCount(0, Storage::disk('public')->allFiles());
     }
+
+    public function test_templates_page_shows_a_table_with_statistics_and_filters(): void
+    {
+        $courses = collect(['Course A', 'Course B', 'Course C'])->map(fn ($title) => Course::create(['title' => $title]));
+        $shared = CertificateTemplate::create(['name' => 'Shared design', 'context_type' => 'course', 'is_active' => true, 'background_path' => 'shared.png']);
+        $shared->courses()->attach([$courses[0]->id, $courses[1]->id]);
+        CertificateTemplate::create(['name' => 'Default', 'context_type' => 'default', 'is_active' => true, 'background_path' => 'default.png']);
+        CertificateTemplate::create(['name' => 'Old summit', 'context_type' => 'default', 'is_active' => false, 'background_path' => 'old.png']);
+
+        $response = $this->get(route('admin.elearning.certificates.templates.index'))
+            ->assertOk()
+            ->assertSee('cert-template-table', false)
+            ->assertSee('Courses covered')
+            ->assertSee('2 / 3')
+            ->assertSee('Default template set')
+            ->assertSee('Shared design')
+            ->assertSee('2 courses');
+
+        $this->assertSame(['total' => 3, 'active' => 2, 'inactive' => 1, 'courses_covered' => 2], array_intersect_key(
+            $response->viewData('stats'), array_flip(['total', 'active', 'inactive', 'courses_covered'])
+        ));
+
+        $this->get(route('admin.elearning.certificates.templates.index', ['status' => 'inactive']))
+            ->assertOk()->assertSee('Old summit')->assertDontSee('Shared design');
+
+        $this->get(route('admin.elearning.certificates.templates.index', ['search' => 'Course B']))
+            ->assertOk()->assertSee('Shared design')->assertDontSee('Old summit');
+    }
 }

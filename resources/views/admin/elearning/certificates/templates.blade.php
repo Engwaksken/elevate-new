@@ -14,44 +14,113 @@
     </div>
 </div>
 
-<div class="admin-panel">
-<div class="cert-template-grid">
-@forelse($templates as $template)
-<article class="cert-template-card {{ $template->is_active ? '' : 'is-inactive' }}">
-    <a class="cert-template-thumb {{ $template->orientation }}" href="{{ route('admin.elearning.certificates.templates.preview',$template) }}" target="_blank" rel="noopener">
-        <img src="{{ route('admin.elearning.certificates.templates.preview',$template) }}" alt="{{ $template->name }} preview" loading="lazy">
-    </a>
-    <div class="cert-template-body">
-        <strong>{{ $template->name }}</strong>
-        <span class="cert-context">
-            <i class="fas {{ ['event' => 'fa-calendar-days', 'course' => 'fa-graduation-cap'][$template->context_type] ?? 'fa-star' }}"></i>
-            {{ $template->context_type === 'default' ? 'Default template' : ucfirst($template->context_type) }}
-        </span>
-        @foreach($template->courses as $course)<span>{{ $course->title }}</span>@endforeach
-        @if($template->courses->isEmpty() && $template->course)<span>{{ $template->course->title }}</span>@endif
-        @if($template->event)<span>{{ $template->event->title }}</span>@endif
-        <span class="cert-template-meta">{{ ucfirst($template->orientation) }} · {{ $template->is_active ? 'Active' : 'Inactive' }}</span>
-    </div>
-    <div class="cert-template-actions">
-        <a href="{{ route('admin.elearning.certificates.templates.design',$template) }}" class="btn btn-primary btn-sm"><i class="fas fa-pen-ruler"></i> Design fields</a>
-        <form method="POST" action="{{ route('admin.elearning.certificates.templates.toggle',$template) }}">
-            @csrf @method('PATCH')
-            <button class="btn btn-outline btn-sm"><i class="fas {{ $template->is_active ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i> {{ $template->is_active ? 'Deactivate' : 'Activate' }}</button>
-        </form>
-        <form method="POST" action="{{ route('admin.elearning.certificates.templates.destroy',$template) }}" data-delete-form data-confirm="Delete the template “{{ $template->name }}”? Certificates already generated keep their PDF.">
-            @csrf
-            @method('DELETE')
-            <button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i> Delete</button>
-        </form>
-    </div>
-</article>
-@empty
-<div class="admin-empty"><i class="fas fa-image"></i><strong>No certificate templates uploaded</strong><span>Certificates use the built-in design until you upload one.</span></div>
-@endforelse
+<div class="admin-stats-grid compact">
+@foreach([
+    ['Templates', 'fa-image', number_format($stats['total']), $stats['inactive'].' inactive', []],
+    ['Active templates', 'fa-circle-check', number_format($stats['active']), $stats['has_default'] ? 'Default template set' : 'No default template', ['status' => 'active']],
+    ['Courses covered', 'fa-graduation-cap', number_format($stats['courses_covered']).' / '.number_format($stats['courses_total']), $stats['events'].' event '.\Illuminate\Support\Str::plural('template', $stats['events']), ['context' => 'course']],
+    ['Certificates generated', 'fa-file-pdf', number_format($stats['certificates']), 'Using an uploaded template', null],
+] as [$label, $icon, $value, $hint, $filter])
+    @if($filter !== null)<a class="admin-stat" href="{{ route('admin.elearning.certificates.templates.index', $filter) }}">@else<div class="admin-stat">@endif
+        <span class="admin-stat-icon"><i class="fas {{ $icon }}"></i></span>
+        <div><small>{{ $label }}</small><strong>{{ $value }}</strong><small class="admin-cell-hint">{{ $hint }}</small></div>
+    @if($filter !== null)</a>@else</div>@endif
+@endforeach
 </div>
 
-{{ $templates->links() }}
+<div class="admin-panel">
+<form method="GET" class="admin-toolbar">
+    <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search template, course or event..." aria-label="Search templates"></div>
+    <select name="context" aria-label="Used for">
+        <option value="">All uses</option>
+        <option value="course" @selected(request('context')==='course')>Courses</option>
+        <option value="event" @selected(request('context')==='event')>Events</option>
+        <option value="default" @selected(request('context')==='default')>Default</option>
+    </select>
+    <select name="status" aria-label="Status">
+        <option value="">All statuses</option>
+        <option value="active" @selected(request('status')==='active')>Active</option>
+        <option value="inactive" @selected(request('status')==='inactive')>Inactive</option>
+    </select>
+    <button class="btn btn-primary btn-sm">Apply</button>
+    <a href="{{ route('admin.elearning.certificates.templates.index') }}" class="btn btn-outline btn-sm">Reset</a>
+</form>
+
+<div class="admin-table-wrap">
+<table class="admin-table cert-template-table">
+<thead>
+<tr>
+    <th>Preview</th>
+    <th>Template</th>
+    <th>Used for</th>
+    <th>Orientation</th>
+    <th>Certificates</th>
+    <th>Status</th>
+    <th class="table-actions">Actions</th>
+</tr>
+</thead>
+<tbody>
+@forelse($templates as $template)
+@php($templateCourses = $template->courses->isNotEmpty() ? $template->courses : collect([$template->course])->filter())
+<tr class="{{ $template->is_active ? '' : 'is-inactive' }}">
+    <td>
+        <a class="cert-template-mini {{ $template->orientation }}" href="{{ route('admin.elearning.certificates.templates.preview',$template) }}" target="_blank" rel="noopener" title="Open full-size image">
+            <img src="{{ route('admin.elearning.certificates.templates.preview',$template) }}" alt="{{ $template->name }} preview" loading="lazy">
+        </a>
+    </td>
+    <td>
+        <strong>{{ $template->name }}</strong>
+        <small class="admin-cell-hint">Added {{ $template->created_at?->format('d M Y') }}{{ $template->creator ? ' by '.$template->creator->name : '' }}</small>
+    </td>
+    <td>
+        <span class="cert-context">
+            <i class="fas {{ ['event' => 'fa-calendar-days', 'course' => 'fa-graduation-cap'][$template->context_type] ?? 'fa-star' }}"></i>
+            {{ $template->context_type === 'default' ? 'Default (all others)' : ($template->context_type === 'event' ? 'Event' : $templateCourses->count().' '.\Illuminate\Support\Str::plural('course', $templateCourses->count())) }}
+        </span>
+        @if($template->event)
+            <small class="admin-cell-hint">{{ $template->event->title }}</small>
+        @elseif($templateCourses->isNotEmpty())
+            <small class="admin-cell-hint" title="{{ $templateCourses->pluck('title')->join(', ') }}">{{ $templateCourses->take(3)->pluck('title')->join(', ') }}{{ $templateCourses->count() > 3 ? ' +'.($templateCourses->count() - 3).' more' : '' }}</small>
+        @endif
+    </td>
+    <td>{{ ucfirst($template->orientation) }}</td>
+    <td>{{ number_format($template->certificates_count) }}</td>
+    <td><span class="status-chip {{ $template->is_active ? 'active' : 'inactive' }}">{{ $template->is_active ? 'Active' : 'Inactive' }}</span></td>
+    <td class="table-actions">
+        <div class="cert-template-actions-row">
+            <a href="{{ route('admin.elearning.certificates.templates.design',$template) }}" class="btn btn-primary btn-sm"><i class="fas fa-pen-ruler"></i> Design fields</a>
+            <form method="POST" action="{{ route('admin.elearning.certificates.templates.toggle',$template) }}">
+                @csrf @method('PATCH')
+                <button class="btn btn-outline btn-sm"><i class="fas {{ $template->is_active ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i> {{ $template->is_active ? 'Deactivate' : 'Activate' }}</button>
+            </form>
+            <form method="POST" action="{{ route('admin.elearning.certificates.templates.destroy',$template) }}" data-delete-form data-confirm="Delete the template “{{ $template->name }}”? Certificates already generated keep their PDF.">
+                @csrf
+                @method('DELETE')
+                <button class="btn-icon danger" title="Delete template" aria-label="Delete {{ $template->name }}"><i class="fas fa-trash"></i></button>
+            </form>
+        </div>
+    </td>
+</tr>
+@empty
+<tr><td colspan="7"><div class="admin-empty"><i class="fas fa-image"></i><strong>{{ request()->hasAny(['search','context','status']) ? 'No templates match these filters' : 'No certificate templates uploaded' }}</strong><span>{{ request()->hasAny(['search','context','status']) ? 'Try changing or clearing the filters.' : 'Certificates use the built-in design until you upload one.' }}</span></div></td></tr>
+@endforelse
+</tbody>
+</table>
 </div>
+
+<div class="admin-pagination">{{ $templates->links() }}</div>
+</div>
+
+<style>
+.cert-template-table td{vertical-align:middle}
+.cert-template-table tr.is-inactive td{opacity:.65}
+.cert-template-table tr.is-inactive td.table-actions{opacity:1}
+.cert-template-mini{display:block;width:96px;aspect-ratio:297/210;border:1px solid #e4e7ec;border-radius:6px;overflow:hidden;background:#f2f4f7}
+.cert-template-mini.portrait{width:56px;aspect-ratio:210/297}
+.cert-template-mini img{width:100%;height:100%;object-fit:cover;display:block;color:transparent;font-size:0}
+.cert-template-actions-row{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:nowrap;white-space:nowrap}
+.cert-template-actions-row form{margin:0}
+</style>
 
 <div class="eh-modal" id="cert-template-upload" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="cert-template-upload-title" @if($errors->any()) data-modal-autoopen @endif>
 <div class="eh-modal-dialog">
