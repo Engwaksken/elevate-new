@@ -72,13 +72,17 @@
         @forelse($tickets as $ticket)
             <details class="itq-row itq-{{ $ticket->status }}">
                 <summary>
-                    <i class="fas fa-chevron-right itq-caret" aria-hidden="true"></i>
-                    <span class="itq-id">#{{ $ticket->id }}</span>
+                    <span class="itq-row-top">
+                        <i class="fas fa-chevron-right itq-caret" aria-hidden="true"></i>
+                        <span class="itq-id">#{{ $ticket->id }}</span>
+                        @if(in_array($ticket->priority, ['urgent', 'high'], true))<span class="itq-pri itq-pri--{{ $ticket->priority }}"><i class="fas fa-flag"></i> {{ $priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority) }}</span>@endif
+                        <span class="itq-chip itq-chip--{{ $ticket->status }}">{{ $ticket->status === 'awaiting_requester' ? 'Awaiting requester' : (ItSupportTicket::STATUSES[$ticket->status] ?? ucfirst(str_replace('_', ' ', $ticket->status))) }}</span>
+                    </span>
                     <strong class="itq-subject">{{ $ticket->subject }}</strong>
-                    @if(in_array($ticket->priority, ['urgent', 'high'], true))<span class="itq-pri itq-pri--{{ $ticket->priority }}"><i class="fas fa-flag"></i> {{ $priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority) }}</span>@endif
-                    <span class="itq-row-who"><i class="fas fa-user"></i> {{ $ticket->requester?->name ?? 'Unknown' }}</span>
-                    <span class="itq-row-when">{{ $ticket->created_at?->diffForHumans() ?? '-' }}</span>
-                    <span class="itq-chip itq-chip--{{ $ticket->status }}">{{ $ticket->status === 'awaiting_requester' ? 'Awaiting requester' : (ItSupportTicket::STATUSES[$ticket->status] ?? ucfirst(str_replace('_', ' ', $ticket->status))) }}</span>
+                    <span class="itq-row-foot">
+                        <span class="itq-row-who"><i class="fas fa-user"></i> {{ $ticket->requester?->name ?? 'Unknown' }}</span>
+                        <span class="itq-row-when">{{ $ticket->created_at?->diffForHumans() ?? '-' }}</span>
+                    </span>
                 </summary>
                 <div class="itq-row-body">
                     <p class="itq-desc">{{ \Illuminate\Support\Str::limit($ticket->description, 400) }}</p>
