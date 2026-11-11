@@ -1305,6 +1305,13 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
 });
 
 Route::middleware(['auth', \App\Http\Middleware\EnsureParticipantUser::class])->prefix('participant')->name('participant.')->group(function () {
+    Route::get('/chat', [\App\Http\Controllers\Participant\ConversationController::class, 'index'])->name('chat.index');
+    Route::post('/chat', [\App\Http\Controllers\Participant\ConversationController::class, 'store'])->name('chat.store');
+    Route::get('/chat/{conversation}', [\App\Http\Controllers\Participant\ConversationController::class, 'show'])->whereNumber('conversation')->name('chat.show');
+    Route::get('/chat/{conversation}/messages', [\App\Http\Controllers\Participant\ConversationController::class, 'messages'])->whereNumber('conversation')->name('chat.messages.index');
+    Route::post('/chat/{conversation}/messages', [\App\Http\Controllers\Participant\ConversationController::class, 'send'])->whereNumber('conversation')->name('chat.messages.store');
+    Route::post('/chat/{conversation}/invite', [\App\Http\Controllers\Participant\ConversationController::class, 'invite'])->whereNumber('conversation')->name('chat.invite');
+
     Route::get('/course-opportunities',[CourseCallApplicationController::class,'index'])->name('course-calls.index');
     Route::get('/course-opportunities/{courseCall}',[CourseCallApplicationController::class,'show'])->name('course-calls.show');
     Route::put('/course-opportunities/{courseCall}',[CourseCallApplicationController::class,'save'])->name('course-calls.save');
