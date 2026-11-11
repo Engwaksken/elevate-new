@@ -89,6 +89,13 @@ class EnrolmentAdminController extends Controller
             }
             $existing->update(['cohort_id'=>$cohortId,'status'=>$status,'enrolled_at'=>now()]);
 
+            // Re-saving an existing enrolment can happen when admins assign a
+            // course that was previously created without its compulsory links.
+            // Keep the automatic enrolment cascade in sync in this path too.
+            if(!in_array($status,EnrolmentService::INACTIVE_STATUSES,true)){
+                $enrolments->enrolCompulsory($existing->user, $existing->course, $cohortId);
+            }
+
             return back()->with('success','Learner enrolment saved.');
         }
 
@@ -122,6 +129,10 @@ class EnrolmentAdminController extends Controller
         }
 
         $enrolment->update(['cohort_id'=>$cohortId,'status'=>$data['status']]);
+
+        if(!in_array($data['status'],EnrolmentService::INACTIVE_STATUSES,true)){
+            $enrolments->enrolCompulsory($enrolment->user, $enrolment->course, $cohortId);
+        }
 
         return back()->with('success','Enrolment updated.');
     }

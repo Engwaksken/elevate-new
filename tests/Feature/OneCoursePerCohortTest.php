@@ -109,6 +109,31 @@ class OneCoursePerCohortTest extends TestCase
             ->assertSessionHasErrors('cohort_id');
     }
 
+    public function test_admin_reassigning_existing_course_catches_up_its_compulsory_courses(): void
+    {
+        $user = $this->participant();
+        $primary = $this->course('Digital Skills');
+        $orientation = $this->course('Orientation');
+        app(EnrolmentService::class)->enrol($user, $primary);
+
+        // A compulsory relationship may be configured after a participant was
+        // already enrolled; saving that assignment again must catch them up.
+        $primary->compulsoryCourses()->attach($orientation->id);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.elearning.enrolments.store'), [
+                'user_id' => $user->id,
+                'course_id' => $primary->id,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('enrolments', [
+            'user_id' => $user->id,
+            'course_id' => $orientation->id,
+            'status' => 'enrolled',
+        ]);
+    }
+
     public function test_bulk_enrolment_skips_participants_already_on_another_course_in_the_cohort(): void
     {
         $cohort = $this->cohort('Cohort 1');
