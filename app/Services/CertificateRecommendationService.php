@@ -314,6 +314,27 @@ class CertificateRecommendationService
             : ['context_type' => 'event', 'course_id' => null, 'event_id' => $target->id];
     }
 
+    /**
+     * Whether staff may open a participant's certificate (issued or draft
+     * preview) for a course or event: approvers, programme staff and
+     * e-learning administrators for everything; instructors and trainers for
+     * their own courses and events linked to them.
+     */
+    public function canViewCertificate(User $user, ?int $courseId, ?Event $event = null): bool
+    {
+        if (! $user->isActive() || ! $user->isStaff()) {
+            return false;
+        }
+
+        if ($this->hasProgrammeWideAccess($user) || $user->hasPermission('courses.edit')) {
+            return true;
+        }
+
+        $courseId ??= $event?->course_id;
+
+        return $courseId !== null && $user->instructedCourses()->whereKey($courseId)->exists();
+    }
+
     private function hasProgrammeWideAccess(User $user): bool
     {
         return $this->canApprove($user) || $user->hasAnyRole(self::PROGRAMME_ROLES);

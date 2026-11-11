@@ -76,7 +76,7 @@
     <th>Course / Event</th>
     <th>Recommended by</th>
     <th>Status</th>
-    <th class="table-actions">Details</th>
+    <th class="table-actions">Actions</th>
 </tr>
 </thead>
 <tbody>
@@ -106,6 +106,7 @@
         <button type="button" class="btn btn-outline btn-sm" data-modal-open="cert-rec-{{ $recommendation->id }}">
             <i class="fas {{ $canApprove && $recommendation->isPending() ? 'fa-gavel' : 'fa-eye' }}"></i> {{ $canApprove && $recommendation->isPending() ? 'Review' : 'View' }}
         </button>
+        @include('certificates.recommendations._certificate-link', ['recommendation' => $recommendation])
     </td>
 </tr>
 @empty
@@ -174,6 +175,7 @@
     </div>
     <div class="eh-modal-footer">
         <button type="button" class="btn btn-outline" data-modal-close>Close</button>
+        @include('certificates.recommendations._certificate-link', ['recommendation' => $recommendation])
         @if($reviewable)
             <button type="submit" name="decision" value="reject" class="btn btn-outline"><i class="fas fa-xmark"></i> Reject</button>
             <button type="submit" name="decision" value="approve" class="btn btn-primary"><i class="fas fa-check"></i> Approve &amp; issue</button>

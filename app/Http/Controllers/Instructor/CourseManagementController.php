@@ -222,6 +222,13 @@ class CourseManagementController extends Controller
 
         $progressRows = $this->progressRows($course, $participants->getCollection());
 
+        // Issued certificates and latest recommendations for the listed participants (Actions column).
+        $participantUserIds = $participants->getCollection()->pluck('user_id');
+        $participantCertificates = \App\Models\Certificate::where('course_id', $course->id)
+            ->whereIn('user_id', $participantUserIds)->latest('id')->get()->unique('user_id')->keyBy('user_id');
+        $participantRecommendations = \App\Models\CertificateRecommendation::where('course_id', $course->id)
+            ->whereIn('user_id', $participantUserIds)->latest('id')->get()->unique('user_id')->keyBy('user_id');
+
         return view('instructor.course-manage', [
             'course' => $course,
             'modules' => $modules,
@@ -238,6 +245,8 @@ class CourseManagementController extends Controller
             'extensionRequests' => $extensionRequests,
             'pendingExtensionCount' => $pendingExtensionCount,
             'progressRows' => $progressRows,
+            'participantCertificates' => $participantCertificates,
+            'participantRecommendations' => $participantRecommendations,
             'stats' => [
                 'modules' => $course->modules()->count(),
                 'lessons' => Lesson::whereHas(

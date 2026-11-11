@@ -115,6 +115,9 @@ $bulkTableId = 'certificatesTable';
                             </span>
                         </td>
                         <td class="table-actions">
+                            <a class="btn btn-primary btn-sm" href="{{ route('certificates.staff.show', ['type' => 'course', 'id' => $certificate->id]) }}" target="_blank" rel="noopener">
+                                <i class="fas fa-eye"></i> View
+                            </a>
                             <button
                                 type="button"
                                 class="btn btn-outline btn-sm"

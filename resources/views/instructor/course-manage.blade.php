@@ -673,6 +673,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>{{ $enrolment->final_score !== null ? number_format((float)$enrolment->final_score,1).'%' : '-' }}</td>
                 <td>
                     <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.participants.progress',[$course,$enrolment]) }}">View Progress</a>
+                    @if($issuedCertificate = $participantCertificates[$enrolment->user_id] ?? null)
+                        <a class="btn btn-primary btn-sm" href="{{ route('certificates.staff.show', ['type' => 'course', 'id' => $issuedCertificate->id]) }}" target="_blank" rel="noopener" title="Certificate {{ $issuedCertificate->certificate_number }}"><i class="fas fa-file-pdf"></i> View certificate</a>
+                    @elseif($recommendation = $participantRecommendations[$enrolment->user_id] ?? null)
+                        <a class="btn btn-outline btn-sm" href="{{ route('certificates.staff.recommendation', $recommendation) }}" target="_blank" rel="noopener" title="{{ $recommendation->status === 'pending' ? 'Recommended, awaiting approval' : 'Recommendation '.$recommendation->status }}. Preview only; nothing is issued."><i class="fas fa-file-circle-question"></i> Preview certificate <small>({{ $recommendation->status === 'pending' ? 'recommended' : $recommendation->status }})</small></a>
+                    @endif
                     <details class="icm-details">
                         <summary>Edit</summary>
                         <form method="POST" action="{{ route('instructor.courses.participants.update',[$course,$enrolment]) }}" class="icm-form-grid" style="min-width:360px;margin-top:10px">

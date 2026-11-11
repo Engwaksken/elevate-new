@@ -4,14 +4,58 @@ namespace App\Services;
 
 use App\Models\Certificate;
 use App\Models\CertificateTemplate;
+use App\Models\Course;
 use App\Models\Enrolment;
+use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
 class CertificatePdfService
 {
+    /** Certificate number shown on draft previews. */
+    public const PREVIEW_NUMBER = 'DRAFT PREVIEW';
+
     public function render(Certificate $certificate): string
     {
-        $certificate->load(['user','course','event','template']);
+        [$pdf, $template] = $this->build($certificate);
+
+        $path = 'certificates/'.$certificate->certificate_number.'.pdf';
+
+        Storage::disk('local')->put($path, $pdf->output());
+
+        $certificate->update([
+            'pdf_path' => $path,
+            'certificate_template_id' => $template?->id,
+            'period_start' => $certificate->period_start,
+            'period_end' => $certificate->period_end,
+        ]);
+
+        return $path;
+    }
+
+    /**
+     * PDF bytes of what a participant's course certificate would look like,
+     * for staff reviewing a recommendation. Nothing is saved or issued.
+     */
+    public function preview(User $user, Course $course): string
+    {
+        $certificate = new Certificate([
+            'user_id' => $user->id,
+            'course_id' => $course->id,
+            'certificate_number' => self::PREVIEW_NUMBER,
+            'issued_on' => now(),
+        ]);
+        $certificate->setRelation('user', $user)->setRelation('course', $course)
+            ->setRelation('event', null)->setRelation('template', null);
+
+        return $this->build($certificate)[0]->output();
+    }
+
+    /**
+     * @return array{0: \Barryvdh\DomPDF\PDF, 1: ?CertificateTemplate}
+     */
+    private function build(Certificate $certificate): array
+    {
+        $certificate->loadMissing(['user','course','event','template']);
 
         $template = $certificate->template;
 
@@ -48,18 +92,7 @@ class CertificatePdfService
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
             ->setPaper('a4', $template?->orientation ?: 'landscape');
 
-        $path = 'certificates/'.$certificate->certificate_number.'.pdf';
-
-        Storage::disk('local')->put($path, $pdf->output());
-
-        $certificate->update([
-            'pdf_path' => $path,
-            'certificate_template_id' => $template?->id,
-            'period_start' => $certificate->period_start,
-            'period_end' => $certificate->period_end,
-        ]);
-
-        return $path;
+        return [$pdf, $template];
     }
 
     /**

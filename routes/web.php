@@ -1589,6 +1589,15 @@ require __DIR__ . '/workspaces.php';
 |
 */
 
+// Staff view of participants' certificates (issued, or a draft preview of a
+// recommendation). Access is checked per certificate in the controller.
+Route::middleware(['auth', 'staff'])->prefix('certificates/staff')->name('certificates.staff.')->group(function () {
+    Route::get('/recommendations/{recommendation}', [\App\Http\Controllers\Certificates\StaffCertificateController::class, 'recommendation'])
+        ->name('recommendation');
+    Route::get('/{type}/{id}', [\App\Http\Controllers\Certificates\StaffCertificateController::class, 'show'])
+        ->where('type', 'course|event')->whereNumber('id')->name('show');
+});
+
 Route::middleware(['auth', 'staff', 'role:'.implode(',', array_merge(
         \App\Services\CertificateRecommendationService::RECOMMENDER_ROLES,
         \App\Services\CertificateRecommendationService::APPROVER_ROLES,

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Certificate;
 use App\Models\CertificateTemplate;
 use App\Models\Enrolment;
+use App\Models\Event;
 use App\Models\EventCertificate;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -52,22 +53,7 @@ class ParticipantCertificateService
         } else {
             $certificate->load(['event','user']);
             abort_unless($certificate->event && $certificate->user, 404);
-            $event = $certificate->event; $user = $certificate->user;
-            $template = CertificateTemplate::resolveFor(null, $event->id);
-            $participantId = $event->course_id ? Enrolment::where('course_id',$event->course_id)->where('user_id',$user->id)->value('enrolment_code') : null;
-            $participantId ??= $user->participant_code;
-            $layout = $template?->fieldLayout() ?? CertificateTemplate::defaultLayout();
-            $fields = [
-                'heading' => $event->certificate_title ?: 'Certificate of Attendance',
-                'name' => $user->name,
-                'course' => $event->title,
-                'certificate_number' => $certificate->certificate_code,
-                'participant_id' => $participantId ?? '',
-                'start_period' => optional($event->starts_at)->format('d M Y') ?? '',
-                'end_period' => optional($event->ends_at ?? $event->starts_at)->format('d M Y') ?? '',
-                'issued' => optional($certificate->issued_at)->format('d M Y') ?? now()->format('d M Y'),
-            ];
-            $pdf = Pdf::loadView('events.certificates.pdf', compact('event','user','certificate','template','participantId','layout','fields'))->setPaper('a4', $template?->orientation ?: 'landscape');
+            $pdf = $this->eventPdf($certificate);
             $path = 'certificates/events/'.$certificate->id.'.pdf';
             Storage::disk('local')->put($path, $pdf->output());
             $number = $certificate->certificate_code;
@@ -75,6 +61,46 @@ class ParticipantCertificateService
         $name = 'certificate-'.preg_replace('/[^A-Za-z0-9_-]/','_', $number).'.pdf';
         $headers = ['Content-Type'=>'application/pdf','Cache-Control'=>'private, no-store','X-Content-Type-Options'=>'nosniff','X-Robots-Tag'=>'noindex, nofollow'];
         return $preview ? Storage::disk('local')->response($path, $name, $headers, 'inline') : Storage::disk('local')->download($path, $name, $headers);
+    }
+
+    /**
+     * PDF bytes of what a participant's event certificate would look like,
+     * for staff reviewing a recommendation. Nothing is saved or issued.
+     */
+    public function previewEvent(User $user, Event $event): string
+    {
+        $certificate = new EventCertificate([
+            'event_id' => $event->id,
+            'user_id' => $user->id,
+            'certificate_code' => CertificatePdfService::PREVIEW_NUMBER,
+            'issued_at' => now(),
+        ]);
+        $certificate->setRelation('event', $event)->setRelation('user', $user);
+
+        return $this->eventPdf($certificate)->output();
+    }
+
+    private function eventPdf(EventCertificate $certificate)
+    {
+        $event = $certificate->event;
+        $user = $certificate->user;
+        $template = CertificateTemplate::resolveFor(null, $event->id);
+        $participantId = $event->course_id ? Enrolment::where('course_id',$event->course_id)->where('user_id',$user->id)->value('enrolment_code') : null;
+        $participantId ??= $user->participant_code;
+        $layout = $template?->fieldLayout() ?? CertificateTemplate::defaultLayout();
+        $fields = [
+            'heading' => $event->certificate_title ?: 'Certificate of Attendance',
+            'name' => $user->name,
+            'course' => $event->title,
+            'certificate_number' => $certificate->certificate_code,
+            'participant_id' => $participantId ?? '',
+            'start_period' => optional($event->starts_at)->format('d M Y') ?? '',
+            'end_period' => optional($event->ends_at ?? $event->starts_at)->format('d M Y') ?? '',
+            'issued' => optional($certificate->issued_at)->format('d M Y') ?? now()->format('d M Y'),
+        ];
+
+        return Pdf::loadView('events.certificates.pdf', compact('event','user','certificate','template','participantId','layout','fields'))
+            ->setPaper('a4', $template?->orientation ?: 'landscape');
     }
 
     public function share(string $type, int $id): array
