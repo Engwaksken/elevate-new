@@ -496,14 +496,14 @@ class ParticipantV2ApiTest extends TestCase
         $this->participant();
         $assessment = $this->assessment(['due_at' => now()->subMinute()]);
 
-        $this->postJson(self::BASE."/assignments/{$assessment->id}/submit", ['submission_text' => 'late'])
+        $this->withHeader('Accept', 'application/json')->post(self::BASE."/assignments/{$assessment->id}/submit", ['submission_file' => $this->work(), 'submission_text' => 'late'])
             ->assertStatus(422)
             ->assertJsonPath('code', 'overdue')
             ->assertJsonPath('message', 'This assignment is past its due date. Request an extension from your instructor.');
 
         $open = $this->assessment(['due_at' => now()->addDay()]);
-        $this->postJson(self::BASE."/assignments/{$open->id}/submit", ['submission_text' => 'on time'])->assertCreated();
-        $this->postJson(self::BASE."/assignments/{$open->id}/submit", ['submission_text' => 'again'])
+        $this->withHeader('Accept', 'application/json')->post(self::BASE."/assignments/{$open->id}/submit", ['submission_file' => $this->work(), 'submission_text' => 'on time'])->assertCreated();
+        $this->withHeader('Accept', 'application/json')->post(self::BASE."/assignments/{$open->id}/submit", ['submission_file' => $this->work(), 'submission_text' => 'again'])
             ->assertStatus(422)->assertJsonPath('code', 'max_attempts_reached');
     }
 
@@ -513,25 +513,25 @@ class ParticipantV2ApiTest extends TestCase
         $assessment = $this->assessment(['due_at' => now()->subHours(10), 'max_attempts' => 5]);
 
         // Made offline before the deadline, received within 72h: accepted.
-        $this->postJson(self::BASE."/assignments/{$assessment->id}/submit", [
+        $this->withHeader('Accept', 'application/json')->post(self::BASE."/assignments/{$assessment->id}/submit", ['submission_file' => $this->work(), 
             'submission_text' => 'queued', 'client_submission_id' => 'sub-1',
             'client_created_at' => now()->subHours(11)->toIso8601String(),
         ])->assertCreated();
 
         // Made after the deadline: rejected.
-        $this->postJson(self::BASE."/assignments/{$assessment->id}/submit", [
+        $this->withHeader('Accept', 'application/json')->post(self::BASE."/assignments/{$assessment->id}/submit", ['submission_file' => $this->work(), 
             'submission_text' => 'queued', 'client_submission_id' => 'sub-2',
             'client_created_at' => now()->subHours(9)->toIso8601String(),
         ])->assertStatus(422)->assertJsonPath('code', 'overdue');
 
         // Client timestamp is ignored without a client_submission_id (not a queued submission).
-        $this->postJson(self::BASE."/assignments/{$assessment->id}/submit", [
+        $this->withHeader('Accept', 'application/json')->post(self::BASE."/assignments/{$assessment->id}/submit", ['submission_file' => $this->work(), 
             'submission_text' => 'direct', 'client_created_at' => now()->subHours(11)->toIso8601String(),
         ])->assertStatus(422)->assertJsonPath('code', 'overdue');
 
         // Made before the deadline but received more than 72h later: rejected.
         $old = $this->assessment(['due_at' => now()->subDays(4)]);
-        $this->postJson(self::BASE."/assignments/{$old->id}/submit", [
+        $this->withHeader('Accept', 'application/json')->post(self::BASE."/assignments/{$old->id}/submit", ['submission_file' => $this->work(), 
             'submission_text' => 'very late', 'client_submission_id' => 'sub-3',
             'client_created_at' => now()->subHours(73)->subDays(1)->toIso8601String(),
         ])->assertStatus(422)->assertJsonPath('code', 'overdue');
@@ -550,15 +550,15 @@ class ParticipantV2ApiTest extends TestCase
              'payload' => ['assessment_id' => $late->id, 'submission_text' => 'late', 'client_created_at' => now()->subHour()->toIso8601String()]],
         ]])
             ->assertOk()
-            ->assertJsonPath('results.0.status', 'processed')
-            ->assertJsonPath('results.0.result.message', 'Submission received.')
+            // Queued text-only operations carry no file, and assignments require one.
+            ->assertJsonPath('results.0.status', 'failed')
+            ->assertJsonPath('results.0.error_code', 'attachment_required')
+            // The deadline is still checked first.
             ->assertJsonPath('results.1.status', 'failed')
             ->assertJsonPath('results.1.code', 422)
             ->assertJsonPath('results.1.error_code', 'overdue');
 
-        $this->assertDatabaseHas('assessment_attempts', [
-            'assessment_id' => $assessment->id, 'user_id' => $user->id, 'client_submission_id' => 'sub-op-1', 'submission_text' => 'offline answer',
-        ]);
+        $this->assertDatabaseMissing('assessment_attempts', ['assessment_id' => $assessment->id, 'user_id' => $user->id]);
     }
 
     public function test_assignment_list_includes_deadline_fields(): void
@@ -681,7 +681,7 @@ class ParticipantV2ApiTest extends TestCase
         $this->assertSame($newDue->toIso8601String(), $item['effective_due_at']);
         $this->assertSame('approved', $item['extension_request']['status']);
 
-        $this->postJson(self::BASE."/assignments/{$assessment->id}/submit", ['submission_text' => 'finally'])->assertCreated();
+        $this->withHeader('Accept', 'application/json')->post(self::BASE."/assignments/{$assessment->id}/submit", ['submission_file' => $this->work(), 'submission_text' => 'finally'])->assertCreated();
     }
 
     public function test_approve_requires_future_date_and_pending_status(): void
@@ -731,7 +731,7 @@ class ParticipantV2ApiTest extends TestCase
 
         Sanctum::actingAs($participant, ['participant']);
         Enrolment::create(['course_id' => $this->course->id, 'user_id' => $participant->id, 'status' => 'enrolled']);
-        $this->postJson(self::BASE."/assignments/{$assessment->id}/submit", ['submission_text' => 'x'])
+        $this->withHeader('Accept', 'application/json')->post(self::BASE."/assignments/{$assessment->id}/submit", ['submission_file' => $this->work(), 'submission_text' => 'x'])
             ->assertStatus(422)->assertJsonPath('code', 'overdue');
     }
 
@@ -818,5 +818,13 @@ class ParticipantV2ApiTest extends TestCase
 
         $this->assertFalse($items[$untouched->id]['is_graded']);
         $this->assertNull($items[$untouched->id]['latest_submission']);
+    }
+
+    /** A submission file; assignments cannot be submitted without one. */
+    private function work(string $name = 'work.pdf'): UploadedFile
+    {
+        Storage::fake('local');
+
+        return UploadedFile::fake()->create($name, 10, 'application/pdf');
     }
 }

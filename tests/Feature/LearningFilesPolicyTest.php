@@ -265,7 +265,7 @@ class LearningFilesPolicyTest extends TestCase
     public function test_participant_submits_several_files_on_the_web_and_can_download_their_own(): void
     {
         $assessment = Assessment::create([
-            'course_id' => $this->course->id, 'title' => 'Essay', 'type' => 'assignment',
+            'course_id' => $this->course->id, 'title' => 'Essay', 'type' => 'assignment', 'max_submission_files' => 5,
             'max_attempts' => 1, 'pass_mark' => 50, 'is_published' => true,
         ]);
 
@@ -310,7 +310,7 @@ class LearningFilesPolicyTest extends TestCase
     public function test_participant_api_submission_accepts_several_files(): void
     {
         $assessment = Assessment::create([
-            'course_id' => $this->course->id, 'title' => 'Report', 'type' => 'assignment',
+            'course_id' => $this->course->id, 'title' => 'Report', 'type' => 'assignment', 'max_submission_files' => 5,
             'max_attempts' => 1, 'pass_mark' => 50, 'is_published' => true,
         ]);
         Sanctum::actingAs($this->participant, ['participant']);

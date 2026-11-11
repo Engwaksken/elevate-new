@@ -5,11 +5,15 @@
     'hint' => null,
     'max' => null,
     'id' => null,
+    // Explicit allowed extensions (overrides the config list named by $mimes).
+    'extensions' => null,
+    'required' => false,
 ])
 @php
     $max = $max ?? (int) config('elearning.max_files_per_upload', 10);
     $inputId = $id ?? 'mfi-'.\Illuminate\Support\Str::random(8);
-    $acceptAttr = collect(explode(',', (string) config('elearning.'.$mimes)))
+    $extensionList = $extensions ?? explode(',', (string) config('elearning.'.$mimes));
+    $acceptAttr = collect($extensionList)
         ->map(fn ($extension) => '.'.trim($extension))
         ->join(',');
     $maxMb = (int) round(((int) config('elearning.max_file_kb', 51200)) / 1024);
@@ -60,7 +64,7 @@
             list.appendChild(li);
         });
 
-        if (error) error.textContent = input.files.length > max ? 'You can upload up to ' + max + ' files at a time.' : '';
+        if (error) error.textContent = input.files.length > max ? (max === 1 ? 'Only one file can be uploaded.' : 'You can upload up to ' + max + ' files at a time.') : '';
     }
 
     document.addEventListener('change', function (event) {
@@ -91,8 +95,8 @@
 
 <div {{ $attributes->merge(['class' => 'mfi']) }}>
     <label for="{{ $inputId }}">{{ $label }}</label>
-    <input type="file" id="{{ $inputId }}" name="{{ $name }}[]" multiple accept="{{ $acceptAttr }}" data-multi-file-input data-max-files="{{ $max }}">
-    <small class="form-hint" style="display:block">{{ $hint ?? "Up to {$max} files, {$maxMb} MB each. You can remove a file from the list before saving." }}</small>
+    <input type="file" id="{{ $inputId }}" name="{{ $name }}[]" @if($max > 1) multiple @endif accept="{{ $acceptAttr }}" data-multi-file-input data-max-files="{{ $max }}" @required($required)>
+    <small class="form-hint" style="display:block">{{ $hint ?? ($max === 1 ? "One file, up to {$maxMb} MB." : "Up to {$max} files, {$maxMb} MB each. You can remove a file from the list before saving.") }}</small>
     <ul class="mfi-list" id="{{ $inputId }}-list" aria-live="polite"></ul>
     <div class="mfi-error" id="{{ $inputId }}-error" role="alert"></div>
 </div>

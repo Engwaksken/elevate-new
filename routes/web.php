@@ -655,6 +655,8 @@ Route::prefix('admin/elearning')->name('admin.elearning.')->middleware(['auth', 
         ->middleware('permission:courses.edit')->name('assessments.store');
     Route::get('/courses/{course}/assessments/{assessment}',[AssessmentBuilderController::class,'edit'])
         ->middleware('permission:courses.edit')->name('assessments.edit');
+    Route::patch('/courses/{course}/assessments/{assessment}/publish',[AssessmentBuilderController::class,'togglePublish'])
+        ->middleware('permission:courses.edit')->name('assessments.publish');
     Route::post('/courses/{course}/assessments/{assessment}/questions',[AssessmentBuilderController::class,'addQuestion'])
         ->middleware('permission:courses.edit')->name('questions.store');
     Route::delete('/courses/{course}/assessments/{assessment}/questions/{question}',[AssessmentBuilderController::class,'destroyQuestion'])
@@ -1543,6 +1545,11 @@ Route::middleware([
             \App\Http\Controllers\Instructor\CourseManagementController::class,
             'updateAssessment',
         ])->name('assessments.update');
+
+        Route::post('/{course}/assessments/{assessment}/publish', [
+            \App\Http\Controllers\Instructor\CourseManagementController::class,
+            'publishAssessment',
+        ])->name('assessments.publish');
 
         Route::delete('/{course}/assessments/{assessment}', [
             \App\Http\Controllers\Instructor\CourseManagementController::class,

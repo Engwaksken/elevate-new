@@ -63,9 +63,8 @@ class AssessmentController extends Controller
         $fileService = app(LearningFileService::class);
         $data = $request->validate([
             'submission_text' => ['nullable', 'string', 'max:20000'],
-        ] + $fileService->uploadRules('submission_files', 'submission_mimes'), [
-            'submission_files.max' => 'You can upload up to :max files at a time.',
-        ]);
+        ] + $fileService->submissionRules($assessment, 'submission_files'),
+            $fileService->submissionMessages($assessment, 'submission_files'));
         $uploads = $fileService->uploadedFiles($request, 'submission_files');
 
         $answers = $request->input('answers', []);

@@ -380,6 +380,14 @@ class ParticipantLessonService
         $data = $assessment->toArray();
         unset($data['files']);
 
+        // Submission settings chosen by the instructor (the app limits its file picker with these).
+        $data['requires_attachment'] = $assessment->requiresAttachment();
+        $data['submission_formats'] = $assessment->allowedSubmissionFormats();
+        $data['allowed_extensions'] = $assessment->submissionExtensions();
+        $data['allowed_formats_label'] = $assessment->submissionFormatLabels();
+        $data['max_submission_files'] = $assessment->maxSubmissionFiles();
+        $data['max_file_mb'] = (int) round(((int) config('elearning.max_file_kb', 51200)) / 1024);
+
         $attachments = $this->files->assessmentFiles($assessment);
         $first = $attachments->first();
 

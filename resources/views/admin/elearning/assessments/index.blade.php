@@ -42,7 +42,7 @@
 <td>{{ $assessment->max_attempts }}</td>
 <td>{{ optional($assessment->opens_at)->format('d M Y') ?: '-' }} - {{ optional($assessment->due_at)->format('d M Y') ?: '-' }}</td>
 <td><span class="status-chip {{ $assessment->is_published ? 'published' : 'draft' }}">{{ $assessment->is_published ? 'Published' : 'Draft' }}</span></td>
-<td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('admin.elearning.assessments.edit',[$course,$assessment]) }}"><i class="fas fa-list-ol"></i> Questions</a></td>
+<td class="table-actions"><form method="POST" action="{{ route('admin.elearning.assessments.publish',[$course,$assessment]) }}" style="display:inline">@csrf @method('PATCH')<input type="hidden" name="publish" value="{{ $assessment->is_published ? 0 : 1 }}">@if($assessment->is_published)<button class="btn btn-outline btn-sm"><i class="fas fa-eye-slash"></i> Unpublish</button>@else<button class="btn btn-primary btn-sm"><i class="fas fa-paper-plane"></i> Publish Now</button>@endif</form> <a class="btn btn-outline btn-sm" href="{{ route('admin.elearning.assessments.edit',[$course,$assessment]) }}"><i class="fas fa-list-ol"></i> Questions</a></td>
 </tr>
 @empty<tr><td colspan="8"><div class="admin-empty">No assessments found.</div></td></tr>@endforelse
 </tbody></table></div>
@@ -54,17 +54,29 @@
 <form method="POST" action="{{ route('admin.elearning.assessments.store',$course) }}">@csrf
 <div class="eh-modal-body"><div class="modal-grid">
 <div class="form-group full"><label>Title *</label><input name="title" value="{{ old('title') }}" required></div>
-<div class="form-group"><label>Type *</label><select name="type">@foreach(['quiz','assignment','exam'] as $type)<option value="{{ $type }}">{{ ucfirst($type) }}</option>@endforeach</select></div>
+<div class="form-group"><label>Type *</label><select name="type" data-assessment-type>@foreach(['quiz','assignment','exam'] as $type)<option value="{{ $type }}" @selected(old('type')===$type)>{{ ucfirst($type) }}</option>@endforeach</select></div>
 <div class="form-group"><label>Pass Mark % *</label><input type="number" step=".01" min="0" max="100" name="pass_mark" value="{{ old('pass_mark',50) }}" required></div>
 <div class="form-group"><label>Max Attempts *</label><input type="number" min="1" max="20" name="max_attempts" value="{{ old('max_attempts',1) }}" required></div>
 <div class="form-group"><label>Opens At</label><input type="datetime-local" name="opens_at" value="{{ old('opens_at') }}"></div>
 <div class="form-group"><label>Due At</label><input type="datetime-local" name="due_at" value="{{ old('due_at') }}"></div>
 <div class="form-group full"><label>Instructions</label><textarea name="instructions" rows="5">{{ old('instructions') }}</textarea></div>
-<div class="form-group full"><label class="modal-check"><input type="checkbox" name="is_published" value="1" @checked(old('is_published'))><span>Published</span></label></div>
+<div class="form-group full" data-assignment-only>
+<label>Accepted submission formats</label>
+<p class="form-hint" style="margin-top:0">Participants must attach at least one file in one of these formats.</p>
+<div class="eh-choice-grid">@foreach(\App\Models\Assessment::SUBMISSION_FORMATS as $key=>$format)<label class="eh-choice-card"><input type="checkbox" name="submission_formats[]" value="{{ $key }}" @checked(in_array($key,(array)old('submission_formats',['document']),true))><span class="eh-choice-card__text">{{ $format['label'] }}<small class="admin-cell-hint">{{ $format['hint'] }}</small></span></label>@endforeach</div>
+</div>
+<div class="form-group" data-assignment-only><label>Maximum files per submission</label><input type="number" name="max_submission_files" min="1" max="{{ \App\Models\Assessment::MAX_SUBMISSION_FILES_LIMIT }}" value="{{ old('max_submission_files',1) }}"></div>
 </div></div>
-<div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">Create Assessment</button></div>
+<div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-outline" name="publish" value="0"><i class="fas fa-file-pen"></i> Save Draft</button><button class="btn btn-primary" name="publish" value="1"><i class="fas fa-paper-plane"></i> Publish Now</button></div>
 </form></div></div>
 
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+    const type=document.querySelector('#createAssessmentModal [data-assessment-type]');
+    const sync=()=>document.querySelectorAll('#createAssessmentModal [data-assignment-only]').forEach(el=>{el.hidden=type.value!=='assignment';});
+    if(type){type.addEventListener('change',sync);sync();}
+});
+</script>
 @if($errors->any())
 <script>document.addEventListener('DOMContentLoaded',()=>document.querySelector('[data-modal-open="createAssessmentModal"]')?.click());</script>
 @endif

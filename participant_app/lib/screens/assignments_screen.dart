@@ -741,9 +741,10 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
   bool _sending = false;
   AppException? _error;
 
-  /// Server limits (config/elearning.php): 10 files, 50 MB each.
-  static const int maxFiles = 10;
-  static const int maxFileBytes = 50 * 1024 * 1024;
+  /// Formats, file limit and "file required" set by the instructor.
+  late final SubmissionRules _rules = SubmissionRules.of(widget.assignment.raw);
+  int get maxFiles => _rules.maxFiles;
+  int get maxFileBytes => _rules.maxFileMb * 1024 * 1024;
 
   @override
   void dispose() {
@@ -752,14 +753,27 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
   }
 
   Future<void> _pickFiles() async {
-    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+    final extensions = _rules.extensions;
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: maxFiles > 1,
+      type: extensions.isEmpty ? FileType.any : FileType.custom,
+      allowedExtensions: extensions.isEmpty ? null : extensions,
+    );
     if (result == null || !mounted) return;
 
     final known = {for (final f in _files) f.path};
     final picked =
         result.files.where((f) => f.path != null && !known.contains(f.path)).toList();
-    final tooBig = [for (final f in picked) if (f.size > maxFileBytes) f.name];
-    final accepted = [for (final f in picked) if (f.size <= maxFileBytes) f];
+    // Some pickers ignore allowedExtensions, so check the names as well.
+    final wrongType = [for (final f in picked) if (!_rules.accepts(f.name)) f.name];
+    final tooBig = [
+      for (final f in picked)
+        if (_rules.accepts(f.name) && f.size > maxFileBytes) f.name
+    ];
+    final accepted = [
+      for (final f in picked)
+        if (_rules.accepts(f.name) && f.size <= maxFileBytes) f
+    ];
     final room = maxFiles - _files.length;
 
     setState(() {
@@ -768,9 +782,12 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
     });
 
     final notes = [
+      if (wrongType.isNotEmpty)
+        '${wrongType.join(', ')} ${wrongType.length == 1 ? 'is not an accepted format' : 'are not accepted formats'}. Accepted: ${_rules.formatsLabel}.',
       if (tooBig.isNotEmpty)
-        '${tooBig.join(', ')} ${tooBig.length == 1 ? 'is' : 'are'} larger than 50 MB.',
-      if (accepted.length > room) 'You can attach up to $maxFiles files.',
+        '${tooBig.join(', ')} ${tooBig.length == 1 ? 'is' : 'are'} larger than ${_rules.maxFileMb} MB.',
+      if (accepted.length > room)
+        maxFiles == 1 ? 'This assignment accepts one file only.' : 'You can attach up to $maxFiles files.',
     ];
     if (notes.isNotEmpty) showAppSnackBar(context, notes.join(' '), error: true);
   }
@@ -784,6 +801,13 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
   List<String> get _paths => [for (final f in _files) f.path!];
 
   Future<void> _send() async {
+    if (_rules.requiresAttachment && _files.isEmpty) {
+      setState(() => _error = const AppException(
+            AppErrorKind.validation,
+            'Attach at least one file. Assignments cannot be submitted without a file.',
+          ));
+      return;
+    }
     if (_text.text.trim().isEmpty && _files.isEmpty) {
       setState(() => _error = const AppException(
             AppErrorKind.validation,
@@ -877,7 +901,9 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
                 keyboardType: TextInputType.multiline,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
-                  labelText: 'Your response',
+                  labelText: _rules.requiresAttachment
+                      ? 'Comments for your instructor (optional)'
+                      : 'Your response',
                   alignLabelWithHint: true,
                   errorText: errors.text,
                 ),
@@ -893,12 +919,16 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
               OutlinedButton.icon(
                 onPressed: _sending || _files.length >= maxFiles ? null : _pickFiles,
                 icon: const Icon(Icons.attach_file),
-                label: Text(_files.isEmpty ? 'Attach files' : 'Add more files'),
+                label: Text(_files.isEmpty
+                    ? (maxFiles == 1 ? 'Attach file' : 'Attach files')
+                    : 'Add more files'),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.xs),
                 child: Text(
-                  'Up to $maxFiles files, 50 MB each '
+                  '${_rules.requiresAttachment ? 'Required. ' : ''}'
+                  'Accepted: ${_rules.formatsLabel}. '
+                  '${maxFiles == 1 ? 'One file' : 'Up to $maxFiles files'}, ${_rules.maxFileMb} MB each '
                   '(${_files.length} of $maxFiles attached)',
                   style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
@@ -931,6 +961,55 @@ class _SubmissionSheetState extends State<_SubmissionSheet> {
         ),
       ),
     );
+  }
+}
+
+/// What an assignment accepts, from the fields the server adds to each
+/// assignment (`allowed_extensions`, `max_submission_files`, ...).
+/// Older servers without them fall back to the previous 10 files / any type.
+class SubmissionRules {
+  const SubmissionRules({
+    required this.extensions,
+    required this.maxFiles,
+    required this.maxFileMb,
+    required this.requiresAttachment,
+    required this.formatsLabel,
+  });
+
+  factory SubmissionRules.of(Map<String, dynamic> raw) {
+    final extensions = [
+      for (final e in (raw['allowed_extensions'] as List?) ?? const [])
+        e.toString().toLowerCase().replaceFirst('.', '')
+    ].where((e) => e.isNotEmpty).toList();
+    final maxFiles = int.tryParse('${raw['max_submission_files'] ?? ''}') ?? 10;
+    final maxMb = int.tryParse('${raw['max_file_mb'] ?? ''}') ?? 50;
+    final label = raw['allowed_formats_label']?.toString().trim() ?? '';
+    final type = raw['type']?.toString();
+
+    return SubmissionRules(
+      extensions: extensions,
+      maxFiles: maxFiles < 1 ? 1 : maxFiles,
+      maxFileMb: maxMb < 1 ? 50 : maxMb,
+      requiresAttachment: raw['requires_attachment'] is bool
+          ? raw['requires_attachment'] as bool
+          : type == null || type == 'assignment',
+      formatsLabel: label.isNotEmpty
+          ? label
+          : (extensions.isEmpty ? 'any file' : extensions.join(', ')),
+    );
+  }
+
+  /// Lower-case extensions without dots; empty means any type.
+  final List<String> extensions;
+  final int maxFiles;
+  final int maxFileMb;
+  final bool requiresAttachment;
+  final String formatsLabel;
+
+  bool accepts(String fileName) {
+    if (extensions.isEmpty) return true;
+    final dot = fileName.lastIndexOf('.');
+    return dot >= 0 && extensions.contains(fileName.substring(dot + 1).toLowerCase());
   }
 }
 

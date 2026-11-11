@@ -458,8 +458,8 @@ class CourseManagementController extends Controller
             'due_at' => $data['due_at'] ?? null,
             'duration_minutes' => $data['duration_minutes'] ?? null,
             'total_marks' => $data['total_marks'] ?? null,
-            'is_published' => $request->boolean('is_published'),
-        ]);
+            'is_published' => $this->publishChoice($request),
+        ] + $this->submissionSettings($data));
 
         $this->files()->storeMaterials(
             $this->files()->uploadedFiles($request, 'assessment_files', 'assessment_file'),
@@ -469,7 +469,7 @@ class CourseManagementController extends Controller
             $request->user()
         );
 
-        return back()->with('success', ucfirst($data['type']).' added.');
+        return back()->with('success', ucfirst($data['type']).($assessment->is_published ? ' published. Participants can see it now.' : ' saved as a draft. Participants will not see it until you publish it.'));
     }
 
     public function updateAssessment(Request $request, Course $course, Assessment $assessment)
@@ -511,10 +511,20 @@ class CourseManagementController extends Controller
             'due_at' => $data['due_at'] ?? null,
             'duration_minutes' => $data['duration_minutes'] ?? null,
             'total_marks' => $data['total_marks'] ?? null,
-            'is_published' => $request->boolean('is_published'),
-        ]);
+            'is_published' => $this->publishChoice($request),
+        ] + $this->submissionSettings($data));
 
-        return back()->with('success', ucfirst($data['type']).' updated.');
+        return back()->with('success', ucfirst($data['type']).($assessment->is_published ? ' saved and published.' : ' saved as a draft.'));
+    }
+
+    /** One-click publish for a draft from its card. */
+    public function publishAssessment(Course $course, Assessment $assessment)
+    {
+        $this->authoriseAssessment($course, $assessment);
+
+        $assessment->update(['is_published' => true]);
+
+        return back()->with('success', ucfirst($assessment->type).' "'.$assessment->title.'" published. Participants can see it now.');
     }
 
     public function destroyAssessment(Course $course, Assessment $assessment)
@@ -1048,9 +1058,38 @@ class CourseManagementController extends Controller
             'remove_attachment' => ['nullable', 'boolean'],
             'remove_files' => ['nullable', 'array'],
             'remove_files.*' => ['integer'],
+            'publish' => ['nullable', 'boolean'],
+            'submission_formats' => ['nullable', 'array'],
+            'submission_formats.*' => ['string', 'in:'.implode(',', array_keys(Assessment::SUBMISSION_FORMATS))],
+            'max_submission_files' => ['nullable', 'integer', 'min:1', 'max:'.Assessment::MAX_SUBMISSION_FILES_LIMIT],
         ] + $this->files()->uploadRules('assessment_files', 'assignment_mimes', 'assessment_file'), [
+            'submission_formats.*.in' => 'Choose file formats from the list.',
             'assessment_files.max' => 'You can upload up to :max files at a time.',
         ]);
+    }
+
+    /**
+     * "Publish now" / "Save draft" buttons send publish=1|0. Older forms (and
+     * the "Save changes" button on a published item) fall back to is_published.
+     */
+    private function publishChoice(Request $request): bool
+    {
+        return $request->has('publish') ? $request->boolean('publish') : $request->boolean('is_published');
+    }
+
+    /** Submission formats and file limit; only assignments take file submissions. */
+    private function submissionSettings(array $data): array
+    {
+        if ($data['type'] !== 'assignment') {
+            return [];
+        }
+
+        $formats = array_values(array_unique($data['submission_formats'] ?? []));
+
+        return [
+            'submission_formats' => $formats ?: Assessment::DEFAULT_SUBMISSION_FORMATS,
+            'max_submission_files' => (int) ($data['max_submission_files'] ?? 1),
+        ];
     }
 
     private function progressRows(Course $course, Collection $enrolments): Collection

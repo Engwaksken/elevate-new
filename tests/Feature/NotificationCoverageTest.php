@@ -200,7 +200,8 @@ class NotificationCoverageTest extends TestCase
         DB::table('user_notifications')->delete();
 
         Sanctum::actingAs($learner, ['participant']);
-        $this->postJson("/api/v1/participant/assignments/{$assessment->id}/submit", ['submission_text' => 'My essay'])
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $this->withHeader('Accept', 'application/json')->post("/api/v1/participant/assignments/{$assessment->id}/submit", ['submission_text' => 'My essay', 'submission_file' => UploadedFile::fake()->create('essay.pdf', 10, 'application/pdf')])
             ->assertSuccessful();
 
         $this->assertCount(1, $this->notificationsFor($instructor, 'assignment_submitted'));

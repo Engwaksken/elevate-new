@@ -58,7 +58,7 @@ class AssessmentBuilderController extends Controller
 
     public function store(Request $request, Course $course)
     {
-        $assessment=$course->assessments()->create($request->validate([
+        $data=$request->validate([
             'title'=>['required','string','max:190'],
             'type'=>['required','in:quiz,assignment,exam'],
             'instructions'=>['nullable','string'],
@@ -67,10 +67,37 @@ class AssessmentBuilderController extends Controller
             'opens_at'=>['nullable','date'],
             'due_at'=>['nullable','date','after_or_equal:opens_at'],
             'is_published'=>['nullable','boolean'],
-        ])+['is_published'=>$request->boolean('is_published')]);
+            'publish'=>['nullable','boolean'],
+            'submission_formats'=>['nullable','array'],
+            'submission_formats.*'=>['string','in:'.implode(',',array_keys(Assessment::SUBMISSION_FORMATS))],
+            'max_submission_files'=>['nullable','integer','min:1','max:'.Assessment::MAX_SUBMISSION_FILES_LIMIT],
+        ]);
+
+        $published=$request->has('publish') ? $request->boolean('publish') : $request->boolean('is_published');
+        $settings=$data['type']==='assignment' ? [
+            'submission_formats'=>array_values(array_unique($data['submission_formats'] ?? [])) ?: Assessment::DEFAULT_SUBMISSION_FORMATS,
+            'max_submission_files'=>(int)($data['max_submission_files'] ?? 1),
+        ] : [];
+
+        $assessment=$course->assessments()->create(
+            collect($data)->except(['publish','submission_formats','max_submission_files'])->all()
+            +['is_published'=>$published]+$settings
+        );
 
         return redirect()->route('admin.elearning.assessments.edit',[$course,$assessment])
-            ->with('success','Assessment created.');
+            ->with('success',$published ? 'Assessment created and published.' : 'Assessment saved as a draft. Participants will not see it until it is published.');
+    }
+
+    /** Publish a draft, or move a published assessment back to drafts. */
+    public function togglePublish(Request $request, Course $course, Assessment $assessment)
+    {
+        abort_unless($assessment->course_id===$course->id,404);
+
+        $assessment->update(['is_published'=>$request->boolean('publish')]);
+
+        return back()->with('success',$assessment->is_published
+            ? "\"{$assessment->title}\" published. Participants can see it now."
+            : "\"{$assessment->title}\" moved to drafts. Participants can no longer see it.");
     }
 
     public function edit(Course $course, Assessment $assessment)

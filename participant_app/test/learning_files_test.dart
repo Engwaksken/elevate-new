@@ -199,6 +199,36 @@ void main() {
     });
   });
 
+  group('SubmissionRules', () {
+    test('uses the formats and file limit the instructor set', () {
+      final rules = SubmissionRules.of({
+        'type': 'assignment',
+        'requires_attachment': true,
+        'allowed_extensions': ['mp4', 'MOV'],
+        'allowed_formats_label': 'Video',
+        'max_submission_files': 2,
+        'max_file_mb': 50,
+      });
+
+      expect(rules.extensions, ['mp4', 'mov']);
+      expect(rules.maxFiles, 2);
+      expect(rules.requiresAttachment, isTrue);
+      expect(rules.formatsLabel, 'Video');
+      expect(rules.accepts('Pitch.MOV'), isTrue);
+      expect(rules.accepts('essay.pdf'), isFalse);
+      expect(rules.accepts('noextension'), isFalse);
+    });
+
+    test('older servers fall back to 10 files of any type, file still required', () {
+      final rules = SubmissionRules.of({'type': 'assignment'});
+
+      expect(rules.extensions, isEmpty);
+      expect(rules.maxFiles, 10);
+      expect(rules.requiresAttachment, isTrue);
+      expect(rules.accepts('anything.xyz'), isTrue);
+    });
+  });
+
   group('SubmissionFileErrors', () {
     test('maps submission_files.N to each picked file', () {
       const error = AppException(

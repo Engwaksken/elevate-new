@@ -214,7 +214,9 @@ class ParticipantController extends Controller
             // When a queued offline submission was made on the device (offline grace window).
             'client_created_at' => ['nullable','date'],
         ] + app(\App\Services\Learning\LearningFileService::class)
-            ->uploadRules('submission_files', 'submission_mimes', 'submission_file'));
+            ->submissionRules($assessment, 'submission_files', 'submission_file'),
+            app(\App\Services\Learning\LearningFileService::class)
+                ->submissionMessages($assessment, 'submission_files'));
 
         $result = $this->assignments->submit(
             $user,

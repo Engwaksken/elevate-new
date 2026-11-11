@@ -51,6 +51,19 @@
 .icm-chip{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#f2f4f7;font-size:.75rem;font-weight:700}
 .icm-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .icm-details{margin-top:12px;border-top:1px solid #eaecf0;padding-top:12px}
+.icm-submission-settings{margin:0;padding:14px;border:1px solid #eaecf0;border-radius:12px;background:#fcfcfd}
+.icm-submission-settings legend{padding:0 6px;font-weight:800;color:#101828}
+.icm-submission-settings>p{margin:0 0 10px}
+.icm-formats{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.icm-format{display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border:1px solid #d0d5dd;border-radius:10px;background:#fff;cursor:pointer}
+.icm-format:has(input:checked){border-color:#800000;background:#fff8f8}
+.icm-form-grid .icm-format input{width:auto;margin:3px 0 0;padding:0;flex:none}
+.icm-format span{display:flex;flex-direction:column;min-width:0}
+.icm-format small{color:#667085;font-size:.74rem}
+.icm-maxfiles{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:12px}
+.icm-form-grid .icm-maxfiles input{width:110px}
+.icm-maxfiles small{flex-basis:100%}
+.icm-publish-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding-top:4px}
 .icm-progress{height:8px;background:#eaecf0;border-radius:999px;overflow:hidden}
 .icm-progress span{display:block;height:100%;background:#800000}
 .icm-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;margin-left:4px;border-radius:999px;background:#b42318;color:#fff;font-size:.72rem;font-weight:800;line-height:1}
@@ -308,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function () {
 @if($activeTab === $tabName)
 <section class="icm-panel">
     <div class="icm-panel-head">
-        <div><h2>{{ ucfirst($tabName) }}</h2><p class="icm-muted">Create and manage {{ $tabName }} for this course.</p></div>
+        <div><h2>New {{ $assessmentType }}</h2><p class="icm-muted">Fill in the details, then publish it to participants now or save it as a draft to finish later.</p></div>
     </div>
 
     <form method="POST" enctype="multipart/form-data" action="{{ route('instructor.courses.assessments.store',$course) }}" class="icm-form-grid">
@@ -322,10 +335,12 @@ document.addEventListener('DOMContentLoaded', function () {
         <div><label>Due / closes at</label><input type="datetime-local" name="due_at"></div>
         <div><label>Duration minutes</label><input type="number" name="duration_minutes" min="1"></div>
         <div><label>Total marks</label><input type="number" name="total_marks" min="0" step="0.01"></div>
-        <x-learning.multi-file-input class="full" name="assessment_files" label="Brief / material files" mimes="assignment_mimes" />
-        <label><input type="checkbox" name="is_published" value="1"> Published</label>
         <div class="full"><label>Instructions</label><textarea name="instructions"></textarea></div>
-        <div><button class="btn btn-primary"><i class="fas fa-plus"></i> Add {{ ucfirst($assessmentType) }}</button></div>
+        <x-learning.multi-file-input class="full" name="assessment_files" label="Brief / material files (optional)" mimes="assignment_mimes" />
+        @if($assessmentType === 'assignment')
+            @include('instructor.partials.assessment-submission-settings')
+        @endif
+        @include('instructor.partials.publish-buttons', ['label' => $assessmentType])
     </form>
 </section>
 
@@ -334,11 +349,17 @@ document.addEventListener('DOMContentLoaded', function () {
         @forelse($course->assessments()->where('type',$assessmentType)->with('files')->withCount(['questions','attempts'])->latest()->get() as $assessment)
         <article class="icm-card">
             <span class="icm-chip">{{ ucfirst($assessment->type) }}</span>
+            <span class="icm-chip {{ $assessment->is_published ? 'icm-status-approved' : 'icm-status-pending' }}">{{ $assessment->is_published ? 'Published' : 'Draft' }}</span>
             <h3>{{ $assessment->title }}</h3>
             <p class="icm-muted">
-                {{ $assessment->questions_count }} question(s) · {{ $assessment->attempts_count }} attempt(s)
-                · {{ $assessment->is_published ? 'Published' : 'Draft' }}
+                @if($assessmentType !== 'assignment'){{ $assessment->questions_count }} question(s) · @endif{{ $assessment->attempts_count }} {{ $assessmentType === 'assignment' ? 'submission(s)' : 'attempt(s)' }}
             </p>
+            @if($assessmentType === 'assignment')<p><strong>Accepts:</strong> {{ $assessment->submissionFormatLabels() }} · up to {{ $assessment->maxSubmissionFiles() }} {{ \Illuminate\Support\Str::plural('file', $assessment->maxSubmissionFiles()) }}</p>@endif
+            @unless($assessment->is_published)
+                <form method="POST" action="{{ route('instructor.courses.assessments.publish',[$course,$assessment]) }}" style="margin:8px 0">@csrf
+                    <button class="btn btn-primary btn-sm"><i class="fas fa-paper-plane"></i> Publish now</button>
+                </form>
+            @endunless
             @if($assessment->duration_minutes)<p><strong>Duration:</strong> {{ $assessment->duration_minutes }} minutes</p>@endif
             @if($assessment->total_marks !== null)<p><strong>Total marks:</strong> {{ number_format((float)$assessment->total_marks,1) }}</p>@endif
             @if($assessment->due_at)<p><strong>Closes:</strong> {{ $assessment->due_at->format('d M Y H:i') }}</p>@endif
@@ -360,8 +381,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div><label>Total marks</label><input type="number" name="total_marks" min="0" step=".01" value="{{ $assessment->total_marks }}"></div>
                     <x-learning.multi-file-input class="full" name="assessment_files" label="Add files" mimes="assignment_mimes" :hint="'Adds to the files already attached. Use Remove on a file above to delete it.'" />
                     <div class="full"><label>Instructions</label><textarea name="instructions">{{ $assessment->instructions }}</textarea></div>
-                    <label><input type="checkbox" name="is_published" value="1" @checked($assessment->is_published)> Published</label>
-                    <div><button class="btn btn-primary btn-sm">Save</button></div>
+                    @if($assessmentType === 'assignment')
+                        @include('instructor.partials.assessment-submission-settings', ['assessment' => $assessment])
+                    @endif
+                    @include('instructor.partials.publish-buttons', ['label' => $assessmentType, 'published' => (bool) $assessment->is_published])
                 </form>
             </details>
 

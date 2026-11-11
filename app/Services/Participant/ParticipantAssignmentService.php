@@ -196,6 +196,14 @@ class ParticipantAssignmentService
             fn ($upload) => $upload instanceof UploadedFile
         ));
 
+        // Covers every path, including queued text-only offline submissions.
+        if ($assessment->requiresAttachment() && $uploads === []) {
+            throw new ParticipantRuleException(
+                'Attach at least one file. Assignments cannot be submitted without a file.',
+                'attachment_required'
+            );
+        }
+
         $attempt = AssessmentAttempt::create([
             'assessment_id' => $assessment->id,
             'user_id' => $user->id,

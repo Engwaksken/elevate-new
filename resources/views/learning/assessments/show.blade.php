@@ -47,9 +47,12 @@
 
 @if($assessment->type === 'assignment')
 <div class="card">
-    <label for="submission_text"><strong>Your response</strong></label>
-    <textarea id="submission_text" name="submission_text" rows="6">{{ old('submission_text') }}</textarea>
-    <x-learning.multi-file-input name="submission_files" label="Upload your files" mimes="submission_mimes" style="margin-top:12px" />
+    @php($maxFiles = $assessment->maxSubmissionFiles())
+    <x-learning.multi-file-input name="submission_files" :label="$maxFiles === 1 ? 'Upload your file *' : 'Upload your files *'"
+        :extensions="$assessment->submissionExtensions()" :max="$maxFiles" required
+        :hint="'Required. Accepted formats: '.$assessment->submissionFormatLabels().' ('.implode(', ', $assessment->submissionExtensions()).'). '.($maxFiles === 1 ? 'One file' : 'Up to '.$maxFiles.' files').', '.(int) round(((int) config('elearning.max_file_kb', 51200)) / 1024).' MB each.'" />
+    <label for="submission_text" style="display:block;margin-top:12px"><strong>Comments for your instructor</strong> <small>(optional)</small></label>
+    <textarea id="submission_text" name="submission_text" rows="4">{{ old('submission_text') }}</textarea>
 </div>
 @endif
 

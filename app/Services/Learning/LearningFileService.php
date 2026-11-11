@@ -120,13 +120,55 @@ class LearningFileService
         return $rules;
     }
 
+    /**
+     * Validation rules for a participant's submission files, using the formats
+     * and file limit the instructor set on the assessment. Assignments must
+     * include at least one file (in $field or the legacy single $legacyField).
+     */
+    public function submissionRules(Assessment $assessment, string $field, ?string $legacyField = null): array
+    {
+        $fileRules = ['file', 'max:'.(int) config('elearning.max_file_kb', 51200), 'mimes:'.$assessment->submissionMimesRule()];
+        $presence = $assessment->requiresAttachment()
+            ? ($legacyField ? 'required_without:'.$legacyField : 'required')
+            : 'nullable';
+
+        $rules = [
+            $field => [$presence, 'array', 'max:'.$assessment->maxSubmissionFiles()],
+            $field.'.*' => $fileRules,
+        ];
+
+        if ($legacyField) {
+            $rules[$legacyField] = array_merge(['nullable'], $fileRules);
+        }
+
+        return $rules;
+    }
+
+    /** Validation messages that name the instructor's formats and file limit. */
+    public function submissionMessages(Assessment $assessment, string $field): array
+    {
+        $formats = $assessment->submissionFormatLabels().' ('.implode(', ', $assessment->submissionExtensions()).')';
+        $max = $assessment->maxSubmissionFiles();
+
+        return [
+            $field.'.required' => 'Attach at least one file. Assignments cannot be submitted without a file.',
+            $field.'.required_without' => 'Attach at least one file. Assignments cannot be submitted without a file.',
+            $field.'.max' => $max === 1 ? 'This assignment accepts one file only.' : "This assignment accepts up to {$max} files.",
+            $field.'.*.mimes' => "This file type is not accepted for this assignment. Allowed: {$formats}.",
+            $field.'.*.max' => 'Each file must be '.(int) round(((int) config('elearning.max_file_kb', 51200)) / 1024).' MB or smaller.',
+        ];
+    }
+
     /** @return array<int,UploadedFile> */
     public function uploadedFiles(Request $request, string ...$fields): array
     {
         $files = [];
 
         foreach ($fields as $field) {
-            foreach ((array) $request->file($field, []) as $file) {
+            // A single upload must be wrapped: casting an UploadedFile object to
+            // an array yields its properties, which silently dropped the file.
+            $value = $request->file($field, []);
+            foreach ($value instanceof UploadedFile ? [$value] : (array) $value as $file) {
                 if ($file instanceof UploadedFile && $file->isValid()) {
                     $files[] = $file;
                 }
