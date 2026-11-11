@@ -10,11 +10,15 @@ use App\Models\Enrolment;
 use App\Models\User;
 use App\Services\EnrolmentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EnrolmentAdminController extends Controller
 {
     use ExportsTables;
     use BulkDeletesRecords;
+
+    /** Matches the enrolments.status column. */
+    private const STATUSES=['enrolled','in_progress','completed','withdrawn','failed'];
 
     protected function bulkDeleteModel(): string
     {
@@ -71,7 +75,7 @@ class EnrolmentAdminController extends Controller
             'course_id'=>['required','exists:courses,id'],
             'user_id'=>['required','exists:users,id'],
             'cohort_id'=>['nullable','exists:cohorts,id'],
-            'status'=>['nullable','in:enrolled,active,in_progress,completed,withdrawn,cancelled'],
+            'status'=>['nullable','in:'.implode(',',self::STATUSES)],
         ]);
 
         $cohortId=isset($data['cohort_id']) ? (int)$data['cohort_id'] : null;
@@ -101,23 +105,55 @@ class EnrolmentAdminController extends Controller
     public function update(Request $request,Enrolment $enrolment,EnrolmentService $enrolments)
     {
         $data=$request->validate([
+            'course_id'=>['nullable','exists:courses,id'],
             'cohort_id'=>['nullable','exists:cohorts,id'],
-            'status'=>['required','in:enrolled,active,in_progress,completed,withdrawn,cancelled'],
+            'status'=>['required','in:'.implode(',',self::STATUSES)],
         ]);
 
-        if(!in_array($data['status'],EnrolmentService::INACTIVE_STATUSES,true)){
-            $enrolments->assertCanEnrol(
-                $enrolment->user_id,
-                $enrolment->course_id,
-                isset($data['cohort_id']) ? (int)$data['cohort_id'] : null,
-                $enrolment->id,
-                'cohort_id'
-            );
+        $cohortId=isset($data['cohort_id']) ? (int)$data['cohort_id'] : null;
+        $courseId=(int)($data['course_id'] ?? $enrolment->course_id);
+
+        if($courseId!==(int)$enrolment->course_id){
+            return $this->reassign($enrolment,Course::findOrFail($courseId),$cohortId,$data['status'],$enrolments);
         }
 
-        $enrolment->update($data);
+        if(!in_array($data['status'],EnrolmentService::INACTIVE_STATUSES,true)){
+            $enrolments->assertCanEnrol($enrolment->user_id,$enrolment->course_id,$cohortId,$enrolment->id,'cohort_id');
+        }
+
+        $enrolment->update(['cohort_id'=>$cohortId,'status'=>$data['status']]);
 
         return back()->with('success','Enrolment updated.');
+    }
+
+    /**
+     * Move a participant to another course. Enrolment codes include the course,
+     * so the old enrolment is kept as withdrawn (history and progress stay) and
+     * the participant is enrolled in the new course, with its compulsory courses.
+     */
+    private function reassign(Enrolment $enrolment,Course $course,?int $cohortId,string $status,EnrolmentService $enrolments)
+    {
+        $from=$enrolment->course?->title ?? 'the previous course';
+
+        if(!in_array($status,EnrolmentService::INACTIVE_STATUSES,true)){
+            $enrolments->assertCanEnrol($enrolment->user_id,$course->id,$cohortId,$enrolment->id,'course_id');
+        }
+
+        DB::transaction(function() use($enrolment,$course,$cohortId,$status,$enrolments){
+            $enrolment->update(['status'=>'withdrawn']);
+
+            $existing=Enrolment::where('course_id',$course->id)->where('user_id',$enrolment->user_id)->first();
+
+            if($existing){
+                // An earlier enrolment in the target course is reopened rather than duplicated.
+                $existing->update(['cohort_id'=>$cohortId,'status'=>$status,'enrolled_at'=>now()]);
+                $enrolments->enrolCompulsory($existing->user,$course,$cohortId);
+            }else{
+                $enrolments->enrol($enrolment->user,$course,['cohort_id'=>$cohortId,'status'=>$status,'enrolled_at'=>now()]);
+            }
+        });
+
+        return back()->with('success',"Participant moved from \"{$from}\" to \"{$course->title}\". The previous enrolment is kept as withdrawn.");
     }
 
     public function destroy(Enrolment $enrolment)

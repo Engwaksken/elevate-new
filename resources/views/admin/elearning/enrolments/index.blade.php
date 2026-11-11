@@ -64,6 +64,7 @@ $bulkTableId = 'enrolmentsTable';
 <div class="eh-modal-header"><div><h2>Edit Enrolment</h2><p>{{ $enrolment->user?->name }} · {{ $enrolment->course?->title }}</p></div><button type="button" class="eh-modal-close" data-modal-close><i class="fas fa-xmark"></i></button></div>
 <form method="POST" action="{{ route('admin.elearning.enrolments.update',$enrolment) }}">@csrf @method('PUT')
 <div class="eh-modal-body"><div class="modal-grid">
+<div class="form-group full"><label>Course</label><select name="course_id">@foreach($courses as $course)<option value="{{ $course->id }}" @selected((string)$enrolment->course_id===(string)$course->id)>{{ $course->title }}</option>@endforeach</select><small class="form-hint">Choosing another course moves the participant: the current enrolment is kept as withdrawn and a new one is created.</small></div>
 <div class="form-group"><label>Cohort</label><select name="cohort_id"><option value="">No cohort</option>@foreach($cohorts as $cohort)<option value="{{ $cohort->id }}" @selected((string)$enrolment->cohort_id===(string)$cohort->id)>{{ $cohort->name }}</option>@endforeach</select></div>
 <div class="form-group"><label>Status *</label><select name="status" required>@foreach(['enrolled','in_progress','completed','withdrawn','failed'] as $status)<option value="{{ $status }}" @selected($enrolment->status===$status)>{{ ucwords(str_replace('_',' ',$status)) }}</option>@endforeach</select></div>
 </div></div>

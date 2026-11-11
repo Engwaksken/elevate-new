@@ -169,4 +169,44 @@ class OneCoursePerCohortTest extends TestCase
         // The catch-up command is safe to run again.
         $this->artisan('enrolments:sync-compulsory')->expectsOutput('0 compulsory course enrolment(s) added.')->assertSuccessful();
     }
+
+    public function test_admin_can_move_a_participant_to_another_course(): void
+    {
+        $service = app(EnrolmentService::class);
+        $user = $this->participant();
+        $cohort = $this->cohort('Cohort 1');
+        $digital = $this->course('Digital Skills');
+        $tailoring = $this->course('Tailoring');
+        $orientation = $this->course('Orientation');
+        $tailoring->compulsoryCourses()->attach($orientation->id);
+        $enrolment = $service->enrol($user, $digital, ['cohort_id' => $cohort->id]);
+
+        $this->actingAs($this->admin())
+            ->put(route('admin.elearning.enrolments.update', $enrolment), ['course_id' => $tailoring->id, 'cohort_id' => $cohort->id, 'status' => 'enrolled'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('withdrawn', $enrolment->fresh()->status);
+        $this->assertDatabaseHas('enrolments', ['user_id' => $user->id, 'course_id' => $tailoring->id, 'cohort_id' => $cohort->id, 'status' => 'enrolled']);
+        $this->assertDatabaseHas('enrolments', ['user_id' => $user->id, 'course_id' => $orientation->id, 'cohort_id' => $cohort->id]);
+
+        // Moving back reopens the original enrolment instead of duplicating it.
+        $moved = Enrolment::where('user_id', $user->id)->where('course_id', $tailoring->id)->first();
+        $this->put(route('admin.elearning.enrolments.update', $moved), ['course_id' => $digital->id, 'cohort_id' => $cohort->id, 'status' => 'in_progress'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('in_progress', $enrolment->fresh()->status);
+        $this->assertSame('withdrawn', $moved->fresh()->status);
+        $this->assertSame(1, Enrolment::where('user_id', $user->id)->where('course_id', $digital->id)->count());
+    }
+
+    public function test_an_enrolment_marked_failed_can_still_be_edited(): void
+    {
+        $enrolment = app(EnrolmentService::class)->enrol($this->participant(), $this->course('Digital Skills'));
+
+        $this->actingAs($this->admin())
+            ->put(route('admin.elearning.enrolments.update', $enrolment), ['course_id' => $enrolment->course_id, 'status' => 'failed'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('failed', $enrolment->fresh()->status);
+    }
 }
