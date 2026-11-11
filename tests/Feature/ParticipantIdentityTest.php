@@ -238,6 +238,20 @@ class ParticipantIdentityTest extends TestCase
         $this->assertEqualsCanonicalizing([$courseA->id, $courseB->id], $instructor->instructedCourses->pluck('id')->all());
         $this->assertTrue((bool) $instructor->instructedCourses->firstWhere('id', $courseA->id)->pivot->is_lead);
 
+        $editHtml = $this->actingAs($this->admin)->get(route('admin.users.index'))->assertOk()->getContent();
+        foreach ([$kampala, $gulu] as $branch) {
+            $this->assertMatchesRegularExpression(
+                '/id="edit-'.preg_quote((string) $instructor->id, '/').'-branch-'.preg_quote((string) $branch->id, '/').'" type="checkbox" name="branches\[\]" value="'.preg_quote((string) $branch->id, '/').'" checked/',
+                $editHtml
+            );
+        }
+        foreach ([$courseA, $courseB] as $course) {
+            $this->assertMatchesRegularExpression(
+                '/id="edit-'.preg_quote((string) $instructor->id, '/').'-course-'.preg_quote((string) $course->id, '/').'" type="checkbox" name="courses\[\]" value="'.preg_quote((string) $course->id, '/').'" checked/',
+                $editHtml
+            );
+        }
+
         // Both courses are now open to the instructor.
         $this->actingAs($instructor)->get(route('instructor.courses.manage', $courseA))->assertOk();
         $this->actingAs($instructor)->get(route('instructor.courses.manage', $courseB))->assertOk();
