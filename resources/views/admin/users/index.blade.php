@@ -164,6 +164,7 @@
     <th>User</th>
     <th>Phone</th>
     <th>Type</th>
+    <th>Joined Date</th>
     <th>Status</th>
     <th>Roles</th>
     <th>Branches &amp; Courses</th>
@@ -184,6 +185,7 @@
     </td>
     <td>{{ $user->phone ?: '-' }}</td>
     <td>{{ ucfirst($user->user_type) }}</td>
+    <td>{{ $user->created_at?->format('d M Y') ?: '-' }}</td>
     <td><span class="status-chip {{ $user->status }}">{{ ucfirst($user->status) }}</span></td>
     <td>
         @if($user->roles->count())
@@ -220,7 +222,7 @@
                 <small class="admin-cell-hint">{{ $participantCohorts->join(', ') }}</small>
             @endif
             @if($coreCourses->isNotEmpty())
-                <small class="admin-cell-hint"><strong>Core course{{ $coreCourses->count() > 1 ? 's' : '' }}:</strong> {{ $coreCourses->join(', ') }}</small>
+                <small class="admin-cell-hint">{{ $coreCourses->join(', ') }}</small>
             @elseif($activeParticipantEnrolments->isNotEmpty())
                 <small class="admin-cell-hint">No active core course</small>
             @endif
@@ -249,7 +251,7 @@
     </td>
 </tr>
 @empty
-<tr><td colspan="{{ $canDeleteUsers ? 9 : 8 }}"><div class="admin-empty">No users found.</div></td></tr>
+<tr><td colspan="{{ $canDeleteUsers ? 10 : 9 }}"><div class="admin-empty">No users found.</div></td></tr>
 @endforelse
 </tbody>
 </table>

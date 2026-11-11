@@ -45,6 +45,7 @@ class AdminParticipantsPageTest extends TestCase
             ->get(route('admin.participants.index'))
             ->assertOk()
             ->assertSee('Participants')
+            ->assertSee('Joined Date')
             ->assertSee('Ada Participant')
             ->assertDontSee('Sam Staff');
     }
@@ -103,7 +104,6 @@ class AdminParticipantsPageTest extends TestCase
         $this->actingAs($this->admin())
             ->get(route('admin.participants.index'))
             ->assertOk()
-            ->assertSee('Core course:')
             ->assertSee('Digital Skills Core')
             ->assertSee('Missing compulsory:')
             ->assertSee('Compulsory Orientation')

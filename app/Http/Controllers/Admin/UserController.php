@@ -80,6 +80,7 @@ class UserController extends Controller
                 'Phone' => 'phone',
                 'Participant code' => 'participant_code',
                 'Type' => fn ($u) => ucfirst((string) $u->user_type),
+                'Joined Date' => 'created_at',
                 'Status' => fn ($u) => ucfirst((string) $u->status),
                 'Roles' => fn ($u) => $u->roles->pluck('name')->implode(', '),
                 'Branches' => fn ($u) => $u->user_type === 'participant'
