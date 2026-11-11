@@ -11,6 +11,7 @@ use App\Models\Course;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditService;
+use App\Services\EnrolmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -35,7 +36,9 @@ class UserController extends Controller
         $query = User::with([
             'roles', 'branches', 'instructedCourses:id,title',
             // Participants: branch lives on the profile, cohorts/courses on enrolments.
-            'profile.branch:id,name', 'enrolments.course:id,title', 'enrolments.cohort:id,name',
+            'profile.branch:id,name', 'enrolments.course:id,title',
+            'enrolments.course.compulsoryFor:id,title', 'enrolments.course.compulsoryCourses:id,title',
+            'enrolments.cohort:id,name',
         ])->latest();
 
         if ($search = trim((string) $request->get('search'))) {
@@ -287,6 +290,34 @@ class UserController extends Controller
         return redirect()
             ->route('admin.users.index')
             ->with('open_user_modal','edit-'.$user->id);
+    }
+
+    public function syncParticipantCompulsory(User $user, EnrolmentService $enrolments)
+    {
+        abort_unless($user->isParticipant(), 404);
+
+        $user->load(['enrolments.course.compulsoryFor', 'enrolments.course.compulsoryCourses']);
+        $coreEnrolments = $user->enrolments->filter(fn ($enrolment) =>
+            $enrolment->course
+            && ! in_array($enrolment->status, EnrolmentService::INACTIVE_STATUSES, true)
+            && $enrolment->course->compulsoryFor->isEmpty()
+        );
+
+        if ($coreEnrolments->isEmpty()) {
+            return back()->with('info', 'This participant has no active core course to check.');
+        }
+
+        $before = $user->enrolments()->count();
+        \Illuminate\Support\Facades\DB::transaction(function () use ($coreEnrolments, $user, $enrolments) {
+            foreach ($coreEnrolments as $coreEnrolment) {
+                $enrolments->enrolCompulsory($user, $coreEnrolment->course, $coreEnrolment->cohort_id);
+            }
+        });
+        $created = max(0, $user->enrolments()->count() - $before);
+
+        return back()->with('success', $created
+            ? $created.' missing compulsory course enrolment(s) added for '.$user->name.'.'
+            : 'All compulsory courses are already assigned to '.$user->name.'.');
     }
 
     public function update(Request $request, User $user, AuditService $audit)

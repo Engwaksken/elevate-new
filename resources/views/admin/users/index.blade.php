@@ -202,14 +202,36 @@
             {{-- Participants keep one branch on their profile; cohorts come from their enrolments. --}}
             @if($user->profile?->branch)<span class="branch-chip">{{ $user->profile->branch->name }}</span>@endif
             @php
-                $participantCohorts = $user->enrolments->pluck('cohort.name')->filter()->unique();
-                $participantCourses = $user->enrolments->pluck('course.title')->filter();
+                $activeParticipantEnrolments = $user->enrolments->filter(fn ($enrolment) =>
+                    ! in_array($enrolment->status, \App\Services\EnrolmentService::INACTIVE_STATUSES, true)
+                );
+                $participantCohorts = $activeParticipantEnrolments->pluck('cohort.name')->filter()->unique();
+                $coreEnrolments = $activeParticipantEnrolments->filter(fn ($enrolment) =>
+                    $enrolment->course && $enrolment->course->compulsoryFor->isEmpty()
+                );
+                $coreCourses = $coreEnrolments->pluck('course.title')->filter()->unique();
+                $enrolledCourseIds = $activeParticipantEnrolments->pluck('course_id')->map(fn ($id) => (int) $id)->all();
+                $missingCompulsoryCourses = $coreEnrolments
+                    ->flatMap(fn ($enrolment) => $enrolment->course->compulsoryCourses)
+                    ->unique('id')
+                    ->reject(fn ($course) => in_array((int) $course->id, $enrolledCourseIds, true));
             @endphp
             @if($participantCohorts->isNotEmpty())
                 <small class="admin-cell-hint">{{ $participantCohorts->join(', ') }}</small>
             @endif
-            @if($user->enrolments->isNotEmpty())
-                <small class="admin-cell-hint" title="{{ $participantCourses->join(', ') }}">{{ $user->enrolments->count() }} {{ \Illuminate\Support\Str::plural('course', $user->enrolments->count()) }}</small>
+            @if($coreCourses->isNotEmpty())
+                <small class="admin-cell-hint"><strong>Core course{{ $coreCourses->count() > 1 ? 's' : '' }}:</strong> {{ $coreCourses->join(', ') }}</small>
+            @elseif($activeParticipantEnrolments->isNotEmpty())
+                <small class="admin-cell-hint">No active core course</small>
+            @endif
+            @if($missingCompulsoryCourses->isNotEmpty())
+                <small class="admin-cell-hint" style="color:#b54708"><strong>Missing compulsory:</strong> {{ $missingCompulsoryCourses->pluck('title')->join(', ') }}</small>
+                @if($canEditUsers)
+                    <form method="POST" action="{{ route('admin.participants.sync-compulsory', $user) }}" style="margin-top:6px">
+                        @csrf
+                        <button type="submit" class="btn btn-outline btn-sm"><i class="fas fa-arrows-rotate"></i> Assign missing</button>
+                    </form>
+                @endif
             @endif
         @else
             <span class="admin-cell-hint">-</span>

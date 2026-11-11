@@ -381,6 +381,9 @@ Route::prefix('admin')
         Route::get('/participants',[UserController::class,'index'])
             ->middleware('permission:users.view')->name('participants.index');
 
+        Route::post('/participants/{user}/sync-compulsory', [UserController::class, 'syncParticipantCompulsory'])
+            ->middleware('permission:users.edit')->name('participants.sync-compulsory');
+
         Route::delete('/participants/bulk-delete',[UserController::class,'bulkDestroy'])
             ->middleware('permission:users.delete')->name('participants.bulk-destroy');
 

@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\Course;
+use App\Models\Enrolment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -83,6 +85,39 @@ class AdminParticipantsPageTest extends TestCase
         $this->actingAs($stranger)
             ->get(route('admin.participants.index'))
             ->assertForbidden();
+    }
+
+    public function test_participants_page_shows_core_course_and_can_assign_missing_compulsory_course(): void
+    {
+        $participant = User::factory()->create(['name' => 'Learner With Missing Course', 'user_type' => 'participant', 'status' => 'active']);
+        $core = Course::create(['title' => 'Digital Skills Core', 'status' => 'published']);
+        $required = Course::create(['title' => 'Compulsory Orientation', 'status' => 'published']);
+        $core->compulsoryCourses()->attach($required->id);
+        Enrolment::create([
+            'user_id' => $participant->id,
+            'course_id' => $core->id,
+            'status' => 'enrolled',
+            'enrolled_at' => now(),
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.participants.index'))
+            ->assertOk()
+            ->assertSee('Core course:')
+            ->assertSee('Digital Skills Core')
+            ->assertSee('Missing compulsory:')
+            ->assertSee('Compulsory Orientation')
+            ->assertSee('Assign missing');
+
+        $this->post(route('admin.participants.sync-compulsory', $participant))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('enrolments', [
+            'user_id' => $participant->id,
+            'course_id' => $required->id,
+            'status' => 'enrolled',
+        ]);
     }
 
     public function test_read_only_viewers_do_not_see_edit_controls_or_user_forms(): void
