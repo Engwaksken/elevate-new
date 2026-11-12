@@ -35,7 +35,9 @@ class AdminPagesTest extends TestCase
         $this->actingAs($this->superAdmin())->get(route('admin.dashboard'))
             ->assertOk()
             ->assertSeeInOrder(['Administration', 'Frontend CMS', 'Platform Configuration'])
-            ->assertSee('href="'.route('admin.cms.index').'"', false);
+            ->assertSee('href="'.route('admin.cms.index').'"', false)
+            ->assertSee('data-admin-sidebar-collapse', false)
+            ->assertSee('title="Frontend CMS"', false);
     }
 
     public function test_dashboard_groups_its_stats_into_tabs(): void

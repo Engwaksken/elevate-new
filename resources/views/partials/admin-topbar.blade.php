@@ -56,6 +56,14 @@
 
     <div class="eh-admin-topbar__left">
         <button type="button"
+                class="eh-admin-topbar__collapse"
+                data-admin-sidebar-collapse
+                aria-pressed="false"
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar">
+            <i class="fas fa-angles-left" aria-hidden="true"></i>
+        </button>
+        <button type="button"
                 class="eh-admin-topbar__mobile-menu"
                 data-admin-sidebar-toggle
                 aria-label="Toggle navigation">

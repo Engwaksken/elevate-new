@@ -317,6 +317,8 @@ body.eh-admin-canonical-layout .table-responsive{
 
 /* ---------- mobile ---------- */
 @media(max-width:900px){
+    body.eh-admin-canonical-layout .eh-admin-topbar__collapse{display:none!important}
+
     body.eh-admin-canonical-layout .eh-admin-sidebar{
         transform:translateX(-100%)!important;
         transition:transform .2s ease!important;
@@ -366,4 +368,101 @@ body.eh-admin-canonical-layout .table-responsive{
         visibility:visible;
         pointer-events:auto;
     }
+}
+
+/* Desktop compact rail: reduce the full sidebar horizontally, retaining the
+   menu icons while keeping every destination one click away. */
+body.eh-admin-canonical-layout.admin-sidebar-collapsed{
+    --eh-admin-sidebar-width:76px;
+}
+
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__brand{
+    justify-content:center!important;
+    padding:12px 8px!important;
+}
+
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__brand-copy,
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__user-copy,
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__user-card > i,
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__group h3,
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__links a > span,
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__badge,
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__logout > span{
+    display:none!important;
+}
+
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__user-card{
+    justify-content:center!important;
+    margin:10px 7px!important;
+    padding:8px 4px!important;
+}
+
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__nav{
+    padding:0 8px 22px!important;
+}
+
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__group{
+    margin:0!important;
+    padding:0!important;
+}
+
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__links,
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__links[hidden]{
+    display:flex!important;
+    flex-direction:column!important;
+    gap:3px!important;
+    margin:0!important;
+    padding:0!important;
+}
+
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__links a{
+    justify-content:center!important;
+    gap:0!important;
+    min-height:44px!important;
+    padding:10px 0!important;
+}
+
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__links a > i,
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__links a > .fas,
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__links a > .far,
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__links a > .fab{
+    width:22px!important;
+    min-width:22px!important;
+    max-width:22px!important;
+    height:22px!important;
+    flex-basis:22px!important;
+    font-size:1rem!important;
+}
+
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__footer{
+    padding:10px 8px!important;
+}
+
+body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__logout{
+    justify-content:center!important;
+    padding:12px 0!important;
+}
+
+body.eh-admin-canonical-layout .eh-admin-topbar__collapse{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:38px!important;
+    height:38px!important;
+    flex:0 0 38px!important;
+    border:1px solid #e4e7ec!important;
+    border-radius:8px!important;
+    background:#fff!important;
+    color:#800000!important;
+    cursor:pointer!important;
+}
+
+body.eh-admin-canonical-layout .eh-admin-topbar__collapse:hover,
+body.eh-admin-canonical-layout .eh-admin-topbar__collapse:focus-visible{
+    background:#fff8f8!important;
+    border-color:#800000!important;
+}
+
+@media(max-width:900px){
+    body.eh-admin-canonical-layout .eh-admin-topbar__collapse{display:none!important}
 }

@@ -78,6 +78,27 @@
                 });
             });
 
+            const collapseButton = document.querySelector('[data-admin-sidebar-collapse]');
+            const applySidebarMode = () => {
+                const compact = window.innerWidth > 900 && localStorage.getItem('eh-admin-sidebar-collapsed') === 'true';
+                body.classList.toggle('admin-sidebar-collapsed', compact);
+                if (collapseButton) {
+                    collapseButton.setAttribute('aria-pressed', String(compact));
+                    collapseButton.setAttribute('aria-label', compact ? 'Expand sidebar' : 'Collapse sidebar');
+                    collapseButton.title = compact ? 'Expand sidebar' : 'Collapse sidebar';
+                    collapseButton.innerHTML = compact
+                        ? '<i class="fas fa-angles-right" aria-hidden="true"></i>'
+                        : '<i class="fas fa-angles-left" aria-hidden="true"></i>';
+                }
+            };
+            applySidebarMode();
+            collapseButton?.addEventListener('click', () => {
+                const compact = body.classList.toggle('admin-sidebar-collapsed');
+                localStorage.setItem('eh-admin-sidebar-collapsed', String(compact));
+                applySidebarMode();
+            });
+            window.addEventListener('resize', applySidebarMode);
+
             document.querySelector('[data-admin-overlay]')?.addEventListener('click', () => {
                 body.classList.remove('admin-sidebar-open');
             });

@@ -67,6 +67,29 @@ class ParticipantChatTest extends TestCase
         ]);
     }
 
+    public function test_chat_list_offers_modal_crud_and_creator_can_edit_or_delete_group(): void
+    {
+        $creator = $this->participant('Amina');
+        $member = $this->participant('Naki');
+        $outsider = $this->participant('Joan');
+        $conversation = ParticipantConversation::create(['type' => 'group', 'title' => 'Original group', 'created_by' => $creator->id]);
+        $conversation->members()->attach([$creator->id, $member->id]);
+
+        $this->actingAs($creator)->get(route('participant.chat.index'))
+            ->assertOk()->assertSee('data-modal-open="chat-create"', false)
+            ->assertSee('id="chat-edit-'.$conversation->id.'"', false)
+            ->assertSee('id="chat-delete-'.$conversation->id.'"', false);
+
+        $this->put(route('participant.chat.update', $conversation), ['title' => 'Updated group'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame('Updated group', $conversation->fresh()->title);
+        $this->actingAs($outsider)->put(route('participant.chat.update', $conversation), ['title' => 'Hijacked'])
+            ->assertForbidden();
+        $this->actingAs($creator)->delete(route('participant.chat.destroy', $conversation))
+            ->assertRedirect(route('participant.chat.index'));
+        $this->assertDatabaseMissing('participant_conversations', ['id' => $conversation->id]);
+    }
+
     public function test_non_member_cannot_read_or_send_to_conversation(): void
     {
         $first = $this->participant('Amina');

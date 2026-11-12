@@ -695,6 +695,7 @@
                             <a
                                 href="{{ $href }}"
                                 class="{{ $active ? 'active' : '' }}"
+                                title="{{ $item['label'] }}"
                                 @if($active) aria-current="page" @endif
                             >
                                 <i class="fas {{ $item['icon'] }}" aria-hidden="true"></i>
@@ -715,7 +716,7 @@
             <form method="POST" action="{{ route('admin.logout') }}">
                 @csrf
 
-                <button type="submit" class="eh-admin-sidebar__logout">
+                <button type="submit" class="eh-admin-sidebar__logout" title="Sign out">
                     <i class="fas fa-right-from-bracket" aria-hidden="true"></i>
                     <span>Sign out</span>
                 </button>

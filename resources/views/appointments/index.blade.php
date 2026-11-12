@@ -45,16 +45,21 @@
         </div>
     @endif
 
-    <section class="appt-section" aria-labelledby="appt-upcoming-heading">
-        <h2 id="appt-upcoming-heading"><i class="fas fa-calendar-day" aria-hidden="true"></i> Upcoming and awaiting response</h2>
-        @include('appointments._participant-table', ['rows' => $upcoming, 'empty' => 'No upcoming appointments.'])
-    </section>
-
-    <section class="appt-section" aria-labelledby="appt-past-heading">
-        <h2 id="appt-past-heading"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Past and closed</h2>
-        @include('appointments._participant-table', ['rows' => $past, 'empty' => 'Nothing here yet.'])
-        @if($past->hasPages())<div class="admin-pagination">{{ $past->links() }}</div>@endif
-    </section>
+    <div class="eh-tabs appt-list-tabs" data-eh-tabs>
+        <div class="eh-tab-nav" role="tablist" aria-label="Appointment lists">
+            <button class="eh-tab-button active" type="button" role="tab" aria-selected="true" data-eh-tab="appointments-upcoming"><i class="fas fa-calendar-day" aria-hidden="true"></i> Upcoming and awaiting response <span class="appt-count">{{ $upcoming->count() }}</span></button>
+            <button class="eh-tab-button" type="button" role="tab" aria-selected="false" data-eh-tab="appointments-past"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Past and closed <span class="appt-count">{{ $past->total() }}</span></button>
+        </div>
+        <section class="eh-tab-pane active appt-section" role="tabpanel" data-eh-pane="appointments-upcoming" aria-labelledby="appt-upcoming-heading">
+            <h2 id="appt-upcoming-heading">Upcoming and awaiting response</h2>
+            @include('appointments._participant-table', ['rows' => $upcoming, 'empty' => 'No upcoming appointments.'])
+        </section>
+        <section class="eh-tab-pane appt-section" role="tabpanel" data-eh-pane="appointments-past" aria-labelledby="appt-past-heading">
+            <h2 id="appt-past-heading">Past and closed</h2>
+            @include('appointments._participant-table', ['rows' => $past, 'empty' => 'Nothing here yet.'])
+            @if($past->hasPages())<div class="admin-pagination">{{ $past->links() }}</div>@endif
+        </section>
+    </div>
 </div>
 
 @if($instructorOptions->isNotEmpty())

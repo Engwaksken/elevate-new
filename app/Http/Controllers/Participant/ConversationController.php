@@ -153,6 +153,25 @@ class ConversationController extends Controller
         return back()->with('success', 'Participant(s) added to the group.');
     }
 
+    public function updateConversation(Request $request, ParticipantConversation $conversation): RedirectResponse
+    {
+        $this->authorizeMember($request, $conversation);
+        abort_unless($conversation->type === 'group' && (int) $conversation->created_by === (int) $request->user()->id, 403);
+        $data = $request->validate(['title' => ['required', 'string', 'max:120']]);
+        $conversation->update(['title' => trim($data['title'])]);
+
+        return back()->with('success', 'Group conversation updated.');
+    }
+
+    public function destroyConversation(Request $request, ParticipantConversation $conversation): RedirectResponse
+    {
+        $this->authorizeMember($request, $conversation);
+        abort_unless((int) $conversation->created_by === (int) $request->user()->id, 403);
+        $conversation->delete();
+
+        return redirect()->route('participant.chat.index')->with('success', 'Conversation deleted.');
+    }
+
     private function authorizeMember(Request $request, ParticipantConversation $conversation): void
     {
         abort_unless($conversation->members()->where('users.id', $request->user()->id)->exists(), 403);

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Course;
+use App\Models\Branch;
 use App\Models\Enrolment;
 use App\Models\InstructorAppointment;
 use App\Models\Role;
@@ -20,12 +21,14 @@ class InstructorAppointmentTest extends TestCase
     private Course $course;
     private User $instructor;
     private User $participant;
+    private Branch $branch;
 
     protected function setUp(): void
     {
         parent::setUp();
         Carbon::setTestNow(Carbon::parse('2026-10-06 09:00:00', config('app.timezone')));
 
+        $this->branch = Branch::create(['name' => 'Kampala', 'code' => 'KLA', 'is_active' => true]);
         $this->course = Course::create(['title' => 'Web Basics', 'status' => 'published']);
         $this->instructor = $this->makeInstructor();
         $this->instructor->instructedCourses()->attach($this->course);
@@ -43,6 +46,7 @@ class InstructorAppointmentTest extends TestCase
         $user = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
         $role = Role::firstOrCreate(['slug' => 'instructor'], ['name' => 'Instructor']);
         $user->roles()->attach($role);
+        $user->branches()->attach($this->branch->id);
 
         return $user;
     }
@@ -50,6 +54,7 @@ class InstructorAppointmentTest extends TestCase
     private function makeParticipant(bool $enrolled = true): User
     {
         $user = User::factory()->create(['user_type' => 'participant', 'status' => 'active']);
+        $user->profile()->updateOrCreate(['user_id' => $user->id], ['branch_id' => $this->branch->id]);
         if ($enrolled) {
             Enrolment::create(['user_id' => $user->id, 'course_id' => $this->course->id, 'status' => 'enrolled']);
         }
@@ -84,7 +89,9 @@ class InstructorAppointmentTest extends TestCase
     public function test_participant_can_book_and_instructor_is_notified(): void
     {
         $this->actingAs($this->participant)->get(route('appointments.index'))
-            ->assertOk()->assertSee('Book an appointment')->assertSee($this->instructor->name);
+            ->assertOk()->assertSee('Book an appointment')->assertSee($this->instructor->name)
+            ->assertSee('data-eh-tab="appointments-upcoming"', false)
+            ->assertSee('data-eh-tab="appointments-past"', false);
 
         $appointment = $this->book();
 
@@ -94,6 +101,16 @@ class InstructorAppointmentTest extends TestCase
 
         $this->actingAs($this->instructor)->get(route('instructor.appointments.index'))
             ->assertOk()->assertSee('Help with assignment 2')->assertSee('Approve');
+    }
+
+    public function test_participant_appointments_are_split_into_two_tabs(): void
+    {
+        $this->actingAs($this->participant)->get(route('appointments.index'))
+            ->assertOk()
+            ->assertSee('data-eh-tab="appointments-upcoming"', false)
+            ->assertSee('data-eh-tab="appointments-past"', false)
+            ->assertSee('Upcoming and awaiting response')
+            ->assertSee('Past and closed');
     }
 
     public function test_booking_rejects_instructor_of_a_course_the_participant_is_not_in(): void

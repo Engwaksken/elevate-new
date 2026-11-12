@@ -1310,6 +1310,8 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
 Route::middleware(['auth', \App\Http\Middleware\EnsureParticipantUser::class])->prefix('participant')->name('participant.')->group(function () {
     Route::get('/chat', [\App\Http\Controllers\Participant\ConversationController::class, 'index'])->name('chat.index');
     Route::post('/chat', [\App\Http\Controllers\Participant\ConversationController::class, 'store'])->name('chat.store');
+    Route::put('/chat/{conversation}', [\App\Http\Controllers\Participant\ConversationController::class, 'updateConversation'])->whereNumber('conversation')->name('chat.update');
+    Route::delete('/chat/{conversation}', [\App\Http\Controllers\Participant\ConversationController::class, 'destroyConversation'])->whereNumber('conversation')->name('chat.destroy');
     Route::get('/chat/{conversation}', [\App\Http\Controllers\Participant\ConversationController::class, 'show'])->whereNumber('conversation')->name('chat.show');
     Route::get('/chat/{conversation}/messages', [\App\Http\Controllers\Participant\ConversationController::class, 'messages'])->whereNumber('conversation')->name('chat.messages.index');
     Route::post('/chat/{conversation}/messages', [\App\Http\Controllers\Participant\ConversationController::class, 'send'])->whereNumber('conversation')->name('chat.messages.store');
