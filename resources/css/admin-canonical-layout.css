@@ -317,7 +317,7 @@ body.eh-admin-canonical-layout .table-responsive{
 
 /* ---------- mobile ---------- */
 @media(max-width:900px){
-    body.eh-admin-canonical-layout .eh-admin-topbar__collapse{display:none!important}
+    body.eh-admin-canonical-layout .eh-admin-topbar__collapse{display:inline-flex!important}
 
     body.eh-admin-canonical-layout .eh-admin-sidebar{
         transform:translateX(-100%)!important;
@@ -374,6 +374,7 @@ body.eh-admin-canonical-layout .table-responsive{
    menu icons while keeping every destination one click away. */
 body.eh-admin-canonical-layout.admin-sidebar-collapsed{
     --eh-admin-sidebar-width:76px;
+    --eh-sidebar-width:76px;
 }
 
 body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar__brand{
@@ -464,5 +465,25 @@ body.eh-admin-canonical-layout .eh-admin-topbar__collapse:focus-visible{
 }
 
 @media(max-width:900px){
-    body.eh-admin-canonical-layout .eh-admin-topbar__collapse{display:none!important}
+    body.eh-admin-canonical-layout .eh-admin-topbar__collapse{display:inline-flex!important}
+    body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-sidebar{
+        width:76px!important;
+        min-width:76px!important;
+        max-width:76px!important;
+        transform:translateX(0)!important;
+    }
+    body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-shell{
+        width:calc(100% - 76px)!important;
+        margin-left:76px!important;
+    }
+    body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-topbar{
+        left:76px!important;
+    }
+    body.eh-admin-canonical-layout.admin-sidebar-collapsed .admin-overlay{
+        display:none!important;
+    }
+    body.eh-admin-canonical-layout.admin-sidebar-collapsed .eh-admin-content{
+        padding-left:10px!important;
+        padding-right:10px!important;
+    }
 }

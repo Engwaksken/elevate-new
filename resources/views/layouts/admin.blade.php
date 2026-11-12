@@ -80,7 +80,8 @@
 
             const collapseButton = document.querySelector('[data-admin-sidebar-collapse]');
             const applySidebarMode = () => {
-                const compact = window.innerWidth > 900 && localStorage.getItem('eh-admin-sidebar-collapsed') === 'true';
+                let compact = false;
+                try { compact = localStorage.getItem('eh-admin-sidebar-collapsed') === 'true'; } catch (error) { /* Storage can be disabled by the browser. */ }
                 body.classList.toggle('admin-sidebar-collapsed', compact);
                 if (collapseButton) {
                     collapseButton.setAttribute('aria-pressed', String(compact));
@@ -94,7 +95,8 @@
             applySidebarMode();
             collapseButton?.addEventListener('click', () => {
                 const compact = body.classList.toggle('admin-sidebar-collapsed');
-                localStorage.setItem('eh-admin-sidebar-collapsed', String(compact));
+                if (compact) body.classList.remove('admin-sidebar-open');
+                try { localStorage.setItem('eh-admin-sidebar-collapsed', String(compact)); } catch (error) { /* Keep this page's state if storage is unavailable. */ }
                 applySidebarMode();
             });
             window.addEventListener('resize', applySidebarMode);
