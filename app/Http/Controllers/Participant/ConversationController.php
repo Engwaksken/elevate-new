@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Participant;
 
 use App\Http\Controllers\Controller;
 use App\Models\ParticipantConversation;
+use App\Models\ParticipantMessage;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,6 +97,25 @@ class ConversationController extends Controller
         $conversation->touch();
 
         return redirect()->to(route('participant.chat.show', $conversation).'#latest');
+    }
+
+    public function updateMessage(Request $request, ParticipantConversation $conversation, ParticipantMessage $message): RedirectResponse
+    {
+        $this->authorizeMember($request, $conversation);
+        abort_unless($message->conversation_id === $conversation->id && $message->sender_id === $request->user()->id, 403);
+        $data = $request->validate(['body' => ['required', 'string', 'max:5000']]);
+        $message->update(['body' => trim($data['body'])]);
+
+        return redirect()->to(route('participant.chat.show', $conversation).'#latest')->with('success', 'Message updated.');
+    }
+
+    public function destroyMessage(Request $request, ParticipantConversation $conversation, ParticipantMessage $message): RedirectResponse
+    {
+        $this->authorizeMember($request, $conversation);
+        abort_unless($message->conversation_id === $conversation->id && $message->sender_id === $request->user()->id, 403);
+        $message->delete();
+
+        return redirect()->to(route('participant.chat.show', $conversation).'#latest')->with('success', 'Message deleted.');
     }
 
     public function messages(Request $request, ParticipantConversation $conversation): JsonResponse

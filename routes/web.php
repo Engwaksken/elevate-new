@@ -1313,6 +1313,8 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureParticipantUser::class])->
     Route::get('/chat/{conversation}', [\App\Http\Controllers\Participant\ConversationController::class, 'show'])->whereNumber('conversation')->name('chat.show');
     Route::get('/chat/{conversation}/messages', [\App\Http\Controllers\Participant\ConversationController::class, 'messages'])->whereNumber('conversation')->name('chat.messages.index');
     Route::post('/chat/{conversation}/messages', [\App\Http\Controllers\Participant\ConversationController::class, 'send'])->whereNumber('conversation')->name('chat.messages.store');
+    Route::put('/chat/{conversation}/messages/{message}', [\App\Http\Controllers\Participant\ConversationController::class, 'updateMessage'])->whereNumber('conversation')->whereNumber('message')->name('chat.messages.update');
+    Route::delete('/chat/{conversation}/messages/{message}', [\App\Http\Controllers\Participant\ConversationController::class, 'destroyMessage'])->whereNumber('conversation')->whereNumber('message')->name('chat.messages.destroy');
     Route::post('/chat/{conversation}/invite', [\App\Http\Controllers\Participant\ConversationController::class, 'invite'])->whereNumber('conversation')->name('chat.invite');
 
     Route::get('/course-opportunities',[CourseCallApplicationController::class,'index'])->name('course-calls.index');

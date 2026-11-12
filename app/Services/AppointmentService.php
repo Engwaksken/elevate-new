@@ -46,11 +46,17 @@ class AppointmentService
      */
     public function bookableInstructors(User $participant): Collection
     {
+        $branchId = $participant->profile?->branch_id;
+        if (! $branchId) {
+            return collect();
+        }
+
         $courses = Course::query()
             ->whereHas('enrolments', fn ($q) => $q->where('user_id', $participant->id)
                 ->whereIn('status', self::ENROLMENT_STATUSES))
             ->with(['instructors' => fn ($q) => $q->where('users.user_type', 'staff')
                 ->where('users.status', 'active')
+                ->whereHas('branches', fn ($branches) => $branches->where('branches.id', $branchId))
                 ->select('users.id', 'users.name', 'users.email')])
             ->orderBy('title')
             ->get(['courses.id', 'courses.title']);

@@ -79,6 +79,25 @@ class ParticipantChatTest extends TestCase
         $this->post(route('participant.chat.messages.store', $conversation), ['body' => 'Intrusion'])->assertForbidden();
     }
 
+    public function test_sender_can_edit_and_delete_only_their_own_messages(): void
+    {
+        $sender = $this->participant('Amina');
+        $member = $this->participant('Naki');
+        $conversation = ParticipantConversation::create(['type' => 'direct', 'created_by' => $sender->id]);
+        $conversation->members()->attach([$sender->id, $member->id]);
+        $message = $conversation->messages()->create(['sender_id' => $sender->id, 'body' => 'Original']);
+
+        $this->actingAs($sender)->put(route('participant.chat.messages.update', [$conversation, $message]), ['body' => 'Updated'])
+            ->assertRedirect(route('participant.chat.show', $conversation).'#latest');
+        $this->assertDatabaseHas('participant_messages', ['id' => $message->id, 'body' => 'Updated']);
+
+        $this->actingAs($member)->put(route('participant.chat.messages.update', [$conversation, $message]), ['body' => 'Hijacked'])
+            ->assertForbidden();
+        $this->actingAs($sender)->delete(route('participant.chat.messages.destroy', [$conversation, $message]))
+            ->assertRedirect(route('participant.chat.show', $conversation).'#latest');
+        $this->assertDatabaseMissing('participant_messages', ['id' => $message->id]);
+    }
+
     public function test_participant_can_open_the_chat_page(): void
     {
         $this->actingAs($this->participant('Amina'))
