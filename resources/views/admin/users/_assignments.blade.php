@@ -1,9 +1,8 @@
 {{-- Staff branch and course assignments. Expects $branches, $courses, $assignedBranches, $assignedCourses, $prefix. --}}
-<input type="hidden" name="sync_assignments" value="1">
-<p class="form-hint" style="margin-top:0">Select the branches and courses associated with this user. These selections are retained if the user's account type changes; participant learning enrolments and profile branch remain managed separately.</p>
+<p class="form-hint" style="margin-top:0">@if(($isParticipant ?? false))Select the participant's branch and course enrolments.@else Select the branches and courses associated with this user. @endif</p>
 <div class="modal-grid">
     <div class="form-group full">
-        <label>Branches</label>
+        <label>{{ ($isParticipant ?? false) ? 'Branch' : 'Branches' }}</label>
         @if($branches->isEmpty())
             <div class="admin-readonly">No branches have been set up yet.</div>
         @else
@@ -18,7 +17,7 @@
         @endif
     </div>
     <div class="form-group full">
-        <label>Courses taught</label>
+        <label>{{ ($isParticipant ?? false) ? 'Course enrolments' : 'Courses taught' }}</label>
         @if($courses->isEmpty())
             <div class="admin-readonly">No courses yet.</div>
         @else
@@ -30,7 +29,7 @@
             </label>
             @endforeach
         </div>
-        <small class="form-hint">Lead instructors are still set on each course's Assignments page.</small>
+        <small class="form-hint">{{ ($isParticipant ?? false) ? 'Selected courses will be enrolled for this participant.' : "Lead instructors are still set on each course's Assignments page." }}</small>
         @endif
     </div>
 </div>

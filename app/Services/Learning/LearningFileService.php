@@ -128,7 +128,7 @@ class LearningFileService
     public function submissionRules(Assessment $assessment, string $field, ?string $legacyField = null): array
     {
         $fileRules = ['file', 'max:'.(int) config('elearning.max_file_kb', 51200), 'mimes:'.$assessment->submissionMimesRule()];
-        $presence = $assessment->requiresAttachment()
+        $presence = $assessment->requiresAttachment() && ! $assessment->allow_link_submissions
             ? ($legacyField ? 'required_without:'.$legacyField : 'required')
             : 'nullable';
 

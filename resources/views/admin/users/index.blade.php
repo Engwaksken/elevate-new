@@ -279,6 +279,7 @@
 
 <form method="POST" action="{{ route('admin.users.store') }}">
 @csrf
+<input type="hidden" name="sync_assignments" value="1">
 <div class="eh-modal-body">
 <x-form-tabs id="user-create" label="New user details" :tabs="$userFormTabs">
 <x-form-tab name="account">
@@ -323,7 +324,7 @@
 </x-form-tab>
 
 <x-form-tab name="assignments">
-@include('admin.users._assignments', ['assignedBranches' => old('branches', []), 'assignedCourses' => old('courses', []), 'prefix' => 'create'])
+@include('admin.users._assignments', ['assignedBranches' => old('branches', []), 'assignedCourses' => old('courses', []), 'prefix' => 'create', 'isParticipant' => old('user_type', 'participant') === 'participant'])
 </x-form-tab>
 
 <x-form-tab name="security">
@@ -353,6 +354,7 @@
 
 <form method="POST" action="{{ route('admin.users.update',$user) }}">
 @csrf @method('PUT')
+<input type="hidden" name="sync_assignments" value="1">
 <div class="eh-modal-body">
 <x-form-tabs id="user-edit-{{ $user->id }}" label="User details" :tabs="$userFormTabs">
 <x-form-tab name="account">
@@ -397,7 +399,7 @@
 </x-form-tab>
 
 <x-form-tab name="assignments">
-@include('admin.users._assignments', ['assignedBranches' => $user->branches->pluck('id')->all(), 'assignedCourses' => $user->instructedCourses->pluck('id')->all(), 'prefix' => 'edit-'.$user->id])
+@include('admin.users._assignments', ['assignedBranches' => $user->isParticipant() ? ($user->profile?->branch_id ? [$user->profile->branch_id] : []) : $user->branches->pluck('id')->all(), 'assignedCourses' => $user->isParticipant() ? $user->enrolments->pluck('course_id')->all() : $user->instructedCourses->pluck('id')->all(), 'prefix' => 'edit-'.$user->id, 'isParticipant' => $user->isParticipant()])
 </x-form-tab>
 
 <x-form-tab name="security">
@@ -426,4 +428,14 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endif
+<script>
+document.addEventListener('change', function (event) {
+    const branch = event.target.closest('input[name="branches[]"]');
+    if (!branch || !branch.checked) return;
+    const form = branch.closest('form');
+    const userType = form?.querySelector('select[name="user_type"]');
+    if (userType?.value !== 'participant') return;
+    form.querySelectorAll('input[name="branches[]"]').forEach(input => { if (input !== branch) input.checked = false; });
+});
+</script>
 @endsection

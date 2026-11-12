@@ -59,7 +59,7 @@ class AssignmentSubmissionSettingsTest extends TestCase
     public function test_save_draft_keeps_the_assignment_hidden_with_the_chosen_formats(): void
     {
         $this->actingAs($this->instructor)
-            ->post(route('instructor.courses.assessments.store', $this->course), $this->form(['publish' => '0']))
+            ->post(route('instructor.courses.assessments.store', $this->course), $this->form(['publish' => '0', 'allow_link_submissions' => '1']))
             ->assertSessionHasNoErrors()
             ->assertSessionHas('success', fn ($message) => str_contains($message, 'draft'));
 
@@ -67,6 +67,7 @@ class AssignmentSubmissionSettingsTest extends TestCase
         $this->assertFalse($assessment->is_published);
         $this->assertSame(['video', 'audio'], $assessment->submission_formats);
         $this->assertSame(2, $assessment->maxSubmissionFiles());
+        $this->assertTrue((bool) $assessment->allow_link_submissions);
         $this->assertContains('mp4', $assessment->submissionExtensions());
         $this->assertNotContains('pdf', $assessment->submissionExtensions());
 
@@ -105,6 +106,36 @@ class AssignmentSubmissionSettingsTest extends TestCase
 
         $this->actingAs($this->participant)
             ->post(route('learning.assessment.submit', $assessment), ['submission_text' => 'Only words'])
+            ->assertSessionHasErrors('submission_files');
+
+        $this->assertSame(0, AssessmentAttempt::count());
+    }
+
+    public function test_assignment_can_accept_and_store_web_links_without_a_file(): void
+    {
+        $assessment = $this->assignment(['allow_link_submissions' => true]);
+
+        $this->actingAs($this->participant)
+            ->get(route('learning.assessment.show', $assessment))
+            ->assertOk()
+            ->assertSee('name="submission_links"', false);
+
+        $this->post(route('learning.assessment.submit', $assessment), [
+            'submission_links' => "https://example.com/project\nhttps://github.com/example/project",
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame([
+            'https://example.com/project',
+            'https://github.com/example/project',
+        ], AssessmentAttempt::firstOrFail()->submission_links);
+    }
+
+    public function test_assignment_rejects_links_when_the_instructor_has_not_enabled_them(): void
+    {
+        $assessment = $this->assignment();
+
+        $this->actingAs($this->participant)
+            ->post(route('learning.assessment.submit', $assessment), ['submission_links' => 'https://example.com'])
             ->assertSessionHasErrors('submission_files');
 
         $this->assertSame(0, AssessmentAttempt::count());
@@ -161,6 +192,19 @@ class AssignmentSubmissionSettingsTest extends TestCase
 
         // Regression: a single "submission_file" used to be dropped silently.
         $this->assertSame(1, AssessmentAttempt::firstOrFail()->files()->count());
+    }
+
+    public function test_api_accepts_links_without_a_file_when_enabled(): void
+    {
+        $assessment = $this->assignment(['allow_link_submissions' => true]);
+        Sanctum::actingAs($this->participant, ['participant']);
+
+        $this->getJson('/api/v1/participant/assignments')
+            ->assertOk()->assertJsonFragment(['allow_link_submissions' => true]);
+        $this->withHeader('Accept', 'application/json')
+            ->post("/api/v1/participant/assignments/{$assessment->id}/submit", [
+                'submission_links' => ['https://example.com/work'],
+            ])->assertCreated()->assertJsonPath('attempt.submission_links.0', 'https://example.com/work');
     }
 
     public function test_admin_builder_saves_drafts_and_can_publish_them(): void

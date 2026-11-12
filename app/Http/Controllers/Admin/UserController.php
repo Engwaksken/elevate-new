@@ -208,7 +208,7 @@ class UserController extends Controller
             ->with('open_user_modal','create');
     }
 
-    public function store(Request $request, AuditService $audit)
+    public function store(Request $request, AuditService $audit, EnrolmentService $enrolments)
     {
         $data = $this->validated($request);
         $roleIds = $this->validatedRoleIds($data['user_type'], $data['roles'] ?? []);
@@ -224,7 +224,7 @@ class UserController extends Controller
         ]);
 
         $user->roles()->sync($roleIds);
-        $this->syncAssignments($user, $data, $request->boolean('sync_assignments'));
+        $this->syncAssignments($user, $data, $request->boolean('sync_assignments'), $enrolments);
 
         if ($user->isStaff()) {
             $verificationUrl = URL::temporarySignedRoute(
@@ -321,7 +321,7 @@ class UserController extends Controller
             : 'All compulsory courses are already assigned to '.$user->name.'.');
     }
 
-    public function update(Request $request, User $user, AuditService $audit)
+    public function update(Request $request, User $user, AuditService $audit, EnrolmentService $enrolments)
     {
         $old = $user->load(['roles', 'branches', 'instructedCourses'])->toArray();
         $data = $this->validated($request, $user);
@@ -355,7 +355,7 @@ class UserController extends Controller
         $newRoleIds = collect($roleIds)->map(fn ($id) => (int) $id)->sort()->values()->all();
 
         $user->roles()->sync($roleIds);
-        $this->syncAssignments($user, $data, $request->boolean('sync_assignments'));
+        $this->syncAssignments($user, $data, $request->boolean('sync_assignments'), $enrolments);
 
         if ($oldRoleIds !== $newRoleIds) {
             app(\App\Services\NotificationDispatcher::class)->notify(
@@ -383,7 +383,7 @@ class UserController extends Controller
 
     private function validated(Request $request, ?User $user = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required','string','max:190'],
             'email' => [
                 'required',
@@ -406,6 +406,12 @@ class UserController extends Controller
             'courses' => ['nullable','array'],
             'courses.*' => ['integer','exists:courses,id'],
         ]);
+
+        if ($data['user_type'] === 'participant' && count($data['branches'] ?? []) > 1) {
+            throw ValidationException::withMessages(['branches' => 'A participant can be assigned to one profile branch.']);
+        }
+
+        return $data;
     }
 
     /**
@@ -413,14 +419,15 @@ class UserController extends Controller
      * The user type controls which areas can act on those associations; changing a
      * user's type must not silently discard the administrator's saved selections.
      */
-    private function syncAssignments(User $user, array $data, bool $submitted): void
+    private function syncAssignments(User $user, array $data, bool $submitted, EnrolmentService $enrolments): void
     {
         // Forms without the Assignments tab must not wipe existing assignments.
         if (! $submitted) {
             return;
         }
 
-        $user->branches()->sync($data['branches'] ?? []);
+        $branchIds = array_values(array_unique(array_map('intval', $data['branches'] ?? [])));
+        $user->branches()->sync($branchIds);
 
         // Keep the lead-instructor flag on courses the user was already assigned to.
         $leads = $user->instructedCourses()->wherePivot('is_lead', true)->pluck('courses.id')->all();
@@ -428,6 +435,23 @@ class UserController extends Controller
         $user->instructedCourses()->sync(collect($data['courses'] ?? [])
             ->mapWithKeys(fn ($courseId) => [(int) $courseId => ['is_lead' => in_array((int) $courseId, $leads, true)]])
             ->all());
+
+        // The user editor is also the admin's quick assignment surface for participants:
+        // keep their operational branch and course enrolments in sync with those selections.
+        if ($user->isParticipant()) {
+            $branchId = $branchIds[0] ?? null;
+            $user->profile()->updateOrCreate(['user_id' => $user->id], ['branch_id' => $branchId]);
+
+            foreach (Course::query()->whereIn('id', $data['courses'] ?? [])->get() as $course) {
+                $cohort = $course->cohorts()
+                    ->when($branchId, fn ($query) => $query->where(fn ($q) => $q->where('cohorts.branch_id', $branchId)
+                        ->orWhereHas('branches', fn ($branches) => $branches->where('branches.id', $branchId))))
+                    ->orderBy('cohorts.id')
+                    ->first();
+
+                $enrolments->enrol($user, $course, ['cohort_id' => $cohort?->id]);
+            }
+        }
     }
 
     private function validatedRoleIds(string $userType, array $roleIds): array

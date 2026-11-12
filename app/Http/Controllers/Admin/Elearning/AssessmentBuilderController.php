@@ -71,16 +71,18 @@ class AssessmentBuilderController extends Controller
             'submission_formats'=>['nullable','array'],
             'submission_formats.*'=>['string','in:'.implode(',',array_keys(Assessment::SUBMISSION_FORMATS))],
             'max_submission_files'=>['nullable','integer','min:1','max:'.Assessment::MAX_SUBMISSION_FILES_LIMIT],
+            'allow_link_submissions'=>['nullable','boolean'],
         ]);
 
         $published=$request->has('publish') ? $request->boolean('publish') : $request->boolean('is_published');
         $settings=$data['type']==='assignment' ? [
             'submission_formats'=>array_values(array_unique($data['submission_formats'] ?? [])) ?: Assessment::DEFAULT_SUBMISSION_FORMATS,
             'max_submission_files'=>(int)($data['max_submission_files'] ?? 1),
+            'allow_link_submissions'=>(bool)($data['allow_link_submissions'] ?? false),
         ] : [];
 
         $assessment=$course->assessments()->create(
-            collect($data)->except(['publish','submission_formats','max_submission_files'])->all()
+            collect($data)->except(['publish','submission_formats','max_submission_files','allow_link_submissions'])->all()
             +['is_published'=>$published]+$settings
         );
 

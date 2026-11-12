@@ -23,6 +23,7 @@ class Assessment extends Model
         'is_published',
         'submission_formats',
         'max_submission_files',
+        'allow_link_submissions',
     ];
 
     /**
@@ -55,6 +56,7 @@ class Assessment extends Model
         'is_published' => 'boolean',
         'submission_formats' => 'array',
         'max_submission_files' => 'integer',
+        'allow_link_submissions' => 'boolean',
     ];
 
     protected $appends = [

@@ -382,6 +382,7 @@ class ParticipantLessonService
 
         // Submission settings chosen by the instructor (the app limits its file picker with these).
         $data['requires_attachment'] = $assessment->requiresAttachment();
+        $data['allow_link_submissions'] = (bool) $assessment->allow_link_submissions;
         $data['submission_formats'] = $assessment->allowedSubmissionFormats();
         $data['allowed_extensions'] = $assessment->submissionExtensions();
         $data['allowed_formats_label'] = $assessment->submissionFormatLabels();

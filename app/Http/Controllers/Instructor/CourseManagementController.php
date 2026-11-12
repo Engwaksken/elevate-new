@@ -1129,6 +1129,7 @@ class CourseManagementController extends Controller
             'submission_formats' => ['nullable', 'array'],
             'submission_formats.*' => ['string', 'in:'.implode(',', array_keys(Assessment::SUBMISSION_FORMATS))],
             'max_submission_files' => ['nullable', 'integer', 'min:1', 'max:'.Assessment::MAX_SUBMISSION_FILES_LIMIT],
+            'allow_link_submissions' => ['nullable', 'boolean'],
         ] + $this->files()->uploadRules('assessment_files', 'assignment_mimes', 'assessment_file'), [
             'submission_formats.*.in' => 'Choose file formats from the list.',
             'assessment_files.max' => 'You can upload up to :max files at a time.',
@@ -1156,6 +1157,7 @@ class CourseManagementController extends Controller
         return [
             'submission_formats' => $formats ?: Assessment::DEFAULT_SUBMISSION_FORMATS,
             'max_submission_files' => (int) ($data['max_submission_files'] ?? 1),
+            'allow_link_submissions' => (bool) ($data['allow_link_submissions'] ?? false),
         ];
     }
 

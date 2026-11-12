@@ -126,6 +126,7 @@ class ParticipantAssignmentService
                 'score' => $isGraded && $attempt->score !== null ? (float) $attempt->score : null,
                 'percentage' => $isGraded && $attempt->percentage !== null ? (float) $attempt->percentage : null,
                 'instructor_feedback' => $isGraded ? $attempt->getAttribute('instructor_feedback') : null,
+                'submission_links' => $attempt->submission_links ?? [],
                 'files' => $this->lessons->presentAttemptFiles($attempt),
             ] : null,
             'effective_due_at' => $due?->toIso8601String(),
@@ -162,6 +163,7 @@ class ParticipantAssignmentService
      * $file accepts one upload or a list of uploads (multi-file submissions).
      *
      * @param  UploadedFile|array<int,UploadedFile>|null  $file
+     * @param  array<int,string>  $links
      * @return array{attempt: AssessmentAttempt, duplicate: bool}
      */
     public function submit(
@@ -170,7 +172,8 @@ class ParticipantAssignmentService
         ?string $text,
         UploadedFile|array|null $file,
         ?string $clientSubmissionId,
-        ?Carbon $clientCreatedAt = null
+        ?Carbon $clientCreatedAt = null,
+        array $links = []
     ): array {
         if ($clientSubmissionId) {
             $duplicate = AssessmentAttempt::where('client_submission_id', $clientSubmissionId)
@@ -197,11 +200,21 @@ class ParticipantAssignmentService
         ));
 
         // Covers every path, including queued text-only offline submissions.
-        if ($assessment->requiresAttachment() && $uploads === []) {
+        $links = array_values(array_unique(array_filter(array_map('trim', $links))));
+        foreach ($links as $link) {
+            $scheme = strtolower((string) parse_url($link, PHP_URL_SCHEME));
+            if (! filter_var($link, FILTER_VALIDATE_URL) || ! in_array($scheme, ['http', 'https'], true)) {
+                throw new ParticipantRuleException('Submission links must be valid http:// or https:// web addresses.', 'invalid_submission_link');
+            }
+        }
+        if ($assessment->requiresAttachment() && $uploads === [] && (! $assessment->allow_link_submissions || $links === [])) {
             throw new ParticipantRuleException(
-                'Attach at least one file. Assignments cannot be submitted without a file.',
+                'Submit at least one file or web link.',
                 'attachment_required'
             );
+        }
+        if ($links !== [] && ! $assessment->allow_link_submissions) {
+            throw new ParticipantRuleException('This assignment does not accept link submissions.', 'links_not_allowed');
         }
 
         $attempt = AssessmentAttempt::create([
@@ -210,6 +223,7 @@ class ParticipantAssignmentService
             'attempt_number' => $existingAttempts + 1,
             'client_submission_id' => $clientSubmissionId,
             'submission_text' => $text,
+            'submission_links' => $links ?: null,
             'status' => 'submitted',
             'started_at' => now(),
             'submitted_at' => now(),

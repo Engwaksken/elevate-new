@@ -7,13 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class AssessmentAttempt extends Model
 {
     protected $fillable = [
-        'assessment_id','user_id','attempt_number','client_submission_id','submission_text','submission_file_path',
+        'assessment_id','user_id','attempt_number','client_submission_id','submission_text','submission_file_path','submission_links',
         'score','percentage','instructor_feedback','status','started_at','submitted_at',
         'graded_at','graded_by',
     ];
 
     protected $casts = [
         'started_at'=>'datetime',
+        'submission_links'=>'array',
         'submitted_at'=>'datetime',
         'graded_at'=>'datetime',
         'score'=>'decimal:2',

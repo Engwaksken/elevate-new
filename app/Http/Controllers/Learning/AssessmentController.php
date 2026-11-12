@@ -11,6 +11,7 @@ use App\Services\CertificateService;
 use App\Services\Learning\LearningFileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AssessmentController extends Controller
 {
@@ -63,18 +64,34 @@ class AssessmentController extends Controller
         $fileService = app(LearningFileService::class);
         $data = $request->validate([
             'submission_text' => ['nullable', 'string', 'max:20000'],
+            'submission_links' => ['nullable', 'string', 'max:20000'],
         ] + $fileService->submissionRules($assessment, 'submission_files'),
             $fileService->submissionMessages($assessment, 'submission_files'));
         $uploads = $fileService->uploadedFiles($request, 'submission_files');
+        $links = collect(preg_split('/\\r?\\n/', (string) ($data['submission_links'] ?? '')))
+            ->map(fn ($link) => trim($link))->filter()->unique()->values();
+        if ($links->isNotEmpty() && ! $assessment->allow_link_submissions) {
+            throw ValidationException::withMessages(['submission_links' => 'This assignment does not accept link submissions.']);
+        }
+        foreach ($links as $link) {
+            $parts = parse_url($link);
+            if (! filter_var($link, FILTER_VALIDATE_URL) || ! in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)) {
+                throw ValidationException::withMessages(['submission_links' => 'Enter valid web links beginning with https:// or http://, one per line.']);
+            }
+        }
+        if ($assessment->requiresAttachment() && $uploads === [] && $links->isEmpty()) {
+            throw ValidationException::withMessages(['submission_files' => 'Submit at least one file or web link.']);
+        }
 
         $answers = $request->input('answers', []);
 
-        $attempt = DB::transaction(function () use ($assessment, $answers, $attemptNumber, $data, $uploads, $fileService) {
+        $attempt = DB::transaction(function () use ($assessment, $answers, $attemptNumber, $data, $uploads, $links, $fileService) {
             $attempt = AssessmentAttempt::create([
                 'assessment_id' => $assessment->id,
                 'user_id' => auth()->id(),
                 'attempt_number' => $attemptNumber,
                 'submission_text' => $data['submission_text'] ?? null,
+                'submission_links' => $links->all() ?: null,
                 'status' => 'submitted',
                 'started_at' => now(),
                 'submitted_at' => now(),

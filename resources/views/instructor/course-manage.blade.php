@@ -513,6 +513,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <div class="admin-readonly" style="max-height:220px;overflow:auto;white-space:pre-wrap">{{ $attempt->submission_text }}</div>
                             </div>
                         @endif
+                        @if($attempt->submission_links)
+                            <div class="form-group full" style="margin-bottom:16px"><label>Submitted links</label><ul>@foreach($attempt->submission_links as $link)<li><a href="{{ $link }}" target="_blank" rel="noopener noreferrer">{{ $link }}</a></li>@endforeach</ul></div>
+                        @endif
                         @if($attempt->files->isNotEmpty())
                             <div style="margin-bottom:16px">
                                 <x-learning.file-list :files="$attempt->files" :title="'Submitted files ('.$attempt->files->count().')'" />
@@ -525,7 +528,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <div class="icm-earlier-item">
                                         <strong>Attempt {{ $earlier->attempt_number }}</strong>
                                         <small class="icm-muted"> · {{ $earlier->submitted_at?->format('d M Y H:i') ?? '-' }} · {{ ucfirst($earlier->status) }}@if($earlier->percentage !== null) · {{ number_format((float) $earlier->percentage, 1) }}%@endif</small>
-                                        @if($earlier->submission_text)<div class="admin-readonly" style="max-height:120px;overflow:auto;white-space:pre-wrap;margin-top:6px">{{ $earlier->submission_text }}</div>@endif
+                                         @if($earlier->submission_text)<div class="admin-readonly" style="max-height:120px;overflow:auto;white-space:pre-wrap;margin-top:6px">{{ $earlier->submission_text }}</div>@endif
+                                        @if($earlier->submission_links)<ul>@foreach($earlier->submission_links as $link)<li><a href="{{ $link }}" target="_blank" rel="noopener noreferrer">{{ $link }}</a></li>@endforeach</ul>@endif
                                         @if($earlier->instructor_feedback)<p class="icm-muted" style="margin:6px 0 0"><strong>Feedback:</strong> {{ $earlier->instructor_feedback }}</p>@endif
                                         @if($earlier->files->isNotEmpty())<x-learning.file-list compact :files="$earlier->files" />@endif
                                     </div>

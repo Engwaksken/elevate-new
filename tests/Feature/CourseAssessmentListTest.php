@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
 use App\Models\Course;
+use App\Models\CourseModule;
 use App\Models\Enrolment;
+use App\Models\Lesson;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -31,7 +33,14 @@ class CourseAssessmentListTest extends TestCase
             AssessmentAttempt::create(['assessment_id' => $quiz->id, 'user_id' => $user->id, 'attempt_number' => $n, 'percentage' => 50 + $n * 10, 'status' => 'graded', 'submitted_at' => now()]);
         }
 
-        $page = $this->actingAs($user)->get(route('learning.course.dashboard', $course))->assertOk();
+        $module = CourseModule::create(['course_id' => $course->id, 'title' => 'Getting started', 'position' => 1, 'is_published' => true]);
+        Lesson::create(['course_module_id' => $module->id, 'title' => 'Welcome lesson', 'content' => 'Intro', 'position' => 1, 'is_published' => true]);
+        $page = $this->actingAs($user)->get(route('learning.course.dashboard', $course))->assertOk()
+            ->assertSee('data-eh-tab="course-timetable"', false)
+            ->assertSee('data-eh-tab="course-assessments"', false)
+            ->assertSee('<details class="participant-module', false)
+            ->assertSee('participant-lesson-group', false)
+            ->assertSee('Welcome lesson');
 
         $page->assertDontSee(route('learning.assessment.show', $quiz), false)
             ->assertSee('All 2 attempts used')

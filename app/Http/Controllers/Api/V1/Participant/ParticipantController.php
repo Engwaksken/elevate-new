@@ -210,6 +210,8 @@ class ParticipantController extends Controller
 
         $data = $request->validate([
             'submission_text' => ['nullable','string'],
+            'submission_links' => ['nullable','array','max:20'],
+            'submission_links.*' => ['required','url','max:2000'],
             'client_submission_id' => ['nullable','string','max:190'],
             // When a queued offline submission was made on the device (offline grace window).
             'client_created_at' => ['nullable','date'],
@@ -225,7 +227,8 @@ class ParticipantController extends Controller
             app(\App\Services\Learning\LearningFileService::class)
                 ->uploadedFiles($request, 'submission_file', 'submission_files'),
             $data['client_submission_id'] ?? null,
-            ! empty($data['client_created_at']) ? Carbon::parse($data['client_created_at']) : null
+            ! empty($data['client_created_at']) ? Carbon::parse($data['client_created_at']) : null,
+            $data['submission_links'] ?? []
         );
 
         // Files are presented with authenticated download URLs (never storage paths).
@@ -790,8 +793,8 @@ class ParticipantController extends Controller
     }
 
     /**
-     * Apply a queued text-only assignment_submission operation
-     * (payload: assessment_id, submission_text, client_created_at).
+     * Apply a queued assignment_submission operation
+     * (payload: assessment_id, submission_text, submission_links, client_created_at).
      */
     private function offlineAssignmentSubmission(Request $request, array $payload, string $clientOperationId, ?string $clientCreatedAt): array
     {
@@ -800,6 +803,10 @@ class ParticipantController extends Controller
         abort_unless($assessment->is_published, 404, 'Assessment not found.');
 
         $text = isset($payload['submission_text']) ? (string) $payload['submission_text'] : null;
+        $links = $payload['submission_links'] ?? [];
+        if (! is_array($links) || count($links) > 20 || collect($links)->contains(fn ($link) => ! is_string($link) || strlen($link) > 2000 || ! filter_var($link, FILTER_VALIDATE_URL))) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['submission_links' => 'Provide up to 20 valid web links.']);
+        }
         $createdAt = null;
 
         if ($clientCreatedAt) {
@@ -810,7 +817,7 @@ class ParticipantController extends Controller
             }
         }
 
-        $result = $this->assignments->submit($request->user(), $assessment, $text, null, $clientOperationId, $createdAt);
+        $result = $this->assignments->submit($request->user(), $assessment, $text, null, $clientOperationId, $createdAt, $links);
 
         return [
             'message' => $result['duplicate'] ? 'Submission already received.' : 'Submission received.',

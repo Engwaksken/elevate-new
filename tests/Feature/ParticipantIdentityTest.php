@@ -286,6 +286,8 @@ class ParticipantIdentityTest extends TestCase
 
         $this->assertTrue($participant->branches()->whereKey($branch->id)->exists());
         $this->assertTrue($participant->instructedCourses()->whereKey($course->id)->exists());
+        $this->assertSame($branch->id, (int) $participant->fresh()->profile?->branch_id);
+        $this->assertDatabaseHas('enrolments', ['user_id' => $participant->id, 'course_id' => $course->id]);
 
         $html = $this->actingAs($this->admin)->get(route('admin.users.index'))->assertOk()->getContent();
         $this->assertMatchesRegularExpression(

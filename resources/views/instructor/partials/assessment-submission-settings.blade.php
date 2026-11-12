@@ -7,7 +7,8 @@
 @endphp
 <fieldset class="full icm-submission-settings">
     <legend>Participant submissions</legend>
-    <p class="icm-muted">Participants must attach at least one file. Choose the formats they may upload and how many files one submission may contain.</p>
+    <p class="icm-muted">Choose file formats and submission methods participants may use.</p>
+    <label class="icm-format"><input type="checkbox" name="allow_link_submissions" value="1" @checked($assessment?->allow_link_submissions ?? old('allow_link_submissions'))><span><strong>Allow links</strong><small>Participants may submit web links instead of or alongside files.</small></span></label>
     <div class="icm-formats" role="group" aria-label="Accepted file formats">
         @foreach(\App\Models\Assessment::SUBMISSION_FORMATS as $key => $format)
             <label class="icm-format">

@@ -63,7 +63,7 @@
 <div class="form-group full" data-assignment-only>
 <label>Accepted submission formats</label>
 <p class="form-hint" style="margin-top:0">Participants must attach at least one file in one of these formats.</p>
-<div class="eh-choice-grid">@foreach(\App\Models\Assessment::SUBMISSION_FORMATS as $key=>$format)<label class="eh-choice-card"><input type="checkbox" name="submission_formats[]" value="{{ $key }}" @checked(in_array($key,(array)old('submission_formats',['document']),true))><span class="eh-choice-card__text">{{ $format['label'] }}<small class="admin-cell-hint">{{ $format['hint'] }}</small></span></label>@endforeach</div>
+<label class="eh-choice-card"><input type="checkbox" name="allow_link_submissions" value="1" @checked(old('allow_link_submissions'))><span class="eh-choice-card__text">Allow link submissions<small class="admin-cell-hint">Participants may provide web links instead of or with uploaded files.</small></span></label><div class="eh-choice-grid">@foreach(\App\Models\Assessment::SUBMISSION_FORMATS as $key=>$format)<label class="eh-choice-card"><input type="checkbox" name="submission_formats[]" value="{{ $key }}" @checked(in_array($key,(array)old('submission_formats',['document']),true))><span class="eh-choice-card__text">{{ $format['label'] }}<small class="admin-cell-hint">{{ $format['hint'] }}</small></span></label>@endforeach</div>
 </div>
 <div class="form-group" data-assignment-only><label>Maximum files per submission</label><input type="number" name="max_submission_files" min="1" max="{{ \App\Models\Assessment::MAX_SUBMISSION_FILES_LIMIT }}" value="{{ old('max_submission_files',1) }}"></div>
 </div></div>
