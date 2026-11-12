@@ -604,39 +604,150 @@ class CourseManagementController extends Controller
             'correct_value' => ['nullable', 'string'],
         ]);
 
-        $options = null;
-
-        if ($data['question_type'] === 'true_false') {
-            $options = ['true' => 'True', 'false' => 'False'];
-        } elseif ($data['question_type'] === 'multiple_choice') {
-            $values = collect(preg_split('/\r\n|\r|\n/', (string) ($data['options_text'] ?? '')))
-                ->map(fn ($value) => trim((string) $value))
-                ->filter()
-                ->values();
-
-            if ($values->count() < 2) {
-                return back()
-                    ->withErrors(['options_text' => 'Multiple-choice questions require at least two options.'])
-                    ->withInput();
-            }
-
-            $options = $values
-                ->mapWithKeys(fn ($value, $index) => [(string) $index => $value])
-                ->all();
+        try {
+            $payload = $this->questionPayload($data);
+        } catch (\InvalidArgumentException $exception) {
+            return back()->withErrors(['options_text' => $exception->getMessage()])->withInput();
         }
-
-        $assessment->questions()->create([
-            'question_type' => $data['question_type'],
-            'question_text' => $data['question_text'],
-            'options' => $options,
-            'correct_answer' => filled($data['correct_value'] ?? null)
-                ? ['value' => $data['correct_value']]
-                : null,
-            'marks' => $data['marks'],
-            'position' => ($assessment->questions()->max('position') ?? 0) + 1,
-        ]);
+        $payload['position'] = ($assessment->questions()->max('position') ?? 0) + 1;
+        $assessment->questions()->create($payload);
 
         return back()->with('success', 'Question added.');
+    }
+
+    public function updateQuestion(Request $request, Course $course, Assessment $assessment, AssessmentQuestion $question)
+    {
+        $this->authoriseAssessment($course, $assessment);
+        abort_unless((int) $question->assessment_id === (int) $assessment->id, 404);
+        $data = $request->validate([
+            'question_type' => ['required', 'in:multiple_choice,true_false,short_text,long_text'],
+            'question_text' => ['required', 'string'],
+            'marks' => ['required', 'numeric', 'min:0.1'],
+            'options_text' => ['nullable', 'string'],
+            'correct_value' => ['nullable', 'string'],
+        ]);
+        try {
+            $question->update($this->questionPayload($data));
+        } catch (\InvalidArgumentException $exception) {
+            return back()->withErrors(['options_text' => $exception->getMessage()])->withInput();
+        }
+
+        return back()->with('success', 'Question updated.');
+    }
+
+    public function downloadQuestionTemplate(Course $course, Assessment $assessment)
+    {
+        $this->authoriseAssessment($course, $assessment);
+        abort_unless(in_array($assessment->type, ['quiz', 'exam'], true), 404);
+
+        return response()->streamDownload(function () {
+            $output = fopen('php://output', 'w');
+            fputcsv($output, ['question_type', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_option', 'marks']);
+            fputcsv($output, ['multiple_choice', 'Which planet is known as the Red Planet?', 'Earth', 'Mars', 'Venus', 'Jupiter', 'B', '1']);
+            fputcsv($output, ['true_false', 'The Earth orbits the Sun.', '', '', '', '', 'true', '1']);
+            fclose($output);
+        }, 'quiz-questions-template.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function importQuestions(Request $request, Course $course, Assessment $assessment)
+    {
+        $this->authoriseAssessment($course, $assessment);
+        abort_unless(in_array($assessment->type, ['quiz', 'exam'], true), 404);
+        $data = $request->validate(['questions_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120']]);
+        $handle = fopen($data['questions_file']->getRealPath(), 'r');
+        $header = $handle ? fgetcsv($handle) : false;
+        if (! is_array($header)) {
+            return back()->withErrors(['questions_file' => 'The CSV file is empty or could not be read.']);
+        }
+        $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) $header[0]);
+        $header = array_map(fn ($value) => strtolower(trim((string) $value)), $header);
+        $requiredHeaders = ['question_type', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_option', 'marks'];
+        if (array_diff($requiredHeaders, $header)) {
+            fclose($handle);
+            return back()->withErrors(['questions_file' => 'Use the downloaded template headers: question_type, question_text, option_a–option_d, correct_option, marks.']);
+        }
+
+        $rows = [];
+        $errors = [];
+        $line = 1;
+        while (($values = fgetcsv($handle)) !== false) {
+            $line++;
+            if (count(array_filter($values, fn ($value) => trim((string) $value) !== '')) === 0) continue;
+            $row = array_combine($header, array_pad(array_slice($values, 0, count($header)), count($header), ''));
+            $type = strtolower(trim((string) ($row['question_type'] ?? '')));
+            $optionValues = collect(['a', 'b', 'c', 'd'])->map(fn ($key) => trim((string) ($row['option_'.$key] ?? '')))->filter()->values();
+            $correct = trim((string) ($row['correct_option'] ?? ''));
+            if ($type === 'multiple_choice' && preg_match('/^[a-d]$/i', $correct)) {
+                $correct = trim((string) ($row['option_'.strtolower($correct)] ?? $correct));
+            }
+            $candidate = [
+                'question_type' => $type,
+                'question_text' => trim((string) ($row['question_text'] ?? '')),
+                'options_text' => $optionValues->implode("\n"),
+                'correct_value' => $type === 'true_false' ? strtolower($correct) : $correct,
+                'marks' => trim((string) ($row['marks'] ?? '')),
+            ];
+            $validator = validator($candidate, [
+                'question_type' => ['required', 'in:multiple_choice,true_false,short_text,long_text'],
+                'question_text' => ['required', 'string', 'max:10000'],
+                'options_text' => ['nullable', 'string'],
+                'correct_value' => ['nullable', 'string'],
+                'marks' => ['required', 'numeric', 'min:0.1'],
+            ]);
+            if ($validator->fails()) {
+                $errors[] = 'CSV row '.$line.': '.$validator->errors()->first();
+                continue;
+            }
+            try {
+                $rows[] = $this->questionPayload($candidate);
+            } catch (\InvalidArgumentException $exception) {
+                $errors[] = 'CSV row '.$line.': '.$exception->getMessage();
+            }
+        }
+        fclose($handle);
+
+        if ($errors) return back()->withErrors(['questions_file' => implode(' ', $errors)]);
+        if ($rows === []) return back()->withErrors(['questions_file' => 'The CSV contains no questions.']);
+        if (count($rows) > 500) return back()->withErrors(['questions_file' => 'Import up to 500 questions at a time.']);
+
+        DB::transaction(function () use ($assessment, $rows) {
+            $position = (int) ($assessment->questions()->max('position') ?? 0);
+            foreach ($rows as $row) $assessment->questions()->create($row + ['position' => ++$position]);
+        });
+
+        return back()->with('success', count($rows).' question(s) imported.');
+    }
+
+    private function questionPayload(array $data): array
+    {
+        $type = $data['question_type'];
+        $options = null;
+        if ($type === 'true_false') {
+            $options = ['true' => 'True', 'false' => 'False'];
+            if (filled($data['correct_value'] ?? null) && ! in_array(strtolower($data['correct_value']), ['true', 'false'], true)) {
+                throw new \InvalidArgumentException('True / False correct_option must be true or false.');
+            }
+        } elseif ($type === 'multiple_choice') {
+            $values = collect(preg_split('/\r\n|\r|\n/', (string) ($data['options_text'] ?? '')))
+                ->map(fn ($value) => trim((string) $value))->filter()->values();
+            if ($values->count() < 2) throw new \InvalidArgumentException('Multiple-choice questions require at least two options.');
+            $options = $values->mapWithKeys(fn ($value, $index) => [(string) $index => $value])->all();
+        }
+
+        $correct = trim((string) ($data['correct_value'] ?? ''));
+        if ($type === 'multiple_choice' && $correct !== '') {
+            $correctIndex = collect($options)->search(fn ($option) => $option === $correct);
+            if ($correctIndex === false) throw new \InvalidArgumentException('Correct option must match one of the listed options.');
+            $correct = (string) $correctIndex;
+        }
+
+        return [
+            'question_type' => $type,
+            'question_text' => $data['question_text'],
+            'options' => $options,
+            'correct_answer' => $correct !== '' ? ['value' => $correct] : null,
+            'marks' => $data['marks'],
+        ];
     }
 
     public function destroyQuestion(

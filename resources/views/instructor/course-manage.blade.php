@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <section class="icm-panel">
     <div class="icm-card-grid">
-        @forelse($course->assessments()->where('type',$assessmentType)->with('files')->withCount(['questions','attempts'])->latest()->get() as $assessment)
+            @forelse($course->assessments()->where('type',$assessmentType)->with(['files','questions'])->withCount(['questions','attempts'])->latest()->get() as $assessment)
         <article class="icm-card">
             <span class="icm-chip">{{ ucfirst($assessment->type) }}</span>
             <span class="icm-chip {{ $assessment->is_published ? 'icm-status-approved' : 'icm-status-pending' }}">{{ $assessment->is_published ? 'Published' : 'Draft' }}</span>
@@ -399,7 +399,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
             @if(in_array($assessmentType,['quiz','exam'],true))
             <details class="icm-details">
-                <summary>Add question</summary>
+                <summary>Preview &amp; manage questions ({{ $assessment->questions->count() }})</summary>
+                <div style="margin:12px 0;padding:14px;border:1px solid #eaecf0;border-radius:10px">
+                    <strong>Import questions from CSV</strong>
+                    <p class="icm-muted">Use the template columns: question_type, question_text, option_a–option_d, correct_option, marks. Multiple-choice correct answers use A–D; true/false answers use true or false. Existing questions are kept and imported questions are added.</p>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.assessments.questions.template', [$course, $assessment]) }}"><i class="fas fa-download"></i> Download CSV template</a>
+                        <form method="POST" enctype="multipart/form-data" action="{{ route('instructor.courses.assessments.questions.import', [$course, $assessment]) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">@csrf<input type="file" name="questions_file" accept=".csv,text/csv" required aria-label="Quiz questions CSV"><button class="btn btn-primary btn-sm" type="submit"><i class="fas fa-upload"></i> Upload questions</button></form>
+                    </div>
+                </div>
+                @forelse($assessment->questions as $question)
+                    @php
+                        $correctKey = (string) data_get($question->correct_answer, 'value', '');
+                        $correctDisplay = $question->question_type === 'multiple_choice' ? ($question->options[$correctKey] ?? $correctKey) : $correctKey;
+                        $optionsText = collect($question->options ?? [])->values()->implode("\n");
+                    @endphp
+                    <article style="margin:10px 0;padding:14px;border:1px solid #eaecf0;border-radius:10px">
+                        <div style="display:flex;justify-content:space-between;gap:10px"><strong>Question {{ $loop->iteration }} · {{ ucfirst(str_replace('_',' ',$question->question_type)) }} · {{ number_format((float)$question->marks,1) }} mark(s)</strong><span class="icm-muted">{{ $question->options ? count($question->options).' options' : '' }}</span></div>
+                        <p style="white-space:pre-wrap">{{ $question->question_text }}</p>
+                        @if($question->options)<ol type="A" style="margin:0 0 10px 20px">@foreach($question->options as $option)<li>{{ $option }} @if($correctDisplay !== '' && (string)$option === (string)$correctDisplay)<strong>(correct)</strong>@endif</li>@endforeach</ol>@endif
+                        @if($correctDisplay !== '')<p class="icm-muted"><strong>Correct answer:</strong> {{ $correctDisplay }}</p>@endif
+                        <details class="icm-details"><summary>Edit question</summary>
+                            <form method="POST" action="{{ route('instructor.courses.assessments.questions.update', [$course, $assessment, $question]) }}" class="icm-form-grid" style="margin-top:12px">@csrf @method('PUT')
+                                <div><label>Question type</label><select name="question_type">@foreach(['multiple_choice'=>'Multiple choice','true_false'=>'True / False','short_text'=>'Short text','long_text'=>'Long text'] as $value=>$label)<option value="{{ $value }}" @selected($question->question_type===$value)>{{ $label }}</option>@endforeach</select></div>
+                                <div><label>Marks</label><input type="number" name="marks" min=".1" step=".1" value="{{ $question->marks }}" required></div>
+                                <div class="full"><label>Question</label><textarea name="question_text" required>{{ $question->question_text }}</textarea></div>
+                                <div class="full"><label>Options (one per line; for multiple choice)</label><textarea name="options_text">{{ $optionsText }}</textarea></div>
+                                <div><label>Correct value / option text</label><input name="correct_value" value="{{ $correctDisplay }}"></div>
+                                <div><button class="btn btn-primary btn-sm" type="submit">Save question</button></div>
+                            </form>
+                        </details>
+                        <form method="POST" action="{{ route('instructor.courses.assessments.questions.destroy', [$course, $assessment, $question]) }}" onsubmit="return confirm('Delete this question?')" style="margin-top:8px">@csrf @method('DELETE')<button class="btn btn-outline btn-sm" type="submit"><i class="fas fa-trash"></i> Delete question</button></form>
+                    </article>
+                @empty
+                    <p class="icm-muted">No questions yet. Add one below or import a CSV.</p>
+                @endforelse
+            </details>
+            <details class="icm-details">
+                <summary>Add question manually</summary>
                 <form method="POST" action="{{ route('instructor.courses.assessments.questions.store',[$course,$assessment]) }}" class="icm-form-grid" style="margin-top:12px">
                     @csrf
                     <div><label>Question type</label><select name="question_type">@foreach(['multiple_choice'=>'Multiple choice','true_false'=>'True / False','short_text'=>'Short text','long_text'=>'Long text'] as $value=>$label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></div>

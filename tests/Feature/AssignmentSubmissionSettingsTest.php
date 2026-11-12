@@ -207,6 +207,37 @@ class AssignmentSubmissionSettingsTest extends TestCase
             ])->assertCreated()->assertJsonPath('attempt.submission_links.0', 'https://example.com/work');
     }
 
+    public function test_instructor_can_download_template_import_questions_and_edit_them(): void
+    {
+        $quiz = Assessment::create([
+            'course_id' => $this->course->id, 'title' => 'Marketing basics', 'type' => 'quiz',
+            'max_attempts' => 2, 'pass_mark' => 50, 'is_published' => false,
+        ]);
+
+        $template = $this->actingAs($this->instructor)
+            ->get(route('instructor.courses.assessments.questions.template', [$this->course, $quiz]))
+            ->assertOk();
+        $this->assertStringContainsString('option_a', $template->streamedContent());
+
+        $csv = "question_type,question_text,option_a,option_b,option_c,option_d,correct_option,marks\n"
+            ."multiple_choice,Which planet is red?,Earth,Mars,Venus,Jupiter,B,2\n"
+            ."true_false,The Earth orbits the Sun.,,,,,true,1\n";
+        $this->post(route('instructor.courses.assessments.questions.import', [$this->course, $quiz]), [
+            'questions_file' => UploadedFile::fake()->createWithContent('questions.csv', $csv),
+        ])->assertSessionHasNoErrors()->assertSessionHas('success', '2 question(s) imported.');
+
+        $question = $quiz->questions()->orderBy('position')->firstOrFail();
+        $this->assertSame('1', (string) data_get($question->correct_answer, 'value'));
+        $this->get(route('instructor.courses.manage', [$this->course, 'tab' => 'quizzes']))
+            ->assertOk()->assertSee('Preview &amp; manage questions', false)->assertSee('Which planet is red?');
+
+        $this->put(route('instructor.courses.assessments.questions.update', [$this->course, $quiz, $question]), [
+            'question_type' => 'multiple_choice', 'question_text' => 'Which planet is closest to the Sun?',
+            'options_text' => "Earth\nMercury\nVenus", 'correct_value' => 'Mercury', 'marks' => 3,
+        ])->assertSessionHasNoErrors();
+        $this->assertSame('Which planet is closest to the Sun?', $question->fresh()->question_text);
+    }
+
     public function test_admin_builder_saves_drafts_and_can_publish_them(): void
     {
         $admin = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);

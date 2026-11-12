@@ -1425,6 +1425,9 @@ Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-a
         Route::delete('/{course}/modules/{module}/lessons/{lesson}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'destroyLesson'])->name('lessons.destroy');
         Route::post('/{course}/assessments', [\App\Http\Controllers\Instructor\CourseManagementController::class,'storeAssessment'])->name('assessments.store');
         Route::post('/{course}/assessments/{assessment}/questions', [\App\Http\Controllers\Instructor\CourseManagementController::class,'addQuestion'])->name('assessments.questions.store');
+        Route::get('/{course}/assessments/{assessment}/questions/template', [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadQuestionTemplate'])->name('assessments.questions.template');
+        Route::post('/{course}/assessments/{assessment}/questions/import', [\App\Http\Controllers\Instructor\CourseManagementController::class,'importQuestions'])->name('assessments.questions.import');
+        Route::put('/{course}/assessments/{assessment}/questions/{question}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'updateQuestion'])->name('assessments.questions.update');
         Route::delete('/{course}/assessments/{assessment}/questions/{question}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'destroyQuestion'])->name('assessments.questions.destroy');
         Route::put('/{course}/participants/{enrolment}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'updateParticipant'])->name('participants.update');
     });
