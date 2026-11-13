@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class NotificationListFiltersTest extends TestCase
@@ -89,5 +90,26 @@ class NotificationListFiltersTest extends TestCase
 
         $response = $this->actingAs($this->user)->get(route('notifications.index', ['per_page' => 999]))->assertOk();
         $this->assertSame(15, $response->viewData('notifications')->perPage());
+    }
+
+    public function test_staff_submission_alert_is_hidden_from_participant_inbox(): void
+    {
+        UserNotification::create([
+            'user_id' => $this->user->id,
+            'type' => 'assignment_submitted',
+            'title' => 'New submission: Business Profile',
+            'message' => 'A participant submitted an assignment.',
+        ]);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))
+            ->assertOk()
+            ->assertDontSee('New submission: Business Profile')
+            ->assertViewHas('stats', ['week' => 1, 'month' => 2, 'total' => 3])
+            ->assertViewHas('unreadCount', 2);
+
+        Sanctum::actingAs($this->user, ['participant']);
+        $this->getJson('/api/v1/participant/notifications')
+            ->assertOk()
+            ->assertJsonMissing(['type' => 'assignment_submitted']);
     }
 }

@@ -60,6 +60,7 @@ class ParticipantController extends Controller
 
         $unread = DB::table('user_notifications')
             ->where('user_id', $user->id)
+            ->whereNotIn('type', \App\Models\UserNotification::participantHiddenTypes())
             ->whereNull('read_at')
             ->count();
 
@@ -441,7 +442,8 @@ class ParticipantController extends Controller
     public function notifications(Request $request)
     {
         $query = DB::table('user_notifications')
-            ->where('user_id',$request->user()->id);
+            ->where('user_id',$request->user()->id)
+            ->whereNotIn('type', \App\Models\UserNotification::participantHiddenTypes());
 
         if ($request->boolean('unread_only')) {
             $query->whereNull('read_at');
@@ -656,6 +658,7 @@ class ParticipantController extends Controller
 
         $notifications = DB::table('user_notifications')
             ->where('user_id',$user->id)
+            ->whereNotIn('type', \App\Models\UserNotification::participantHiddenTypes())
             ->when($since,
                 fn ($q) => $q->where('updated_at','>',$since),
                 fn ($q) => $q->latest('id')->limit(100)

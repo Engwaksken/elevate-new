@@ -70,6 +70,7 @@ class DashboardController extends Controller
             ->get();
 
         $notifications=UserNotification::query()
+            ->visibleToParticipant()
             ->where('user_id',$user->id)
             ->latest()
             ->limit(5)
@@ -151,6 +152,7 @@ class DashboardController extends Controller
             'notifications'=>$notifications,
             'conversations'=>$conversations,
             'unreadNotifications'=>UserNotification::query()
+                ->visibleToParticipant()
                 ->where('user_id',$user->id)
                 ->whereNull('read_at')
                 ->count(),

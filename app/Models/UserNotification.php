@@ -4,9 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
 
 class UserNotification extends Model
 {
+    /** Notification types intended for staff workflows, not the participant inbox. */
+    private const PARTICIPANT_HIDDEN_TYPES = [
+        'assignment_submitted',
+        'leave',
+        'appraisal',
+        'task',
+        'deliverable',
+        'milestone',
+        'activity',
+        'procurement',
+        'workplan',
+        'performance',
+    ];
+
     protected $fillable=[
         'user_id',
         'type',
@@ -24,6 +39,16 @@ class UserNotification extends Model
         'read_at'=>'datetime',
         'opened_at'=>'datetime',
     ];
+
+    public function scopeVisibleToParticipant(Builder $query): Builder
+    {
+        return $query->whereNotIn('type', self::PARTICIPANT_HIDDEN_TYPES);
+    }
+
+    public static function participantHiddenTypes(): array
+    {
+        return self::PARTICIPANT_HIDDEN_TYPES;
+    }
 
     protected static function booted(): void
     {

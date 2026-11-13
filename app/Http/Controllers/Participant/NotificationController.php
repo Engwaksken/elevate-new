@@ -16,7 +16,9 @@ class NotificationController extends Controller
 
     public function index(Request $request): View|\Symfony\Component\HttpFoundation\Response
     {
-        $base = UserNotification::query()->where('user_id', $request->user()->id);
+        $base = UserNotification::query()
+            ->visibleToParticipant()
+            ->where('user_id', $request->user()->id);
         $query = clone $base;
 
         [$from, $to] = $this->periodRange($request);
