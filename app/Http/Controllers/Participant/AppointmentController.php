@@ -59,6 +59,7 @@ class AppointmentController extends Controller
             'upcoming' => $upcoming,
             'past' => $past,
             'instructorOptions' => $this->appointments->bookableInstructors($user),
+            'enrolledCourseCount' => $this->appointments->enrolledCourses($user)->count(),
             'service' => $this->appointments,
             'stats' => [
                 'pending' => (clone $all)->where('status', Appointment::PENDING)->count(),

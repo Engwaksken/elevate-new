@@ -42,34 +42,56 @@ class AppointmentService
     /**
      * Instructors the participant may book, each with the courses they share.
      *
+     * Any enrolled participant can book an instructor of their course. When the
+     * course has instructors in the participant's own branch, only those are
+     * offered; otherwise (no branch on the profile, or no instructor in that
+     * branch) every active instructor of the course is offered so the
+     * participant is never left without someone to book.
+     *
      * @return Collection<int, array{instructor: User, courses: Collection<int, Course>}>
      */
     public function bookableInstructors(User $participant): Collection
     {
         $branchId = $participant->profile?->branch_id;
-        if (! $branchId) {
-            return collect();
-        }
 
-        $courses = Course::query()
-            ->whereHas('enrolments', fn ($q) => $q->where('user_id', $participant->id)
-                ->whereIn('status', self::ENROLMENT_STATUSES))
-            ->with(['instructors' => fn ($q) => $q->where('users.user_type', 'staff')
-                ->where('users.status', 'active')
-                ->whereHas('branches', fn ($branches) => $branches->where('branches.id', $branchId))
-                ->select('users.id', 'users.name', 'users.email')])
-            ->orderBy('title')
-            ->get(['courses.id', 'courses.title']);
+        $courses = $this->enrolledCourses($participant);
 
         $options = [];
         foreach ($courses as $course) {
-            foreach ($course->instructors as $instructor) {
+            $instructors = $course->instructors;
+            if ($branchId) {
+                $local = $instructors->filter(fn (User $i) => $i->branches->contains('id', $branchId));
+                if ($local->isNotEmpty()) {
+                    $instructors = $local;
+                }
+            }
+
+            foreach ($instructors as $instructor) {
+                $instructor = $instructor->withoutRelations();
                 $options[$instructor->id] ??= ['instructor' => $instructor, 'courses' => collect()];
                 $options[$instructor->id]['courses']->push($course->withoutRelations());
             }
         }
 
         return collect($options)->sortBy(fn ($row) => $row['instructor']->name)->values();
+    }
+
+    /**
+     * Courses the participant is actively enrolled in, with their active instructors.
+     *
+     * @return Collection<int, Course>
+     */
+    public function enrolledCourses(User $participant): Collection
+    {
+        return Course::query()
+            ->whereHas('enrolments', fn ($q) => $q->where('user_id', $participant->id)
+                ->whereIn('status', self::ENROLMENT_STATUSES))
+            ->with(['instructors' => fn ($q) => $q->where('users.user_type', 'staff')
+                ->where('users.status', 'active')
+                ->select('users.id', 'users.name', 'users.email')
+                ->with('branches:branches.id')])
+            ->orderBy('title')
+            ->get(['courses.id', 'courses.title']);
     }
 
     public function request(User $participant, array $data): Appointment

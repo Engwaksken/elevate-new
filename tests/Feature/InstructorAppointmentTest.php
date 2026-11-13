@@ -113,6 +113,54 @@ class InstructorAppointmentTest extends TestCase
             ->assertSee('Past and closed');
     }
 
+    public function test_enrolled_participant_can_book_even_without_a_branch_match(): void
+    {
+        // Profile has no branch: every instructor of the enrolled course is bookable.
+        $noBranch = $this->makeParticipant();
+        $noBranch->profile()->update(['branch_id' => null]);
+
+        $this->actingAs($noBranch)->get(route('appointments.index'))
+            ->assertOk()->assertSee('data-modal-open="appt-book"', false)
+            ->assertSee('Web Basics')->assertSee($this->instructor->name)
+            ->assertDontSee('Find a course');
+        $this->book([], $noBranch);
+
+        // Participant in another branch where the course has no instructor: still bookable.
+        $elsewhere = Branch::create(['name' => 'Gulu', 'code' => 'GUL', 'is_active' => true]);
+        $remote = $this->makeParticipant();
+        $remote->profile()->update(['branch_id' => $elsewhere->id]);
+        $this->book([], $remote);
+
+        $this->assertDatabaseCount('instructor_appointments', 2);
+    }
+
+    public function test_branch_instructors_are_preferred_when_the_course_has_them(): void
+    {
+        $outOfBranch = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
+        $outOfBranch->instructedCourses()->attach($this->course);
+
+        $options = app(\App\Services\AppointmentService::class)->bookableInstructors($this->participant);
+
+        $this->assertSame([$this->instructor->id], $options->pluck('instructor.id')->all());
+    }
+
+    public function test_booking_page_opens_preselected_for_a_course(): void
+    {
+        $this->actingAs($this->participant)->get(route('appointments.index', ['course' => $this->course->id]))
+            ->assertOk()
+            ->assertSee('data-modal-autoopen', false)
+            ->assertSee('<option value="'.$this->course->id.'" selected', false);
+    }
+
+    public function test_enrolled_participant_with_no_course_instructor_is_told_why(): void
+    {
+        $this->course->instructors()->detach();
+
+        $this->actingAs($this->participant)->get(route('appointments.index'))
+            ->assertOk()->assertSee('does not have an instructor assigned yet')
+            ->assertDontSee('data-modal-open="appt-book"', false);
+    }
+
     public function test_booking_rejects_instructor_of_a_course_the_participant_is_not_in(): void
     {
         $other = $this->makeInstructor();

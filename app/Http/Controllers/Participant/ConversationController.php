@@ -15,18 +15,9 @@ class ConversationController extends Controller
 {
     public function index(Request $request): View
     {
-        $user = $request->user();
-        $conversations = ParticipantConversation::query()
-            ->whereHas('members', fn ($query) => $query->where('users.id', $user->id))
-            ->with(['members:id,name', 'latestMessage.sender:id,name'])
-            ->withCount('messages')
-            ->orderByDesc('updated_at')
-            ->paginate(20);
-
         return view('participant.chat.index', [
-            'conversations' => $conversations,
-            'participants' => User::query()->where('user_type', 'participant')->where('status', 'active')
-                ->whereKeyNot($user->id)->orderBy('name')->get(['id', 'name']),
+            'conversations' => $this->conversationList($request)->paginate(30),
+            'directory' => $this->participantDirectory($request->user()->id),
         ]);
     }
 
@@ -82,6 +73,8 @@ class ConversationController extends Controller
 
         return view('participant.chat.show', [
             'conversation' => $conversation,
+            'conversations' => $this->conversationList($request)->limit(50)->get(),
+            'directory' => $this->participantDirectory($request->user()->id),
             'participants' => $conversation->type === 'group'
                 ? User::query()->where('user_type', 'participant')->where('status', 'active')
                     ->whereNotIn('id', $conversation->members->pluck('id'))->orderBy('name')->get(['id', 'name'])
@@ -89,31 +82,43 @@ class ConversationController extends Controller
         ]);
     }
 
-    public function send(Request $request, ParticipantConversation $conversation): RedirectResponse
+    public function send(Request $request, ParticipantConversation $conversation): RedirectResponse|JsonResponse
     {
         $this->authorizeMember($request, $conversation);
         $data = $request->validate(['body' => ['required', 'string', 'max:5000']]);
-        $conversation->messages()->create(['sender_id' => $request->user()->id, 'body' => trim($data['body'])]);
+        $message = $conversation->messages()->create(['sender_id' => $request->user()->id, 'body' => trim($data['body'])]);
         $conversation->touch();
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $this->messagePayload($conversation, $message->load('sender:id,name'), $request->user()->id)], 201);
+        }
 
         return redirect()->to(route('participant.chat.show', $conversation).'#latest');
     }
 
-    public function updateMessage(Request $request, ParticipantConversation $conversation, ParticipantMessage $message): RedirectResponse
+    public function updateMessage(Request $request, ParticipantConversation $conversation, ParticipantMessage $message): RedirectResponse|JsonResponse
     {
         $this->authorizeMember($request, $conversation);
         abort_unless($message->conversation_id === $conversation->id && $message->sender_id === $request->user()->id, 403);
         $data = $request->validate(['body' => ['required', 'string', 'max:5000']]);
         $message->update(['body' => trim($data['body'])]);
 
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $this->messagePayload($conversation, $message->load('sender:id,name'), $request->user()->id)]);
+        }
+
         return redirect()->to(route('participant.chat.show', $conversation).'#latest')->with('success', 'Message updated.');
     }
 
-    public function destroyMessage(Request $request, ParticipantConversation $conversation, ParticipantMessage $message): RedirectResponse
+    public function destroyMessage(Request $request, ParticipantConversation $conversation, ParticipantMessage $message): RedirectResponse|JsonResponse
     {
         $this->authorizeMember($request, $conversation);
         abort_unless($message->conversation_id === $conversation->id && $message->sender_id === $request->user()->id, 403);
         $message->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['deleted' => $message->id]);
+        }
 
         return redirect()->to(route('participant.chat.show', $conversation).'#latest')->with('success', 'Message deleted.');
     }
@@ -124,13 +129,7 @@ class ConversationController extends Controller
         $after = max(0, (int) $request->query('after', 0));
         $messages = $conversation->messages()->where('id', '>', $after)
             ->with('sender:id,name')->orderBy('id')->limit(100)->get()
-            ->map(fn ($message) => [
-                'id' => $message->id,
-                'sender_id' => $message->sender_id,
-                'sender' => $message->sender?->name,
-                'body' => $message->body,
-                'created_at' => $message->created_at?->format('d M Y · H:i'),
-            ]);
+            ->map(fn ($message) => $this->messagePayload($conversation, $message, $request->user()->id));
 
         return response()->json(['messages' => $messages]);
     }
@@ -170,6 +169,49 @@ class ConversationController extends Controller
         $conversation->delete();
 
         return redirect()->route('participant.chat.index')->with('success', 'Conversation deleted.');
+    }
+
+    /**
+     * The viewer's conversations, most recent activity first, for the chat sidebar.
+     */
+    private function conversationList(Request $request)
+    {
+        return ParticipantConversation::query()
+            ->whereHas('members', fn ($query) => $query->where('users.id', $request->user()->id))
+            ->with(['members:id,name', 'latestMessage.sender:id,name'])
+            ->withCount('messages')
+            ->orderByDesc('updated_at');
+    }
+
+    private function participantDirectory(int $exceptId)
+    {
+        return User::query()->where('user_type', 'participant')->where('status', 'active')
+            ->whereKeyNot($exceptId)->orderBy('name')->get(['id', 'name']);
+    }
+
+    /**
+     * JSON shape used by the live thread (polling and inline send/edit).
+     */
+    private function messagePayload(ParticipantConversation $conversation, ParticipantMessage $message, int $viewerId): array
+    {
+        $mine = (int) $message->sender_id === $viewerId;
+
+        return [
+            'id' => $message->id,
+            'sender_id' => $message->sender_id,
+            'sender' => $message->sender?->name,
+            'color' => \App\Support\ChatPresenter::color('u'.$message->sender_id),
+            'body' => $message->body,
+            'mine' => $mine,
+            'edited' => $message->updated_at && $message->created_at && $message->updated_at->gt($message->created_at),
+            'ts' => $message->created_at?->getTimestamp(),
+            'day' => $message->created_at?->toDateString(),
+            'day_label' => $message->created_at ? \App\Support\ChatPresenter::dayLabel($message->created_at) : null,
+            'time' => $message->created_at?->format('H:i'),
+            'created_at' => $message->created_at?->format('d M Y · H:i'),
+            'update_url' => $mine ? route('participant.chat.messages.update', [$conversation, $message]) : null,
+            'delete_url' => $mine ? route('participant.chat.messages.destroy', [$conversation, $message]) : null,
+        ];
     }
 
     private function authorizeMember(Request $request, ParticipantConversation $conversation): void

@@ -121,6 +121,42 @@ class ParticipantChatTest extends TestCase
         $this->assertDatabaseMissing('participant_messages', ['id' => $message->id]);
     }
 
+    public function test_thread_page_shows_sidebar_and_supports_inline_send_edit_delete(): void
+    {
+        $me = $this->participant('Amina Kato');
+        $friend = $this->participant('Naki Ruth');
+        $third = $this->participant('Joan Akello');
+        $conversation = ParticipantConversation::create(['type' => 'direct', 'created_by' => $me->id]);
+        $conversation->members()->attach([$me->id, $friend->id]);
+        $other = ParticipantConversation::create(['type' => 'group', 'title' => 'Study circle', 'created_by' => $third->id]);
+        $other->members()->attach([$me->id, $third->id]);
+        $conversation->messages()->create(['sender_id' => $friend->id, 'body' => 'Morning!']);
+
+        $this->actingAs($me)->get(route('participant.chat.show', $conversation))
+            ->assertOk()
+            ->assertSee('Study circle')            // sidebar lists the other conversation
+            ->assertSee('aria-current="page"', false)
+            ->assertSee('data-ehc-compose', false)
+            ->assertSee('Morning!')
+            ->assertSee('NR');                      // initials avatar
+
+        $sent = $this->postJson(route('participant.chat.messages.store', $conversation), ['body' => 'Hi Naki'])
+            ->assertCreated()
+            ->assertJsonPath('message.body', 'Hi Naki')
+            ->assertJsonPath('message.mine', true)
+            ->json('message');
+        $this->assertNotNull($sent['update_url']);
+
+        $this->putJson($sent['update_url'], ['body' => 'Hi Naki!'])
+            ->assertOk()->assertJsonPath('message.body', 'Hi Naki!');
+        $this->deleteJson($sent['delete_url'])->assertOk()->assertJsonPath('deleted', $sent['id']);
+        $this->assertDatabaseMissing('participant_messages', ['id' => $sent['id']]);
+
+        // Polled messages from someone else are not editable by the viewer.
+        $this->getJson(route('participant.chat.messages.index', $conversation).'?after=0')
+            ->assertOk()->assertJsonPath('messages.0.mine', false)->assertJsonPath('messages.0.update_url', null);
+    }
+
     public function test_participant_can_open_the_chat_page(): void
     {
         $this->actingAs($this->participant('Amina'))

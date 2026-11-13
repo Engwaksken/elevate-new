@@ -5,11 +5,21 @@
     use App\Models\InstructorAppointment;
     $bookingFields = ['instructor_user_id', 'course_id', 'date', 'start_time', 'duration_minutes', 'mode', 'topic', 'details'];
     $reopenBooking = $errors->hasAny($bookingFields) || old('topic') !== null;
-    $courseMap = $instructorOptions->mapWithKeys(fn ($row) => [
-        $row['instructor']->id => $row['courses']->map(fn ($c) => ['id' => $c->id, 'title' => $c->title])->values(),
-    ]);
-    $selectedInstructor = (int) old('instructor_user_id', $instructorOptions->count() === 1 ? $instructorOptions->first()['instructor']->id : 0);
-    $initialCourses = $selectedInstructor ? ($courseMap[$selectedInstructor] ?? collect()) : collect();
+    // Course-first booking: every enrolled course that has an instructor, with its instructors.
+    $courseOptions = $instructorOptions
+        ->flatMap(fn ($row) => $row['courses']->map(fn ($c) => ['course' => $c, 'instructor' => $row['instructor']]))
+        ->groupBy(fn ($pair) => $pair['course']->id)
+        ->map(fn ($pairs) => [
+            'id' => $pairs->first()['course']->id,
+            'title' => $pairs->first()['course']->title,
+            'instructors' => $pairs->map(fn ($p) => ['id' => $p['instructor']->id, 'name' => $p['instructor']->name])->unique('id')->sortBy('name')->values(),
+        ])
+        ->sortBy('title')->values();
+    $requestedCourse = (int) old('course_id', request('course', $courseOptions->count() === 1 ? $courseOptions->first()['id'] : 0));
+    $selectedCourse = $courseOptions->firstWhere('id', $requestedCourse);
+    $initialInstructors = $selectedCourse['instructors'] ?? collect();
+    $selectedInstructor = (int) old('instructor_user_id', $initialInstructors->count() === 1 ? $initialInstructors->first()['id'] : 0);
+    $reopenBooking = $reopenBooking || request()->boolean('book') || request()->filled('course');
 @endphp
 @include('appointments._styles')
 <style>
@@ -40,8 +50,12 @@
 
     @if($instructorOptions->isEmpty())
         <div class="appt-empty" style="margin-bottom:20px"><i class="fas fa-chalkboard-user" aria-hidden="true"></i>
-            You can book an appointment once you are enrolled in a course that has an assigned instructor.
-            @if(Route::has('learning.index'))<div style="margin-top:10px"><a href="{{ route('learning.index') }}" class="btn btn-outline btn-sm">Browse courses</a></div>@endif
+            @if($enrolledCourseCount > 0)
+                Your {{ \Illuminate\Support\Str::plural('course', $enrolledCourseCount) }} {{ $enrolledCourseCount === 1 ? 'does' : 'do' }} not have an instructor assigned yet. You will be able to book as soon as one is assigned.
+            @else
+                Enrol in a course to book one-to-one time with its instructor.
+                @if(Route::has('learning.index'))<div style="margin-top:10px"><a href="{{ route('learning.index') }}" class="btn btn-outline btn-sm">Find a course</a></div>@endif
+            @endif
         </div>
     @endif
 
@@ -81,24 +95,25 @@
                 </ul>
                 <div class="modal-grid">
                     <div class="form-group">
+                        <label for="appt-course">Course *</label>
+                        <select id="appt-course" name="course_id" required data-appt-course @error('course_id') aria-invalid="true" aria-describedby="appt-course-error" @enderror>
+                            <option value="">Select one of your courses</option>
+                            @foreach($courseOptions as $course)
+                                <option value="{{ $course['id'] }}" @selected($requestedCourse === $course['id'])>{{ $course['title'] }}</option>
+                            @endforeach
+                        </select>
+                        @error('course_id')<span class="appt-hint" id="appt-course-error" style="color:#b42318">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="form-group">
                         <label for="appt-instructor">Instructor *</label>
-                        <select id="appt-instructor" name="instructor_user_id" required data-appt-instructor @error('instructor_user_id') aria-invalid="true" aria-describedby="appt-instructor-error" @enderror>
-                            <option value="">Select instructor</option>
-                            @foreach($instructorOptions as $row)
-                                <option value="{{ $row['instructor']->id }}" @selected($selectedInstructor === $row['instructor']->id)>{{ $row['instructor']->name }}</option>
+                        <select id="appt-instructor" name="instructor_user_id" required data-appt-instructor data-selected="{{ $selectedInstructor ?: '' }}" @error('instructor_user_id') aria-invalid="true" aria-describedby="appt-instructor-error" @enderror>
+                            @if($initialInstructors->isEmpty())<option value="">Select a course first</option>@endif
+                            @foreach($initialInstructors as $person)
+                                <option value="{{ $person['id'] }}" @selected($selectedInstructor === $person['id'])>{{ $person['name'] }}</option>
                             @endforeach
                         </select>
                         @error('instructor_user_id')<span class="appt-hint" id="appt-instructor-error" style="color:#b42318">{{ $message }}</span>@enderror
-                    </div>
-                    <div class="form-group">
-                        <label for="appt-course">Course *</label>
-                        <select id="appt-course" name="course_id" required data-appt-course data-selected="{{ old('course_id') }}" @error('course_id') aria-invalid="true" @enderror>
-                            @if($initialCourses->isEmpty())<option value="">Select an instructor first</option>@endif
-                            @foreach($initialCourses as $course)
-                                <option value="{{ $course['id'] }}" @selected((int) old('course_id') === $course['id'])>{{ $course['title'] }}</option>
-                            @endforeach
-                        </select>
-                        <span class="appt-hint">Only courses this instructor teaches you are listed.</span>
+                        <span class="appt-hint">Filled in from the course you choose.</span>
                     </div>
                     <div class="form-group">
                         <label for="appt-date">Date *</label>
@@ -145,21 +160,22 @@
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const courses = @json($courseMap);
-    const instructor = document.querySelector('[data-appt-instructor]');
+    const courses = @json($courseOptions->keyBy('id'));
     const course = document.querySelector('[data-appt-course]');
+    const instructor = document.querySelector('[data-appt-instructor]');
     if (!instructor || !course) return;
     const fill = () => {
-        const list = courses[instructor.value] || [];
-        const keep = course.value || course.dataset.selected;
-        course.replaceChildren();
+        const list = (courses[course.value] || {}).instructors || [];
+        const keep = instructor.dataset.selected;
+        instructor.replaceChildren();
         if (!list.length) {
-            course.append(new Option('Select an instructor first', ''));
+            instructor.append(new Option('Select a course first', ''));
             return;
         }
-        list.forEach(c => course.append(new Option(c.title, c.id, false, String(c.id) === String(keep))));
+        if (list.length > 1) instructor.append(new Option('Select instructor', ''));
+        list.forEach(p => instructor.append(new Option(p.name, p.id, false, list.length === 1 || String(p.id) === String(keep))));
     };
-    instructor.addEventListener('change', () => { course.dataset.selected = ''; course.value = ''; fill(); });
+    course.addEventListener('change', () => { instructor.dataset.selected = ''; fill(); });
     fill();
 });
 </script>

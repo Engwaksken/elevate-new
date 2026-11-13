@@ -119,6 +119,7 @@ document.querySelector('[data-ai-hero-form]')?.addEventListener('submit', functi
 <div class="eh-tab-section">
 @php($quickLinks = collect([
     ['learning.my-courses', 'fa-graduation-cap', 'Learning', 'Continue your courses and track progress.'],
+    ['appointments.index', 'fa-calendar-check', 'Appointments', 'Book one-to-one time with an instructor of your enrolled courses.'],
     ['mentorship.dashboard', 'fa-user-group', 'Mentorship', 'Review mentor relationships, sessions and goals.'],
     ['participant.chat.index', 'fa-comments', 'Chat', 'Message other participants or start a group conversation.'],
     ['career.resume.index', 'fa-file-lines', 'Resume Builder', 'Create and manage your professional resume.'],
