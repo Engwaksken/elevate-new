@@ -113,7 +113,6 @@ class NotificationAdminController extends Controller
             $data['action_url'] ?? null,
             [
                 'sent_by' => $request->user()->id,
-                'recipient_user_ids' => $recipients->pluck('id')->all(),
                 'recipient_role_ids' => $roleIds,
             ]
         );

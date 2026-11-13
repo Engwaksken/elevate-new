@@ -40,6 +40,9 @@ class TargetedAdminNotificationTest extends TestCase
             [$selectedUser->id, $roleMember->id],
             UserNotification::where('title', 'Schedule update')->pluck('user_id')->all()
         );
+        UserNotification::where('title', 'Schedule update')->get()->each(function (UserNotification $notification): void {
+            $this->assertArrayNotHasKey('recipient_user_ids', $notification->data ?? []);
+        });
         $this->assertSame(0, UserNotification::where('user_id', $unselected->id)->count());
         Mail::assertSent(SystemMail::class, 2);
     }
