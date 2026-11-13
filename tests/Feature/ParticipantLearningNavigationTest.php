@@ -43,6 +43,19 @@ class ParticipantLearningNavigationTest extends TestCase
             ->assertSee(route('participant.chat.index'), false);
     }
 
+    public function test_participant_sidebar_can_collapse_to_an_icon_rail(): void
+    {
+        $this->actingAs($this->participant());
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-ps-collapse', false)
+            ->assertSee('Collapse menu')
+            ->assertSee('data-ps-tip="My Learning"', false)
+            ->assertSee('data-ps-tip-bubble', false)
+            ->assertSee('eh-ps-sidebar-collapsed', false);
+    }
+
     public function test_home_learning_card_links_participants_to_my_learning(): void
     {
         $this->actingAs($this->participant());

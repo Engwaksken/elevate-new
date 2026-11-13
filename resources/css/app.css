@@ -37,6 +37,7 @@
 @import './admin-modal-crud.css';
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 @import './participant-sidebar.css';
+@import './participant-sidebar-rail.css';
 @import './participant-tabs.css';
 @import './resume-ai-center.css';
 @import './auth-feedback.css';

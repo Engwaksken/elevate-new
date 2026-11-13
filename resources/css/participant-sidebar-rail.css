@@ -1,0 +1,192 @@
+/* =========================================================
+   Participant / mentor / employer sidebar: icon-only rail
+   ---------------------------------------------------------
+   body.ps-rail is set by the script in components/role-sidebar:
+   - desktop (>= 992px): when the user collapses the menu
+   - tablet (768-991px): always, so icons stay one tap away
+   On tablets the hamburger still opens the full menu
+   (body.sidebar-open), which overrides the compact look.
+   ========================================================= */
+
+:root {
+    --ps-rail: 76px;
+}
+
+.participant-sidebar,
+.participant-app-main {
+    transition: width 0.22s ease, margin-left 0.22s ease, transform 0.24s ease;
+}
+
+/* Collapse toggle (desktop only) */
+.ps-collapse {
+    width: 100%;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 6px;
+    padding: 8px 13px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.78);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+}
+
+.ps-collapse i {
+    width: 20px;
+    text-align: center;
+}
+
+.ps-collapse:hover,
+.ps-collapse:focus-visible {
+    background: rgba(255, 255, 255, 0.10);
+    color: #ffffff;
+}
+
+.ps-collapse:focus-visible {
+    outline: 2px solid var(--secondary, #d4af37);
+    outline-offset: -2px;
+}
+
+@media (max-width: 991px) {
+    .ps-collapse {
+        display: none;
+    }
+}
+
+/* Floating label beside a rail icon */
+.ps-tip {
+    position: fixed;
+    z-index: 1300;
+    transform: translateY(-50%);
+    padding: 6px 10px;
+    border-radius: 7px;
+    background: #101828;
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 650;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 6px 18px rgba(16, 24, 40, 0.25);
+}
+
+.ps-tip::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    background: inherit;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.ps-tip[hidden] {
+    display: none;
+}
+
+/* ---------- Layout: content sits beside the rail ---------- */
+
+body.ps-rail .participant-sidebar {
+    transform: none;
+}
+
+body.ps-rail .participant-app-main {
+    width: calc(100% - var(--ps-rail));
+    margin-left: var(--ps-rail);
+}
+
+/* ---------- Compact look (not while the full menu is open) ---------- */
+
+body.ps-rail:not(.sidebar-open) .participant-sidebar {
+    width: var(--ps-rail);
+}
+
+body.ps-rail:not(.sidebar-open) .ps-brand {
+    justify-content: center;
+    padding: 16px 10px;
+}
+
+body.ps-rail:not(.sidebar-open) .ps-brand-link {
+    flex: 0 0 auto;
+    justify-content: center;
+}
+
+body.ps-rail:not(.sidebar-open) .ps-brand-copy,
+body.ps-rail:not(.sidebar-open) .ps-user-copy,
+body.ps-rail:not(.sidebar-open) .ps-link span,
+body.ps-rail:not(.sidebar-open) .ps-logout span,
+body.ps-rail:not(.sidebar-open) .ps-collapse span,
+body.ps-rail:not(.sidebar-open) .ps-group-toggle,
+body.ps-rail:not(.sidebar-open) .ps-close {
+    display: none;
+}
+
+body.ps-rail:not(.sidebar-open) .ps-user {
+    justify-content: center;
+    margin: 12px 10px 6px;
+    padding: 8px 0;
+    border-color: transparent;
+    background: transparent;
+}
+
+body.ps-rail:not(.sidebar-open) .ps-nav {
+    padding: 4px 10px 12px;
+}
+
+/* Every destination stays visible as an icon (the sidebar script un-hides the
+   group panels; Tailwind's layered [hidden] rule can't be overridden in CSS);
+   groups become thin dividers. */
+body.ps-rail:not(.sidebar-open) .ps-group + .ps-group {
+    margin-top: 6px;
+    padding-top: 6px;
+}
+
+body.ps-rail:not(.sidebar-open) .ps-link,
+body.ps-rail:not(.sidebar-open) .ps-logout,
+body.ps-rail:not(.sidebar-open) .ps-collapse {
+    justify-content: center;
+    gap: 0;
+    padding: 10px 0;
+}
+
+body.ps-rail:not(.sidebar-open) .ps-link:hover,
+body.ps-rail:not(.sidebar-open) .ps-link:focus {
+    transform: none;
+}
+
+body.ps-rail:not(.sidebar-open) .ps-link i {
+    font-size: 1.05rem;
+}
+
+body.ps-rail:not(.sidebar-open) .ps-footer {
+    padding: 10px;
+}
+
+/* Phones never use the rail. */
+@media (max-width: 767px) {
+    body.ps-rail .participant-app-main {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    body.ps-rail .participant-sidebar {
+        transform: translateX(-105%);
+    }
+
+    body.ps-rail.sidebar-open .participant-sidebar {
+        transform: translateX(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .participant-sidebar,
+    .participant-app-main {
+        transition: none;
+    }
+}

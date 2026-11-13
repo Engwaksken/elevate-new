@@ -58,7 +58,7 @@
                 </button>
                 <div id="{{ $rsGroupId }}" class="ps-group-links" @if(! $rsGroupOpen) hidden @endif>
                     @foreach($items as $item)
-                        <a href="{{ $item['url'] }}" class="ps-link {{ $item['is_active'] ? 'active' : '' }}" @if($item['is_active']) aria-current="page" @endif>
+                        <a href="{{ $item['url'] }}" class="ps-link {{ $item['is_active'] ? 'active' : '' }}" data-ps-tip="{{ $item['label'] }}" @if($item['is_active']) aria-current="page" @endif>
                             <i class="fas {{ $item['icon'] }}" aria-hidden="true"></i>
                             <span>{{ $item['label'] }}</span>
                         </a>
@@ -69,12 +69,75 @@
     </nav>
 
     <div class="ps-footer">
+        <button type="button" class="ps-collapse" data-ps-collapse aria-controls="participantSidebar" aria-pressed="false" data-ps-tip="Expand menu">
+            <i class="fas fa-angles-left" aria-hidden="true"></i>
+            <span>Collapse menu</span>
+        </button>
         <form method="POST" action="{{ route($role !== 'participant' && Route::has('partners.logout') ? 'partners.logout' : 'logout') }}" class="ps-logout-form">
             @csrf
-            <button type="submit" class="ps-logout">
+            <button type="submit" class="ps-logout" data-ps-tip="Sign out">
                 <i class="fas fa-right-from-bracket" aria-hidden="true"></i>
                 <span>Sign Out</span>
             </button>
         </form>
     </div>
 </aside>
+<div class="ps-tip" data-ps-tip-bubble role="tooltip" hidden></div>
+<script>
+/* Sidebar rail: desktop users can shrink the menu to icons (remembered per browser);
+   tablets always show the icon rail and the hamburger opens the full menu over it. */
+(function () {
+    const KEY = 'eh-ps-sidebar-collapsed';
+    const body = document.body;
+    const button = document.querySelector('[data-ps-collapse]');
+    const tip = document.querySelector('[data-ps-tip-bubble]');
+    // In the compact rail every group's icons show; otherwise only the open group's links.
+    const syncGroups = () => {
+        const compact = body.classList.contains('ps-rail') && !body.classList.contains('sidebar-open');
+        document.querySelectorAll('#participantSidebar [data-ps-group]').forEach(group => {
+            const panel = group.querySelector('.ps-group-links');
+            if (panel) panel.hidden = !compact && !group.classList.contains('is-open');
+        });
+    };
+    new MutationObserver(syncGroups).observe(body, {attributes: true, attributeFilter: ['class']});
+    const read = () => { try { return localStorage.getItem(KEY) === 'true'; } catch (e) { return false; } };
+    const apply = () => {
+        const w = window.innerWidth;
+        const pref = read();
+        body.classList.toggle('ps-rail', (w >= 992 && pref) || (w >= 768 && w < 992));
+        if (w >= 992) body.classList.remove('sidebar-open');
+        syncGroups();
+        if (button) {
+            button.setAttribute('aria-pressed', String(pref));
+            button.setAttribute('aria-label', pref ? 'Expand menu' : 'Collapse menu');
+            button.querySelector('i').className = 'fas ' + (pref ? 'fa-angles-right' : 'fa-angles-left');
+            button.querySelector('span').textContent = pref ? 'Expand menu' : 'Collapse menu';
+        }
+    };
+    button?.addEventListener('click', () => {
+        try { localStorage.setItem(KEY, String(!read())); } catch (e) { body.classList.toggle('ps-rail'); return; }
+        tip.hidden = true;
+        apply();
+    });
+    window.addEventListener('resize', apply);
+    apply();
+
+    // Icon-only rail: show the item's name beside it on hover/focus.
+    const show = (el) => {
+        if (!body.classList.contains('ps-rail') || body.classList.contains('sidebar-open') || !tip) return;
+        const r = el.getBoundingClientRect();
+        tip.textContent = el.dataset.psTip;
+        tip.hidden = false;
+        tip.style.top = (r.top + r.height / 2) + 'px';
+        tip.style.left = (r.right + 10) + 'px';
+    };
+    const hide = () => { if (tip) tip.hidden = true; };
+    document.querySelectorAll('#participantSidebar [data-ps-tip]').forEach(el => {
+        el.addEventListener('mouseenter', () => show(el));
+        el.addEventListener('focus', () => show(el));
+        el.addEventListener('mouseleave', hide);
+        el.addEventListener('blur', hide);
+    });
+    document.querySelector('#participantSidebar .ps-nav')?.addEventListener('scroll', hide, {passive: true});
+})();
+</script>
