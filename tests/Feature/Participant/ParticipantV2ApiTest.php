@@ -594,6 +594,8 @@ class ParticipantV2ApiTest extends TestCase
         $instructor = $this->staff('instructor');
         $this->course->instructors()->attach($instructor->id);
         $user = $this->participant();
+        // Guard against stale course-instructor pivots leaking instructor notices.
+        $this->course->instructors()->attach($user->id);
 
         $farAway = $this->assessment(['due_at' => now()->addDays(5)]);
         $this->postJson(self::BASE."/assignments/{$farAway->id}/extension-requests", ['reason' => 'I need more time please'])
@@ -616,6 +618,7 @@ class ParticipantV2ApiTest extends TestCase
             ->assertJsonPath('extension_request.requested_due_at', $requested->toIso8601String());
 
         $this->assertDatabaseHas('user_notifications', ['user_id' => $instructor->id, 'type' => 'assignment_extension_requested']);
+        $this->assertDatabaseMissing('user_notifications', ['user_id' => $user->id, 'type' => 'assignment_extension_requested']);
 
         $this->postJson(self::BASE."/assignments/{$overdue->id}/extension-requests", ['reason' => 'Asking once more please'])
             ->assertStatus(422)->assertJsonPath('code', 'extension_pending');

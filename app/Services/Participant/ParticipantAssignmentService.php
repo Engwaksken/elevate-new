@@ -293,7 +293,9 @@ class ParticipantAssignmentService
             ? route('instructor.courses.manage', ['course' => $assessment->course, 'tab' => 'extensions'])
             : null;
 
-        foreach ($assessment->course?->instructors()->get() ?? [] as $instructor) {
+        // A stale/invalid course_instructors pivot can contain participant IDs.
+        // Never expose instructor workflow notifications to non-staff accounts.
+        foreach ($assessment->course?->instructors()->where('users.user_type', 'staff')->get() ?? [] as $instructor) {
             $this->notifications->send(
                 $instructor,
                 'assignment_extension_requested',
