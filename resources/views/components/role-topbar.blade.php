@@ -1,6 +1,6 @@
 @props(['role' => 'participant'])
-@php($rtMeta = \App\Support\RoleShell::meta($role))
 @php
+    $rtMeta = \App\Support\RoleShell::meta($role);
     $unreadNotifications = auth()->user()
         ? \App\Models\UserNotification::where('user_id', auth()->id())->whereNull('read_at')
             ->when($role === 'participant', fn ($query) => $query->visibleToParticipant())
