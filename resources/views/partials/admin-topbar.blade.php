@@ -30,6 +30,9 @@
     }
 
     $topbarUser = auth()->user();
+    $topbarUnreadNotifications = $topbarUser
+        ? \App\Models\UserNotification::where('user_id', $topbarUser->id)->whereNull('read_at')->count()
+        : 0;
 
     $topbarDisplayName = $topbarUser?->name
         ?? $topbarUser?->full_name
@@ -104,15 +107,19 @@
     <div class="eh-admin-topbar__right">
         @if(Route::has('admin.notifications.index'))
             <a href="{{ route('admin.notifications.index') }}"
-               class="eh-admin-topbar__icon-btn"
-               title="Notifications">
+                class="eh-admin-topbar__icon-btn"
+                title="Notifications"
+                aria-label="Notifications{{ $topbarUnreadNotifications ? ', '.$topbarUnreadNotifications.' unread' : '' }}">
                 <i class="fas fa-bell"></i>
+                @if($topbarUnreadNotifications > 0)<span class="notification-count-badge">{{ $topbarUnreadNotifications > 99 ? '99+' : $topbarUnreadNotifications }}</span>@endif
             </a>
         @elseif(Route::has('notifications.index'))
             <a href="{{ route('notifications.index') }}"
-               class="eh-admin-topbar__icon-btn"
-               title="Notifications">
+                class="eh-admin-topbar__icon-btn"
+                title="Notifications"
+                aria-label="Notifications{{ $topbarUnreadNotifications ? ', '.$topbarUnreadNotifications.' unread' : '' }}">
                 <i class="fas fa-bell"></i>
+                @if($topbarUnreadNotifications > 0)<span class="notification-count-badge">{{ $topbarUnreadNotifications > 99 ? '99+' : $topbarUnreadNotifications }}</span>@endif
             </a>
         @endif
 

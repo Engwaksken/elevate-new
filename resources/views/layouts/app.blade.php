@@ -43,7 +43,7 @@ $brandLogoUrl = $brandLogoPath && \Illuminate\Support\Facades\Route::has('brandi
 <header class="participant-mobile-header">
 <button type="button" data-sidebar-toggle aria-controls="participantSidebar" aria-expanded="false" aria-label="Open navigation"><i class="fas fa-bars"></i></button>
 <a href="{{ \App\Support\RoleShell::homeUrl(auth()->user()) ?? route('home') }}" class="participant-mobile-brand">@if($brandLogoUrl)<img src="{{ $brandLogoUrl }}" alt="ElevateHer360" style="max-width:36px;max-height:36px;object-fit:contain">@else<span class="ps-mobile-mark">E360</span>@endif<span class="participant-mobile-brand-copy"><strong>ElevateHer360</strong><x-role-badge :role="$roleShell" tone="dark" class="role-badge--compact" /></span></a>
-@if(Route::has('notifications.index'))<a href="{{ route('notifications.index') }}" class="participant-mobile-action" aria-label="Notifications"><i class="fas fa-bell"></i></a>@else<span></span>@endif
+@if(Route::has('notifications.index'))<a href="{{ route('notifications.index') }}" class="participant-mobile-action" aria-label="Notifications{{ ($mobileUnreadNotifications = \App\Models\UserNotification::where('user_id', auth()->id())->whereNull('read_at')->when($roleShell === 'participant', fn ($query) => $query->visibleToParticipant())->count()) ? ', '.$mobileUnreadNotifications.' unread' : '' }}"><i class="fas fa-bell"></i>@if($mobileUnreadNotifications > 0)<span class="notification-count-badge">{{ $mobileUnreadNotifications > 99 ? '99+' : $mobileUnreadNotifications }}</span>@endif</a>@else<span></span>@endif
 </header>
 <x-role-topbar :role="$roleShell" />
 <main id="main-content" class="site-main participant-site-main">
