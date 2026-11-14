@@ -120,4 +120,20 @@ class NotificationAdminController extends Controller
         return redirect()->route('admin.notifications.index')
             ->with('success', "Notification sent to {$count} selected user(s).");
     }
+
+    public function markRead(Request $request)
+    {
+        $data = $request->validate([
+            'notification_ids' => ['required', 'array', 'min:1', 'max:200'],
+            'notification_ids.*' => ['required', 'integer', 'distinct', 'exists:user_notifications,id'],
+        ]);
+
+        $updated = UserNotification::query()
+            ->whereIn('id', $data['notification_ids'])
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return redirect()->route('admin.notifications.index')
+            ->with('success', "Marked {$updated} notification(s) as read.");
+    }
 }

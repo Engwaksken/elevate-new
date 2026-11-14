@@ -62,4 +62,27 @@ class TargetedAdminNotificationTest extends TestCase
 
         $this->assertDatabaseMissing('user_notifications', ['title' => 'Schedule update']);
     }
+
+    public function test_admin_can_mark_selected_notifications_read_across_recipients(): void
+    {
+        $admin = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
+        $admin->roles()->attach(Role::firstOrCreate(
+            ['slug' => 'super-administrator'],
+            ['name' => 'Super Administrator', 'is_system' => true]
+        ));
+        $firstRecipient = User::factory()->create(['user_type' => 'participant']);
+        $secondRecipient = User::factory()->create(['user_type' => 'participant']);
+        $first = UserNotification::create(['user_id' => $firstRecipient->id, 'type' => 'general', 'title' => 'First']);
+        $second = UserNotification::create(['user_id' => $secondRecipient->id, 'type' => 'general', 'title' => 'Second']);
+        $untouched = UserNotification::create(['user_id' => $secondRecipient->id, 'type' => 'general', 'title' => 'Untouched']);
+
+        $this->actingAs($admin)->post(route('admin.notifications.mark-read'), [
+            'notification_ids' => [$first->id, $second->id],
+        ])->assertRedirect(route('admin.notifications.index'))
+            ->assertSessionHas('success', 'Marked 2 notification(s) as read.');
+
+        $this->assertNotNull($first->fresh()->read_at);
+        $this->assertNotNull($second->fresh()->read_at);
+        $this->assertNull($untouched->fresh()->read_at);
+    }
 }

@@ -1100,6 +1100,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 
     Route::get('/notifications',[NotificationAdminController::class,'index'])
         ->middleware('permission:reports.view')->name('notifications.index');
+    Route::post('/notifications/mark-read',[NotificationAdminController::class,'markRead'])
+        ->middleware('permission:reports.view')->name('notifications.mark-read');
     Route::post('/notifications',[NotificationAdminController::class,'send'])
         ->middleware('permission:notifications.send')->name('notifications.send');
 });

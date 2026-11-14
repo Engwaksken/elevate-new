@@ -82,12 +82,19 @@
 </div>
 @endif
 
+<form method="POST" action="{{ route('admin.notifications.mark-read') }}" id="notificationBulkForm">
+@csrf
+<div class="admin-page-actions" style="justify-content:flex-start;margin:12px 0">
+    <button type="submit" class="btn btn-outline btn-sm"><i class="fas fa-envelope-open"></i> Mark selected as read</button>
+    <span class="admin-cell-hint">Select notifications from any recipient on this page.</span>
+</div>
 <div class="admin-table-wrap">
 <table class="admin-table">
-<thead><tr><th>Recipient</th><th>Type</th><th>Notification</th><th>Created</th><th>Read</th><th class="table-actions">Details</th></tr></thead>
+<thead><tr><th><input type="checkbox" data-notification-select-all aria-label="Select all notifications on this page"></th><th>Recipient</th><th>Type</th><th>Notification</th><th>Created</th><th>Read</th><th class="table-actions">Details</th></tr></thead>
 <tbody>
 @forelse($notifications as $notification)
 <tr>
+    <td><input type="checkbox" name="notification_ids[]" value="{{ $notification->id }}" data-notification-select aria-label="Select notification for {{ data_get($notification,'user.name','unknown user') }}"></td>
     <td><strong>{{ data_get($notification,'user.name','-') }}</strong><small class="admin-cell-hint">{{ data_get($notification,'user.email','') }}</small></td>
     <td>{{ ucfirst(str_replace('_',' ',$notification->type)) }}</td>
     <td><strong>{{ $notification->title }}</strong><small class="admin-cell-hint">{{ Str::limit($notification->message,100) }}</small></td>
@@ -98,11 +105,18 @@
     </td>
 </tr>
 @empty
-<tr><td colspan="6"><div class="admin-empty">No notifications found.</div></td></tr>
+<tr><td colspan="7"><div class="admin-empty">No notifications found.</div></td></tr>
 @endforelse
 </tbody>
 </table>
 </div>
+</form>
+
+<script>
+document.querySelector('[data-notification-select-all]')?.addEventListener('change', function () {
+    document.querySelectorAll('[data-notification-select]').forEach((checkbox) => { checkbox.checked = this.checked; });
+});
+</script>
 
 <div class="admin-pagination">{{ $notifications->links() }}</div>
 </div>
