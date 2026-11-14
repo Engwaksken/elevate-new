@@ -90,7 +90,7 @@ class LibraryCourseAccessTest extends TestCase
             ->assertOk()->assertSee('>A<', false)->assertDontSee('Coding Basics');
     }
 
-    public function test_participants_only_see_course_books_for_courses_they_are_enrolled_in(): void
+    public function test_all_signed_in_users_can_see_course_linked_books(): void
     {
         $digital = $this->course('Digital Skills');
         $tailoring = $this->course('Tailoring');
@@ -99,32 +99,31 @@ class LibraryCourseAccessTest extends TestCase
         $sewing = $this->book('Sewing Patterns', [$tailoring]);
 
         $user = $this->participant();
-        Enrolment::create(['user_id' => $user->id, 'course_id' => $digital->id, 'status' => 'enrolled', 'enrolled_at' => now()]);
 
         $this->actingAs($user)->get(route('library.index'))
-            ->assertOk()->assertSee('General Handbook')->assertSee('Coding Guide')->assertDontSee('Sewing Patterns');
+            ->assertOk()->assertSee('General Handbook')->assertSee('Coding Guide')->assertSee('Sewing Patterns');
 
         $this->get(route('library.show', $coding))->assertOk();
-        $this->get(route('library.show', $sewing))->assertForbidden();
-        $this->get(route('library.read', $sewing))->assertForbidden();
-        $this->get(route('library.download', $sewing))->assertForbidden();
+        $this->get(route('library.show', $sewing))->assertOk();
+        $this->get(route('library.read', $sewing))->assertOk();
+        $this->get(route('library.download', $sewing))->assertOk();
         $this->get(route('library.show', $general))->assertOk();
 
         // Staff see everything.
         $this->actingAs($this->librarian())->get(route('library.show', $sewing))->assertOk();
     }
 
-    public function test_withdrawn_participants_lose_access_to_the_course_books(): void
+    public function test_withdrawn_participants_keep_access_to_shared_library_books(): void
     {
         $digital = $this->course('Digital Skills');
         $coding = $this->book('Coding Guide', [$digital]);
         $user = $this->participant();
         Enrolment::create(['user_id' => $user->id, 'course_id' => $digital->id, 'status' => 'withdrawn', 'enrolled_at' => now()]);
 
-        $this->actingAs($user)->get(route('library.show', $coding))->assertForbidden();
+        $this->actingAs($user)->get(route('library.show', $coding))->assertOk();
     }
 
-    public function test_participant_app_applies_the_same_course_rule(): void
+    public function test_participant_app_shows_course_linked_books_to_every_participant(): void
     {
         $digital = $this->course('Digital Skills');
         $this->book('General Handbook');
@@ -135,11 +134,10 @@ class LibraryCourseAccessTest extends TestCase
 
         $titles = collect($this->getJson('/api/v1/participant/library')->assertOk()->json('data'))->pluck('title');
         $this->assertContains('General Handbook', $titles);
-        $this->assertNotContains('Coding Guide', $titles);
+        $this->assertContains('Coding Guide', $titles);
 
-        $this->getJson("/api/v1/participant/library/{$coding->id}")->assertForbidden();
-
-        Enrolment::create(['user_id' => $user->id, 'course_id' => $digital->id, 'status' => 'enrolled', 'enrolled_at' => now()]);
         $this->getJson("/api/v1/participant/library/{$coding->id}")->assertOk();
+
+        $this->assertDatabaseMissing('enrolments', ['user_id' => $user->id, 'course_id' => $digital->id]);
     }
 }

@@ -232,7 +232,7 @@ class LibraryController extends Controller
     public function mine(Request $request)
     {
         $userId=auth()->id();
-        $visible=fn($q)=>$q->where('is_active',true)->whereIn('access_level',auth()->user()->isStaff() ? ['public','authenticated','staff'] : ['public','authenticated'])->availableTo(auth()->user());
+        $visible=fn($q)=>$q->where('is_active',true)->availableTo(auth()->user());
 
         $reading=LibraryReadingProgress::with('resource.category')->where('user_id',$userId)->whereHas('resource',$visible)->latest('last_read_at');
 
@@ -257,7 +257,6 @@ class LibraryController extends Controller
 
     private function applyAccessScope($query): void
     {
-        // Books linked to courses are only for participants enrolled in one of them.
         $query->availableTo(auth()->user());
 
         if(!auth()->check()){
@@ -265,9 +264,6 @@ class LibraryController extends Controller
             return;
         }
 
-        if(!auth()->user()->isStaff()){
-            $query->whereIn('access_level',['public','authenticated']);
-        }
     }
 
     private function authoriseAccess(LibraryResource $resource): void
@@ -279,11 +275,5 @@ class LibraryController extends Controller
         }
 
         abort_unless(auth()->check(),401);
-
-        if($resource->access_level==='staff'){
-            abort_unless(auth()->user()->isStaff(),403);
-        }
-
-        abort_unless($resource->isAvailableTo(auth()->user()),403,'This book is only available to participants enrolled in its course.');
     }
 }

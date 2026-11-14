@@ -62,6 +62,7 @@ class NotificationAdminController extends Controller
                 'today'=>UserNotification::whereDate('created_at',today())->count(),
             ],
             'canSend' => $request->user()->hasPermission('notifications.send'),
+            'isAdmin' => $request->user()->hasRole(['administrator', 'super-administrator', 'super-admin']),
             'recipientUsers' => $request->user()->hasPermission('notifications.send')
                 ? User::where('status', 'active')->orderBy('name')->limit(1000)->get(['id','name','email','user_type'])
                 : collect(),
@@ -121,19 +122,25 @@ class NotificationAdminController extends Controller
             ->with('success', "Notification sent to {$count} selected user(s).");
     }
 
-    public function markRead(Request $request)
+    public function bulkAction(Request $request)
     {
         $data = $request->validate([
-            'notification_ids' => ['required', 'array', 'min:1', 'max:200'],
-            'notification_ids.*' => ['required', 'integer', 'distinct', 'exists:user_notifications,id'],
+            'ids' => ['required', 'array', 'min:1', 'max:200'],
+            'ids.*' => ['required', 'integer', 'distinct', 'exists:user_notifications,id'],
+            'action' => ['required', 'in:mark_read,delete'],
         ]);
 
-        $updated = UserNotification::query()
-            ->whereIn('id', $data['notification_ids'])
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+        $query = UserNotification::query()->whereIn('id', $data['ids']);
+        if ($data['action'] === 'delete') {
+            abort_unless($request->user()->hasRole(['administrator', 'super-administrator', 'super-admin']), 403);
+            $count = $query->delete();
+            $message = $count.' notification'.($count === 1 ? '' : 's').' deleted.';
+        } else {
+            $count = $query->whereNull('read_at')->update(['read_at' => now()]);
+            $message = "Marked {$count} notification(s) as read.";
+        }
 
         return redirect()->route('admin.notifications.index')
-            ->with('success', "Marked {$updated} notification(s) as read.");
+            ->with('success', $message);
     }
 }

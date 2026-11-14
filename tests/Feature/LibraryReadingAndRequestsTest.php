@@ -117,7 +117,7 @@ class LibraryReadingAndRequestsTest extends TestCase
         $this->actingAs($user)->get(route('library.read.file', $word))->assertNotFound();
 
         $staffOnly = LibraryResource::create(['title' => 'Staff manual', 'file_path' => 'library/guide.pdf', 'language' => 'English', 'access_level' => 'staff', 'is_active' => true]);
-        $this->actingAs($user)->get(route('library.read.file', $staffOnly))->assertForbidden();
+        $this->actingAs($user)->get(route('library.read.file', $staffOnly))->assertOk();
         $this->get(route('library.read.file', $book))->assertOk();
         auth()->logout();
         $this->get(route('library.read.file', $book))->assertRedirect();

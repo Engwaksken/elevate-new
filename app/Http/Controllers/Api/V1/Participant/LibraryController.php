@@ -17,12 +17,12 @@ use Illuminate\Support\Facades\Storage;
 /**
  * The digital library for the participant app: browse, read PDFs page by page,
  * save progress, bookmark and request downloads. Mirrors the website's rules:
- * participants see public and signed-in books, and reading progress is shared
+ * signed-in participants see the full library, and reading progress is shared
  * with the website's "Continue reading".
  */
 class LibraryController extends Controller
 {
-    private const VISIBLE_LEVELS = ['public', 'authenticated'];
+    private const VISIBLE_LEVELS = ['public', 'authenticated', 'staff'];
 
     public function index(Request $request)
     {
@@ -184,8 +184,6 @@ class LibraryController extends Controller
     private function authorise(LibraryResource $resource): void
     {
         abort_unless($resource->is_active && in_array($resource->access_level, self::VISIBLE_LEVELS, true), 404);
-        // Books linked to courses are only for participants enrolled in one of them.
-        abort_unless($resource->isAvailableTo(request()->user()), 403, 'This book is only available to participants enrolled in its course.');
     }
 
     /** @param Collection<int, LibraryResource> $resources */

@@ -323,7 +323,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
-    Route::delete('/notifications/bulk-delete', [NotificationController::class, 'bulkDestroy'])->name('notifications.bulk-destroy');
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
 });
 
@@ -1100,8 +1099,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
 
     Route::get('/notifications',[NotificationAdminController::class,'index'])
         ->middleware('permission:reports.view')->name('notifications.index');
-    Route::post('/notifications/mark-read',[NotificationAdminController::class,'markRead'])
-        ->middleware('permission:reports.view')->name('notifications.mark-read');
+    Route::post('/notifications/bulk-action',[NotificationAdminController::class,'bulkAction'])
+        ->middleware('permission:reports.view')->name('notifications.bulk-action');
     Route::post('/notifications',[NotificationAdminController::class,'send'])
         ->middleware('permission:notifications.send')->name('notifications.send');
 });

@@ -10,7 +10,6 @@ class LibraryController extends Controller
     {
         return response()->json([
             'data'=>LibraryResource::where('is_active',true)
-                ->whereIn('access_level',['public','authenticated'])
                 ->availableTo(request()->user())
                 ->latest()
                 ->paginate(20)

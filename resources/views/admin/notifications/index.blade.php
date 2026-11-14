@@ -82,10 +82,11 @@
 </div>
 @endif
 
-<form method="POST" action="{{ route('admin.notifications.mark-read') }}" id="notificationBulkForm">
+<form method="POST" action="{{ route('admin.notifications.bulk-action') }}" id="notificationBulkForm">
 @csrf
 <div class="admin-page-actions" style="justify-content:flex-start;margin:12px 0">
-    <button type="submit" class="btn btn-outline btn-sm"><i class="fas fa-envelope-open"></i> Mark selected as read</button>
+    <button type="submit" name="action" value="mark_read" class="btn btn-outline btn-sm"><i class="fas fa-envelope-open"></i> Mark selected as read</button>
+    @if($isAdmin)<button type="submit" name="action" value="delete" class="btn btn-danger btn-sm" onclick="return confirm('Delete the selected notifications for all recipients?')"><i class="fas fa-trash"></i> Delete selected</button>@endif
     <span class="admin-cell-hint">Select notifications from any recipient on this page.</span>
 </div>
 <div class="admin-table-wrap">
@@ -94,7 +95,7 @@
 <tbody>
 @forelse($notifications as $notification)
 <tr>
-    <td><input type="checkbox" name="notification_ids[]" value="{{ $notification->id }}" data-notification-select aria-label="Select notification for {{ data_get($notification,'user.name','unknown user') }}"></td>
+    <td><input type="checkbox" name="ids[]" value="{{ $notification->id }}" data-notification-select aria-label="Select notification for {{ data_get($notification,'user.name','unknown user') }}"></td>
     <td><strong>{{ data_get($notification,'user.name','-') }}</strong><small class="admin-cell-hint">{{ data_get($notification,'user.email','') }}</small></td>
     <td>{{ ucfirst(str_replace('_',' ',$notification->type)) }}</td>
     <td><strong>{{ $notification->title }}</strong><small class="admin-cell-hint">{{ Str::limit($notification->message,100) }}</small></td>
@@ -116,6 +117,11 @@
 document.querySelector('[data-notification-select-all]')?.addEventListener('change', function () {
     document.querySelectorAll('[data-notification-select]').forEach((checkbox) => { checkbox.checked = this.checked; });
 });
+document.querySelectorAll('[data-notification-select]').forEach((checkbox) => checkbox.addEventListener('change', function () {
+    const all = [...document.querySelectorAll('[data-notification-select]')];
+    const selectAll = document.querySelector('[data-notification-select-all]');
+    if (selectAll) selectAll.checked = all.length > 0 && all.every((item) => item.checked);
+}));
 </script>
 
 <div class="admin-pagination">{{ $notifications->links() }}</div>

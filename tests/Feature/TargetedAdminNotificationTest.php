@@ -76,13 +76,27 @@ class TargetedAdminNotificationTest extends TestCase
         $second = UserNotification::create(['user_id' => $secondRecipient->id, 'type' => 'general', 'title' => 'Second']);
         $untouched = UserNotification::create(['user_id' => $secondRecipient->id, 'type' => 'general', 'title' => 'Untouched']);
 
-        $this->actingAs($admin)->post(route('admin.notifications.mark-read'), [
-            'notification_ids' => [$first->id, $second->id],
+        $this->actingAs($admin)->post(route('admin.notifications.bulk-action'), [
+            'action' => 'mark_read', 'ids' => [$first->id, $second->id],
         ])->assertRedirect(route('admin.notifications.index'))
             ->assertSessionHas('success', 'Marked 2 notification(s) as read.');
 
         $this->assertNotNull($first->fresh()->read_at);
         $this->assertNotNull($second->fresh()->read_at);
         $this->assertNull($untouched->fresh()->read_at);
+    }
+
+    public function test_only_administrators_can_delete_notifications(): void
+    {
+        $admin = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
+        $admin->roles()->attach(Role::firstOrCreate(['slug' => 'super-administrator'], ['name' => 'Super Administrator', 'is_system' => true]));
+        $recipient = User::factory()->create(['user_type' => 'participant']);
+        $notification = UserNotification::create(['user_id' => $recipient->id, 'type' => 'general', 'title' => 'Delete me']);
+
+        $this->actingAs($admin)->post(route('admin.notifications.bulk-action'), [
+            'action' => 'delete', 'ids' => [$notification->id],
+        ])->assertRedirect(route('admin.notifications.index'));
+
+        $this->assertDatabaseMissing('user_notifications', ['id' => $notification->id]);
     }
 }

@@ -26,14 +26,10 @@ class LibraryResource extends Model
         return $this->belongsToMany(Course::class)->withTimestamps();
     }
 
-    /**
-     * Books the user may see as far as courses go: staff see everything;
-     * everyone else sees books with no course, plus books of courses they
-     * are actively enrolled in. Access level is checked separately.
-     */
+    /** Every signed-in platform user may see the full library, regardless of course links. */
     public function scopeAvailableTo($query, ?User $user)
     {
-        if ($user?->isStaff()) {
+        if ($user) {
             return $query;
         }
 
@@ -48,20 +44,11 @@ class LibraryResource extends Model
 
     public function isAvailableTo(?User $user): bool
     {
-        if ($user?->isStaff() || ! $this->courses()->exists()) {
+        if ($user || ! $this->courses()->exists()) {
             return true;
         }
 
-        return $user !== null
-            && $this->courses()->whereIn('courses.id', self::activeCourseIdsQuery($user))->exists();
-    }
-
-    private static function activeCourseIdsQuery(User $user)
-    {
-        return Enrolment::query()
-            ->select('course_id')
-            ->where('user_id', $user->id)
-            ->where(fn ($q) => $q->whereNull('status')->orWhereNotIn('status', \App\Services\EnrolmentService::INACTIVE_STATUSES));
+        return false;
     }
 
     public function requiresDownloadApproval(): bool { return $this->download_policy===self::DOWNLOAD_ON_REQUEST; }
