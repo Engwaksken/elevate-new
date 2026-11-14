@@ -112,4 +112,23 @@ class NotificationListFiltersTest extends TestCase
             ->assertOk()
             ->assertJsonMissing(['type' => 'assignment_submitted']);
     }
+
+    public function test_instructor_extension_request_alert_is_hidden_from_participant_inbox(): void
+    {
+        UserNotification::create([
+            'user_id' => $this->user->id,
+            'type' => 'assignment_extension_requested',
+            'title' => 'Extension requested: Business Profile',
+            'message' => 'A participant asked for more time.',
+        ]);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))
+            ->assertOk()
+            ->assertDontSee('Extension requested: Business Profile');
+
+        Sanctum::actingAs($this->user, ['participant']);
+        $this->getJson('/api/v1/participant/notifications')
+            ->assertOk()
+            ->assertJsonMissing(['type' => 'assignment_extension_requested']);
+    }
 }

@@ -11,6 +11,7 @@ class UserNotification extends Model
     /** Notification types intended for staff workflows, not the participant inbox. */
     private const PARTICIPANT_HIDDEN_TYPES = [
         'assignment_submitted',
+        'assignment_extension_requested',
         'leave',
         'appraisal',
         'task',
