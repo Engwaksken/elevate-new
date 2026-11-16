@@ -7,6 +7,7 @@ use App\Models\AssessmentAttempt;
 use App\Models\Course;
 use App\Models\Enrolment;
 use App\Services\Learning\ModuleAccessService;
+use App\Services\Participant\ParticipantAssignmentService;
 use App\Services\CourseTimetableService;
 use Illuminate\Http\Request;
 
@@ -35,7 +36,15 @@ class CourseLearningController extends Controller
             ->groupBy('assessment_id')
             ->get()
             ->keyBy('assessment_id');
-        return view('learning.course-dashboard', ['course'=>$course,'enrolment'=>$enrolment,'moduleAccess'=>$moduleAccess,'assessmentAttempts'=>$attempts,
+        // Effective due dates (approved extensions applied) and extension status,
+        // matching what the mobile app shows.
+        $assignments = app(ParticipantAssignmentService::class);
+        $dueContext = $assignments->context($request->user(), $course->assessments->pluck('id'));
+        $assessmentDue = $course->assessments->mapWithKeys(fn ($assessment) => [$assessment->id => [
+            'due' => $assignments->effectiveDueAt($assessment, $dueContext),
+            'extension' => $dueContext['latest'][$assessment->id] ?? null,
+        ]]);
+        return view('learning.course-dashboard', ['course'=>$course,'enrolment'=>$enrolment,'moduleAccess'=>$moduleAccess,'assessmentAttempts'=>$attempts,'assessmentDue'=>$assessmentDue,
             'canViewTimetable'=>true,'timetable'=>app(CourseTimetableService::class)->forCourse($course)]);
     }
 }

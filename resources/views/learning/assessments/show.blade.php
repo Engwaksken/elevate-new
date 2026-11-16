@@ -31,6 +31,63 @@
 <div class="alert alert-danger" role="alert">{{ $errors->first() }}</div>
 @endif
 
+@php($effectiveDue = $dueState['effective_due'] ?? null)
+@php($extension = $dueState['extension'] ?? null)
+@php($isOverdue = (bool) ($dueState['is_overdue'] ?? false))
+@if($effectiveDue)
+<section class="card" aria-labelledby="due-date-title" style="margin-top:12px">
+    <h2 id="due-date-title" style="font-size:1.05rem;margin:0 0 6px"><i class="fas fa-clock"></i> Due date</h2>
+    <p style="margin:0">
+        <strong>{{ $effectiveDue->format('d M Y H:i') }}</strong>
+        @if($isOverdue)
+            <span class="status-chip inactive">Overdue</span>
+        @elseif($effectiveDue->lte(now()->addHours(\App\Services\Participant\ParticipantAssignmentService::EXTENSION_WINDOW_HOURS)))
+            <span class="status-chip draft">Due {{ $effectiveDue->diffForHumans() }}</span>
+        @endif
+        @if($extension && $extension->status === 'approved' && $extension->approved_due_at)
+            <small class="text-muted">(extended from {{ $assessment->due_at?->format('d M Y H:i') ?? 'no due date' }})</small>
+        @endif
+    </p>
+
+    @if($extension)
+    <div style="margin-top:10px">
+        <strong>Your latest extension request:</strong>
+        <span class="status-chip {{ ['pending' => 'draft', 'approved' => 'active', 'rejected' => 'inactive'][$extension->status] ?? 'draft' }}">{{ $extension->status === 'rejected' ? 'Not approved' : ucfirst($extension->status) }}</span>
+        <small class="text-muted">Sent {{ $extension->created_at?->format('d M Y H:i') }}@if($extension->requested_due_at) · asked for {{ $extension->requested_due_at->format('d M Y H:i') }}@endif</small>
+        @if($extension->isPending())
+            <p class="text-muted" style="margin:4px 0 0">Your instructor has been notified. You will get a notification when they respond.</p>
+        @endif
+        @if($extension->approved_due_at)
+            <p style="margin:4px 0 0">New due date: <strong>{{ $extension->approved_due_at->format('d M Y H:i') }}</strong></p>
+        @endif
+        @if($extension->reviewer_note)
+            <p style="margin:4px 0 0">Instructor note: {{ $extension->reviewer_note }}</p>
+        @endif
+    </div>
+    @endif
+
+    @if($isOverdue)
+        <p style="margin:10px 0 0">This assignment is past its due date, so it can no longer be submitted. @if($dueState['can_request_extension'] ?? false)You can ask your instructor for more time below.@endif</p>
+    @endif
+
+    @if($dueState['can_request_extension'] ?? false)
+    <details style="margin-top:12px" @if($isOverdue || $errors->has('reason') || $errors->has('requested_due_at') || $errors->has('extension')) open @endif>
+        <summary style="cursor:pointer"><strong>Request a deadline extension</strong></summary>
+        <form method="POST" action="{{ route('learning.assessment.extension-request', $assessment) }}" style="margin-top:10px">
+            @csrf
+            <label for="extension_reason" style="display:block"><strong>Why do you need more time? *</strong></label>
+            <textarea id="extension_reason" name="reason" rows="4" minlength="10" maxlength="1000" required placeholder="Explain briefly what has stopped you from submitting on time.">{{ old('reason') }}</textarea>
+            <label for="extension_requested_due_at" style="display:block;margin-top:10px"><strong>New due date you are asking for</strong> <small>(optional)</small></label>
+            <input id="extension_requested_due_at" type="datetime-local" name="requested_due_at" value="{{ old('requested_due_at') }}" min="{{ now()->format('Y-m-d\TH:i') }}">
+            <p class="text-muted" style="margin:6px 0 10px;font-size:.85rem">Your instructor decides the final new due date.</p>
+            <button type="submit"><i class="fas fa-paper-plane"></i> Send request</button>
+        </form>
+    </details>
+    @endif
+</section>
+@endif
+
+@unless($isOverdue)
 <form method="POST" enctype="multipart/form-data" action="{{ route('learning.assessment.submit',$assessment) }}">
 @csrf
 @foreach($assessment->questions as $question)
@@ -63,5 +120,6 @@
 
 <button>Submit {{ $assessment->type === 'assignment' ? 'Assignment' : 'Assessment' }}</button>
 </form>
+@endunless
 </div>
 @endsection

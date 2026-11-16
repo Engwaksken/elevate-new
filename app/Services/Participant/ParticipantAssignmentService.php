@@ -358,7 +358,9 @@ class ParticipantAssignmentService
         $participant = $request->user()->first();
 
         if ($participant) {
-            $this->notifications->send($participant, $type, $title, $message, null, $this->notificationData($request, $assessment));
+            // The mobile app routes these by type; the link is for the web bell.
+            $actionUrl = Route::has('learning.assessment.show') ? route('learning.assessment.show', $assessment) : null;
+            $this->notifications->send($participant, $type, $title, $message, $actionUrl, $this->notificationData($request, $assessment));
         }
     }
 

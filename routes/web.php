@@ -495,6 +495,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         '/learning/assessments/{assessment}',
         [AssessmentController::class, 'submit']
     )->name('learning.assessment.submit');
+
+    Route::post(
+        '/learning/assessments/{assessment}/extension-requests',
+        [AssessmentController::class, 'requestExtension']
+    )->name('learning.assessment.extension-request');
 });
 
 

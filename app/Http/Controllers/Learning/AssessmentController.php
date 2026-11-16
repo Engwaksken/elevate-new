@@ -7,15 +7,18 @@ use App\Models\Assessment;
 use App\Models\AssessmentAnswer;
 use App\Models\AssessmentAttempt;
 use App\Models\Enrolment;
+use App\Exceptions\ParticipantRuleException;
 use App\Services\CertificateService;
 use App\Services\Learning\LearningFileService;
+use App\Services\Participant\ParticipantAssignmentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AssessmentController extends Controller
 {
-    public function show(Assessment $assessment)
+    public function show(Assessment $assessment, ParticipantAssignmentService $assignments)
     {
         $assessment->load(['questions','course']);
         abort_unless($assessment->is_published, 404);
@@ -46,7 +49,50 @@ class AssessmentController extends Controller
         $files->syncAttempts($previousAttempts);
         $previousAttempts->load('files');
 
-        return view('learning.assessments.show', compact('assessment','attempts','briefFiles','previousAttempts'));
+        // Same due-date rules as the mobile app: an approved extension moves the
+        // due date, and an overdue assignment can only be reopened by an extension.
+        $context = $assignments->context(auth()->user(), [$assessment->id]);
+        $dueState = $assignments->state($assessment, $context);
+        $dueState['effective_due'] = $assignments->effectiveDueAt($assessment, $context);
+        $dueState['extension'] = $context['latest'][$assessment->id] ?? null;
+        $dueState['can_request_extension'] = $dueState['can_request_extension'] && $enrolled;
+
+        return view('learning.assessments.show', compact('assessment','attempts','briefFiles','previousAttempts','dueState'));
+    }
+
+    /**
+     * Ask the course instructors for more time on an assignment (web counterpart of
+     * POST /api/v1/participant/assignments/{assessment}/extension-requests).
+     */
+    public function requestExtension(Request $request, Assessment $assessment, ParticipantAssignmentService $assignments)
+    {
+        abort_unless($assessment->is_published, 404);
+        abort_unless(
+            Enrolment::where('course_id', $assessment->course_id)->where('user_id', $request->user()->id)->exists(),
+            403
+        );
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:10', 'max:1000'],
+            'requested_due_at' => ['nullable', 'date', 'after:now'],
+        ], [
+            'reason.min' => 'Please explain why you need more time (at least 10 characters).',
+            'requested_due_at.after' => 'The date you are asking for must be in the future.',
+        ]);
+
+        try {
+            $assignments->createExtensionRequest(
+                $request->user(),
+                $assessment,
+                trim($data['reason']),
+                ! empty($data['requested_due_at']) ? Carbon::parse($data['requested_due_at']) : null
+            );
+        } catch (ParticipantRuleException $e) {
+            return back()->withInput()->withErrors(['extension' => $e->getMessage()]);
+        }
+
+        return redirect()->route('learning.assessment.show', $assessment)
+            ->with('success', 'Extension request sent to your instructor. You will be notified when it is reviewed.');
     }
 
     public function submit(Request $request, Assessment $assessment, CertificateService $certificateService)
@@ -60,6 +106,13 @@ class AssessmentController extends Controller
             ->count() + 1;
 
         abort_if($attemptNumber > $assessment->max_attempts, 403);
+
+        $assignments = app(ParticipantAssignmentService::class);
+        try {
+            $assignments->ensureNotOverdue($assessment, $assignments->context($request->user(), [$assessment->id]), null);
+        } catch (ParticipantRuleException $e) {
+            return redirect()->route('learning.assessment.show', $assessment)->withErrors(['extension' => $e->getMessage()]);
+        }
 
         $fileService = app(LearningFileService::class);
         $data = $request->validate([

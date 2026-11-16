@@ -60,17 +60,23 @@
 <section class="eh-tab-pane {{ $canViewTimetable ? '' : 'active' }}" role="tabpanel" data-eh-pane="course-assessments" aria-labelledby="course-assessments-title">
 <div class="eh-tab-section"><h2 id="course-assessments-title"><i class="fas fa-clipboard-check"></i> Assessments</h2>
 <div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
-<thead><tr><th>Assessment</th><th>Type</th><th>Attempts</th><th>Best score</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+<thead><tr><th>Assessment</th><th>Type</th><th>Due</th><th>Attempts</th><th>Best score</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @foreach($course->assessments as $assessment)
 @php($tried = ($assessmentAttempts ?? collect())->get($assessment->id))
 @php($used = (int) ($tried->used ?? 0))
 @php($max = (int) $assessment->max_attempts)
 @php($exhausted = $max > 0 && $used >= $max)
 @php($best = $tried && $tried->best !== null ? rtrim(rtrim(number_format((float) $tried->best, 1), '0'), '.').'%' : null)
+@php($dueInfo = ($assessmentDue ?? collect())->get($assessment->id))
+@php($due = $dueInfo['due'] ?? null)
+@php($ext = $dueInfo['extension'] ?? null)
+@php($overdue = ! $exhausted && $due && $due->isPast())
 <tr>
     <td><strong>{{ $assessment->title }}</strong></td><td>{{ ucfirst($assessment->type) }}</td>
+    <td>@if($due){{ $due->format('d M Y H:i') }}@else - @endif
+        @if(! $exhausted && $ext && $ext->isPending())<br><small>Extension requested</small>@elseif(! $exhausted && $ext && $ext->status === 'approved')<br><small>Extended</small>@endif</td>
     @if($exhausted)<td>All {{ $max }} {{ \Illuminate\Support\Str::plural('attempt', $max) }} used</td><td>{{ $best ? 'Best score '.$best : '-' }}</td><td><span class="status-chip completed">Completed</span></td><td class="table-actions"></td>
-    @else<td>@if($max > 0){{ $max - $used }} of {{ $max }} {{ \Illuminate\Support\Str::plural('attempt', $max) }} left @else Unlimited @endif</td><td>{{ $best ? 'Best score '.$best : '-' }}</td><td><span class="status-chip {{ $used > 0 ? 'pending' : 'active' }}">{{ $used > 0 ? 'In progress' : 'Open' }}</span></td><td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('learning.assessment.show',$assessment) }}"><i class="fas fa-arrow-right"></i> Open</a></td>@endif
+    @else<td>@if($max > 0){{ $max - $used }} of {{ $max }} {{ \Illuminate\Support\Str::plural('attempt', $max) }} left @else Unlimited @endif</td><td>{{ $best ? 'Best score '.$best : '-' }}</td><td>@if($overdue)<span class="status-chip inactive">Overdue</span>@else<span class="status-chip {{ $used > 0 ? 'pending' : 'active' }}">{{ $used > 0 ? 'In progress' : 'Open' }}</span>@endif</td><td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('learning.assessment.show',$assessment) }}"><i class="fas {{ $overdue ? 'fa-clock' : 'fa-arrow-right' }}"></i> {{ $overdue ? ($ext && $ext->isPending() ? 'View request' : 'Request extension') : 'Open' }}</a></td>@endif
 </tr>
 @endforeach
 </tbody></table></div></div></div>
