@@ -60,6 +60,7 @@
 @import './responsive-global.css';
 @import './mobile-compact.css';
 @import './modal-standard.css';
+@import './document-library.css';
 
 .eh-admin-topbar__icon-btn,
 .role-topbar__link,

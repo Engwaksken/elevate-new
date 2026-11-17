@@ -110,6 +110,30 @@ Route::middleware(['auth', 'staff'])
         Route::delete('/{purchaseRequest}', [\App\Http\Controllers\Staff\StaffPurchaseRequestController::class, 'destroy'])->name('destroy');
     });
 
+// Department document libraries (SharePoint-style): sites, folders, versions and sharing.
+// Access is checked per item in the controller (membership, headship, shares).
+Route::middleware(['auth', 'staff'])
+    ->prefix('staff/documents')
+    ->name('staff.documents.')
+    ->controller(\App\Http\Controllers\Staff\DocumentLibraryController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/shared', 'shared')->name('shared');
+        Route::get('/sites/{department}', 'library')->name('library');
+        Route::post('/sites/{department}/folders', 'storeFolder')->name('folders.store');
+        Route::post('/sites/{department}/files', 'upload')->middleware('throttle:30,1')->name('upload');
+        Route::get('/files/{file}', 'open')->name('open');
+        Route::get('/files/{file}/download', 'download')->name('download');
+        Route::post('/files/{file}/versions', 'uploadVersion')->name('versions.store');
+        Route::get('/versions/{version}/download', 'downloadVersion')->name('versions.download');
+        Route::post('/versions/{version}/restore', 'restoreVersion')->name('versions.restore');
+        Route::put('/items/{type}/{id}', 'rename')->whereIn('type', ['folder', 'file'])->whereNumber('id')->name('rename');
+        Route::delete('/items/{type}/{id}', 'destroy')->whereIn('type', ['folder', 'file'])->whereNumber('id')->name('destroy');
+        Route::post('/items/{type}/{id}/share', 'share')->whereIn('type', ['site', 'folder', 'file'])->whereNumber('id')->name('share');
+        Route::put('/shares/{share}', 'updateShare')->name('shares.update');
+        Route::delete('/shares/{share}', 'removeShare')->name('shares.destroy');
+    });
+
 // Staff Help & Support: every staff member raises IT / general help requests and tracks their own.
 Route::middleware(['auth', 'staff'])
     ->prefix('staff/support')

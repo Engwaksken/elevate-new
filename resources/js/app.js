@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('[da
 
 import './admin-modal-crud';
 import './notification-modal';
+import './document-library';
 
 import './admin-universal-responsive';
 

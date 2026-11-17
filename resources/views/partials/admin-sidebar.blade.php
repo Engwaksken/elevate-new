@@ -216,6 +216,13 @@
                     'permissions' => [],
                     'active' => ['staff.purchase-requests.*'],
                 ],
+                [
+                    'route' => 'staff.documents.index',
+                    'label' => 'Documents',
+                    'icon' => 'fa-folder-tree',
+                    'permissions' => [],
+                    'active' => ['staff.documents.*'],
+                ],
                 // Help & Support: every staff member can raise and track IT / help requests.
                 [
                     'route' => 'staff.support.index',
@@ -512,6 +519,13 @@
                         'icon' => 'fa-cart-plus',
                         'permissions' => [],
                         'active' => ['staff.purchase-requests.*'],
+                    ],
+                    [
+                        'route' => 'staff.documents.index',
+                        'label' => 'Documents',
+                        'icon' => 'fa-folder-tree',
+                        'permissions' => [],
+                        'active' => ['staff.documents.*'],
                     ],
                     [
                         'route' => 'certificates.recommendations.index',

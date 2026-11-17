@@ -38,4 +38,14 @@ class Department extends Model
     {
         return $this->hasMany(Employee::class);
     }
+
+    public function documentFolders(): HasMany
+    {
+        return $this->hasMany(DocumentFolder::class);
+    }
+
+    public function documentFiles(): HasMany
+    {
+        return $this->hasMany(DocumentFile::class);
+    }
 }
