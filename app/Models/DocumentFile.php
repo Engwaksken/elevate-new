@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DocumentFile extends Model
 {
-    protected $fillable = ['department_id', 'folder_id', 'name', 'extension', 'mime_type', 'size', 'path', 'version', 'created_by', 'updated_by'];
+    use SoftDeletes;
+
+    protected $fillable = ['department_id', 'folder_id', 'name', 'extension', 'mime_type', 'size', 'path', 'version', 'created_by', 'updated_by', 'deleted_by', 'delete_batch', 'is_delete_root'];
     protected $casts = ['size' => 'integer', 'version' => 'integer'];
 
     /** Types the browser may show inline; everything else is downloaded. */
@@ -16,6 +19,7 @@ class DocumentFile extends Model
 
     public function department(): BelongsTo { return $this->belongsTo(Department::class); }
     public function folder(): BelongsTo { return $this->belongsTo(DocumentFolder::class, 'folder_id'); }
+    public function deleter(): BelongsTo { return $this->belongsTo(User::class, 'deleted_by'); }
     public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
     public function editor(): BelongsTo { return $this->belongsTo(User::class, 'updated_by'); }
     public function versions(): HasMany { return $this->hasMany(DocumentFileVersion::class)->orderByDesc('version'); }

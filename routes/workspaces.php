@@ -122,6 +122,11 @@ Route::middleware(['auth', 'staff'])
         Route::get('/sites/{department}', 'library')->name('library');
         Route::post('/sites/{department}/folders', 'storeFolder')->name('folders.store');
         Route::post('/sites/{department}/files', 'upload')->middleware('throttle:30,1')->name('upload');
+        Route::post('/sites/{department}/bulk', 'bulk')->name('bulk');
+        Route::get('/sites/{department}/recycle-bin', 'recycleBin')->name('recycle-bin');
+        Route::delete('/sites/{department}/recycle-bin', 'emptyRecycleBin')->name('recycle-bin.empty');
+        Route::post('/recycle-bin/{type}/{id}/restore', 'restore')->whereIn('type', ['folder', 'file'])->whereNumber('id')->name('recycle-bin.restore');
+        Route::delete('/recycle-bin/{type}/{id}', 'purge')->whereIn('type', ['folder', 'file'])->whereNumber('id')->name('recycle-bin.purge');
         Route::get('/files/{file}', 'open')->name('open');
         Route::get('/files/{file}/download', 'download')->name('download');
         Route::post('/files/{file}/versions', 'uploadVersion')->name('versions.store');

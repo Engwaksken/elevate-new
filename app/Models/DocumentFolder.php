@@ -3,17 +3,24 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DocumentFolder extends Model
 {
-    protected $fillable = ['department_id', 'parent_id', 'name', 'description', 'created_by', 'updated_by'];
+    use SoftDeletes;
+
+    /** Days an item stays in the recycle bin before it is purged (as in SharePoint). */
+    public const RETENTION_DAYS = 93;
+
+    protected $fillable = ['department_id', 'parent_id', 'name', 'description', 'created_by', 'updated_by', 'deleted_by', 'delete_batch', 'is_delete_root'];
 
     public function department(): BelongsTo { return $this->belongsTo(Department::class); }
     public function parent(): BelongsTo { return $this->belongsTo(self::class, 'parent_id'); }
     public function children(): HasMany { return $this->hasMany(self::class, 'parent_id'); }
     public function files(): HasMany { return $this->hasMany(DocumentFile::class, 'folder_id'); }
+    public function deleter(): BelongsTo { return $this->belongsTo(User::class, 'deleted_by'); }
     public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
     public function editor(): BelongsTo { return $this->belongsTo(User::class, 'updated_by'); }
 

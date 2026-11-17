@@ -28,6 +28,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const renameForm = document.querySelector('[data-dl-rename-form]');
     const versionForm = document.querySelector('[data-dl-version-form]');
     const deleteForm = document.querySelector('[data-dl-delete-form]');
+    const bulkForm = document.querySelector('[data-dl-bulk-form]');
+    const moveForm = document.querySelector('[data-dl-move-form]');
+
+    const setItems = (form, keys) => {
+        form.querySelectorAll('input[name="items[]"]').forEach((i) => i.remove());
+        keys.forEach((key) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'items[]';
+            input.value = key;
+            form.appendChild(input);
+        });
+    };
+
+    // keys: ["folder:3", "file:9"]; label: what the dialogs show.
+    const runBulk = (kind, keys, label) => {
+        if (!keys.length) return;
+        if (kind === 'zip' && bulkForm) {
+            bulkForm.querySelector('[name=action]').value = 'download';
+            setItems(bulkForm, keys);
+            bulkForm.submit();
+        } else if (kind === 'move' && moveForm) {
+            setItems(moveForm, keys);
+            moveForm.querySelector('[data-dl-move-label]').textContent = label;
+            // A folder can't go into itself.
+            moveForm.querySelectorAll('[data-dl-move-target]').forEach((row) => {
+                const blocked = keys.includes(`folder:${row.dataset.dlMoveTarget}`);
+                row.classList.toggle('is-disabled', blocked);
+                row.querySelector('input').disabled = blocked;
+            });
+            openModal('dl-move');
+        } else if (kind === 'bulkdelete' && bulkForm) {
+            if (confirm(`Move ${label} to the recycle bin? You can restore them from there.`)) {
+                bulkForm.querySelector('[name=action]').value = 'delete';
+                setItems(bulkForm, keys);
+                bulkForm.submit();
+            }
+        }
+    };
 
     const runAction = (kind, url, name, rename) => {
         dropdowns().forEach((d) => { d.open = false; });
@@ -42,8 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
             versionForm.action = url;
             versionForm.querySelector('[data-dl-version-label]').textContent = name;
             openModal('dl-new-version');
+        } else if (kind === 'zip' || kind === 'move') {
+            runBulk(kind, [url], name);
         } else if (kind === 'delete' && deleteForm) {
-            if (confirm(`Delete "${name}"? Folders are deleted with everything inside them. This cannot be undone.`)) {
+            if (confirm(`Move "${name}" to the recycle bin? Folders go with everything inside them. You can restore it from the recycle bin.`)) {
                 deleteForm.action = url;
                 deleteForm.submit();
             }
@@ -107,9 +148,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 let data = {};
                 try { data = JSON.parse(selected[0].dataset.dlItem || '{}'); } catch { /* ignore */ }
                 // Command bar order, as SharePoint shows it for one selected item.
-                ['open', 'share', 'download', 'access', 'rename', 'newversion', 'versions', 'details', 'delete'].forEach((key) => {
+                ['open', 'share', 'download', 'access', 'rename', 'move', 'newversion', 'versions', 'details', 'delete'].forEach((key) => {
                     if (data.actions?.[key]) selectionCmds.append(cmdButton(key, data.actions[key], data.name, data.rename));
                 });
+            }
+
+            if (selected.length > 1) {
+                const rowsData = selected.map((r) => { try { return JSON.parse(r.dataset.dlItem || '{}'); } catch { return {}; } });
+                const keys = rowsData.map((d) => d.key).filter(Boolean);
+                const label = `${keys.length} items`;
+                const bulkButton = (kind, text, icon, danger) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'dl-cmd' + (danger ? ' danger' : '');
+                    b.innerHTML = `<i class="fas ${icon}"></i><span class="dl-cmd-label"></span>`;
+                    b.querySelector('span').textContent = text;
+                    b.addEventListener('click', () => runBulk(kind, keys, label));
+                    selectionCmds.append(b);
+                };
+                bulkButton('zip', 'Download', 'fa-download');
+                if (rowsData.every((d) => d.edit)) bulkButton('move', 'Move to', 'fa-folder-tree');
+                if (rowsData.every((d) => d.full)) bulkButton('bulkdelete', 'Delete', 'fa-trash-can', true);
             }
 
             const info = document.createElement('span');

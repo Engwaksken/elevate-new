@@ -29,3 +29,7 @@ Schedule::call(function () {
         }
     }
 })->daily()->name('prune-file-previews');
+
+// Department document libraries: empty recycle-bin items older than 93 days.
+Schedule::call(fn () => app(\App\Services\DocumentLibraryService::class)->purgeExpired())
+    ->dailyAt('02:30')->name('purge-document-recycle-bin')->withoutOverlapping();

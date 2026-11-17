@@ -32,6 +32,7 @@
         $a = [];
         if ($isFolder) {
             $a['open'] = ['Open', 'fa-folder-open', $url(['folder' => $item->id, 'q' => null]), 'link'];
+            $a['download'] = ['Download as zip', 'fa-file-zipper', $key, 'zip'];
         } else {
             $a['open'] = ['Open', 'fa-up-right-from-square', route('staff.documents.open', $item), 'blank'];
             $a['download'] = ['Download', 'fa-download', route('staff.documents.download', $item), 'link'];
@@ -43,11 +44,21 @@
         if (Access::allows($r, DocumentShare::EDIT)) {
             if (! $isFolder) $a['newversion'] = ['Upload new version', 'fa-file-arrow-up', route('staff.documents.versions.store', $item), 'version'];
             $a['rename'] = ['Rename', 'fa-i-cursor', route('staff.documents.rename', [$type, $item->id]), 'rename'];
+            $a['move'] = ['Move to', 'fa-folder-tree', $key, 'move'];
         }
         if (Access::allows($r, DocumentShare::FULL)) $a['delete'] = ['Delete', 'fa-trash-can', route('staff.documents.destroy', [$type, $item->id]), 'delete'];
 
         return $a;
     };
+    $rowData = fn ($item, bool $isFolder, array $actions) => json_encode([
+        'key' => ($isFolder ? 'folder' : 'file').':'.$item->id,
+        'name' => $item->name,
+        'type' => $isFolder ? 'folder' : 'file',
+        'rename' => $isFolder || ! $item->extension ? $item->name : \Illuminate\Support\Str::beforeLast($item->name, '.'.$item->extension),
+        'edit' => Access::allows($item->row_role, DocumentShare::EDIT),
+        'full' => Access::allows($item->row_role, DocumentShare::FULL),
+        'actions' => $actions,
+    ]);
     $renameValue = fn ($item, bool $isFolder) => $isFolder || ! $item->extension ? $item->name : \Illuminate\Support\Str::beforeLast($item->name, '.'.$item->extension);
     $total = $folders->count() + $files->count();
 @endphp
@@ -71,6 +82,9 @@
             <div class="dl-site-header-actions">
                 @if($siteRole)
                     <a href="{{ $panelUrl('access', 'site:'.$department->id) }}" class="btn btn-outline"><i class="fas fa-users-gear"></i> Site access</a>
+                @endif
+                @if($siteRole && $siteRole !== 'view')
+                    <a href="{{ route('staff.documents.recycle-bin', $department) }}" class="btn btn-outline"><i class="fas fa-trash-can-arrow-up"></i> Recycle bin</a>
                 @endif
                 @if($siteFull)
                     <a href="{{ $panelUrl('access', 'site:'.$department->id) }}#grant" class="btn btn-primary"><i class="fas fa-share-nodes"></i> Share site</a>
@@ -168,7 +182,7 @@
                 <div class="dl-tiles" data-dl-items>
                     @foreach($folders as $item)
                         @php $actions = $actionsFor($item, true); @endphp
-                        <div class="dl-tile" data-dl-row data-dl-item="{{ json_encode(['name' => $item->name, 'type' => 'folder', 'rename' => $renameValue($item, true), 'actions' => $actions]) }}">
+                        <div class="dl-tile" data-dl-row data-dl-item="{{ $rowData($item, true, $actions) }}">
                             <input type="checkbox" class="dl-check dl-tile-check" data-dl-select aria-label="Select {{ $item->name }}">
                             <div class="dl-tile-more">@include('staff.documents._row-menu', ['actions' => $actions, 'item' => $item, 'rename' => $renameValue($item, true)])</div>
                             <a class="dl-tile-thumb" href="{{ $actions['open'][2] }}">
@@ -183,7 +197,7 @@
                     @endforeach
                     @foreach($files as $item)
                         @php $actions = $actionsFor($item, false); [$fi, $fc] = $item->iconInfo(); $isImage = $fc === 'image' && $item->canOpenInline(); @endphp
-                        <div class="dl-tile" data-dl-row data-dl-item="{{ json_encode(['name' => $item->name, 'type' => 'file', 'rename' => $renameValue($item, false), 'actions' => $actions]) }}">
+                        <div class="dl-tile" data-dl-row data-dl-item="{{ $rowData($item, false, $actions) }}">
                             <input type="checkbox" class="dl-check dl-tile-check" data-dl-select aria-label="Select {{ $item->name }}">
                             <div class="dl-tile-more">@include('staff.documents._row-menu', ['actions' => $actions, 'item' => $item, 'rename' => $renameValue($item, false)])</div>
                             <a class="dl-tile-thumb" href="{{ $actions['open'][2] }}" target="_blank" rel="noopener">
@@ -215,7 +229,7 @@
                     <tbody>
                     @foreach($folders as $item)
                         @php $actions = $actionsFor($item, true); @endphp
-                        <tr data-dl-row data-dl-item="{{ json_encode(['name' => $item->name, 'type' => 'folder', 'rename' => $renameValue($item, true), 'actions' => $actions]) }}">
+                        <tr data-dl-row data-dl-item="{{ $rowData($item, true, $actions) }}">
                             <td class="col-check"><input type="checkbox" class="dl-check" data-dl-select aria-label="Select {{ $item->name }}"></td>
                             <td class="col-icon"><span class="dl-icon folder"><i class="fas fa-folder"></i></span></td>
                             <td class="col-name">
@@ -231,7 +245,7 @@
                     @endforeach
                     @foreach($files as $item)
                         @php $actions = $actionsFor($item, false); [$fi, $fc] = $item->iconInfo(); @endphp
-                        <tr data-dl-row data-dl-item="{{ json_encode(['name' => $item->name, 'type' => 'file', 'rename' => $renameValue($item, false), 'actions' => $actions]) }}">
+                        <tr data-dl-row data-dl-item="{{ $rowData($item, false, $actions) }}">
                             <td class="col-check"><input type="checkbox" class="dl-check" data-dl-select aria-label="Select {{ $item->name }}"></td>
                             <td class="col-icon"><span class="dl-icon {{ $fc }}"><i class="fas {{ $fi }}"></i></span></td>
                             <td class="col-name">
@@ -348,4 +362,43 @@
 </div>
 
 <form method="POST" action="" data-dl-delete-form hidden>@csrf @method('DELETE')</form>
+
+{{-- Bulk actions (and single-item zip / move) post here; items[] are added by JS --}}
+<form method="POST" action="{{ route('staff.documents.bulk', $department) }}" data-dl-bulk-form hidden>
+    @csrf
+    <input type="hidden" name="action" value="">
+</form>
+
+{{-- Move to: pick a destination folder in this library --}}
+<div class="eh-modal" id="dl-move" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="dl-move-title">
+<div class="eh-modal-dialog eh-modal-sm">
+<form method="POST" action="{{ route('staff.documents.bulk', $department) }}" data-dl-move-form>
+    @csrf
+    <input type="hidden" name="action" value="move">
+    <div class="eh-modal-header">
+        <div><h2 id="dl-move-title">Move to</h2><p data-dl-move-label></p></div>
+        <button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="eh-modal-body">
+        @if(empty($moveTargets))
+            <p class="dl-muted">You don't have edit access to any folder in this library.</p>
+        @else
+        <div class="dl-tree" role="radiogroup" aria-label="Destination folder">
+            @foreach($moveTargets as $target)
+                <label style="--depth:{{ $target['depth'] }}" data-dl-move-target="{{ $target['id'] ?? 'root' }}">
+                    <input type="radio" name="destination" value="{{ $target['id'] ?? 'root' }}" @checked(($target['id'] ?? null) === $folder?->id) required>
+                    <i class="fas {{ $target['id'] ? 'fa-folder' : 'fa-house' }}"></i>
+                    <span>{{ $target['name'] }}</span>
+                </label>
+            @endforeach
+        </div>
+        @endif
+    </div>
+    <div class="eh-modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button class="btn btn-primary" @disabled(empty($moveTargets))><i class="fas fa-folder-tree"></i> Move here</button>
+    </div>
+</form>
+</div>
+</div>
 @endsection

@@ -11,6 +11,7 @@ use App\Models\DocumentShare;
 use App\Models\Employee;
 use App\Models\User;
 use App\Services\DocumentAccessService;
+use App\Services\DocumentLibraryService;
 use App\Services\UserNotificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
@@ -40,7 +41,7 @@ class DocumentLibraryController extends Controller
 
     private const DISK = 'local';
 
-    public function __construct(private UserNotificationService $notifications)
+    public function __construct(private UserNotificationService $notifications, private DocumentLibraryService $library)
     {
     }
 
@@ -161,6 +162,7 @@ class DocumentLibraryController extends Controller
             'sites' => $this->access()->accessibleSites($user),
             'memberCount' => Employee::where('department_id', $department->id)->count(),
             'maxUploadMb' => (int) (self::MAX_UPLOAD_KB / 1024),
+            'moveTargets' => $this->moveTargets($user, $department, $siteRole),
         ]);
     }
 
@@ -289,6 +291,7 @@ class DocumentLibraryController extends Controller
         return back()->with('success', 'Renamed to "'.$name.'".');
     }
 
+    /** Send a file or folder (with everything inside) to the site's recycle bin. */
     public function destroy(Request $request, string $type, int $id): RedirectResponse
     {
         [$item, $role] = $this->resolveItem($request->user(), $type, $id);
@@ -298,25 +301,179 @@ class DocumentLibraryController extends Controller
         $parent = $item instanceof DocumentFile ? $item->folder : $item->parent;
         $name = $item->name;
 
-        DB::transaction(function () use ($item) {
-            if ($item instanceof DocumentFolder) {
-                $folderIds = $item->descendantIds();
-                $files = DocumentFile::whereIn('folder_id', $folderIds)->get();
-                foreach ($files as $file) $this->purgeFile($file);
-                DocumentShare::where('shareable_type', DocumentShare::FOLDER)->whereIn('shareable_id', $folderIds)->delete();
-                $item->delete();
-            } else {
-                $this->purgeFile($item);
-            }
-        });
+        $this->library->trash($item, $request->user());
 
+        $message = "\"{$name}\" moved to the recycle bin.";
         // A parent the user can no longer see would 403; fall back to the root.
         $target = $parent && $this->access()->folderRole($request->user(), $parent) ? $parent : null;
         if (! $target && ! $this->access()->siteRole($request->user(), $department)) {
-            return redirect()->route('staff.documents.shared')->with('success', "\"{$name}\" deleted.");
+            return redirect()->route('staff.documents.shared')->with('success', $message);
         }
 
-        return $this->backToLibrary($department, $target)->with('success', "\"{$name}\" deleted.");
+        return $this->backToLibrary($department, $target)->with('success', $message);
+    }
+
+    /**
+     * Act on several selected items at once: download as a zip, move to a
+     * folder or send to the recycle bin. Items come as "folder:12" / "file:7".
+     */
+    public function bulk(Request $request, Department $department): Response
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'action' => ['required', Rule::in(['download', 'move', 'delete'])],
+            'items' => ['required', 'array', 'min:1', 'max:200'],
+            'items.*' => ['string', 'regex:/^(folder|file):\d+$/'],
+            'destination' => ['nullable', 'string', 'regex:/^(root|\d+)$/'],
+        ], ['items.required' => 'Select at least one item.']);
+
+        $needed = ['download' => DocumentShare::VIEW, 'move' => DocumentShare::EDIT, 'delete' => DocumentShare::FULL][$data['action']];
+        $items = collect($data['items'])->unique()->map(function (string $key) use ($user, $department, $needed) {
+            [$type, $id] = explode(':', $key);
+            [$item, $role] = $this->resolveItem($user, $type, (int) $id);
+            abort_unless((int) $item->department_id === $department->id, 404);
+            $this->authorizeRole($role, $needed);
+
+            return $item;
+        });
+        // Drop items inside a selected folder; the folder already covers them.
+        $inside = $items->filter(fn ($i) => $i instanceof DocumentFolder)
+            ->flatMap(fn ($f) => array_slice($f->descendantIds(), 1))->flip();
+        $items = $items->reject(fn ($i) => $i instanceof DocumentFolder ? $inside->has($i->id) : $inside->has($i->folder_id) || $items->contains(fn ($o) => $o instanceof DocumentFolder && $o->id === $i->folder_id))->values();
+
+        if ($data['action'] === 'download') {
+            if ($items->count() === 1 && $items->first() instanceof DocumentFile) {
+                return $this->download($request, $items->first());
+            }
+            $label = $items->count() === 1 ? $items->first()->name : $department->name.' files';
+            $zip = $this->library->zip($items, $label);
+
+            return response()->download($zip, Str::slug($label).'.zip')->deleteFileAfterSend();
+        }
+
+        if ($data['action'] === 'move') {
+            $destination = ($data['destination'] ?? 'root') === 'root' ? null
+                : DocumentFolder::where('department_id', $department->id)->findOrFail((int) $data['destination']);
+            $this->authorizeRole($this->access()->locationRole($user, $department, $destination), DocumentShare::EDIT);
+            $this->library->move($items, $department->id, $destination, $user);
+            $this->touchFolders($destination, $user);
+
+            return $this->backToLibrary($department, $destination)
+                ->with('success', $items->count().' '.Str::plural('item', $items->count()).' moved to '.($destination?->name ?? 'Documents').'.');
+        }
+
+        foreach ($items as $item) $this->library->trash($item, $user);
+
+        return back()->with('success', $items->count().' '.Str::plural('item', $items->count()).' moved to the recycle bin.');
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Recycle bin                                                        */
+    /* ------------------------------------------------------------------ */
+
+    public function recycleBin(Request $request, Department $department): View
+    {
+        $user = $request->user();
+        $siteRole = $this->access()->siteRole($user, $department);
+        $isOwner = DocumentAccessService::allows($siteRole, DocumentShare::FULL);
+
+        $scope = fn ($q) => $q->where('department_id', $department->id)->where('is_delete_root', true)
+            ->when(! $isOwner, fn ($q) => $q->where('deleted_by', $user->id));
+        $folders = DocumentFolder::onlyTrashed()->where($scope)->with(['deleter:id,name', 'parent' => fn ($q) => $q->withTrashed()])->get();
+        $files = DocumentFile::onlyTrashed()->where($scope)->with(['deleter:id,name', 'folder' => fn ($q) => $q->withTrashed()])->get();
+        abort_unless($siteRole || $folders->isNotEmpty() || $files->isNotEmpty(), 403, 'You do not have access to this recycle bin.');
+
+        $batches = $folders->pluck('delete_batch')->merge($files->pluck('delete_batch'))->filter()->values()->all();
+        $batchFiles = DocumentFile::onlyTrashed()->whereIn('delete_batch', $batches ?: [''])
+            ->selectRaw('delete_batch, count(*) as n, coalesce(sum(size),0) as bytes')->groupBy('delete_batch')->get()->keyBy('delete_batch');
+
+        $items = $folders->map(fn ($f) => (object) ['type' => 'folder', 'item' => $f, 'location' => $f->parent?->name])
+            ->concat($files->map(fn ($f) => (object) ['type' => 'file', 'item' => $f, 'location' => $f->folder?->name]))
+            ->each(function ($row) use ($batchFiles) {
+                $b = $batchFiles->get($row->item->delete_batch);
+                $row->files = (int) ($b->n ?? 0);
+                $row->bytes = (int) ($b->bytes ?? 0);
+                $row->days_left = max(0, DocumentFolder::RETENTION_DAYS - (int) $row->item->deleted_at->diffInDays(now()));
+            })
+            ->sortByDesc(fn ($r) => $r->item->deleted_at->timestamp)->values();
+
+        return view('staff.documents.recycle-bin', [
+            'department' => $department,
+            'items' => $items,
+            'isOwner' => $isOwner,
+            'siteRole' => $siteRole,
+            'sites' => $this->access()->accessibleSites($user),
+        ]);
+    }
+
+    public function restore(Request $request, string $type, int $id): RedirectResponse
+    {
+        $item = $this->trashedRoot($request->user(), $type, $id);
+        $this->library->restore($item, $request->user());
+
+        return back()->with('success', '"'.$item->fresh()->name.'" restored.');
+    }
+
+    public function purge(Request $request, string $type, int $id): RedirectResponse
+    {
+        $item = $this->trashedRoot($request->user(), $type, $id);
+        $name = $item->name;
+        $this->library->purge($item);
+
+        return back()->with('success', "\"{$name}\" permanently deleted.");
+    }
+
+    public function emptyRecycleBin(Request $request, Department $department): RedirectResponse
+    {
+        $this->authorizeRole($this->access()->siteRole($request->user(), $department), DocumentShare::FULL);
+
+        $count = 0;
+        foreach ([DocumentFile::class, DocumentFolder::class] as $class) {
+            $class::onlyTrashed()->where('department_id', $department->id)->where('is_delete_root', true)->get()
+                ->each(function ($item) use (&$count) { $this->library->purge($item); $count++; });
+        }
+
+        return back()->with('success', $count ? "Recycle bin emptied ({$count} ".Str::plural('item', $count).').' : 'The recycle bin was already empty.');
+    }
+
+    /** A recycle-bin item the user may restore or purge: site owners, or whoever deleted it. */
+    private function trashedRoot(User $user, string $type, int $id): DocumentFolder|DocumentFile
+    {
+        $class = $type === 'folder' ? DocumentFolder::class : DocumentFile::class;
+        $item = $class::onlyTrashed()->where('is_delete_root', true)->findOrFail($id);
+        $isOwner = DocumentAccessService::allows($this->access()->siteRole($user, $item->department), DocumentShare::FULL);
+        abort_unless($isOwner || (int) $item->deleted_by === $user->id, 403, 'Only site owners or the person who deleted it can do that.');
+
+        return $item;
+    }
+
+    /**
+     * Folders the user may move items into, as an indented list (root first).
+     * Roles are worked out from the in-memory tree instead of a query per folder.
+     *
+     * @return array<int, array{id: ?int, name: string, depth: int}>
+     */
+    private function moveTargets(User $user, Department $department, ?string $siteRole): array
+    {
+        $folders = DocumentFolder::where('department_id', $department->id)->orderBy('name')->get(['id', 'parent_id', 'name']);
+        $byParent = $folders->groupBy(fn ($f) => (string) $f->parent_id);
+        $targets = [];
+        if (DocumentAccessService::allows($siteRole, DocumentShare::EDIT)) {
+            $targets[] = ['id' => null, 'name' => 'Documents', 'depth' => 0];
+        }
+
+        $walk = function (string $parentKey, int $depth, ?string $inherited) use (&$walk, &$targets, $byParent, $user) {
+            foreach ($byParent->get($parentKey, collect()) as $folder) {
+                $role = DocumentAccessService::strongest($inherited, $this->access()->directShare($user, DocumentShare::FOLDER, $folder->id));
+                if (DocumentAccessService::allows($role, DocumentShare::EDIT)) {
+                    $targets[] = ['id' => $folder->id, 'name' => $folder->name, 'depth' => $depth];
+                }
+                if ($depth < 30) $walk((string) $folder->id, $depth + 1, $role);
+            }
+        };
+        $walk('', 1, $siteRole);
+
+        return $targets;
     }
 
     /* ------------------------------------------------------------------ */
@@ -635,14 +792,6 @@ class DocumentLibraryController extends Controller
                 'version' => $next, 'updated_by' => $user->id,
             ]);
         });
-    }
-
-    private function purgeFile(DocumentFile $file): void
-    {
-        $paths = $file->versions()->pluck('path')->push($file->path)->unique()->all();
-        Storage::disk(self::DISK)->delete($paths);
-        DocumentShare::where('shareable_type', DocumentShare::FILE)->where('shareable_id', $file->id)->delete();
-        $file->delete();
     }
 
     /** Bump "Modified" on the folder chain, as SharePoint does when content changes. */

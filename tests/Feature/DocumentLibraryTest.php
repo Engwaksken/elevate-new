@@ -130,7 +130,138 @@ class DocumentLibraryTest extends TestCase
         $path = $file->path;
         $this->actingAs($this->head)->delete(route('staff.documents.destroy', ['file', $file->id]))->assertSessionHas('success');
         $this->assertSame(0, DocumentFile::count());
-        Storage::disk('local')->assertMissing($path);
+        $this->assertSame(1, DocumentFile::onlyTrashed()->count());
+        Storage::disk('local')->assertExists($path); // still in the recycle bin
+    }
+
+    public function test_deleted_folders_go_to_the_recycle_bin_and_can_be_restored(): void
+    {
+        $folder = $this->folder();
+        $sub = DocumentFolder::create(['department_id' => $this->finance->id, 'parent_id' => $folder->id, 'name' => 'Q1']);
+        $this->upload($this->member, 'Inside.txt', $sub);
+
+        $this->actingAs($this->head)->delete(route('staff.documents.destroy', ['folder', $folder->id]))->assertSessionHas('success');
+        $this->assertSame(0, DocumentFolder::count());
+        $this->assertSame(0, DocumentFile::count());
+
+        $this->actingAs($this->head)->get(route('staff.documents.recycle-bin', $this->finance))
+            ->assertOk()->assertSee('Reports')->assertDontSee('Inside.txt')->assertSee('1 file inside');
+
+        // Members (edit only) don't see what others deleted and can't restore it.
+        $this->actingAs($this->member)->get(route('staff.documents.recycle-bin', $this->finance))->assertOk()->assertDontSee('Reports');
+        $this->actingAs($this->member)->post(route('staff.documents.recycle-bin.restore', ['folder', $folder->id]))->assertForbidden();
+
+        // A new folder took the name meanwhile, so the restored one is renamed.
+        $this->folder('Reports');
+        $this->actingAs($this->head)->post(route('staff.documents.recycle-bin.restore', ['folder', $folder->id]))->assertSessionHas('success');
+
+        $this->assertSame('Reports (restored)', $folder->fresh()->name);
+        $this->assertSame(3, DocumentFolder::count());
+        $this->assertSame($sub->id, DocumentFile::firstOrFail()->folder_id);
+    }
+
+    public function test_purging_and_emptying_the_recycle_bin_removes_files_for_good(): void
+    {
+        $this->upload($this->member, 'One.txt', null, 'one');
+        $this->upload($this->member, 'One.txt', null, 'two'); // second version
+        $this->upload($this->member, 'Two.txt');
+        [$one, $two] = DocumentFile::orderBy('id')->get()->all();
+        $paths = $one->versions()->pluck('path')->push($two->path)->all();
+
+        $this->actingAs($this->head)->delete(route('staff.documents.destroy', ['file', $one->id]));
+        $this->actingAs($this->head)->delete(route('staff.documents.destroy', ['file', $two->id]));
+
+        $this->actingAs($this->head)->delete(route('staff.documents.recycle-bin.purge', ['file', $one->id]))->assertSessionHas('success');
+        $this->assertSame(1, DocumentFile::onlyTrashed()->count());
+
+        $this->actingAs($this->member)->delete(route('staff.documents.recycle-bin.empty', $this->finance))->assertForbidden();
+        $this->actingAs($this->head)->delete(route('staff.documents.recycle-bin.empty', $this->finance))->assertSessionHas('success');
+
+        $this->assertSame(0, DocumentFile::withTrashed()->count());
+        foreach ($paths as $path) Storage::disk('local')->assertMissing($path);
+    }
+
+    public function test_old_recycle_bin_items_are_purged_automatically(): void
+    {
+        $this->upload($this->member, 'Old.txt');
+        $file = DocumentFile::firstOrFail();
+        $this->actingAs($this->head)->delete(route('staff.documents.destroy', ['file', $file->id]));
+        DocumentFile::onlyTrashed()->update(['deleted_at' => now()->subDays(DocumentFolder::RETENTION_DAYS + 1)]);
+
+        $this->assertSame(1, app(\App\Services\DocumentLibraryService::class)->purgeExpired());
+        $this->assertSame(0, DocumentFile::withTrashed()->count());
+    }
+
+    public function test_items_can_be_moved_between_folders(): void
+    {
+        $from = $this->folder('From');
+        $to = $this->folder('To');
+        $this->upload($this->member, 'Move me.txt', $from);
+        $file = DocumentFile::firstOrFail();
+
+        $this->actingAs($this->member)->post(route('staff.documents.bulk', $this->finance), [
+            'action' => 'move', 'items' => ['file:'.$file->id, 'folder:'.$from->id], 'destination' => (string) $to->id,
+        ])->assertSessionHas('success');
+
+        // The file sat inside the moved folder, so it travels with it rather than on its own.
+        $this->assertSame($to->id, $from->fresh()->parent_id);
+        $this->assertSame($from->id, $file->fresh()->folder_id);
+
+        // A folder can't be moved into its own subfolder.
+        $this->actingAs($this->member)->post(route('staff.documents.bulk', $this->finance), [
+            'action' => 'move', 'items' => ['folder:'.$to->id], 'destination' => (string) $from->id,
+        ])->assertSessionHasErrors('items');
+
+        // Name clashes in the destination are refused.
+        $this->upload($this->member, 'Move me.txt');
+        $rootFile = DocumentFile::whereNull('folder_id')->firstOrFail();
+        $this->actingAs($this->member)->post(route('staff.documents.bulk', $this->finance), [
+            'action' => 'move', 'items' => ['file:'.$rootFile->id], 'destination' => (string) $from->id,
+        ])->assertSessionHasErrors('items');
+    }
+
+    public function test_view_only_people_cannot_move_and_edit_people_cannot_bulk_delete(): void
+    {
+        $folder = $this->folder();
+        $this->upload($this->member, 'A.txt', $folder);
+        DocumentShare::create(['shareable_type' => 'folder', 'shareable_id' => $folder->id, 'user_id' => $this->outsider->id, 'role' => 'view']);
+        $file = DocumentFile::firstOrFail();
+
+        $this->actingAs($this->outsider)->post(route('staff.documents.bulk', $this->finance), [
+            'action' => 'move', 'items' => ['file:'.$file->id], 'destination' => 'root',
+        ])->assertForbidden();
+        $this->actingAs($this->member)->post(route('staff.documents.bulk', $this->finance), [
+            'action' => 'delete', 'items' => ['file:'.$file->id],
+        ])->assertForbidden();
+
+        $this->actingAs($this->head)->post(route('staff.documents.bulk', $this->finance), [
+            'action' => 'delete', 'items' => ['file:'.$file->id, 'folder:'.$folder->id],
+        ])->assertSessionHas('success');
+        $this->assertSame(0, DocumentFolder::count());
+        $this->assertSame(1, DocumentFolder::onlyTrashed()->where('is_delete_root', true)->count());
+    }
+
+    public function test_selected_items_download_as_a_zip(): void
+    {
+        $folder = $this->folder();
+        $this->upload($this->member, 'Inner.txt', $folder, 'inner');
+        $this->upload($this->member, 'Top.txt', null, 'top');
+        $top = DocumentFile::where('name', 'Top.txt')->firstOrFail();
+
+        $response = $this->actingAs($this->member)->post(route('staff.documents.bulk', $this->finance), [
+            'action' => 'download', 'items' => ['folder:'.$folder->id, 'file:'.$top->id],
+        ])->assertOk();
+
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($response->baseResponse->getFile()->getPathname()) === true);
+        $this->assertSame('inner', $zip->getFromName('Reports/Inner.txt'));
+        $this->assertSame('top', $zip->getFromName('Top.txt'));
+        $zip->close();
+
+        // A single file comes back as itself, not zipped.
+        $this->actingAs($this->member)->post(route('staff.documents.bulk', $this->finance), [
+            'action' => 'download', 'items' => ['file:'.$top->id],
+        ])->assertOk()->assertDownload('Top.txt');
     }
 
     public function test_sharing_a_folder_gives_view_access_to_it_and_everything_inside(): void

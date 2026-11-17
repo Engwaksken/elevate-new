@@ -113,7 +113,7 @@
 .dl-muted{color:var(--dl-muted)}
 
 /* Row checkbox: round like SharePoint's selection circle */
-:root .dl-check{appearance:none;-webkit-appearance:none;width:18px !important;height:18px !important;min-width:18px !important;min-height:18px !important;margin:0;padding:0 !important;border:1.5px solid #a19f9d;border-radius:50%;background:#fff;cursor:pointer;opacity:.35;display:grid;place-items:center;box-shadow:none}
+:root .dl-check{transition:opacity .12s;appearance:none;-webkit-appearance:none;width:18px !important;height:18px !important;min-width:18px !important;min-height:18px !important;margin:0;padding:0 !important;border:1.5px solid #a19f9d;border-radius:50%;background:#fff;cursor:pointer;opacity:.35;display:grid;place-items:center;box-shadow:none}
 :root .dl-check::after{content:"";width:5px;height:9px;border:solid transparent;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
 .dl-list tr:hover .dl-check,.dl-tile:hover .dl-check,:root .dl-check:checked,:root .dl-check:focus-visible{opacity:1}
 :root .dl-check:checked{border-color:var(--dl-accent);background:var(--dl-accent)}
@@ -263,3 +263,13 @@
 @media (hover:none){
     :root .dl-more,:root .dl-check{opacity:1}
 }
+
+/* Move to: indented folder picker */
+.dl-tree{display:grid;gap:2px;max-height:320px;overflow:auto;padding:4px;border:1px solid var(--dl-line);border-radius:8px}
+:root .dl-tree label{display:flex;align-items:center;gap:8px;margin:0;padding:7px 10px 7px calc(10px + var(--depth,0) * 18px);border-radius:6px;font-size:.8rem;font-weight:500;cursor:pointer}
+.dl-tree label:hover{background:var(--dl-hover)}
+:root .dl-tree label:has(input:checked){background:var(--dl-accent-soft);font-weight:700}
+:root .dl-tree input{width:15px;height:15px;min-width:15px;min-height:15px;margin:0}
+.dl-tree i{color:var(--dl-folder)}
+.dl-tree .fa-house{color:var(--dl-accent)}
+.dl-tree label.is-disabled{opacity:.45;pointer-events:none}
