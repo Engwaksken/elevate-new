@@ -327,10 +327,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
 @foreach(['assignment'=>'assignments','quiz'=>'quizzes','exam'=>'exams'] as $assessmentType => $tabName)
 @if($activeTab === $tabName)
+@php
+    $assessmentList = $course->assessments()->where('type',$assessmentType)->with(['files','questions'])->withCount(['questions','attempts'])->latest()->get();
+    $openNew = $assessmentList->isEmpty() || ($errors->any() && old('type') === $assessmentType && ! old('_method'));
+@endphp
 <section class="icm-panel">
-    <div class="icm-panel-head">
-        <div><h2>New {{ $assessmentType }}</h2><p class="icm-muted">Fill in the details, then publish it to participants now or save it as a draft to finish later.</p></div>
-    </div>
+    <details class="ag-new" @if($openNew) open @endif>
+    <summary><i class="fas fa-plus"></i> New {{ $assessmentType }}</summary>
+    <p class="icm-muted" style="margin:12px 0 0">Fill in the details, then publish it to participants now or save it as a draft to finish later.</p>
 
     <form method="POST" enctype="multipart/form-data" action="{{ route('instructor.courses.assessments.store',$course) }}" class="icm-form-grid">
         @csrf
@@ -350,32 +354,44 @@ document.addEventListener('DOMContentLoaded', function () {
         @endif
         @include('instructor.partials.publish-buttons', ['label' => $assessmentType])
     </form>
+    </details>
 </section>
 
 <section class="icm-panel">
-    <div class="icm-card-grid">
-            @forelse($course->assessments()->where('type',$assessmentType)->with(['files','questions'])->withCount(['questions','attempts'])->latest()->get() as $assessment)
-        <article class="icm-card">
-            <span class="icm-chip">{{ ucfirst($assessment->type) }}</span>
-            <span class="icm-chip {{ $assessment->is_published ? 'icm-status-approved' : 'icm-status-pending' }}">{{ $assessment->is_published ? 'Published' : 'Draft' }}</span>
-            <h3>{{ $assessment->title }}</h3>
-            <p class="icm-muted">
-                @if($assessmentType !== 'assignment'){{ $assessment->questions_count }} question(s) · @endif{{ $assessment->attempts_count }} {{ $assessmentType === 'assignment' ? 'submission(s)' : 'attempt(s)' }}
-            </p>
-            @if($assessment->attempts_count > 0)<p><a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.download', [$course, 'assessment_id' => $assessment->id]) }}"><i class="fas fa-file-zipper"></i> Download submissions (ZIP)</a></p>@endif
-            @if($assessmentType === 'assignment')<p><strong>Accepts:</strong> {{ $assessment->submissionFormatLabels() }} · up to {{ $assessment->maxSubmissionFiles() }} {{ \Illuminate\Support\Str::plural('file', $assessment->maxSubmissionFiles()) }}</p>@endif
-            @unless($assessment->is_published)
-                <form method="POST" action="{{ route('instructor.courses.assessments.publish',[$course,$assessment]) }}" style="margin:8px 0">@csrf
-                    <button class="btn btn-primary btn-sm"><i class="fas fa-paper-plane"></i> Publish now</button>
-                </form>
-            @endunless
-            @if($assessment->duration_minutes)<p><strong>Duration:</strong> {{ $assessment->duration_minutes }} minutes</p>@endif
-            @if($assessment->total_marks !== null)<p><strong>Total marks:</strong> {{ number_format((float)$assessment->total_marks,1) }}</p>@endif
-            @if($assessment->due_at)<p><strong>Closes:</strong> {{ $assessment->due_at->format('d M Y H:i') }}</p>@endif
-            <x-learning.file-list compact :files="$assessment->files" :title="$assessment->files->count().' file(s)'"
-                :delete-url="fn ($file) => route('instructor.courses.files.destroy', [$course, $file])" />
+    <div class="icm-panel-head"><div><h2>{{ ucfirst($tabName) }} <span class="ag-count">{{ $assessmentList->count() }}</span></h2><p class="icm-muted">Expand a card for details, editing{{ $assessmentType !== 'assignment' ? ' and questions' : '' }}.</p></div></div>
+    <div class="ag-grid">
+        @forelse($assessmentList as $assessment)
+        <article class="ag-card {{ $assessment->is_published ? 'is-published' : 'is-draft' }}">
+            <div class="ag-chips">
+                <span class="icm-chip">{{ ucfirst($assessment->type) }}</span>
+                <span class="icm-chip {{ $assessment->is_published ? 'icm-status-approved' : 'icm-status-pending' }}">{{ $assessment->is_published ? 'Published' : 'Draft' }}</span>
+            </div>
+            <h3 title="{{ $assessment->title }}">{{ $assessment->title }}</h3>
+            <div class="ag-meta">
+                <span><i class="fas fa-inbox"></i>@if($assessmentType !== 'assignment'){{ $assessment->questions_count }} question(s) · @endif{{ $assessment->attempts_count }} {{ $assessmentType === 'assignment' ? 'submission(s)' : 'attempt(s)' }}</span>
+                <span><i class="fas fa-calendar-xmark"></i>{{ $assessment->due_at ? 'Closes '.$assessment->due_at->format('d M Y H:i') : 'No closing date' }}</span>
+            </div>
+            <div class="ag-card-actions">
+                @unless($assessment->is_published)
+                    <form method="POST" action="{{ route('instructor.courses.assessments.publish',[$course,$assessment]) }}">@csrf
+                        <button class="btn btn-primary btn-sm"><i class="fas fa-paper-plane"></i> Publish</button>
+                    </form>
+                @endunless
+                @if($assessment->attempts_count > 0)<a class="btn btn-outline btn-sm" href="{{ route('instructor.courses.submissions.download', [$course, 'assessment_id' => $assessment->id]) }}" title="Download submissions (ZIP)"><i class="fas fa-file-zipper"></i> ZIP</a>@endif
+            </div>
 
-            <details class="icm-details">
+            <details class="ag-more">
+                <summary>Details</summary>
+                @if($assessmentType === 'assignment')<p><strong>Accepts:</strong> {{ $assessment->submissionFormatLabels() }} · up to {{ $assessment->maxSubmissionFiles() }} {{ \Illuminate\Support\Str::plural('file', $assessment->maxSubmissionFiles()) }}</p>@endif
+                <p><strong>Pass mark:</strong> {{ rtrim(rtrim(number_format((float) $assessment->pass_mark, 2), '0'), '.') }}% · <strong>Attempts:</strong> {{ $assessment->max_attempts }}</p>
+                @if($assessment->opens_at)<p><strong>Opens:</strong> {{ $assessment->opens_at->format('d M Y H:i') }}</p>@endif
+                @if($assessment->duration_minutes)<p><strong>Duration:</strong> {{ $assessment->duration_minutes }} minutes</p>@endif
+                @if($assessment->total_marks !== null)<p><strong>Total marks:</strong> {{ number_format((float)$assessment->total_marks,1) }}</p>@endif
+                <x-learning.file-list compact :files="$assessment->files" :title="$assessment->files->count().' file(s)'"
+                    :delete-url="fn ($file) => route('instructor.courses.files.destroy', [$course, $file])" />
+            </details>
+
+            <details class="ag-more ag-wide">
                 <summary>Edit {{ $assessmentType }}</summary>
                 <form method="POST" enctype="multipart/form-data" action="{{ route('instructor.courses.assessments.update',[$course,$assessment]) }}" class="icm-form-grid" style="margin-top:12px">
                     @csrf @method('PUT')
@@ -398,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function () {
             </details>
 
             @if(in_array($assessmentType,['quiz','exam'],true))
-            <details class="icm-details">
+            <details class="ag-more ag-wide">
                 <summary>Preview &amp; manage questions ({{ $assessment->questions->count() }})</summary>
                 <div style="margin:12px 0;padding:14px;border:1px solid #eaecf0;border-radius:10px">
                     <strong>Import questions from CSV</strong>
@@ -435,8 +451,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p class="icm-muted">No questions yet. Add one below or import a CSV.</p>
                 @endforelse
             </details>
-            <details class="icm-details">
-                <summary>Add question manually</summary>
+            <details class="ag-more ag-wide">
+                <summary>Add question</summary>
                 <form method="POST" action="{{ route('instructor.courses.assessments.questions.store',[$course,$assessment]) }}" class="icm-form-grid" style="margin-top:12px">
                     @csrf
                     <div><label>Question type</label><select name="question_type">@foreach(['multiple_choice'=>'Multiple choice','true_false'=>'True / False','short_text'=>'Short text','long_text'=>'Long text'] as $value=>$label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></div>
@@ -449,13 +465,13 @@ document.addEventListener('DOMContentLoaded', function () {
             </details>
             @endif
 
-            <form method="POST" action="{{ route('instructor.courses.assessments.destroy',[$course,$assessment]) }}" onsubmit="return confirm('Delete this {{ $assessmentType }}?')" style="margin-top:10px">
+            <form method="POST" action="{{ route('instructor.courses.assessments.destroy',[$course,$assessment]) }}" onsubmit="return confirm('Delete this {{ $assessmentType }}?')" class="ag-more">
                 @csrf @method('DELETE')
-                <button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i> Delete</button>
+                <button class="ag-toolbar-btn" style="color:#b42318"><i class="fas fa-trash"></i> Delete {{ $assessmentType }}</button>
             </form>
         </article>
         @empty
-        <div class="icm-card">No {{ $tabName }} created yet.</div>
+        <div class="icm-card" style="grid-column:1/-1">No {{ $tabName }} created yet.</div>
         @endforelse
     </div>
 </section>

@@ -34,7 +34,7 @@
         <thead><tr><th>Session</th><th>Date</th><th>Time</th><th>Venue</th><th>Status</th><th class="table-actions">Actions</th></tr></thead>
         <tbody>
         @forelse($timetable as $session)
-            @php($sessionState = $session['status'] === 'cancelled' ? 'Cancelled' : ($session['is_past'] ? 'Past session' : 'Scheduled'))
+            @php $sessionState = $session['status'] === 'cancelled' ? 'Cancelled' : ($session['is_past'] ? 'Past session' : 'Scheduled'); @endphp
             <tr>
                 <td><strong>{{ $session['title'] }}</strong>@if($session['notes'])<small class="admin-cell-hint" style="white-space:pre-wrap">{{ $session['notes'] }}</small>@endif</td>
                 <td>{{ $session['date_label'] }}</td>
@@ -57,29 +57,94 @@
 @endif
 
 @if($enrolment && $course->assessments->count())
+@php
+    // One row per assessment with everything the card needs, then split into
+    // "To do" (still open to the participant) and "Completed" (all attempts used).
+    $assessmentAttempts = $assessmentAttempts ?? collect();
+    $assessmentDue = $assessmentDue ?? collect();
+    $assessmentCards = $course->assessments->map(function ($assessment) use ($assessmentAttempts, $assessmentDue) {
+        $tried = $assessmentAttempts->get($assessment->id);
+        $used = (int) ($tried->used ?? 0);
+        $max = (int) $assessment->max_attempts;
+        $exhausted = $max > 0 && $used >= $max;
+        $dueInfo = $assessmentDue->get($assessment->id);
+        $due = $dueInfo['due'] ?? null;
+        $ext = $dueInfo['extension'] ?? null;
+        $overdue = ! $exhausted && $due && $due->isPast();
+
+        return (object) [
+            'assessment' => $assessment,
+            'used' => $used,
+            'max' => $max,
+            'exhausted' => $exhausted,
+            'best' => $tried && $tried->best !== null ? rtrim(rtrim(number_format((float) $tried->best, 1), '0'), '.').'%' : null,
+            'due' => $due,
+            'ext' => $ext,
+            'overdue' => $overdue,
+            'state' => $exhausted ? 'done' : ($overdue ? 'overdue' : ($used > 0 ? 'progress' : 'open')),
+        ];
+    });
+    // Overdue first, then soonest due, then undated.
+    $todoCards = $assessmentCards->where('exhausted', false)
+        ->sortBy(fn ($c) => [$c->overdue ? 0 : 1, $c->due?->timestamp ?? PHP_INT_MAX])->values();
+    $doneCards = $assessmentCards->where('exhausted', true)->values();
+    $stateLabels = ['open' => ['Open', 'active'], 'progress' => ['In progress', 'pending'], 'overdue' => ['Overdue', 'inactive'], 'done' => ['Completed', 'completed']];
+@endphp
 <section class="eh-tab-pane {{ $canViewTimetable ? '' : 'active' }}" role="tabpanel" data-eh-pane="course-assessments" aria-labelledby="course-assessments-title">
 <div class="eh-tab-section"><h2 id="course-assessments-title"><i class="fas fa-clipboard-check"></i> Assessments</h2>
-<div class="admin-panel"><div class="admin-table-wrap"><table class="admin-table">
-<thead><tr><th>Assessment</th><th>Type</th><th>Due</th><th>Attempts</th><th>Best score</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
-@foreach($course->assessments as $assessment)
-@php($tried = ($assessmentAttempts ?? collect())->get($assessment->id))
-@php($used = (int) ($tried->used ?? 0))
-@php($max = (int) $assessment->max_attempts)
-@php($exhausted = $max > 0 && $used >= $max)
-@php($best = $tried && $tried->best !== null ? rtrim(rtrim(number_format((float) $tried->best, 1), '0'), '.').'%' : null)
-@php($dueInfo = ($assessmentDue ?? collect())->get($assessment->id))
-@php($due = $dueInfo['due'] ?? null)
-@php($ext = $dueInfo['extension'] ?? null)
-@php($overdue = ! $exhausted && $due && $due->isPast())
-<tr>
-    <td><strong>{{ $assessment->title }}</strong></td><td>{{ ucfirst($assessment->type) }}</td>
-    <td>@if($due){{ $due->format('d M Y H:i') }}@else - @endif
-        @if(! $exhausted && $ext && $ext->isPending())<br><small>Extension requested</small>@elseif(! $exhausted && $ext && $ext->status === 'approved')<br><small>Extended</small>@endif</td>
-    @if($exhausted)<td>All {{ $max }} {{ \Illuminate\Support\Str::plural('attempt', $max) }} used</td><td>{{ $best ? 'Best score '.$best : '-' }}</td><td><span class="status-chip completed">Completed</span></td><td class="table-actions"></td>
-    @else<td>@if($max > 0){{ $max - $used }} of {{ $max }} {{ \Illuminate\Support\Str::plural('attempt', $max) }} left @else Unlimited @endif</td><td>{{ $best ? 'Best score '.$best : '-' }}</td><td>@if($overdue)<span class="status-chip inactive">Overdue</span>@else<span class="status-chip {{ $used > 0 ? 'pending' : 'active' }}">{{ $used > 0 ? 'In progress' : 'Open' }}</span>@endif</td><td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('learning.assessment.show',$assessment) }}"><i class="fas {{ $overdue ? 'fa-clock' : 'fa-arrow-right' }}"></i> {{ $overdue ? ($ext && $ext->isPending() ? 'View request' : 'Request extension') : 'Open' }}</a></td>@endif
-</tr>
+
+@foreach([['todo', 'To do', 'fa-list-check', $todoCards, true], ['done', 'Completed', 'fa-circle-check', $doneCards, $todoCards->isEmpty()]] as [$groupKey, $groupLabel, $groupIcon, $cards, $openByDefault])
+    @continue($cards->isEmpty())
+    <details class="ag-section" @if($openByDefault) open @endif>
+        <summary>
+            <h3><i class="fas {{ $groupIcon }}"></i> {{ $groupLabel }}</h3>
+            <span class="ag-count">{{ $cards->count() }}</span>
+            @if($groupKey === 'todo' && ($overdueCount = $cards->where('overdue', true)->count()))
+                <span class="status-chip inactive">{{ $overdueCount }} overdue</span>
+            @endif
+        </summary>
+        <div class="ag-section-body">
+            <div class="ag-grid">
+            @foreach($cards as $card)
+                @php
+                    $assessment = $card->assessment;
+                    [$stateLabel, $stateChip] = $stateLabels[$card->state];
+                @endphp
+                <article class="ag-card is-{{ $card->state }}">
+                    <div class="ag-chips">
+                        <span class="status-chip">{{ ucfirst($assessment->type) }}</span>
+                        <span class="status-chip {{ $stateChip }}">{{ $stateLabel }}</span>
+                    </div>
+                    <h3 title="{{ $assessment->title }}">{{ $assessment->title }}</h3>
+                    <div class="ag-meta">
+                        <span><i class="fas fa-calendar-day"></i>@if($card->due)Due <strong>{{ $card->due->format('d M Y H:i') }}</strong>@else No due date @endif</span>
+                        @if(! $card->exhausted && $card->ext && $card->ext->isPending())
+                            <span><i class="fas fa-hourglass-half"></i>Extension requested</span>
+                        @elseif(! $card->exhausted && $card->ext && $card->ext->status === 'approved')
+                            <span><i class="fas fa-calendar-plus"></i>Extended</span>
+                        @endif
+                        <span><i class="fas fa-rotate"></i>
+                            @if($card->exhausted)All {{ $card->max }} {{ \Illuminate\Support\Str::plural('attempt', $card->max) }} used
+                            @elseif($card->max > 0){{ $card->max - $card->used }} of {{ $card->max }} {{ \Illuminate\Support\Str::plural('attempt', $card->max) }} left
+                            @else Unlimited attempts @endif
+                        </span>
+                        @if($card->best)<span><i class="fas fa-star"></i>Best score {{ $card->best }}</span>@endif
+                    </div>
+                    @unless($card->exhausted)
+                    <div class="ag-card-actions">
+                        <a class="btn btn-outline btn-sm" href="{{ route('learning.assessment.show',$assessment) }}">
+                            <i class="fas {{ $card->overdue ? 'fa-clock' : 'fa-arrow-right' }}"></i>
+                            {{ $card->overdue ? ($card->ext && $card->ext->isPending() ? 'View request' : 'Request extension') : 'Open' }}
+                        </a>
+                    </div>
+                    @endunless
+                </article>
+            @endforeach
+            </div>
+        </div>
+    </details>
 @endforeach
-</tbody></table></div></div></div>
+</div>
 </section>
 @endif
 </div></div>
@@ -88,7 +153,7 @@
 <h2 id="course-modules-title"><i class="fas fa-layer-group"></i> Course modules and lessons</h2>
 <div class="participant-course-list">
 @foreach($course->modules as $module)
-@php($state=$moduleAccess->get($module->id,['accessible'=>!$enrolment,'complete'=>false]))
+@php $state=$moduleAccess->get($module->id,['accessible'=>!$enrolment,'complete'=>false]); @endphp
 <details class="participant-module {{ $enrolment && !$state['accessible'] ? 'locked':'' }}">
 <summary><span class="module-number">{{ $loop->iteration }}</span><span>{{ $module->title }} <small>· {{ $module->lessons->count() }} lesson(s)</small></span>
 @if($enrolment)<span class="status-chip {{ $state['complete'] ? 'active' : ($state['accessible'] ? 'published' : 'inactive') }}">{{ $state['complete'] ? 'Completed' : ($state['accessible'] ? 'Open' : 'Locked') }}</span>@endif</summary>
