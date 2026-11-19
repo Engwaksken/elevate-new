@@ -32,7 +32,7 @@
 <div class="admin-panel-head"><div><h2>Invite People</h2><p>Invite staff or participants. Each person gets an in-app notification and an email.</p></div></div>
 <form method="POST" action="{{ route('admin.events.invitations.store', $event) }}">@csrf
 <div class="form-group"><label>People to invite</label>
-<x-people-picker id="event-invitees" name="invitee_ids" :required="true" :source="route('admin.events.people', ['event' => $event->id])" :groups="$inviteGroups" :exclude="$event->invitations->pluck('user_id')->all()" placeholder="Search staff or participants by name or email…" /></div>
+<x-people-picker id="event-invitees" name="invitee_ids" :required="true" :source="route('admin.events.people', ['event' => $event->id])" :groups="$inviteGroups" :exclude="$event->invitations->pluck('user_id')->all()" placeholder="Search people by name or email, or add a whole group above…" /></div>
 <div class="form-group"><label for="invitation-note">Personal note (optional)</label><textarea id="invitation-note" name="invitation_note" rows="3" maxlength="2000" placeholder="Add a short note to the invitation…">{{ old('invitation_note') }}</textarea></div>
 <div class="eh-form-actions"><button class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Invitations</button></div>
 </form>

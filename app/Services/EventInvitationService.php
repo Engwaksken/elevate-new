@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
- * Event invitations (staff and participants) and appreciation messages
+ * Event invitations (staff, participants, mentors and employers) and appreciation messages
  * sent to people connected to an event.
  */
 class EventInvitationService
@@ -18,14 +18,22 @@ class EventInvitationService
     {
     }
 
-    /** Active staff and participants who can be invited to events. */
+    /** User types that can be invited, with their "select all" label. */
+    public const TYPE_GROUPS = [
+        'staff' => 'All staff',
+        'participant' => 'All participants',
+        'mentor' => 'All mentors',
+        'employer' => 'All employers',
+    ];
+
+    /** Active staff, participants, mentors and employers who can be invited to events. */
     public function inviteable(): Builder
     {
-        return User::query()->where('status', 'active')->whereIn('user_type', ['staff', 'participant']);
+        return User::query()->where('status', 'active')->whereIn('user_type', array_keys(self::TYPE_GROUPS));
     }
 
     /**
-     * People-picker search. Groups: "staff", and for an existing event with a
+     * People-picker search. Groups: one per user type (see TYPE_GROUPS), and for an existing event with a
      * course or cohort, "course" / "cohort" (participants enrolled there).
      */
     public function search(?string $term, ?string $group, ?Event $event, array $exclude = []): Collection
@@ -34,9 +42,9 @@ class EventInvitationService
         $limit = 30;
 
         if ($group) {
-            $limit = 1000;
+            $limit = 5000;
             match (true) {
-                $group === 'staff' => $query->where('user_type', 'staff'),
+                array_key_exists($group, self::TYPE_GROUPS) => $query->where('user_type', $group),
                 $group === 'course' && $event?->course_id => $query->where('user_type', 'participant')
                     ->whereHas('enrolments', fn ($e) => $e->where('course_id', $event->course_id)->where('status', '!=', 'withdrawn')),
                 $group === 'cohort' && $event?->cohort_id => $query->where('user_type', 'participant')
@@ -56,7 +64,7 @@ class EventInvitationService
     /** @return array<string, string> */
     public function groups(?Event $event): array
     {
-        $groups = ['staff' => 'All staff'];
+        $groups = self::TYPE_GROUPS;
         if ($event?->course_id) {
             $groups['course'] = 'Participants in '.($event->course?->title ?? 'the event course');
         }

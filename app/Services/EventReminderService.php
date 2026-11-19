@@ -147,7 +147,7 @@ class EventReminderService
         if ($event->meeting_url && $event->delivery_mode !== 'physical') {
             $text .= "\nJoin online: {$event->meeting_url}";
         }
-        if (! $registered && $event->registration_required && $user->isParticipant()) {
+        if (! $registered && $event->registration_required && ! ChatDirectory::isStaffSide($user)) {
             $text .= "\nYou were invited but have not registered yet. Open the event to register.";
         }
 

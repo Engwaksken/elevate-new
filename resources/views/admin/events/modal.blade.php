@@ -34,8 +34,8 @@ if ($method === 'POST') {
 </div></x-form-tab>
 @if($method === 'POST')
 <x-form-tab name="invite"><div class="modal-grid">
-<div class="form-group full"><label>Invite staff and participants</label>
-<x-people-picker id="{{ $id }}-invitees" name="invitee_ids" :source="route('admin.events.people')" :groups="['staff' => 'All staff']" placeholder="Search staff or participants by name or email…" />
+<div class="form-group full"><label>Invite staff, participants, mentors or employers</label>
+<x-people-picker id="{{ $id }}-invitees" name="invitee_ids" :source="route('admin.events.people')" :groups="\App\Services\EventInvitationService::TYPE_GROUPS" placeholder="Search people by name or email, or add a whole group above…" />
 <small class="form-hint">Optional. Each person gets an in-app notification and an email with the event details. You can invite more people later from the event page.</small></div>
 <div class="form-group full"><label>Personal note</label><textarea name="invitation_note" rows="3" maxlength="2000" placeholder="e.g. We would love you to share your experience with the cohort.">{{ old('invitation_note') }}</textarea></div>
 </div></x-form-tab>

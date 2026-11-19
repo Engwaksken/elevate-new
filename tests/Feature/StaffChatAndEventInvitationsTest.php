@@ -164,6 +164,31 @@ class StaffChatAndEventInvitationsTest extends TestCase
         $this->get(route('admin.events.view', $event))->assertOk()->assertSee('People &amp; Appreciation', false)->assertSee('Naki');
     }
 
+    public function test_event_invite_picker_can_select_all_participants_mentors_or_employers(): void
+    {
+        $staff = $this->user('Grace Staff', 'staff');
+        $participant = $this->user('Amina', 'participant');
+        $mentor = $this->user('Mary Mentor', 'mentor');
+        $employer = $this->user('Acme Employer', 'employer');
+        $this->user('Inactive Mentor', 'mentor')->update(['status' => 'inactive']);
+
+        $this->actingAs($staff)->get(route('admin.events.index'))->assertOk();
+        foreach (['participant' => $participant, 'mentor' => $mentor, 'employer' => $employer] as $group => $person) {
+            $this->getJson(route('admin.events.people', ['group' => $group]))
+                ->assertOk()->assertJsonCount(1, 'people')->assertJsonPath('people.0.id', $person->id);
+        }
+
+        $this->post(route('admin.events.store'), [
+            'title' => 'Industry Mixer', 'event_type' => 'workshop', 'starts_at' => now()->addWeek()->format('Y-m-d H:i'),
+            'delivery_mode' => 'physical', 'invitee_ids' => [$mentor->id, $employer->id],
+        ])->assertSessionHasNoErrors();
+
+        $event = Event::firstOrFail();
+        $this->assertDatabaseHas('user_notifications', ['user_id' => $mentor->id, 'type' => 'event_invitation', 'action_url' => route('events.show', $event)]);
+        $this->assertDatabaseHas('user_notifications', ['user_id' => $employer->id, 'type' => 'event_invitation']);
+        $this->actingAs($mentor)->get(route('events.show', $event))->assertOk();
+    }
+
     public function test_appreciation_reaches_only_selected_people_connected_to_the_event(): void
     {
         $staff = $this->user('Grace Staff', 'staff');
