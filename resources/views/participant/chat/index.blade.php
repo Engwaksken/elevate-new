@@ -1,5 +1,5 @@
-@extends('layouts.app')
-@section('title', 'Participant Chat | ElevateHer360')
+@extends($chatLayout)
+@section('title', ($chatRoute === 'admin.chat' ? 'Staff Chat' : 'Participant Chat').' | ElevateHer360')
 @section('content')
 @include('participant.chat._styles')
 <div class="ehc is-list">
@@ -8,7 +8,7 @@
         <div class="ehc-welcome">
             <div class="ehc-welcome-icon" aria-hidden="true"><i class="fas fa-comments"></i></div>
             <h2>Your messages</h2>
-            <p>Pick a conversation on the left, or start a new one with another participant or a study group. Only members of a conversation can read its messages.</p>
+            <p>Pick a conversation on the left, or start a new one with one person or a group. You can share files in any chat. Only members of a conversation can read its messages.</p>
             <button type="button" class="btn btn-primary" data-modal-open="chat-create"><i class="fas fa-plus" aria-hidden="true"></i> New conversation</button>
         </div>
     </section>

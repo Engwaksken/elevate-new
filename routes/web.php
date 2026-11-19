@@ -1137,6 +1137,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'staff'])->group(fun
     Route::post('/events/{event}/reminders',[EventOperationsController::class,'saveReminder'])->name('events.reminders.store');
     Route::delete('/events/{event}/reminders/{reminder}',[EventOperationsController::class,'deleteReminder'])->name('events.reminders.destroy');
     Route::get('/events/{event}/attendance.csv',[EventOperationsController::class,'csv'])->name('events.attendance.csv');
+    Route::get('/events-people',[EventOperationsController::class,'people'])->middleware('throttle:120,1')->name('events.people');
+    Route::post('/events/{event}/invitations',[EventOperationsController::class,'invite'])->name('events.invitations.store');
+    Route::delete('/events/{event}/invitations/{invitation}',[EventOperationsController::class,'revokeInvitation'])->name('events.invitations.destroy');
+    Route::post('/events/{event}/appreciation',[EventOperationsController::class,'appreciate'])->name('events.appreciation.send');
 
     Route::get('/attendance-analytics',[EventOperationsController::class,'analytics'])->name('attendance-analytics.index');
     Route::get('/attendance-analytics.csv',[EventOperationsController::class,'analyticsCsv'])->name('attendance-analytics.csv');
@@ -1313,17 +1317,13 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
         ->name('platform-settings.admissions');
 });
 
+// Staff chat (staff <-> staff, instructors <-> their course participants).
+Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(function () {
+    require __DIR__.'/chat.php';
+});
+
 Route::middleware(['auth', \App\Http\Middleware\EnsureParticipantUser::class])->prefix('participant')->name('participant.')->group(function () {
-    Route::get('/chat', [\App\Http\Controllers\Participant\ConversationController::class, 'index'])->name('chat.index');
-    Route::post('/chat', [\App\Http\Controllers\Participant\ConversationController::class, 'store'])->name('chat.store');
-    Route::put('/chat/{conversation}', [\App\Http\Controllers\Participant\ConversationController::class, 'updateConversation'])->whereNumber('conversation')->name('chat.update');
-    Route::delete('/chat/{conversation}', [\App\Http\Controllers\Participant\ConversationController::class, 'destroyConversation'])->whereNumber('conversation')->name('chat.destroy');
-    Route::get('/chat/{conversation}', [\App\Http\Controllers\Participant\ConversationController::class, 'show'])->whereNumber('conversation')->name('chat.show');
-    Route::get('/chat/{conversation}/messages', [\App\Http\Controllers\Participant\ConversationController::class, 'messages'])->whereNumber('conversation')->name('chat.messages.index');
-    Route::post('/chat/{conversation}/messages', [\App\Http\Controllers\Participant\ConversationController::class, 'send'])->whereNumber('conversation')->name('chat.messages.store');
-    Route::put('/chat/{conversation}/messages/{message}', [\App\Http\Controllers\Participant\ConversationController::class, 'updateMessage'])->whereNumber('conversation')->whereNumber('message')->name('chat.messages.update');
-    Route::delete('/chat/{conversation}/messages/{message}', [\App\Http\Controllers\Participant\ConversationController::class, 'destroyMessage'])->whereNumber('conversation')->whereNumber('message')->name('chat.messages.destroy');
-    Route::post('/chat/{conversation}/invite', [\App\Http\Controllers\Participant\ConversationController::class, 'invite'])->whereNumber('conversation')->name('chat.invite');
+    require __DIR__.'/chat.php';
 
     Route::get('/course-opportunities',[CourseCallApplicationController::class,'index'])->name('course-calls.index');
     Route::get('/course-opportunities/{courseCall}',[CourseCallApplicationController::class,'show'])->name('course-calls.show');

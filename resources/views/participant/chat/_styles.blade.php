@@ -80,6 +80,26 @@
 .ehc-compose-field:focus-within{border-color:var(--ehc-brand);box-shadow:0 0 0 3px #80000014}
 .ehc .ehc-compose textarea{flex:1;width:100%;min-height:0 !important;height:38px;border:0 !important;box-shadow:none !important;outline:0;resize:none;max-height:160px;padding:8px 0 !important;font:inherit;font-size:.95rem;line-height:1.4;background:transparent}
 .ehc-compose small{display:block;padding:0 4px;color:#98a2b3;font-size:.7rem}
+.ehc-attach{margin-bottom:20px;color:var(--ehc-muted)}
+.ehc-pending{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 6px}
+.ehc-pending-file{display:inline-flex;align-items:center;gap:6px;max-width:240px;padding:4px 10px;border-radius:999px;background:#f2f4f7;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ehc-pending-clear{border:0;background:none;color:var(--ehc-brand);font-size:.78rem;font-weight:700;cursor:pointer;text-decoration:underline}
+.ehc-pending-error{color:#b42318;font-size:.8rem;font-weight:600}
+
+/* Attachments inside bubbles */
+.ehc-files{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.ehc-text[hidden]+.ehc-files{margin-top:0}
+.ehc-file{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:#f2f4f7;color:var(--ehc-ink);text-decoration:none;min-width:200px;max-width:320px}
+.ehc-file:hover{background:#e9ecf1}
+.ehc-file i{font-size:1.2rem;color:var(--ehc-brand)}
+.ehc-file span{display:flex;flex-direction:column;min-width:0}
+.ehc-file strong{font-size:.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ehc-file small{font-size:.72rem;color:var(--ehc-muted)}
+.ehc-row.is-mine .ehc-file{background:#ffffff26;color:#fff}
+.ehc-row.is-mine .ehc-file:hover{background:#ffffff40}
+.ehc-row.is-mine .ehc-file i,.ehc-row.is-mine .ehc-file small{color:#fff}
+.ehc-file-img{display:block;border-radius:10px;overflow:hidden;max-width:280px}
+.ehc-file-img img{display:block;width:100%;max-height:260px;object-fit:cover}
 .ehc-send{width:44px;height:44px}
 .ehc-send:disabled{opacity:.45;cursor:not-allowed}
 

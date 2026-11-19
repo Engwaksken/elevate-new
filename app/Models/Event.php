@@ -27,6 +27,7 @@ class Event extends Model
     public function reminders(){ return $this->hasMany(EventReminder::class); }
     public function feedbackResponses(){ return $this->hasMany(EventFeedbackResponse::class); }
     public function certificates(){ return $this->hasMany(EventCertificate::class); }
+    public function invitations(){ return $this->hasMany(EventInvitation::class); }
     public function cohort(){ return $this->belongsTo(Cohort::class); }
     public function course(){ return $this->belongsTo(Course::class); }
     public function creator(){ return $this->belongsTo(User::class,'created_by'); }

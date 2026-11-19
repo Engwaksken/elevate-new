@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends($chatLayout)
 @php
     use App\Support\ChatPresenter as Chat;
     $viewerId = (int) auth()->id();
@@ -11,7 +11,7 @@
         : 'Direct message';
     $grouping = 300; // seconds: consecutive messages from one sender within this window share a bubble group
 @endphp
-@section('title', $title.' | Participant Chat')
+@section('title', $title.' | '.($chatRoute === 'admin.chat' ? 'Staff Chat' : 'Participant Chat'))
 @section('content')
 @include('participant.chat._styles')
 <div class="ehc is-thread" data-type="{{ $conversation->type }}">
@@ -19,7 +19,7 @@
 
     <section class="ehc-main" aria-label="Conversation with {{ $title }}" style="position:relative">
         <header class="ehc-head">
-            <a class="ehc-icon-btn ehc-back" href="{{ route('participant.chat.index') }}" aria-label="All conversations"><i class="fas fa-arrow-left" aria-hidden="true"></i></a>
+            <a class="ehc-icon-btn ehc-back" href="{{ route($chatRoute.'.index') }}" aria-label="All conversations"><i class="fas fa-arrow-left" aria-hidden="true"></i></a>
             <span @class(['ehc-avatar', 'is-group' => $isGroup]) style="--ehc-av:{{ Chat::color(Chat::avatarSeed($conversation, $viewerId)) }}" aria-hidden="true">
                 @if($isGroup)<i class="fas fa-user-group"></i>@else{{ Chat::initials($title) }}@endif
             </span>
@@ -28,11 +28,12 @@
                 <button type="button" class="ehc-icon-btn" data-modal-open="chat-members" aria-label="{{ $isGroup ? 'Members' : 'Conversation details' }}" title="{{ $isGroup ? 'Members' : 'Details' }}"><i class="fas {{ $isGroup ? 'fa-users' : 'fa-circle-info' }}" aria-hidden="true"></i></button>
                 @if($isOwner && $isGroup)<button type="button" class="ehc-icon-btn" data-modal-open="chat-edit-{{ $conversation->id }}" aria-label="Rename group" title="Rename group"><i class="fas fa-pen" aria-hidden="true"></i></button>@endif
                 @if($isOwner)<button type="button" class="ehc-icon-btn" data-modal-open="chat-delete-{{ $conversation->id }}" aria-label="Delete conversation" title="Delete conversation"><i class="fas fa-trash" aria-hidden="true"></i></button>@endif
+                @if($isGroup && ! $isOwner)<button type="button" class="ehc-icon-btn" data-modal-open="chat-leave" aria-label="Leave group" title="Leave group"><i class="fas fa-right-from-bracket" aria-hidden="true"></i></button>@endif
             </div>
         </header>
 
         <div class="ehc-thread" id="latest" role="log" aria-live="polite" aria-label="Messages"
-             data-messages-url="{{ route('participant.chat.messages.index', $conversation) }}"
+             data-messages-url="{{ route($chatRoute.'.messages.index', $conversation) }}"
              data-last-id="{{ $conversation->messages->last()?->id ?? 0 }}"
              data-group-window="{{ $grouping }}">
             @php $previous = null; $messages = $conversation->messages->values(); @endphp
@@ -50,11 +51,22 @@
                 @endif
                 <div @class(['ehc-row', 'is-mine' => $mine, 'is-first' => ! $joinsPrevious, 'is-last' => ! $joinsNext])
                      data-id="{{ $message->id }}" data-sender="{{ $message->sender_id }}" data-day="{{ $day }}" data-ts="{{ $message->created_at->getTimestamp() }}"
-                     @if($mine) data-update-url="{{ route('participant.chat.messages.update', [$conversation, $message]) }}" data-delete-url="{{ route('participant.chat.messages.destroy', [$conversation, $message]) }}" @endif>
+                     @if($mine) data-update-url="{{ route($chatRoute.'.messages.update', [$conversation, $message]) }}" data-delete-url="{{ route($chatRoute.'.messages.destroy', [$conversation, $message]) }}" @endif>
                     <span class="ehc-avatar is-sm" style="--ehc-av:{{ Chat::color('u'.$message->sender_id) }}" aria-hidden="true">{{ Chat::initials($message->sender?->name) }}</span>
                     <div class="ehc-bubble">
                         <span class="ehc-sender">{{ $message->sender?->name }}</span>
-                        <p class="ehc-text">{{ $message->body }}</p>
+                        <p class="ehc-text" @if($message->body === '') hidden @endif>{{ $message->body }}</p>
+                        @if($message->attachments->isNotEmpty())
+                            <div class="ehc-files">
+                                @foreach($message->attachments as $file)
+                                    @if($file->isImage())
+                                        <a class="ehc-file-img" href="{{ route($chatRoute.'.attachments.show', [$conversation, $file]) }}" title="Download {{ $file->original_name }}"><img src="{{ route($chatRoute.'.attachments.show', [$conversation, $file, 'inline' => 1]) }}" alt="{{ $file->original_name }}" loading="lazy"></a>
+                                    @else
+                                        <a class="ehc-file" href="{{ route($chatRoute.'.attachments.show', [$conversation, $file]) }}"><i class="fas fa-file-arrow-down" aria-hidden="true"></i><span><strong>{{ $file->original_name }}</strong><small>{{ $file->sizeLabel() }}</small></span></a>
+                                    @endif
+                                @endforeach
+                            </div>
+                        @endif
                         <time class="ehc-meta" datetime="{{ $message->created_at->toIso8601String() }}" title="{{ $message->created_at->format('d M Y · H:i') }}">@if($edited)<span data-edited>edited · </span>@endif{{ $message->created_at->format('H:i') }}</time>
                     </div>
                     @if($mine)
@@ -71,14 +83,20 @@
         </div>
         <button type="button" class="ehc-icon-btn ehc-jump" data-ehc-jump aria-label="Jump to latest message"><i class="fas fa-arrow-down" aria-hidden="true"></i></button>
 
-        <form class="ehc-compose" method="POST" action="{{ route('participant.chat.messages.store', $conversation) }}" data-ehc-compose>
+        <form class="ehc-compose" method="POST" action="{{ route($chatRoute.'.messages.store', $conversation) }}" enctype="multipart/form-data" data-ehc-compose>
             @csrf
-            <div style="flex:1">
+            <label class="ehc-icon-btn ehc-attach" for="chat-attachments" title="Attach files" aria-label="Attach files"><i class="fas fa-paperclip" aria-hidden="true"></i></label>
+            <input type="file" id="chat-attachments" name="attachments[]" multiple accept="{{ $chatAccept }}" data-ehc-files data-max="{{ $chatMaxFiles }}" hidden>
+            <div style="flex:1;min-width:0">
+                @error('attachments')<div class="alert alert-danger" role="alert">{{ $message }}</div>@enderror
+                @error('attachments.*')<div class="alert alert-danger" role="alert">{{ $message }}</div>@enderror
+                @error('body')<div class="alert alert-danger" role="alert">{{ $message }}</div>@enderror
+                <div class="ehc-pending" data-ehc-pending hidden></div>
                 <div class="ehc-compose-field">
                     <label for="chat-message-body" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Message</label>
-                    <textarea id="chat-message-body" name="body" rows="1" maxlength="5000" required placeholder="Write a message…" autocomplete="off"></textarea>
+                    <textarea id="chat-message-body" name="body" rows="1" maxlength="5000" placeholder="Write a message…" autocomplete="off"></textarea>
                 </div>
-                <small>Enter to send · Shift + Enter for a new line</small>
+                <small>Enter to send · Shift + Enter for a new line · Up to {{ $chatMaxFiles }} files, 10 MB each</small>
             </div>
             <button class="ehc-icon-btn is-brand ehc-send" type="submit" aria-label="Send message" title="Send"><i class="fas fa-paper-plane" aria-hidden="true"></i></button>
         </form>
@@ -95,21 +113,29 @@
                     <li><span class="ehc-avatar is-sm" style="--ehc-av:{{ Chat::color('u'.$member->id) }}" aria-hidden="true">{{ Chat::initials($member->name) }}</span><span>{{ $member->name }} @if($member->id === $viewerId)<small>(you)</small>@endif @if((int) $conversation->created_by === $member->id)<small>· {{ $isGroup ? 'created the group' : 'started the chat' }}</small>@endif</span></li>
                 @endforeach
             </ul>
-            @if($isGroup && $participants->isNotEmpty())
-                <form method="POST" action="{{ route('participant.chat.invite', $conversation) }}" id="chat-invite-form">@csrf
+            @if($isGroup)
+                <form method="POST" action="{{ route($chatRoute.'.invite', $conversation) }}" id="chat-invite-form">@csrf
                     @error('participant_ids')<div class="alert alert-danger" role="alert">{{ $message }}</div>@enderror
-                    <label class="ehc-label" for="chat-invite-members">Add people</label>
-                    <select class="ehc-field" id="chat-invite-members" name="participant_ids[]" multiple required>@foreach($participants as $person)<option value="{{ $person->id }}">{{ $person->name }}</option>@endforeach</select>
-                    <span class="ehc-hint">Hold Ctrl (Cmd on Mac) to pick several people.</span>
+                    <span class="ehc-label">Invite people</span>
+                    <x-people-picker id="chat-invite-members" name="participant_ids" :required="true" :groups="$chatGroups"
+                        :source="route($chatRoute.'.people')" :exclude="$conversation->members->pluck('id')->all()" />
+                    <span class="ehc-hint">Search and click to add people. They can read the whole conversation once added.</span>
                 </form>
             @endif
         </div>
         <div class="eh-modal-footer">
             <button type="button" class="btn btn-outline" data-modal-close>Close</button>
-            @if($isGroup && $participants->isNotEmpty())<button class="btn btn-primary" type="submit" form="chat-invite-form"><i class="fas fa-user-plus" aria-hidden="true"></i> Add to group</button>@endif
+            @if($isGroup)<button class="btn btn-primary" type="submit" form="chat-invite-form"><i class="fas fa-user-plus" aria-hidden="true"></i> Add to group</button>@endif
         </div>
     </div>
 </div>
+
+@if($isGroup && ! $isOwner)
+<div class="eh-modal" id="chat-leave" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="chat-leave-title"><div class="eh-modal-dialog"><form method="POST" action="{{ route($chatRoute.'.leave', $conversation) }}">@csrf
+    <div class="eh-modal-header"><div><h2 id="chat-leave-title">Leave {{ $title }}?</h2><p>You will stop seeing this group. A member can add you back later.</p></div><button type="button" class="eh-modal-close" data-modal-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button></div>
+    <div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Stay</button><button class="btn btn-danger" type="submit">Leave group</button></div>
+</form></div></div>
+@endif
 
 {{-- Shared edit / delete message modals; JS points their forms at the chosen message. --}}
 <div class="eh-modal" id="chat-msg-edit" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="chat-msg-edit-title"><div class="eh-modal-dialog"><form method="POST" data-ehc-edit-form>@csrf @method('PUT')
@@ -168,9 +194,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const bubble = document.createElement('div'); bubble.className = 'ehc-bubble';
         const sender = document.createElement('span'); sender.className = 'ehc-sender'; sender.textContent = m.sender || '';
-        const text = document.createElement('p'); text.className = 'ehc-text'; text.textContent = m.body;
+        const text = document.createElement('p'); text.className = 'ehc-text'; text.textContent = m.body; text.hidden = !m.body;
         const time = document.createElement('time'); time.className = 'ehc-meta'; time.title = m.created_at || ''; time.textContent = m.time || '';
-        bubble.append(sender, text, time);
+        bubble.append(sender, text);
+        if (m.attachments && m.attachments.length) {
+            const files = document.createElement('div'); files.className = 'ehc-files';
+            m.attachments.forEach(f => {
+                const link = document.createElement('a'); link.href = f.url;
+                if (f.is_image) {
+                    link.className = 'ehc-file-img'; link.title = 'Download ' + f.name;
+                    const img = document.createElement('img'); img.src = f.preview_url; img.alt = f.name; img.loading = 'lazy';
+                    link.append(img);
+                } else {
+                    link.className = 'ehc-file';
+                    link.innerHTML = '<i class="fas fa-file-arrow-down" aria-hidden="true"></i><span><strong></strong><small></small></span>';
+                    link.querySelector('strong').textContent = f.name;
+                    link.querySelector('small').textContent = f.size;
+                }
+                files.append(link);
+            });
+            bubble.append(files);
+        }
+        bubble.append(time);
         row.append(av, bubble);
 
         if (m.mine) {
@@ -204,7 +249,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- Sending ----------------------------------------------------------
     const autosize = () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 160) + 'px'; };
-    const syncButton = () => { sendBtn.disabled = input.value.trim() === ''; };
+    const fileInput = form.querySelector('[data-ehc-files]');
+    const pending = form.querySelector('[data-ehc-pending]');
+    const maxFiles = Number(fileInput.dataset.max || 5);
+    const hasFiles = () => fileInput.files.length > 0;
+    const syncButton = () => { sendBtn.disabled = input.value.trim() === '' && !hasFiles(); };
+    const renderPending = () => {
+        pending.innerHTML = '';
+        [...fileInput.files].forEach(f => {
+            const chip = document.createElement('span'); chip.className = 'ehc-pending-file';
+            chip.innerHTML = '<i class="fas fa-paperclip" aria-hidden="true"></i> ';
+            chip.append(document.createTextNode(f.name));
+            pending.append(chip);
+        });
+        if (hasFiles()) {
+            const clear = document.createElement('button');
+            clear.type = 'button'; clear.className = 'ehc-pending-clear'; clear.textContent = 'Remove files';
+            clear.addEventListener('click', () => { fileInput.value = ''; renderPending(); syncButton(); });
+            pending.append(clear);
+        }
+        pending.hidden = !hasFiles();
+    };
+    fileInput.addEventListener('change', () => {
+        const tooBig = [...fileInput.files].find(f => f.size > 10 * 1024 * 1024);
+        if (fileInput.files.length > maxFiles || tooBig) {
+            alertBox(tooBig ? `"${tooBig.name}" is larger than 10 MB.` : `Attach at most ${maxFiles} files at a time.`);
+            fileInput.value = '';
+        }
+        renderPending(); syncButton();
+    });
+    const alertBox = (text) => {
+        pending.hidden = false;
+        pending.innerHTML = '';
+        const warn = document.createElement('span'); warn.className = 'ehc-pending-error'; warn.textContent = text;
+        pending.append(warn);
+        setTimeout(() => { if (!hasFiles()) pending.hidden = true; }, 5000);
+    };
     input.addEventListener('input', () => { autosize(); syncButton(); });
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); }
@@ -214,13 +294,20 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const body = input.value.trim();
-        if (!body) return;
+        if (!body && !hasFiles()) return;
         sendBtn.disabled = true;
         try {
             const res = await fetch(form.action, {method: 'POST', headers, body: new FormData(form)});
+            if (res.status === 422) {
+                const data = await res.json();
+                alertBox(Object.values(data.errors || {}).flat()[0] || data.message || 'That message could not be sent.');
+                syncButton();
+                return;
+            }
             if (!res.ok) throw new Error(res.status);
             const data = await res.json();
             input.value = ''; autosize();
+            fileInput.value = ''; renderPending();
             append(data.message);
         } catch (err) {
             form.submit(); // fall back to a normal post so the message is not lost
@@ -250,6 +337,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btn.hasAttribute('data-ehc-edit')) {
             editForm.action = target.dataset.updateUrl;
             editForm.querySelector('textarea').value = target.querySelector('.ehc-text').textContent;
+            // A message that carries files may have its text cleared.
+            editForm.querySelector('textarea').required = !target.querySelector('.ehc-files');
             openModal('chat-msg-edit');
         } else {
             deleteForm.action = target.dataset.deleteUrl;
@@ -264,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error(res.status);
             const {message} = await res.json();
             target.querySelector('.ehc-text').textContent = message.body;
+            target.querySelector('.ehc-text').hidden = !message.body;
             const meta = target.querySelector('.ehc-meta');
             if (!meta.querySelector('[data-edited]')) meta.insertAdjacentHTML('afterbegin', '<span data-edited>edited · </span>');
             closeModal(editModal);

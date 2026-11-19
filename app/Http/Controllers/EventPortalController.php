@@ -25,7 +25,7 @@ class EventPortalController extends Controller
 
     public function show(Event $event)
     {
-        abort_unless($event->is_published,404);
+        abort_unless($event->is_published || $this->invited($event),404);
 
         $registered=auth()->check()
             ? $event->registrations()->where('user_id',auth()->id())->exists()
@@ -49,7 +49,7 @@ class EventPortalController extends Controller
 
     public function register(Event $event)
     {
-        abort_unless($event->is_published,404);
+        abort_unless($event->is_published || $this->invited($event),404);
 
         if($event->capacity && $event->registrations()->count()>=$event->capacity){
             return back()->with('error','This event has reached capacity.');
@@ -59,7 +59,14 @@ class EventPortalController extends Controller
             ['event_id'=>$event->id,'user_id'=>auth()->id()],
             ['status'=>'registered','registered_at'=>now()]
         );
+        $event->invitations()->where('user_id',auth()->id())->update(['status'=>'registered']);
 
         return back()->with('success','You are registered for this event.');
+    }
+
+    /** Invited people may open and register for an event before it is published. */
+    private function invited(Event $event): bool
+    {
+        return auth()->check() && $event->invitations()->where('user_id',auth()->id())->exists();
     }
 }

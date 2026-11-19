@@ -32,7 +32,14 @@ class EventController extends Controller{
   ]);
   return view('admin.events.index',['events'=>$q->latest('starts_at')->paginate(20)->withQueryString(),'cohorts'=>Cohort::orderBy('name')->get(),'courses'=>Course::orderBy('title')->get(),'stats'=>['total'=>Event::count(),'upcoming'=>Event::where('starts_at','>=',now())->count(),'published'=>Event::where('is_published',true)->count(),'attendance'=>EventAttendanceRecord::whereIn('attendance_status',['present','late'])->count()]]);
  }
- public function store(Request $r){Event::create($this->v($r)+['registration_required'=>$r->boolean('registration_required'),'is_published'=>$r->boolean('is_published'),'created_by'=>auth()->id()]);return back()->with('success','Event created.');}
+ public function store(Request $r,\App\Services\EventInvitationService $invitations){
+  $fields=$this->v($r);
+  $invite=$r->validate(['invitee_ids'=>['nullable','array','max:1000'],'invitee_ids.*'=>['integer','distinct'],'invitation_note'=>['nullable','string','max:2000']]);
+  $event=Event::create($fields+['registration_required'=>$r->boolean('registration_required'),'is_published'=>$r->boolean('is_published'),'created_by'=>auth()->id()]);
+  app(\App\Services\EventReminderService::class)->ensureDefaults($event);
+  $count=$invitations->invite($event,$invite['invitee_ids']??[],$r->user(),$invite['invitation_note']??null);
+  return back()->with('success',$count?"Event created and {$count} ".str('invitation')->plural($count).' sent.':'Event created.');
+ }
  public function update(Request $r,Event $event){$event->update($this->v($r)+['registration_required'=>$r->boolean('registration_required'),'is_published'=>$r->boolean('is_published')]);return back()->with('success','Event updated.');}
  public function destroy(Event $event){$event->delete();return back()->with('success','Event archived.');}
  public function attendance(Request $r,Event $event){

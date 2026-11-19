@@ -21,7 +21,7 @@
                     $mine = (int) $item->created_by === $viewerId;
                 @endphp
                 <li data-ehc-filter="{{ \Illuminate\Support\Str::lower($itemTitle.' '.$item->members->pluck('name')->join(' ')) }}">
-                    <a @class(['ehc-item', 'is-active' => $isActive]) href="{{ route('participant.chat.show', $item) }}" @if($isActive) aria-current="page" @endif>
+                    <a @class(['ehc-item', 'is-active' => $isActive]) href="{{ route($chatRoute.'.show', $item) }}" @if($isActive) aria-current="page" @endif>
                         <span @class(['ehc-avatar', 'is-group' => $isGroup]) style="--ehc-av:{{ Chat::color(Chat::avatarSeed($item, $viewerId)) }}" aria-hidden="true">
                             @if($isGroup)<i class="fas fa-user-group"></i>@else{{ Chat::initials($itemTitle) }}@endif
                         </span>

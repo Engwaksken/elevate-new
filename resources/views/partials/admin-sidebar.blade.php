@@ -131,6 +131,7 @@
                     'permissions' => [],
                 ],
                 ['route'=>'calendar.index','label'=>'Calendar','icon'=>'fa-calendar-days','permissions'=>[]],
+                ['route'=>'admin.chat.index','label'=>'Chat','icon'=>'fa-comments','permissions'=>[],'active'=>['admin.chat.*']],
             ],
         ],
         [

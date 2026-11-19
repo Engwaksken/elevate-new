@@ -169,7 +169,7 @@ document.querySelector('[data-ai-hero-form]')?.addEventListener('submit', functi
 @php($lastMessage=$conversation->latestMessage)
 <tr>
 <td><strong><i class="fas {{ $conversation->type==='group' ? 'fa-user-group' : 'fa-user' }}" style="color:#800000;margin-right:6px"></i>{{ $conversationTitle }}</strong><small class="admin-cell-hint">{{ $conversation->messages_count }} {{ Str::plural('message',$conversation->messages_count) }}</small></td>
-<td>{{ $lastMessage?->sender?->name ? $lastMessage->sender->name.': ' : '' }}{{ Str::limit($lastMessage?->body ?? 'No messages yet',80) }}</td>
+<td>{{ $lastMessage?->sender?->name ? $lastMessage->sender->name.': ' : '' }}{{ Str::limit($lastMessage ? (trim((string) $lastMessage->body) !== '' ? $lastMessage->body : 'Sent an attachment') : 'No messages yet',80) }}</td>
 <td class="table-actions"><a class="btn btn-outline btn-sm" href="{{ route('participant.chat.show',$conversation) }}"><i class="fas fa-arrow-right"></i> Open</a></td>
 </tr>
 @empty

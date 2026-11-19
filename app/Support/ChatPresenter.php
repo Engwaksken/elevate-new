@@ -56,7 +56,9 @@ class ChatPresenter
             ? 'You: '
             : ($conversation->type === 'group' && $latest->sender ? Str::before($latest->sender->name, ' ').': ' : '');
 
-        return $prefix.Str::limit(preg_replace('/\s+/', ' ', $latest->body), 80);
+        $text = trim((string) $latest->body) === '' ? 'Sent an attachment' : preg_replace('/\s+/', ' ', $latest->body);
+
+        return $prefix.Str::limit($text, 80);
     }
 
     /**

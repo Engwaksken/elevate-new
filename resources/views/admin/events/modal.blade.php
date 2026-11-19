@@ -7,6 +7,9 @@ $eventFormTabs = [
     'schedule' => ['label' => 'Schedule & Venue', 'icon' => 'fa-calendar-days', 'fields' => ['starts_at', 'ends_at', 'venue', 'district', 'meeting_url', 'capacity']],
     'audience' => ['label' => 'Audience & Publishing', 'icon' => 'fa-users', 'fields' => ['cohort_id', 'course_id', 'registration_required', 'is_published']],
 ];
+if ($method === 'POST') {
+    $eventFormTabs['invite'] = ['label' => 'Invite People', 'icon' => 'fa-envelope-open-text', 'fields' => ['invitee_ids', 'invitee_ids.*', 'invitation_note']];
+}
 @endphp
 <div class="eh-modal-body">
 <x-form-tabs id="{{ $id }}-tabs" label="Event details" :tabs="$eventFormTabs">
@@ -29,5 +32,13 @@ $eventFormTabs = [
 <div class="form-group"><label>Course</label><select name="course_id"><option value="">None</option>@foreach($courses as $course)<option value="{{ $course->id }}" @selected((string)$event->course_id===(string)$course->id)>{{ $course->title }}</option>@endforeach</select></div>
 <div class="form-group full"><div class="eh-choice-grid"><label class="eh-choice-card"><input type="checkbox" name="registration_required" value="1" @checked($event->exists ? $event->registration_required : true)><span class="eh-choice-card__text">Registration required</span></label><label class="eh-choice-card"><input type="checkbox" name="is_published" value="1" @checked($event->is_published)><span class="eh-choice-card__text">Publish event</span></label></div></div>
 </div></x-form-tab>
+@if($method === 'POST')
+<x-form-tab name="invite"><div class="modal-grid">
+<div class="form-group full"><label>Invite staff and participants</label>
+<x-people-picker id="{{ $id }}-invitees" name="invitee_ids" :source="route('admin.events.people')" :groups="['staff' => 'All staff']" placeholder="Search staff or participants by name or email…" />
+<small class="form-hint">Optional. Each person gets an in-app notification and an email with the event details. You can invite more people later from the event page.</small></div>
+<div class="form-group full"><label>Personal note</label><textarea name="invitation_note" rows="3" maxlength="2000" placeholder="e.g. We would love you to share your experience with the cohort.">{{ old('invitation_note') }}</textarea></div>
+</div></x-form-tab>
+@endif
 </x-form-tabs>
 </div><div class="eh-modal-footer"><button type="button" class="btn btn-outline" data-modal-close>Cancel</button><button class="btn btn-primary">{{ $method==='POST' ? 'Create Event':'Save Changes' }}</button></div></form></div></div>
