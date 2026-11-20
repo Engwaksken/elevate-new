@@ -346,6 +346,32 @@ class HrOperationsTest extends TestCase
         $this->assertCount(1, app(\App\Services\HR\HrComplianceService::class)->missingDocuments($ben));
     }
 
+    public function test_my_hr_uses_tabs_and_upload_modal_and_directory_groups_by_department(): void
+    {
+        $amy = $this->staff('Amy Staff');
+        HrDocumentRequirement::create(['name' => 'National ID', 'is_mandatory' => true]);
+
+        // Nothing to acknowledge but a document missing: My documents opens first.
+        $this->actingAs($amy)->get(route('staff.hr.index'))->assertOk()
+            ->assertSee('class="admin-tab-pane active" role="tabpanel" id="pane-documents"', false)
+            ->assertSee('class="admin-tab-pane " role="tabpanel" id="pane-policies"', false)
+            ->assertSee('id="uploadOtherModal"', false);
+
+        $this->post(route('staff.hr.documents.store'), ['_form' => 'other', 'title' => 'Reference letter', 'file' => UploadedFile::fake()->create('ref.pdf', 5, 'application/pdf')])
+            ->assertRedirect(route('staff.hr.index', ['tab' => 'documents']));
+        $this->get(route('staff.hr.index', ['tab' => 'documents']))->assertSee('Reference letter');
+
+        // Failed modal upload re-opens the modal.
+        $this->from(route('staff.hr.index'))->post(route('staff.hr.documents.store'), ['_form' => 'other', 'title' => 'X'])->assertSessionHasErrors('file');
+        $this->get(route('staff.hr.index'))->assertSee('data-modal-autoopen', false);
+
+        $dept = \App\Models\Department::firstOrCreate(['name' => 'Programmes'], ['is_active' => true]);
+        Employee::create(['user_id' => $amy->id, 'employee_number' => 'E-7', 'status' => 'active', 'department_id' => $dept->id]);
+        $this->actingAs($this->hr())->get(route('admin.hr.employees.index'))->assertOk()
+            ->assertSee('data-emp-grid', false)->assertSee('ag-section', false)
+            ->assertSeeInOrder(['Programmes', 'Amy Staff', 'Details &amp; actions'], false);
+    }
+
     public function test_hr_pages_render_and_need_hr_permission(): void
     {
         $hr = $this->hr();

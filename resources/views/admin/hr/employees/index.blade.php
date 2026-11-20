@@ -21,25 +21,130 @@
 
 @php
 $bulkRoute = route('admin.hr.employees.bulk-destroy');
-$bulkTableId = 'employeesTable';
+$bulkTableId = 'employeesGrid';
+$canManageHr = auth()->user()->hasPermission('hr.manage');
+$groups = $employees->getCollection()->toBase()->groupBy(fn ($e) => $departmentNames[$e->department_id] ?? 'No department')->sortKeys();
+if ($groups->has('No department')) { $groups = $groups->except('No department')->put('No department', $groups['No department']); }
+$statusAccent = ['active' => 'is-open', 'probation' => 'is-progress', 'on_leave' => 'is-draft', 'suspended' => 'is-overdue', 'exiting' => 'is-overdue', 'exited' => 'is-done'];
 @endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
-<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Employee</th><th>No.</th><th>Department / Position</th><th>Supervisor</th><th>Start Date</th><th>HR file</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
-@forelse($employees as $employee)
-<tr>
-<td><input type="checkbox" data-row-select value="{{ $employee->id }}" aria-label="Select {{ data_get($employee,'user.name','Employee') }}"></td>
-@php $hrRow = $compliance[$employee->user_id] ?? null; $hrOut = $hrRow ? $hrRow['documents'] + $hrRow['policies'] : 0; @endphp
-<td><a href="{{ route('admin.hr.employees.show', $employee) }}"><strong>{{ data_get($employee,'user.name','-') }}</strong></a><small class="admin-cell-hint">{{ data_get($employee,'user.email','') }}</small></td>
-<td>{{ $employee->employee_number }}<small class="admin-cell-hint">{{ $employee->employment_type }}</small></td>
-<td>{{ $departmentNames[$employee->department_id] ?? '-' }}<small class="admin-cell-hint">{{ $positionNames[$employee->position_id] ?? '' }}{{ $employee->work_location ? ' · '.$employee->work_location : '' }}</small></td>
-<td>{{ $employee->supervisor->name ?? '-' }}</td>
-<td>{{ optional($employee->start_date)->format('d M Y') ?: '-' }}</td>
-<td>@if(! $hrRow)<span class="admin-cell-hint">-</span>@elseif($hrOut)<span class="status-chip on_hold" title="{{ implode(', ', array_merge($hrRow['missing'], $hrRow['pending_policies'])) }}">{{ $hrOut }} outstanding</span>@else<span class="status-chip active">Complete</span>@endif</td>
-<td><span class="status-chip {{ $employee->status }}">{{ ucfirst(str_replace('_',' ',$employee->status)) }}</span></td>
-<td class="table-actions"><a href="{{ route('admin.hr.employees.show', $employee) }}" class="btn btn-outline btn-sm">Profile</a>@if(auth()->user()->hasPermission('hr.manage'))<button type="button" class="btn btn-outline btn-sm" data-modal-open="contract{{ $employee->id }}"><i class="fas fa-file-signature"></i> Contract</button>@if($hrOut)<form method="POST" action="{{ route('admin.hr.compliance.remind') }}" style="display:inline">@csrf<input type="hidden" name="scope" value="all"><input type="hidden" name="user_ids[]" value="{{ $employee->user_id }}"><button class="btn btn-outline btn-sm" title="Remind about outstanding documents and policies"><i class="fas fa-bell"></i></button></form>@endif @endif</td>
-</tr>
-@empty<tr><td colspan="9"><div class="admin-empty">No employees found.</div></td></tr>@endforelse
-</tbody></table></div>
+
+<div id="{{ $bulkTableId }}" data-emp-grid>
+@if($employees->count())
+<div class="ag-section-tools">
+    @if($canManageHr)<label style="display:flex;gap:6px;align-items:center;font-weight:600;font-size:.8rem"><input type="checkbox" data-emp-select-all style="width:auto" aria-label="Select all employees on this page"> Select all</label>@endif
+    <input type="search" class="ag-filter" placeholder="Quick filter on this page..." aria-label="Filter employees on this page" data-emp-filter>
+    <button type="button" class="ag-toolbar-btn" data-emp-toggle="open">Expand all</button>
+    <button type="button" class="ag-toolbar-btn" data-emp-toggle="close">Collapse all</button>
+</div>
+<p class="ag-empty-filter" data-emp-no-match hidden>No employees on this page match.</p>
+@endif
+
+@forelse($groups as $groupName => $members)
+<details class="ag-section" open data-emp-section>
+    <summary><h2>{{ $groupName }}</h2><span class="ag-count">{{ $members->count() }}</span>
+        @php $out = $members->filter(fn ($e) => ($r = $compliance[$e->user_id] ?? null) && $r['documents'] + $r['policies'] > 0)->count(); @endphp
+        @if($out)<span class="ag-hint">{{ $out }} with outstanding HR items</span>@endif
+    </summary>
+    <div class="ag-section-body">
+    <div class="ag-grid">
+    @foreach($members as $employee)
+        @php
+            $hrRow = $compliance[$employee->user_id] ?? null;
+            $hrOut = $hrRow ? $hrRow['documents'] + $hrRow['policies'] : 0;
+            $name = data_get($employee, 'user.name', 'Employee');
+        @endphp
+        <article class="ag-card {{ $statusAccent[$employee->status] ?? '' }}" data-emp-card data-search="{{ \Illuminate\Support\Str::lower($name.' '.data_get($employee, 'user.email').' '.$employee->employee_number.' '.($positionNames[$employee->position_id] ?? '').' '.$employee->work_location) }}">
+            <div style="display:flex;gap:8px;align-items:flex-start">
+                @if($canManageHr)<input type="checkbox" data-row-select value="{{ $employee->id }}" aria-label="Select {{ $name }}" style="width:auto;margin-top:3px">@endif
+                <div style="min-width:0">
+                    <h3><a href="{{ route('admin.hr.employees.show', $employee) }}">{{ $name }}</a></h3>
+                    <small class="admin-cell-hint" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">{{ data_get($employee, 'user.email') }}</small>
+                </div>
+            </div>
+            <div class="ag-chips">
+                <span class="status-chip {{ $employee->status }}">{{ ucfirst(str_replace('_', ' ', $employee->status)) }}</span>
+                @if(! $hrRow)
+                @elseif($hrOut)<span class="status-chip on_hold">{{ $hrOut }} HR item{{ $hrOut === 1 ? '' : 's' }} outstanding</span>
+                @else<span class="status-chip active">HR file complete</span>@endif
+            </div>
+            <div class="ag-meta">
+                <div><i class="fas fa-briefcase" aria-hidden="true"></i><strong>{{ $positionNames[$employee->position_id] ?? 'No position' }}</strong></div>
+                <div><i class="fas fa-hashtag" aria-hidden="true"></i>{{ $employee->employee_number }}{{ $employee->employment_type ? ' · '.$employee->employment_type : '' }}</div>
+                <div><i class="fas fa-calendar" aria-hidden="true"></i>Started {{ optional($employee->start_date)->format('d M Y') ?: '-' }}</div>
+            </div>
+            <details class="ag-more" data-emp-more>
+                <summary>Details &amp; actions</summary>
+                <div class="ag-meta">
+                    <div><i class="fas fa-user-tie" aria-hidden="true"></i>Supervisor: {{ $employee->supervisor->name ?? '-' }}</div>
+                    <div><i class="fas fa-location-dot" aria-hidden="true"></i>{{ $employee->work_location ?: 'No location set' }}</div>
+                    <div><i class="fas fa-hourglass-half" aria-hidden="true"></i>Probation ends {{ optional($employee->probation_end_date)->format('d M Y') ?: '-' }}</div>
+                    <div><i class="fas fa-phone" aria-hidden="true"></i>Emergency: {{ collect([$employee->emergency_contact_name, $employee->emergency_contact_phone])->filter()->join(' · ') ?: '-' }}</div>
+                    @if($hrOut)
+                        @if($hrRow['missing'])<div><i class="fas fa-file-circle-exclamation" aria-hidden="true"></i>Missing: {{ implode(', ', $hrRow['missing']) }}</div>@endif
+                        @if($hrRow['pending_policies'])<div><i class="fas fa-scale-balanced" aria-hidden="true"></i>To acknowledge: {{ implode(', ', $hrRow['pending_policies']) }}</div>@endif
+                    @endif
+                </div>
+                <div class="ag-card-actions">
+                    <a href="{{ route('admin.hr.employees.show', $employee) }}" class="btn btn-outline btn-sm">Profile</a>
+                    @if($canManageHr)
+                        <button type="button" class="btn btn-outline btn-sm" data-modal-open="contract{{ $employee->id }}"><i class="fas fa-file-signature" aria-hidden="true"></i> Contract</button>
+                        @if($hrOut)
+                            <form method="POST" action="{{ route('admin.hr.compliance.remind') }}">@csrf<input type="hidden" name="scope" value="all"><input type="hidden" name="user_ids[]" value="{{ $employee->user_id }}"><button class="btn btn-outline btn-sm"><i class="fas fa-bell" aria-hidden="true"></i> Remind</button></form>
+                        @endif
+                    @endif
+                </div>
+            </details>
+        </article>
+    @endforeach
+    </div>
+    </div>
+</details>
+@empty
+<div class="admin-empty">No employees found.</div>
+@endforelse
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var root = document.querySelector('[data-emp-grid]');
+    if (!root) return;
+    var boxes = root.querySelectorAll('[data-row-select]');
+    var bar = document.getElementById(root.id + '-bar');
+    var all = root.querySelector('[data-emp-select-all]');
+    function sync() {
+        var n = root.querySelectorAll('[data-row-select]:checked').length;
+        if (bar) { bar.classList.toggle('is-visible', n > 0); var c = bar.querySelector('[data-selected-count]'); if (c) c.textContent = n; }
+        if (all) all.checked = n > 0 && n === boxes.length;
+    }
+    boxes.forEach(function (b) { b.addEventListener('change', sync); });
+    if (all) all.addEventListener('change', function () { boxes.forEach(function (b) { b.checked = all.checked; }); sync(); });
+    root.querySelectorAll('[data-emp-toggle]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var open = btn.dataset.empToggle === 'open';
+            root.querySelectorAll('[data-emp-section]').forEach(function (d) { d.open = true; });
+            root.querySelectorAll('[data-emp-more]').forEach(function (d) { d.open = open; });
+            if (!open) root.querySelectorAll('[data-emp-section]').forEach(function (d) { d.open = false; });
+        });
+    });
+    var filter = root.querySelector('[data-emp-filter]');
+    var none = root.querySelector('[data-emp-no-match]');
+    if (filter) filter.addEventListener('input', function () {
+        var q = filter.value.trim().toLowerCase(), shown = 0;
+        root.querySelectorAll('[data-emp-section]').forEach(function (section) {
+            var visible = 0;
+            section.querySelectorAll('[data-emp-card]').forEach(function (card) {
+                card.hidden = q !== '' && card.dataset.search.indexOf(q) === -1;
+                if (!card.hidden) visible++;
+            });
+            section.hidden = visible === 0;
+            if (q && visible) section.open = true;
+            shown += visible;
+        });
+        if (none) none.hidden = shown > 0;
+    });
+    sync();
+});
+</script>
 <div class="admin-pagination">{{ $employees->links() }}</div>
 </div>
 

@@ -227,7 +227,7 @@
                 ],
                 [
                     'route' => 'staff.hr.index',
-                    'label' => 'My HR (Policies & Documents)',
+                    'label' => 'My HR',
                     'icon' => 'fa-file-shield',
                     'permissions' => [],
                     'active' => ['staff.hr.*'],
@@ -577,7 +577,7 @@
                     ],
                     [
                         'route' => 'staff.hr.index',
-                        'label' => 'My HR (Policies & Documents)',
+                        'label' => 'My HR',
                         'icon' => 'fa-file-shield',
                         'permissions' => [],
                         'active' => ['staff.hr.*'],

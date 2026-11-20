@@ -81,7 +81,7 @@ class MyHrController extends Controller
 
         HrComplianceController::storeDocument($request->user(), $request->file('file'), $data);
 
-        return back()->with('success', 'Document uploaded. HR will review it.');
+        return redirect()->route('staff.hr.index', ['tab' => 'documents'])->with('success', 'Document uploaded. HR will review it.');
     }
 
     public function download(Request $request, StaffDocument $document)
@@ -99,7 +99,7 @@ class MyHrController extends Controller
         Storage::disk(StaffDocument::DISK)->delete($document->path);
         $document->delete();
 
-        return back()->with('success', 'Document removed.');
+        return redirect()->route('staff.hr.index', ['tab' => 'documents'])->with('success', 'Document removed.');
     }
 
     /** The viewer's assignment; HR may open any policy without one. */
