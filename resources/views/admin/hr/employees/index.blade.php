@@ -1,7 +1,8 @@
 @extends('layouts.admin')
 @section('title','Employees | ElevateHer360 Administration')
 @section('content')
-<div class="admin-page-header"><div><span class="admin-eyebrow">Human Resources</span><h1>Employees</h1><p>Manage employee records, employment status and contracts.</p></div><div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="createEmployeeModal"><i class="fas fa-plus"></i> New Employee</button></div></div>
+<div class="admin-page-header"><div><span class="admin-eyebrow">Human Resources</span><h1>Employee Directory</h1><p>Manage employee records, placement, contracts and each person's HR documents and policy acknowledgements.</p></div><div class="admin-page-actions"><x-export-buttons />@if(auth()->user()->hasPermission('hr.manage'))<button type="button" class="btn btn-primary" data-modal-open="createEmployeeModal"><i class="fas fa-plus"></i> New Employee</button>@endif</div></div>
+@include('admin.hr.partials.nav')
 
 <div class="admin-stats-grid compact">
 @foreach([['total','Total Employees','fa-users'],['active','Active','fa-circle-check'],['probation','Probation','fa-hourglass-half'],['on_leave','On Leave','fa-plane-departure']] as [$key,$label,$icon])
@@ -11,7 +12,8 @@
 
 <div class="admin-panel">
 <form method="GET" class="admin-toolbar">
-<div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search name, email, employee number, type or location..."></div>
+<div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search name, email, number, department, position or location..."></div>
+<select name="department" aria-label="Department"><option value="">All departments</option>@foreach($departments as $d)<option value="{{ $d->id }}" @selected((int) request('department') === $d->id)>{{ $d->name }}</option>@endforeach</select>
 <select name="status"><option value="">All statuses</option>@foreach(['active','probation','on_leave','suspended','exiting','exited'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select>
 <select name="per_page">@foreach([10,25,50,100] as $n)<option value="{{ $n }}" @selected((int)request('per_page',25)===$n)>{{ $n }}/page</option>@endforeach</select>
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.hr.employees.index') }}" class="btn btn-outline btn-sm">Reset</a>
@@ -22,19 +24,21 @@ $bulkRoute = route('admin.hr.employees.bulk-destroy');
 $bulkTableId = 'employeesTable';
 @endphp
 @include('partials.admin-bulk-bar', ['bulkRoute' => $bulkRoute, 'bulkTableId' => $bulkTableId])
-<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Employee</th><th>No.</th><th>Type</th><th>Location</th><th>Start Date</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
+<div class="admin-table-wrap"><table class="admin-table" id="{{ $bulkTableId }}"><thead><tr><th style="width:34px"><input type="checkbox" data-select-all data-bulk-target="#{{ $bulkTableId }}-bar" aria-label="Select all"></th><th>Employee</th><th>No.</th><th>Department / Position</th><th>Supervisor</th><th>Start Date</th><th>HR file</th><th>Status</th><th class="table-actions">Actions</th></tr></thead><tbody>
 @forelse($employees as $employee)
 <tr>
 <td><input type="checkbox" data-row-select value="{{ $employee->id }}" aria-label="Select {{ data_get($employee,'user.name','Employee') }}"></td>
-<td><strong>{{ data_get($employee,'user.name','-') }}</strong><small class="admin-cell-hint">{{ data_get($employee,'user.email','') }}</small></td>
-<td>{{ $employee->employee_number }}</td>
-<td>{{ $employee->employment_type ?: '-' }}</td>
-<td>{{ $employee->work_location ?: '-' }}</td>
+@php $hrRow = $compliance[$employee->user_id] ?? null; $hrOut = $hrRow ? $hrRow['documents'] + $hrRow['policies'] : 0; @endphp
+<td><a href="{{ route('admin.hr.employees.show', $employee) }}"><strong>{{ data_get($employee,'user.name','-') }}</strong></a><small class="admin-cell-hint">{{ data_get($employee,'user.email','') }}</small></td>
+<td>{{ $employee->employee_number }}<small class="admin-cell-hint">{{ $employee->employment_type }}</small></td>
+<td>{{ $departmentNames[$employee->department_id] ?? '-' }}<small class="admin-cell-hint">{{ $positionNames[$employee->position_id] ?? '' }}{{ $employee->work_location ? ' · '.$employee->work_location : '' }}</small></td>
+<td>{{ $employee->supervisor->name ?? '-' }}</td>
 <td>{{ optional($employee->start_date)->format('d M Y') ?: '-' }}</td>
+<td>@if(! $hrRow)<span class="admin-cell-hint">-</span>@elseif($hrOut)<span class="status-chip on_hold" title="{{ implode(', ', array_merge($hrRow['missing'], $hrRow['pending_policies'])) }}">{{ $hrOut }} outstanding</span>@else<span class="status-chip active">Complete</span>@endif</td>
 <td><span class="status-chip {{ $employee->status }}">{{ ucfirst(str_replace('_',' ',$employee->status)) }}</span></td>
-<td class="table-actions"><button type="button" class="btn btn-outline btn-sm" data-modal-open="contract{{ $employee->id }}"><i class="fas fa-file-signature"></i> Add Contract</button></td>
+<td class="table-actions"><a href="{{ route('admin.hr.employees.show', $employee) }}" class="btn btn-outline btn-sm">Profile</a>@if(auth()->user()->hasPermission('hr.manage'))<button type="button" class="btn btn-outline btn-sm" data-modal-open="contract{{ $employee->id }}"><i class="fas fa-file-signature"></i> Contract</button>@if($hrOut)<form method="POST" action="{{ route('admin.hr.compliance.remind') }}" style="display:inline">@csrf<input type="hidden" name="scope" value="all"><input type="hidden" name="user_ids[]" value="{{ $employee->user_id }}"><button class="btn btn-outline btn-sm" title="Remind about outstanding documents and policies"><i class="fas fa-bell"></i></button></form>@endif @endif</td>
 </tr>
-@empty<tr><td colspan="8"><div class="admin-empty">No employees found.</div></td></tr>@endforelse
+@empty<tr><td colspan="9"><div class="admin-empty">No employees found.</div></td></tr>@endforelse
 </tbody></table></div>
 <div class="admin-pagination">{{ $employees->links() }}</div>
 </div>

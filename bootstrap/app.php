@@ -28,6 +28,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'user_type' => \App\Http\Middleware\EnsureUserType::class,
         ]);
 
+        // Job applications posted from the careers widget embedded on other websites:
+        // a cross-site iframe cannot carry the session cookie, so CSRF cannot apply.
+        // The endpoint is throttled and has honeypot / timing spam traps instead.
+        $middleware->validateCsrfTokens(except: ['careers/*/apply']);
+
         $middleware->web(
             append: [
                 \App\Http\Middleware\DynamicMaintenanceMode::class,

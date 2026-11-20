@@ -29,6 +29,21 @@
         ])
         : null;
 
+    // HR self-service badges: policies to acknowledge and interviews still to score.
+    $hrPolicyPending = 0;
+    $hrPanelPending = 0;
+    $hrHasPanels = false;
+    if ($sidebarUser && \Illuminate\Support\Facades\Schema::hasTable('hr_policy_assignments')) {
+        try {
+            $hrPolicyPending = \App\Models\HrPolicyAssignment::where('user_id', $sidebarUser->id)->whereNull('acknowledged_at')
+                ->whereHas('policy', fn ($q) => $q->where('is_active', true)->where('requires_acknowledgement', true))->count();
+            $hrPanelPending = \App\Models\RecruitmentInterviewPanelist::where('user_id', $sidebarUser->id)->whereNull('submitted_at')
+                ->whereHas('interview', fn ($q) => $q->where('status', 'scheduled'))->count();
+            $hrHasPanels = $hrPanelPending > 0 || \App\Models\RecruitmentInterviewPanelist::where('user_id', $sidebarUser->id)->exists();
+        } catch (\Throwable) {
+        }
+    }
+
     // Pending appointment requests addressed to this instructor (sidebar badge).
     $appointmentPending = 0;
     if ($sidebarUser && ($isInstructor || $isSuperAdmin) && Route::has('instructor.appointments.index')) {
@@ -211,6 +226,23 @@
                     'active' => ['hr.leave.*'],
                 ],
                 [
+                    'route' => 'staff.hr.index',
+                    'label' => 'My HR (Policies & Documents)',
+                    'icon' => 'fa-file-shield',
+                    'permissions' => [],
+                    'active' => ['staff.hr.*'],
+                    'badge' => $hrPolicyPending,
+                ],
+                [
+                    'route' => 'staff.interviews.index',
+                    'label' => 'My Interview Panels',
+                    'icon' => 'fa-user-tie',
+                    'permissions' => [],
+                    'active' => ['staff.interviews.*'],
+                    'badge' => $hrPanelPending,
+                    'visible' => $hrHasPanels,
+                ],
+                [
                     'route' => 'staff.purchase-requests.index',
                     'label' => 'My Purchase Requests',
                     'icon' => 'fa-cart-plus',
@@ -241,10 +273,25 @@
                     'active' => ['it-support.tickets.*'],
                 ],
                 [
+                    'route' => 'admin.hr.dashboard',
+                    'label' => 'HR Operations',
+                    'icon' => 'fa-people-roof',
+                    'permissions' => ['hr.view', 'hr.manage'],
+                    'active' => ['admin.hr.dashboard', 'admin.hr.policies.*', 'admin.hr.compliance.*'],
+                ],
+                [
+                    'route' => 'admin.hr.recruitment.index',
+                    'label' => 'Recruitment',
+                    'icon' => 'fa-user-plus',
+                    'permissions' => ['hr.view', 'hr.manage'],
+                    'active' => ['admin.hr.recruitment.*'],
+                ],
+                [
                     'route' => 'admin.hr.employees.index',
-                    'label' => 'Employees',
+                    'label' => 'Employee Directory',
                     'icon' => 'fa-id-badge',
                     'permissions' => ['hr.view', 'hr.manage'],
+                    'active' => ['admin.hr.employees.*'],
                 ],
                 [
                     'route' => 'admin.hr.leave.index',
@@ -527,6 +574,23 @@
                         'icon' => 'fa-folder-tree',
                         'permissions' => [],
                         'active' => ['staff.documents.*'],
+                    ],
+                    [
+                        'route' => 'staff.hr.index',
+                        'label' => 'My HR (Policies & Documents)',
+                        'icon' => 'fa-file-shield',
+                        'permissions' => [],
+                        'active' => ['staff.hr.*'],
+                        'badge' => $hrPolicyPending,
+                    ],
+                    [
+                        'route' => 'staff.interviews.index',
+                        'label' => 'My Interview Panels',
+                        'icon' => 'fa-user-tie',
+                        'permissions' => [],
+                        'active' => ['staff.interviews.*'],
+                        'badge' => $hrPanelPending,
+                        'visible' => $hrHasPanels,
                     ],
                     [
                         'route' => 'certificates.recommendations.index',

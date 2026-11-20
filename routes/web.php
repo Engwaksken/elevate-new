@@ -1600,6 +1600,7 @@ if (! \Illuminate\Support\Facades\Route::has('offline')) {
 }
 
 require __DIR__ . '/workspaces.php';
+require __DIR__ . '/hr.php';
 
 /*
 |--------------------------------------------------------------------------

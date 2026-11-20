@@ -33,3 +33,6 @@ Schedule::call(function () {
 // Department document libraries: empty recycle-bin items older than 93 days.
 Schedule::call(fn () => app(\App\Services\DocumentLibraryService::class)->purgeExpired())
     ->dailyAt('02:30')->name('purge-document-recycle-bin')->withoutOverlapping();
+
+// HR compliance: chase staff with missing documents / unacknowledged policies (at most every 3 days each).
+Schedule::command('hr:send-compliance-reminders')->weekdays()->at('08:00')->timezone('Africa/Kampala')->withoutOverlapping();
