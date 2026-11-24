@@ -201,6 +201,43 @@ class UserController extends Controller
         );
     }
 
+    public function bulkStatus(Request $request, AuditService $audit)
+    {
+        $data = $request->validate([
+            'ids' => ['required','array','min:1'],
+            'ids.*' => ['integer','exists:users,id'],
+            'status' => ['required','in:active,inactive,suspended,pending'],
+        ]);
+
+        $candidates = User::query()->whereKey($data['ids'])->get();
+
+        // An administrator cannot lock themselves out, and super administrator
+        // accounts can only be deactivated one at a time from the edit form.
+        $users = $data['status'] === 'active'
+            ? $candidates
+            : $candidates->reject(fn (User $user) =>
+                (int) $user->id === (int) auth()->id() || $user->isSuperAdmin());
+
+        $users = $users->reject(fn (User $user) => $user->status === $data['status']);
+
+        foreach ($users as $user) {
+            $old = $user->only(['id','status']);
+            $user->update(['status' => $data['status']]);
+            $audit->log('users', 'status_updated', $user, $old, $user->only(['id','status']));
+        }
+
+        $count = $users->count();
+        $skipped = $candidates->count() - $count;
+        $label = ucfirst($data['status']);
+
+        if ($count === 0) {
+            return back()->with('error', 'No users were changed. They are already '.$label.' or cannot be changed in bulk.');
+        }
+
+        return back()->with('success', $count.' user(s) set to '.$label.'.'
+            .($skipped > 0 ? ' '.$skipped.' skipped (already '.$label.', your own account or a super administrator).' : ''));
+    }
+
     public function create()
     {
         return redirect()

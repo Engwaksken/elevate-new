@@ -389,6 +389,9 @@ Route::prefix('admin')
         Route::delete('/users/bulk-delete',[UserController::class,'bulkDestroy'])
             ->middleware('permission:users.delete')->name('users.bulk-destroy');
 
+        Route::post('/users/bulk-status',[UserController::class,'bulkStatus'])
+            ->middleware('permission:users.edit')->name('users.bulk-status');
+
         Route::resource('users',UserController::class)->except(['show','destroy'])
             ->middleware('permission:users.edit');
 

@@ -6,6 +6,7 @@
     $isParticipantsView = $forcedType === 'participant';
     $canEditUsers = auth()->user()?->hasPermission('users.edit') ?? false;
     $canDeleteUsers = auth()->user()?->hasPermission('users.delete') ?? false;
+    $canBulkSelect = $canEditUsers || $canDeleteUsers;
     $activeType = $forcedType ?? request('user_type');
 @endphp
 
@@ -144,13 +145,31 @@
     <a href="{{ $isParticipantsView ? route('admin.participants.index') : route('admin.users.index') }}" class="btn btn-outline btn-sm">Reset</a>
 </form>
 
-@if($canDeleteUsers)
+@if($canBulkSelect)
 <div class="admin-bulk-bar" id="usersBulkBar">
     <strong><span data-selected-count>0</span> selected</strong>
-    <form method="POST" action="{{ route('admin.users.bulk-destroy') }}" data-bulk-form data-table="usersTable">
-        @csrf @method('DELETE')
-        <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete Selected</button>
-    </form>
+    <div class="admin-bulk-actions">
+        @if($canEditUsers)
+            <form method="POST" action="{{ route('admin.users.bulk-status') }}" data-bulk-form data-table="usersTable"
+                  data-bulk-confirm="Update the status of {count} selected user(s)?" class="admin-bulk-status-form">
+                @csrf
+                <label for="bulkUserStatus" class="sr-only">New status</label>
+                <select name="status" id="bulkUserStatus" class="form-select form-select-sm" required>
+                    <option value="" disabled selected>Set status…</option>
+                    @foreach(['active','inactive','suspended','pending'] as $status)
+                        <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                    @endforeach
+                </select>
+                <button class="btn btn-primary btn-sm"><i class="fas fa-user-check"></i> Update Status</button>
+            </form>
+        @endif
+        @if($canDeleteUsers)
+            <form method="POST" action="{{ route('admin.users.bulk-destroy') }}" data-bulk-form data-table="usersTable">
+                @csrf @method('DELETE')
+                <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete Selected</button>
+            </form>
+        @endif
+    </div>
 </div>
 @endif
 
@@ -158,7 +177,7 @@
 <table class="admin-table" id="usersTable">
 <thead>
 <tr>
-    @if($canDeleteUsers)
+    @if($canBulkSelect)
         <th class="select-col"><input type="checkbox" data-select-all data-bulk-target="#usersBulkBar" aria-label="Select all users"></th>
     @endif
     <th>User</th>
@@ -175,7 +194,7 @@
 <tbody>
 @forelse($users as $user)
 <tr>
-    @if($canDeleteUsers)
+    @if($canBulkSelect)
         <td><input type="checkbox" data-row-select value="{{ $user->id }}" aria-label="Select {{ $user->name }}"></td>
     @endif
     <td>
@@ -251,7 +270,7 @@
     </td>
 </tr>
 @empty
-<tr><td colspan="{{ $canDeleteUsers ? 10 : 9 }}"><div class="admin-empty">No users found.</div></td></tr>
+<tr><td colspan="{{ $canBulkSelect ? 10 : 9 }}"><div class="admin-empty">No users found.</div></td></tr>
 @endforelse
 </tbody>
 </table>

@@ -76,7 +76,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 form.appendChild(input);
             });
 
-            if (!ids.length || !confirm(`Delete ${ids.length} selected record(s)? This cannot be undone.`)) {
+            const message = (form.dataset.bulkConfirm || 'Delete {count} selected record(s)? This cannot be undone.')
+                .replace('{count}', ids.length);
+
+            if (!ids.length || !confirm(message)) {
                 e.preventDefault();
             }
         });
