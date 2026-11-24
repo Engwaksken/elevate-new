@@ -75,14 +75,7 @@ class ParticipantController extends Controller
                 'courses' => $enrolments->count(),
                 'in_progress' => $enrolments->where('status', 'in_progress')->count(),
                 'completed' => $enrolments->where('status', 'completed')->count(),
-                'pending_assignments' => Assessment::query()
-                    ->whereIn('course_id', $courseIds)
-                    ->where('is_published', true)
-                    ->whereIn('type', ['assignment','quiz','exam'])
-                    ->where(function ($q) {
-                        $q->whereNull('due_at')->orWhere('due_at', '>=', now());
-                    })
-                    ->count(),
+                'pending_assignments' => $this->pendingAssignmentsCount($user, $courseIds),
                 'unread_notifications' => $unread,
             ],
             'courses' => $enrolments->map(fn ($enrolment) => [
@@ -119,23 +112,44 @@ class ParticipantController extends Controller
         return response()->json($query->orderBy('title')->paginate(20));
     }
 
+    /**
+     * Published assignments, quizzes and exams not yet past the participant's own
+     * due date (cohort deadline or approved extension included).
+     */
+    private function pendingAssignmentsCount($user, $courseIds): int
+    {
+        $assessments = Assessment::query()
+            ->whereIn('course_id', $courseIds)
+            ->where('is_published', true)
+            ->whereIn('type', ['assignment','quiz','exam'])
+            ->get(['id', 'due_at']);
+
+        $context = $this->assignments->context($user, $assessments->pluck('id'));
+
+        return $assessments->filter(function ($assessment) use ($context) {
+            $due = $this->assignments->effectiveDueAt($assessment, $context);
+
+            return $due === null || $due->gte(now());
+        })->count();
+    }
+
     public function course(Request $request, Course $course)
     {
         $this->ensureParticipantOwnsCourse($request, $course);
+
+        $user = $request->user();
+        $enrolment = Enrolment::where('course_id', $course->id)->where('user_id', $user->id)->first();
+        $cohortId = $enrolment?->cohort_id ? (int) $enrolment->cohort_id : null;
 
         $course->load([
             'cohorts',
             'branches',
             'modules' => fn ($q) => $q->where('is_published', true)->orderBy('position'),
-            'modules.lessons' => fn ($q) => $q->where('is_published', true)->orderBy('position'),
+            'modules.lessons' => fn ($q) => $q->where('is_published', true)->visibleToCohort($cohortId)->orderBy('position'),
             'assessments' => fn ($q) => $q->where('is_published', true)->orderBy('due_at'),
-            'announcements' => fn ($q) => $q
-                ->where(fn ($x) => $x->whereNull('published_at')->orWhere('published_at', '<=', now()))
-                ->where(fn ($x) => $x->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-                ->latest('published_at'),
+            'announcements' => fn ($q) => $q->current()->visibleToCohort($cohortId)->latest('published_at'),
         ]);
 
-        $user = $request->user();
         $lessonIds = $course->modules->flatMap(fn ($module) => $module->lessons->pluck('id'));
 
         app(\App\Services\Learning\LearningFileService::class)->syncLessons($course->modules->flatMap->lessons);
@@ -144,7 +158,6 @@ class ParticipantController extends Controller
 
         $payload = $course->toArray();
         $payload['timetable'] = app(\App\Services\CourseTimetableService::class)->forCourse($course);
-        $enrolment = Enrolment::where('course_id', $course->id)->where('user_id', $user->id)->first();
 
         $payload['enrolment'] = $enrolment ? [
             'enrolment_code' => $enrolment->enrolment_code,
@@ -473,13 +486,12 @@ class ParticipantController extends Controller
 
     public function announcements(Request $request)
     {
-        $courseIds = Enrolment::where('user_id', $request->user()->id)->pluck('course_id');
+        $enrolments = Enrolment::where('user_id', $request->user()->id)->get(['course_id', 'cohort_id']);
 
         $query = CourseAnnouncement::query()
             ->with('course:id,title')
-            ->whereIn('course_id', $courseIds)
-            ->where(fn ($q) => $q->whereNull('published_at')->orWhere('published_at', '<=', now()))
-            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()));
+            ->forEnrolments($enrolments)
+            ->current();
 
         if ($request->filled('updated_since')) {
             $query->where('updated_at', '>', $request->get('updated_since'));
@@ -627,7 +639,7 @@ class ParticipantController extends Controller
 
         $announcements = CourseAnnouncement::query()
             ->when($since, fn ($q) => $changedOrNew($q->withTrashed()))
-            ->whereIn('course_id',$courseIds)
+            ->forEnrolments($enrolments)
             ->get();
 
         $jobs = DB::table('jobs')
@@ -675,13 +687,15 @@ class ParticipantController extends Controller
             ->get();
 
         $reminders = collect();
+        $presentedAssignments = $this->assignments->presentMany($assignments, $user);
 
-        foreach ($assignments->whereNotNull('due_at') as $item) {
+        // Each participant's own due date: cohort deadline or approved extension included.
+        foreach ($presentedAssignments->whereNotNull('effective_due_at') as $item) {
             $reminders->push([
                 'type'=>'assignment_deadline',
-                'source_id'=>$item->id,
-                'title'=>$item->title,
-                'scheduled_at'=>$item->due_at,
+                'source_id'=>$item['id'],
+                'title'=>$item['title'],
+                'scheduled_at'=>$item['effective_due_at'],
             ]);
         }
 
@@ -710,7 +724,7 @@ class ParticipantController extends Controller
             'last_synced_at'=>now()->toIso8601String(),
             'enrolments'=>$enrolments,
             'courses'=>$courses,
-            'assignments'=>$this->assignments->presentMany($assignments, $user),
+            'assignments'=>$presentedAssignments,
             'announcements'=>$announcements,
             'mentorship'=>$mentorship->map(fn ($session) => $this->presentSession($session))->values(),
             'jobs'=>$jobs,

@@ -5,6 +5,7 @@ namespace App\Services\Participant;
 use App\Exceptions\ParticipantRuleException;
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
+use App\Models\AssessmentCohortDeadline;
 use App\Models\AssignmentExtensionRequest;
 use App\Models\User;
 use App\Services\Learning\LearningFileService;
@@ -45,7 +46,7 @@ class ParticipantAssignmentService
         $ids = collect($assessmentIds)->map(fn ($id) => (int) $id)->unique()->values();
 
         if ($ids->isEmpty()) {
-            return ['attempts' => [], 'latest_attempts' => [], 'latest' => [], 'approved' => []];
+            return ['attempts' => [], 'latest_attempts' => [], 'latest' => [], 'approved' => [], 'cohort_due' => []];
         }
 
         $attemptRows = AssessmentAttempt::query()
@@ -87,7 +88,40 @@ class ParticipantAssignmentService
             'latest_attempts' => $latestAttempts,
             'latest' => $latest,
             'approved' => $approved,
+            'cohort_due' => $this->cohortDueDates($user, $ids),
         ];
+    }
+
+    /**
+     * Due dates set for the participant's own cohort, keyed by assessment id.
+     * Only counts a cohort the participant is enrolled with in that assessment's course.
+     *
+     * @return array<int, Carbon>
+     */
+    public function cohortDueDates(User $user, iterable $assessmentIds): array
+    {
+        return AssessmentCohortDeadline::query()
+            ->whereIn('assessment_id', collect($assessmentIds)->all())
+            ->whereExists(fn ($q) => $q->selectRaw('1')
+                ->from('assessments')
+                ->join('enrolments', 'enrolments.course_id', '=', 'assessments.course_id')
+                ->whereColumn('assessments.id', 'assessment_cohort_deadlines.assessment_id')
+                ->whereColumn('enrolments.cohort_id', 'assessment_cohort_deadlines.cohort_id')
+                ->where('enrolments.user_id', $user->id))
+            ->get(['assessment_id', 'due_at'])
+            ->mapWithKeys(fn ($row) => [(int) $row->assessment_id => $row->due_at])
+            ->all();
+    }
+
+    /**
+     * The participant's own due date before any extension: their cohort's
+     * deadline when one is set, otherwise the course-wide due date.
+     */
+    public function baseDueAt(Assessment $assessment, array $context): ?Carbon
+    {
+        $cohortDue = $context['cohort_due'][$assessment->id] ?? null;
+
+        return $cohortDue ? $cohortDue->copy() : $assessment->due_at?->copy();
     }
 
     public function effectiveDueAt(Assessment $assessment, array $context): ?Carbon
@@ -96,6 +130,11 @@ class ParticipantAssignmentService
 
         if ($approved && $approved->approved_due_at) {
             return $approved->approved_due_at->copy();
+        }
+
+        // The participant's cohort may have its own deadline for this assessment.
+        if ($cohortDue = $context['cohort_due'][$assessment->id] ?? null) {
+            return $cohortDue->copy();
         }
 
         return $assessment->due_at?->copy();
@@ -148,7 +187,16 @@ class ParticipantAssignmentService
      */
     public function present(Assessment $assessment, array $context): array
     {
-        return $this->lessons->presentAssessment($assessment) + $this->state($assessment, $context);
+        $data = $this->lessons->presentAssessment($assessment) + $this->state($assessment, $context);
+
+        // The app treats due_at as the participant's original due date (before an
+        // extension), so it carries their cohort's deadline when there is one.
+        $data['course_due_at'] = $assessment->due_at?->toJSON();
+        if ($cohortDue = $context['cohort_due'][$assessment->id] ?? null) {
+            $data['due_at'] = $cohortDue->toJSON();
+        }
+
+        return $data;
     }
 
     public function presentMany(Collection $assessments, User $user): Collection
@@ -295,7 +343,14 @@ class ParticipantAssignmentService
 
         // A stale/invalid course_instructors pivot can contain participant IDs.
         // Never expose instructor workflow notifications to non-staff accounts.
-        foreach ($assessment->course?->instructors()->where('users.user_type', 'staff')->get() ?? [] as $instructor) {
+        // Only the instructors who work with this participant (a branch instructor
+        // hears about their own branch's participants).
+        $instructors = $assessment->course
+            ? app(\App\Services\Learning\InstructorScope::class)->instructorsFor($assessment->course, (int) $user->id)
+                ->filter(fn ($instructor) => $instructor->user_type === 'staff')
+            : collect();
+
+        foreach ($instructors as $instructor) {
             $this->notifications->send(
                 $instructor,
                 'assignment_extension_requested',

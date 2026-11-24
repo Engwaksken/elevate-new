@@ -50,6 +50,9 @@ class ParticipantLessonService
             'You are not enrolled in the course for this lesson.'
         );
 
+        // Extra material for another group is not shown to this participant.
+        abort_unless($lesson->isVisibleTo($user), 404, 'Lesson not found.');
+
         if ($enforceModuleLock) {
             abort_unless(
                 $this->moduleAccess->canAccess($module, $user),
@@ -318,10 +321,16 @@ class ParticipantLessonService
             return $progress;
         });
 
+        // Progress counts only the lessons meant for this participant (shared + their cohort's).
+        $cohortId = Enrolment::cohortIdFor($user->id, (int) $courseId);
+        $forCohort = fn ($q) => $q->where(fn ($q) => $q->whereNull('lessons.cohort_id')
+            ->when($cohortId, fn ($q) => $q->orWhere('lessons.cohort_id', $cohortId)));
+
         $total = DB::table('lessons')
             ->join('course_modules', 'course_modules.id', '=', 'lessons.course_module_id')
             ->where('course_modules.course_id', $courseId)
             ->where('lessons.is_published', true)
+            ->where($forCohort)
             ->count();
 
         $done = DB::table('lesson_progress')
@@ -329,6 +338,7 @@ class ParticipantLessonService
             ->join('course_modules', 'course_modules.id', '=', 'lessons.course_module_id')
             ->where('course_modules.course_id', $courseId)
             ->where('lessons.is_published', true)
+            ->where($forCohort)
             ->where('lesson_progress.user_id', $user->id)
             ->whereNotNull('lesson_progress.completed_at')
             ->count();

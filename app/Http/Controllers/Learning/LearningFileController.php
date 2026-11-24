@@ -65,6 +65,7 @@ class LearningFileController extends Controller
             $lesson = $file->lesson()->with('module.course')->first();
 
             abort_unless($lesson && $lesson->is_published && $lesson->module?->is_published, 404);
+            abort_unless($lesson->isVisibleTo($user), 404);
             abort_unless($moduleAccess->canAccess($lesson->module, $user), 403, 'This module is locked.');
         }
 

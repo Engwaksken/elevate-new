@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Instructor;
 use App\Http\Controllers\Concerns\ExportsTables;
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
+use App\Models\AssessmentCohortDeadline;
 use App\Models\AssessmentAttempt;
 use App\Models\AssessmentQuestion;
 use App\Models\AssignmentExtensionRequest;
@@ -14,7 +15,9 @@ use App\Models\CourseModule;
 use App\Models\Enrolment;
 use App\Models\LearningFile;
 use App\Models\Lesson;
+use App\Observers\LearningNotificationObserver;
 use App\Services\Files\FilePreviewService;
+use App\Services\Learning\InstructorScope;
 use App\Services\Learning\LearningFileService;
 use App\Services\CareerAiService;
 use App\Services\DocumentTextExtractor;
@@ -35,6 +38,12 @@ class CourseManagementController extends Controller
 
         $course->load(['cohorts']);
 
+        $user = $request->user();
+        $scope = $this->scope();
+        $seesWholeCourse = $scope->seesWholeCourse($user, $course);
+        $scopeCohorts = $scope->cohorts($user, $course);
+        $scopeCohortIds = $scopeCohorts->pluck('id')->map(fn ($id) => (int) $id)->all();
+
         $moduleQuery = $course->modules()->withCount('lessons');
 
         if ($request->filled('module_search')) {
@@ -53,8 +62,10 @@ class CourseManagementController extends Controller
         $this->syncLegacyFiles($course);
 
         $lessonQuery = Lesson::query()
-            ->with(['module', 'files'])
-            ->whereHas('module', fn ($query) => $query->where('course_id', $course->id));
+            ->with(['module', 'files', 'cohort'])
+            ->whereHas('module', fn ($query) => $query->where('course_id', $course->id))
+            // A branch instructor sees the shared lessons and their own groups' extra material.
+            ->when(! $seesWholeCourse, fn ($query) => $query->where(fn ($q) => $q->whereNull('cohort_id')->orWhereIn('cohort_id', $scopeCohortIds ?: [0])));
 
         if ($request->filled('lesson_search')) {
             $term = trim((string) $request->get('lesson_search'));
@@ -79,7 +90,7 @@ class CourseManagementController extends Controller
             ->withQueryString();
 
         $assessmentQuery = $course->assessments()
-            ->with('files')
+            ->with(['files', 'cohortDeadlines'])
             ->withCount(['questions', 'attempts']);
 
         if ($request->filled('assessment_search')) {
@@ -122,6 +133,9 @@ class CourseManagementController extends Controller
             )
             ->latest();
 
+        // A branch instructor works with their own branches' participants only.
+        $scope->scopeEnrolments($participantQuery, $user, $course);
+
         // One row per participant per assessment: the latest attempt, with the
         // number of attempts. Earlier attempts are shown inside its review window.
         $submissionQuery = AssessmentAttempt::query()
@@ -152,6 +166,8 @@ class CourseManagementController extends Controller
                 fn ($query) => $query->where('status', (string) $request->get('submission_status'))
             )
             ->latest('submitted_at');
+
+        $scope->scopeParticipants($submissionQuery, $user, $course, 'assessment_attempts.user_id');
 
         if ($format = $this->exportFormat($request)) {
             if ($request->query('list') === 'submissions') {
@@ -204,6 +220,7 @@ class CourseManagementController extends Controller
         $extensionRequests = AssignmentExtensionRequest::query()
             ->with(['assessment', 'user', 'reviewer'])
             ->whereHas('assessment', fn ($query) => $query->where('course_id', $course->id))
+            ->tap(fn ($query) => $scope->scopeParticipants($query, $user, $course))
             ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
             ->latest()
             ->paginate(20, ['*'], 'extensions_page')
@@ -212,10 +229,12 @@ class CourseManagementController extends Controller
         $pendingExtensionCount = AssignmentExtensionRequest::query()
             ->where('status', AssignmentExtensionRequest::STATUS_PENDING)
             ->whereHas('assessment', fn ($query) => $query->where('course_id', $course->id))
+            ->tap(fn ($query) => $scope->scopeParticipants($query, $user, $course))
             ->count();
 
         $announcements = $course->announcements()
-            ->with('creator')
+            ->with(['creator', 'cohort'])
+            ->when(! $seesWholeCourse, fn ($query) => $query->where(fn ($q) => $q->whereNull('cohort_id')->orWhereIn('cohort_id', $scopeCohortIds ?: [0])))
             ->latest('published_at')
             ->paginate(20, ['*'], 'announcements_page')
             ->withQueryString();
@@ -247,6 +266,10 @@ class CourseManagementController extends Controller
             'progressRows' => $progressRows,
             'participantCertificates' => $participantCertificates,
             'participantRecommendations' => $participantRecommendations,
+            // Branch delivery: which groups this staff member works with, and what they may change.
+            'scopeCohorts' => $scopeCohorts,
+            'seesWholeCourse' => $seesWholeCourse,
+            'canEditShared' => $scope->canEditSharedContent($user, $course),
             'stats' => [
                 'modules' => $course->modules()->count(),
                 'lessons' => Lesson::whereHas(
@@ -256,7 +279,7 @@ class CourseManagementController extends Controller
                 'assignments' => $course->assessments()->where('type', 'assignment')->count(),
                 'quizzes' => $course->assessments()->where('type', 'quiz')->count(),
                 'exams' => $course->assessments()->where('type', 'exam')->count(),
-                'participants' => $course->enrolments()->count(),
+                'participants' => $scope->scopeEnrolments($course->enrolments(), $user, $course)->count(),
             ],
         ]);
     }
@@ -264,6 +287,7 @@ class CourseManagementController extends Controller
     public function updateCourse(Request $request, Course $course)
     {
         $this->authorise($course);
+        $this->authoriseSharedEdit($course);
 
         $course->update($request->validate([
             'title' => ['required', 'string', 'max:190'],
@@ -282,6 +306,7 @@ class CourseManagementController extends Controller
     public function storeModule(Request $request, Course $course)
     {
         $this->authorise($course);
+        $this->authoriseSharedEdit($course);
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:190'],
@@ -303,6 +328,7 @@ class CourseManagementController extends Controller
     public function updateModule(Request $request, Course $course, CourseModule $module)
     {
         $this->authoriseModule($course, $module);
+        $this->authoriseSharedEdit($course);
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:190'],
@@ -324,6 +350,7 @@ class CourseManagementController extends Controller
     public function destroyModule(Course $course, CourseModule $module)
     {
         $this->authoriseModule($course, $module);
+        $this->authoriseSharedEdit($course);
         $module->delete();
 
         return back()->with('success', 'Module deleted.');
@@ -332,6 +359,10 @@ class CourseManagementController extends Controller
     public function storeLesson(Request $request, Course $course, CourseModule $module)
     {
         $this->authoriseModule($course, $module);
+
+        // Blank = shared with the whole course; a cohort = extra material for that group only.
+        $cohortId = $this->requestedCohortId($request);
+        $this->authoriseCohortTarget($course, $cohortId);
 
         if ($request->has('lessons')) {
             $data = $request->validate([
@@ -355,6 +386,7 @@ class CourseManagementController extends Controller
                     'external_url' => $item['external_url'] ?? null,
                     'estimated_minutes' => $item['estimated_minutes'] ?? null,
                     'position' => ++$position, 'is_published' => $request->boolean('is_published'),
+                    'cohort_id' => $cohortId,
                 ]);
                 if ($uploads !== []) {
                     $this->files()->storeMaterials($uploads, $course->id, $lesson, null, $request->user());
@@ -375,6 +407,7 @@ class CourseManagementController extends Controller
             'estimated_minutes' => $data['estimated_minutes'] ?? null,
             'position' => $data['position'] ?? (($module->lessons()->max('position') ?? 0) + 1),
             'is_published' => $request->boolean('is_published'),
+            'cohort_id' => $cohortId,
         ]);
 
         $stored = $this->files()->storeMaterials(
@@ -395,8 +428,13 @@ class CourseManagementController extends Controller
         Lesson $lesson
     ) {
         $this->authoriseLesson($course, $module, $lesson);
+        $this->authoriseLessonEdit($course, $lesson);
 
         $data = $this->validateLesson($request);
+
+        // Forms without the "Who can see this" field keep the lesson's current audience.
+        $cohortId = $request->has('cohort_id') ? $this->requestedCohortId($request) : ($lesson->cohort_id ? (int) $lesson->cohort_id : null);
+        $this->authoriseCohortTarget($course, $cohortId);
 
         // Legacy "remove existing file" checkbox: removes the original single file.
         if ($request->boolean('remove_file') && $lesson->file_path) {
@@ -430,6 +468,7 @@ class CourseManagementController extends Controller
             'estimated_minutes' => $data['estimated_minutes'] ?? null,
             'position' => $data['position'] ?? $lesson->position,
             'is_published' => $request->boolean('is_published'),
+            'cohort_id' => $cohortId,
         ]);
 
         return back()->with('success', 'Lesson updated.');
@@ -438,6 +477,7 @@ class CourseManagementController extends Controller
     public function destroyLesson(Course $course, CourseModule $module, Lesson $lesson)
     {
         $this->authoriseLesson($course, $module, $lesson);
+        $this->authoriseLessonEdit($course, $lesson);
 
         $this->files()->deleteAllFor($lesson);
 
@@ -464,9 +504,13 @@ class CourseManagementController extends Controller
     public function storeAssessment(Request $request, Course $course)
     {
         $this->authorise($course);
+        $this->authoriseSharedEdit($course);
 
         $data = $this->validateAssessment($request);
 
+        // Created with its group deadlines in one transaction, so the "new assignment"
+        // notification (sent after commit) tells each group its own due date.
+        $assessment = DB::transaction(function () use ($course, $data, $request) {
         $assessment = $course->assessments()->create([
             'course_module_id' => $data['course_module_id'] ?? null,
             'title' => $data['title'],
@@ -480,6 +524,11 @@ class CourseManagementController extends Controller
             'total_marks' => $data['total_marks'] ?? null,
             'is_published' => $this->publishChoice($request),
         ] + $this->submissionSettings($data));
+
+        $this->saveCohortDeadlines($course, $assessment, $data['cohort_due'] ?? []);
+
+        return $assessment;
+        });
 
         $this->files()->storeMaterials(
             $this->files()->uploadedFiles($request, 'assessment_files', 'assessment_file'),
@@ -495,6 +544,7 @@ class CourseManagementController extends Controller
     public function updateAssessment(Request $request, Course $course, Assessment $assessment)
     {
         $this->authoriseAssessment($course, $assessment);
+        $this->authoriseSharedEdit($course);
 
         $data = $this->validateAssessment($request);
 
@@ -520,27 +570,113 @@ class CourseManagementController extends Controller
             $request->user()
         );
 
-        $assessment->update([
-            'course_module_id' => $data['course_module_id'] ?? null,
-            'title' => $data['title'],
-            'type' => $data['type'],
-            'instructions' => $data['instructions'] ?? null,
-            'pass_mark' => $data['pass_mark'],
-            'max_attempts' => $data['max_attempts'],
-            'opens_at' => $data['opens_at'] ?? null,
-            'due_at' => $data['due_at'] ?? null,
-            'duration_minutes' => $data['duration_minutes'] ?? null,
-            'total_marks' => $data['total_marks'] ?? null,
-            'is_published' => $this->publishChoice($request),
-        ] + $this->submissionSettings($data));
+        $changedDeadlines = DB::transaction(function () use ($assessment, $course, $data, $request) {
+            $assessment->update([
+                'course_module_id' => $data['course_module_id'] ?? null,
+                'title' => $data['title'],
+                'type' => $data['type'],
+                'instructions' => $data['instructions'] ?? null,
+                'pass_mark' => $data['pass_mark'],
+                'max_attempts' => $data['max_attempts'],
+                'opens_at' => $data['opens_at'] ?? null,
+                'due_at' => $data['due_at'] ?? null,
+                'duration_minutes' => $data['duration_minutes'] ?? null,
+                'total_marks' => $data['total_marks'] ?? null,
+                'is_published' => $this->publishChoice($request),
+            ] + $this->submissionSettings($data));
+
+            return $this->saveCohortDeadlines($course, $assessment, $data['cohort_due'] ?? []);
+        });
+
+        $this->notifyCohortDeadlines($assessment, $changedDeadlines);
 
         return back()->with('success', ucfirst($data['type']).($assessment->is_published ? ' saved and published.' : ' saved as a draft.'));
+    }
+
+    /**
+     * Set or clear group (cohort) due dates for an assessment. A branch instructor
+     * can only change their own groups; a blank date returns the group to the
+     * course-wide due date.
+     */
+    public function updateCohortDeadlines(Request $request, Course $course, Assessment $assessment)
+    {
+        $this->authoriseAssessment($course, $assessment);
+
+        $data = $request->validate([
+            'cohort_due' => ['required', 'array'],
+            'cohort_due.*' => ['nullable', 'date'],
+        ]);
+
+        $changed = DB::transaction(fn () => $this->saveCohortDeadlines($course, $assessment, $data['cohort_due']));
+
+        if ($changed === []) {
+            return back()->with('success', 'No group due dates changed.');
+        }
+
+        // So the mobile app picks up the new dates on its next sync.
+        $assessment->touch();
+        $this->notifyCohortDeadlines($assessment, $changed);
+
+        return back()->with('success', count($changed).' group due date(s) saved for "'.$assessment->title.'".');
+    }
+
+    /**
+     * Save cohort_due[cohortId] => date|blank for the groups the user covers.
+     *
+     * @return array<int, Carbon|null> cohort id => new due date (null = back to the course date), changed rows only
+     */
+    private function saveCohortDeadlines(Course $course, Assessment $assessment, array $input): array
+    {
+        $user = auth()->user();
+        $existing = $assessment->cohortDeadlines()->get()->keyBy('cohort_id');
+        $changed = [];
+
+        foreach ($input as $cohortId => $value) {
+            $cohortId = (int) $cohortId;
+
+            if ($cohortId <= 0 || ! $this->scope()->coversCohort($user, $course, $cohortId)) {
+                continue;
+            }
+
+            $current = $existing->get($cohortId);
+            $due = filled($value) ? Carbon::parse($value) : null;
+
+            if ($due === null) {
+                if ($current) {
+                    $current->delete();
+                    $changed[$cohortId] = null;
+                }
+                continue;
+            }
+
+            if ($current && $current->due_at->equalTo($due)) {
+                continue;
+            }
+
+            AssessmentCohortDeadline::updateOrCreate(
+                ['assessment_id' => $assessment->id, 'cohort_id' => $cohortId],
+                ['due_at' => $due, 'set_by' => $user->id]
+            );
+            $changed[$cohortId] = $due;
+        }
+
+        return $changed;
+    }
+
+    private function notifyCohortDeadlines(Assessment $assessment, array $changed): void
+    {
+        $observer = app(LearningNotificationObserver::class);
+
+        foreach ($changed as $cohortId => $due) {
+            $observer->cohortDeadlineChanged($assessment->fresh(), (int) $cohortId, $due);
+        }
     }
 
     /** One-click publish for a draft from its card. */
     public function publishAssessment(Course $course, Assessment $assessment)
     {
         $this->authoriseAssessment($course, $assessment);
+        $this->authoriseSharedEdit($course);
 
         $assessment->update(['is_published' => true]);
 
@@ -550,6 +686,7 @@ class CourseManagementController extends Controller
     public function destroyAssessment(Course $course, Assessment $assessment)
     {
         $this->authoriseAssessment($course, $assessment);
+        $this->authoriseSharedEdit($course);
 
         $this->files()->deleteAllFor($assessment);
 
@@ -586,6 +723,13 @@ class CourseManagementController extends Controller
 
         abort_unless($belongsToCourse, 404);
 
+        // Same rule as editing the lesson or assessment the file belongs to.
+        if ($file->lesson_id && ($lesson = Lesson::find($file->lesson_id))) {
+            $this->authoriseLessonEdit($course, $lesson);
+        } else {
+            $this->authoriseSharedEdit($course);
+        }
+
         $name = $file->displayName();
         $this->files()->deleteLearningFile($file);
 
@@ -595,6 +739,7 @@ class CourseManagementController extends Controller
     public function addQuestion(Request $request, Course $course, Assessment $assessment)
     {
         $this->authoriseAssessment($course, $assessment);
+        $this->authoriseSharedEdit($course);
 
         $data = $request->validate([
             'question_type' => ['required', 'in:multiple_choice,true_false,short_text,long_text'],
@@ -618,6 +763,7 @@ class CourseManagementController extends Controller
     public function updateQuestion(Request $request, Course $course, Assessment $assessment, AssessmentQuestion $question)
     {
         $this->authoriseAssessment($course, $assessment);
+        $this->authoriseSharedEdit($course);
         abort_unless((int) $question->assessment_id === (int) $assessment->id, 404);
         $data = $request->validate([
             'question_type' => ['required', 'in:multiple_choice,true_false,short_text,long_text'],
@@ -652,6 +798,7 @@ class CourseManagementController extends Controller
     public function importQuestions(Request $request, Course $course, Assessment $assessment)
     {
         $this->authoriseAssessment($course, $assessment);
+        $this->authoriseSharedEdit($course);
         abort_unless(in_array($assessment->type, ['quiz', 'exam'], true), 404);
         $data = $request->validate(['questions_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120']]);
         $handle = fopen($data['questions_file']->getRealPath(), 'r');
@@ -756,6 +903,7 @@ class CourseManagementController extends Controller
         AssessmentQuestion $question
     ) {
         $this->authoriseAssessment($course, $assessment);
+        $this->authoriseSharedEdit($course);
 
         abort_unless((int) $question->assessment_id === (int) $assessment->id, 404);
 
@@ -775,7 +923,12 @@ class CourseManagementController extends Controller
             'expires_at' => ['nullable', 'date', 'after:published_at'],
         ]);
 
+        // Blank = whole course; a cohort = that group only.
+        $cohortId = $this->requestedCohortId($request);
+        $this->authoriseCohortTarget($course, $cohortId);
+
         $course->announcements()->create([
+            'cohort_id' => $cohortId,
             'title' => $data['title'],
             'body' => $data['body'],
             'published_at' => $data['published_at'] ?? now(),
@@ -790,6 +943,11 @@ class CourseManagementController extends Controller
     {
         $this->authorise($course);
         abort_unless((int) $announcement->course_id === (int) $course->id, 404);
+
+        // Its author, or anyone who could have posted it to the same audience, may remove it.
+        if ((int) $announcement->created_by !== (int) auth()->id()) {
+            $this->authoriseCohortTarget($course, $announcement->cohort_id ? (int) $announcement->cohort_id : null);
+        }
 
         $announcement->delete();
 
@@ -806,6 +964,7 @@ class CourseManagementController extends Controller
             (int) $attempt->assessment?->course_id === (int) $course->id,
             404
         );
+        $this->authoriseParticipant($course, (int) $attempt->user_id);
 
         $data = $request->validate([
             'score' => ['nullable', 'numeric', 'min:0'],
@@ -832,7 +991,9 @@ class CourseManagementController extends Controller
         $data = $request->validate(['ids' => ['required', 'array', 'min:1', 'max:10'], 'ids.*' => ['integer']]);
         $attempts = AssessmentAttempt::with(['assessment', 'user', 'files'])
             ->whereIn('id', $data['ids'])->where('status', 'submitted')
-            ->whereHas('assessment', fn ($q) => $q->where('course_id', $course->id)->whereIn('type', ['assignment', 'quiz', 'exam']))->get();
+            ->whereHas('assessment', fn ($q) => $q->where('course_id', $course->id)->whereIn('type', ['assignment', 'quiz', 'exam']))
+            ->tap(fn ($q) => $this->scope()->scopeParticipants($q, $request->user(), $course))
+            ->get();
         abort_if($attempts->isEmpty(), 422, 'Select submitted assessments from this course.');
         $drafts = [];
         foreach ($attempts as $attempt) {
@@ -890,7 +1051,9 @@ class CourseManagementController extends Controller
         foreach (array_unique($data['ids']) as $id) {
             if (! isset($drafts[$id])) continue;
             $attempt = AssessmentAttempt::whereKey($id)->where('status', 'submitted')
-                ->whereHas('assessment', fn ($q) => $q->where('course_id', $course->id))->first();
+                ->whereHas('assessment', fn ($q) => $q->where('course_id', $course->id))
+                ->tap(fn ($q) => $this->scope()->scopeParticipants($q, $request->user(), $course))
+                ->first();
             if (! $attempt) continue;
             $attempt->update(['score' => $drafts[$id]['score'], 'percentage' => $drafts[$id]['percentage'],
                 'instructor_feedback' => $drafts[$id]['feedback'], 'status' => 'graded', 'graded_at' => now(), 'graded_by' => $request->user()->id]);
@@ -971,7 +1134,7 @@ class CourseManagementController extends Controller
         }
 
         try {
-            $archive = $archives->build($course, $assessment);
+            $archive = $archives->build($course, $assessment, $this->scope()->participantIds($request->user(), $course));
         } catch (\RuntimeException $exception) {
             return back()->with('error', $exception->getMessage());
         }
@@ -1011,6 +1174,7 @@ class CourseManagementController extends Controller
         $attempt->loadMissing('assessment');
 
         abort_unless((int) $attempt->assessment?->course_id === (int) $course->id, 404);
+        $this->authoriseParticipant($course, (int) $attempt->user_id);
 
         // Legacy single-file route: serves the submission's first file.
         $file = $this->files()->attemptFiles($attempt)->first();
@@ -1023,6 +1187,7 @@ class CourseManagementController extends Controller
     {
         $this->authorise($course);
         abort_unless((int) $enrolment->course_id === (int) $course->id, 404);
+        $this->authoriseParticipant($course, (int) $enrolment->user_id);
 
         $enrolment->update($request->validate([
             'status' => ['required', 'in:enrolled,in_progress,completed,withdrawn,failed'],
@@ -1037,6 +1202,7 @@ class CourseManagementController extends Controller
     {
         $this->authorise($course);
         abort_unless((int) $enrolment->course_id === (int) $course->id, 404);
+        $this->authoriseParticipant($course, (int) $enrolment->user_id);
 
         $enrolment->load(['user', 'cohort']);
 
@@ -1047,6 +1213,8 @@ class CourseManagementController extends Controller
                     ->where('lp.user_id', '=', $enrolment->user_id);
             })
             ->where('cm.course_id', $course->id)
+            // Shared lessons plus this participant's own group's extra material.
+            ->where(fn ($q) => $q->whereNull('l.cohort_id')->when($enrolment->cohort_id, fn ($q) => $q->orWhere('l.cohort_id', $enrolment->cohort_id)))
             ->select(
                 'l.id',
                 'l.title',
@@ -1104,7 +1272,7 @@ class CourseManagementController extends Controller
     {
         $this->authorise($course);
 
-        $enrolments = $course->enrolments()
+        $enrolments = $this->scope()->scopeEnrolments($course->enrolments(), auth()->user(), $course)
             ->with('user')
             ->orderBy('id')
             ->get();
@@ -1241,6 +1409,8 @@ class CourseManagementController extends Controller
             'submission_formats.*' => ['string', 'in:'.implode(',', array_keys(Assessment::SUBMISSION_FORMATS))],
             'max_submission_files' => ['nullable', 'integer', 'min:1', 'max:'.Assessment::MAX_SUBMISSION_FILES_LIMIT],
             'allow_link_submissions' => ['nullable', 'boolean'],
+            'cohort_due' => ['nullable', 'array'],
+            'cohort_due.*' => ['nullable', 'date'],
         ] + $this->files()->uploadRules('assessment_files', 'assignment_mimes', 'assessment_file'), [
             'submission_formats.*.in' => 'Choose file formats from the list.',
             'assessment_files.max' => 'You can upload up to :max files at a time.',
@@ -1284,12 +1454,15 @@ class CourseManagementController extends Controller
             ->join('course_modules as cm', 'cm.id', '=', 'l.course_module_id')
             ->where('cm.course_id', $course->id)
             ->where('l.is_published', true)
-            ->select('l.id', 'l.course_module_id')
+            ->select('l.id', 'l.course_module_id', 'l.cohort_id')
             ->get();
 
         $lessonIds = $courseLessons->pluck('id');
-        $moduleLessonIds = $courseLessons->groupBy('course_module_id')
-            ->map(fn ($rows) => $rows->pluck('id')->all());
+
+        // Each participant is measured on the lessons meant for them: shared + their group's.
+        $lessonsFor = fn (?int $cohortId) => $courseLessons->filter(
+            fn ($lesson) => $lesson->cohort_id === null || ($cohortId !== null && (int) $lesson->cohort_id === $cohortId)
+        );
 
         $completedProgress = $lessonIds->isEmpty()
             ? collect()
@@ -1333,8 +1506,7 @@ class CourseManagementController extends Controller
         ];
 
         return $enrolments->map(function ($enrolment) use (
-            $courseLessons,
-            $moduleLessonIds,
+            $lessonsFor,
             $completedByUser,
             $attemptsByUser,
             $assessments,
@@ -1342,7 +1514,11 @@ class CourseManagementController extends Controller
             $attendanceByUser
         ) {
             $userId = (int) $enrolment->user_id;
-            $completedIds = $completedByUser->get($userId, collect());
+            $ownLessons = $lessonsFor($enrolment->cohort_id ? (int) $enrolment->cohort_id : null);
+            $moduleLessonIds = $ownLessons->groupBy('course_module_id')->map(fn ($rows) => $rows->pluck('id')->all());
+            $completedIds = $completedByUser->get($userId, collect())
+                ->intersect($ownLessons->pluck('id')->map(fn ($id) => (int) $id))
+                ->values();
 
             $modulesCompleted = $moduleLessonIds->filter(function ($lessonIds) use ($completedIds) {
                 if ($lessonIds === []) {
@@ -1398,7 +1574,7 @@ class CourseManagementController extends Controller
                 'email' => $enrolment->user?->email ?? '',
                 'status' => $enrolment->status,
                 'lessons_completed' => $completedIds->count(),
-                'lessons_total' => $courseLessons->count(),
+                'lessons_total' => $ownLessons->count(),
                 'modules_completed' => $modulesCompleted,
                 'modules_total' => $moduleLessonIds->count(),
                 'assignment_progress' => $progressFor('assignment'),
@@ -1450,6 +1626,62 @@ class CourseManagementController extends Controller
         $this->authorise($course);
         $extensionRequest->loadMissing('assessment');
         abort_unless((int) $extensionRequest->assessment?->course_id === (int) $course->id, 404);
+        $this->authoriseParticipant($course, (int) $extensionRequest->user_id);
+    }
+
+    private ?InstructorScope $scopeInstance = null;
+
+    private function scope(): InstructorScope
+    {
+        return $this->scopeInstance ??= app(InstructorScope::class);
+    }
+
+    /** Shared course content: modules, shared lessons, assessments, questions, course details. */
+    private function authoriseSharedEdit(Course $course): void
+    {
+        abort_unless(
+            $this->scope()->canEditSharedContent(auth()->user(), $course),
+            403,
+            'Only the lead instructor can change the shared course content. You can add lessons, due dates and announcements for your own group.'
+        );
+    }
+
+    /** A target audience: null = whole course (shared content), otherwise one of the user's groups. */
+    private function authoriseCohortTarget(Course $course, ?int $cohortId): void
+    {
+        if ($cohortId === null) {
+            $this->authoriseSharedEdit($course);
+
+            return;
+        }
+
+        abort_unless(
+            $this->scope()->coversCohort(auth()->user(), $course, $cohortId),
+            403,
+            'Choose one of your own groups.'
+        );
+    }
+
+    private function authoriseLessonEdit(Course $course, Lesson $lesson): void
+    {
+        $this->authoriseCohortTarget($course, $lesson->cohort_id ? (int) $lesson->cohort_id : null);
+    }
+
+    /** The participant must be one this staff member works with (their branch, for a branch instructor). */
+    private function authoriseParticipant(Course $course, int $participantId): void
+    {
+        abort_unless(
+            $this->scope()->coversParticipant(auth()->user(), $course, $participantId),
+            403,
+            'This participant is in another branch.'
+        );
+    }
+
+    private function requestedCohortId(Request $request): ?int
+    {
+        $request->validate(['cohort_id' => ['nullable', 'integer']]);
+
+        return $request->filled('cohort_id') ? (int) $request->input('cohort_id') : null;
     }
 
     private function authoriseModule(Course $course, CourseModule $module): void

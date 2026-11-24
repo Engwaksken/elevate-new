@@ -78,6 +78,12 @@ class Assessment extends Model
         return $this->belongsTo(Course::class);
     }
 
+    /** Cohort-specific due dates that replace due_at for participants in that cohort. */
+    public function cohortDeadlines()
+    {
+        return $this->hasMany(AssessmentCohortDeadline::class);
+    }
+
     public function extensionRequests()
     {
         return $this->hasMany(AssignmentExtensionRequest::class);

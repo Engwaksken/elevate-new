@@ -18,6 +18,7 @@
 
 <style>
 .participant-course-tabs{margin:18px 0 24px}.participant-course-tabs .eh-tab-nav{display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid #eaecf0}.participant-course-tabs .eh-tab-button{border:0;background:transparent;padding:12px 16px;font:inherit;font-weight:700;color:#667085;cursor:pointer;border-bottom:3px solid transparent}.participant-course-tabs .eh-tab-button.active{color:#800000;border-color:#800000}.participant-course-list{display:grid;gap:10px}.participant-module,.participant-lesson-group{border:1px solid #e7e4e4;border-radius:10px;background:#fff}.participant-module>summary,.participant-lesson-group>summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;padding:14px 16px;font-weight:700}.participant-module>summary::-webkit-details-marker,.participant-lesson-group>summary::-webkit-details-marker{display:none}.participant-module>summary:after,.participant-lesson-group>summary:after{content:'+';margin-left:auto;font-size:1.2rem;color:#800000}.participant-module[open]>summary:after,.participant-lesson-group[open]>summary:after{content:'−'}.participant-module-content{padding:0 16px 14px}.participant-module-content>p{margin:0 0 10px;color:#667085}.participant-lesson-list{list-style:none;padding:0;margin:0;border-top:1px solid #eaecf0}.participant-lesson-list li{display:flex;gap:10px;align-items:center;padding:11px 8px;border-bottom:1px solid #f0eeee}.participant-lesson-list li:last-child{border-bottom:0}.participant-lesson-list li>i{color:#800000}.participant-lesson-list a{font-weight:700;color:#344054;text-decoration:none}.participant-lesson-list a:hover{text-decoration:underline;color:#800000}.participant-lesson-list .is-locked{color:#98a2b3}.participant-lesson-group{margin-top:8px}.participant-lesson-group>summary{padding:10px 12px;font-size:.92rem}
+.participant-announcements ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}.participant-announcements li{padding:12px 14px;border:1px solid #e7e4e4;border-radius:10px;background:#fff}.participant-announcement-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.participant-announcement-head small{margin-left:auto;color:#667085}.participant-announcements p{margin:6px 0 0;color:#344054}
 </style>
 <div class="eh-tabs participant-course-tabs" data-eh-tabs>
 <div class="eh-tab-nav" role="tablist" aria-label="Course information">
@@ -149,6 +150,24 @@
 @endif
 </div></div>
 
+@if($enrolment && isset($announcements) && $announcements->isNotEmpty())
+<section class="eh-tab-section participant-announcements" aria-labelledby="course-announcements-title">
+<h2 id="course-announcements-title"><i class="fas fa-bullhorn"></i> Announcements</h2>
+<ul>
+@foreach($announcements as $announcement)
+<li>
+    <div class="participant-announcement-head">
+        <strong>{{ $announcement->title }}</strong>
+        @if($announcement->cohort_id)<span class="status-chip published">Your group</span>@endif
+        <small>{{ ($announcement->published_at ?? $announcement->created_at)?->format('d M Y') }}</small>
+    </div>
+    <p>{!! nl2br(e($announcement->body)) !!}</p>
+</li>
+@endforeach
+</ul>
+</section>
+@endif
+
 <section class="eh-tab-section" aria-labelledby="course-modules-title">
 <h2 id="course-modules-title"><i class="fas fa-layer-group"></i> Course modules and lessons</h2>
 <div class="participant-course-list">
@@ -161,7 +180,7 @@
 @if($module->description)<p>{{ $module->description }}</p>@endif
 <details class="participant-lesson-group"><summary>Lessons <small>({{ $module->lessons->count() }})</small></summary><ul class="participant-lesson-list">
 @foreach($module->lessons as $lesson)
-<li>@if($enrolment && $state['accessible'])<i class="fas fa-file-lines"></i><a href="{{ route('learning.lesson.show',$lesson) }}">{{ $lesson->title }}</a>@else<i class="fas fa-lock"></i><span class="is-locked">{{ $lesson->title }}</span>@endif</li>
+<li>@if($enrolment && $state['accessible'])<i class="fas fa-file-lines"></i><a href="{{ route('learning.lesson.show',$lesson) }}">{{ $lesson->title }}</a>@else<i class="fas fa-lock"></i><span class="is-locked">{{ $lesson->title }}</span>@endif @if($lesson->cohort_id)<span class="status-chip published" title="Extra material from your group's instructor">Your group</span>@endif</li>
 @endforeach
 </ul></details>
 

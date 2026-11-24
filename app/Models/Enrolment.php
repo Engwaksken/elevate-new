@@ -32,4 +32,12 @@ class Enrolment extends Model
     public function course(){ return $this->belongsTo(Course::class); }
     public function user(){ return $this->belongsTo(User::class); }
     public function cohort(){ return $this->belongsTo(Cohort::class); }
+
+    /** The cohort a participant is in on a course, or null (not enrolled / no cohort). */
+    public static function cohortIdFor(int $userId, int $courseId): ?int
+    {
+        $cohortId = static::query()->where('user_id', $userId)->where('course_id', $courseId)->value('cohort_id');
+
+        return $cohortId ? (int) $cohortId : null;
+    }
 }

@@ -37,6 +37,11 @@ class ProgressController extends Controller
         // Lessons: published lessons in published modules of enrolled courses.
         $lessonStats = DB::table('lessons as l')
             ->join('course_modules as cm', 'cm.id', '=', 'l.course_module_id')
+            // Shared lessons plus extra material for the participant's own cohort on that course.
+            ->join('enrolments as en', function ($join) use ($user) {
+                $join->on('en.course_id', '=', 'cm.course_id')->where('en.user_id', '=', $user->id);
+            })
+            ->where(fn ($q) => $q->whereNull('l.cohort_id')->orWhereColumn('l.cohort_id', 'en.cohort_id'))
             ->leftJoin('lesson_progress as lp', function ($join) use ($user) {
                 $join->on('lp.lesson_id', '=', 'l.id')->where('lp.user_id', '=', $user->id);
             })

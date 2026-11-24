@@ -25,6 +25,12 @@
 
     $allModules = $course->modules()->orderBy('position')->get();
     $pendingExtensionCount = (int) ($pendingExtensionCount ?? 0);
+    $scopeCohorts = $scopeCohorts ?? $course->cohorts;
+    $seesWholeCourse = $seesWholeCourse ?? true;
+    $canEditShared = $canEditShared ?? true;
+    $audience = ['scopeCohorts' => $scopeCohorts, 'canEditShared' => $canEditShared];
+    // A lesson is editable when it is shared and the user may edit shared content, or it is for one of their groups.
+    $canEditLesson = fn ($lesson) => $lesson->cohort_id === null ? $canEditShared : $scopeCohorts->contains('id', (int) $lesson->cohort_id);
 @endphp
 
 <style>
@@ -35,6 +41,8 @@
 .icm-tabs{display:flex;gap:7px;overflow:auto;padding:8px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:18px}
 .icm-tabs a{padding:9px 12px;border-radius:8px;color:#475467;text-decoration:none;font-weight:700;white-space:nowrap}
 .icm-tabs a.active{background:#800000;color:#fff}
+.icm-branch-note{display:flex;gap:10px;align-items:flex-start;background:#fffaeb;border-color:#fedf89;color:#7a5d00}.icm-branch-note i{margin-top:3px}
+.icm-audience{background:#eef4ff;color:#3538cd}
 .icm-panel{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin-bottom:18px}
 .icm-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .icm-panel-head h2,.icm-panel-head h3{margin:0}
@@ -123,6 +131,21 @@
         </a>
     @endforeach
 </nav>
+
+@if(! $seesWholeCourse || ! $canEditShared)
+<div class="icm-panel icm-branch-note" role="note">
+    <i class="fas fa-location-dot" aria-hidden="true"></i>
+    <div>
+        @if(! $seesWholeCourse)
+            <strong>You are seeing your branch's participants only</strong>
+            ({{ $scopeCohorts->pluck('name')->join(', ') ?: 'no groups at your branch yet' }}).
+        @endif
+        @unless($canEditShared)
+            The shared lessons and assessments are managed by the course's lead instructor. You can add extra lessons, due dates and announcements for your own group.
+        @endunless
+    </div>
+</div>
+@endif
 
 @if($activeTab === 'overview')
 <section class="icm-panel">
@@ -224,6 +247,7 @@
         </div>
         <div class="full"><button type="button" class="btn btn-outline btn-sm" id="addLessonRow"><i class="fas fa-plus"></i> Add another lesson</button></div>
         <x-learning.multi-file-input class="full" name="resource_files" label="Files to attach to each new lesson" mimes="lesson_mimes" :hint="'Selected files are attached to every lesson in this batch.'" />
+        @include('instructor.partials.audience-select', $audience + ['id' => 'lessonAudience', 'sharedLabel' => 'Whole course (shared lesson)', 'selected' => old('cohort_id') ? (int) old('cohort_id') : null])
         <label><input type="checkbox" name="is_published" value="1"> Published</label>
         <div><button class="btn btn-primary" @disabled($allModules->isEmpty())><i class="fas fa-plus"></i> Add Lessons</button></div>
     </form>
@@ -264,6 +288,7 @@ document.addEventListener('DOMContentLoaded', function () {
         @forelse($lessons as $lesson)
         <article class="icm-card">
             <span class="icm-chip">{{ ucfirst($lesson->content_type) }}</span>
+            @if($lesson->cohort_id)<span class="icm-chip icm-audience" title="Extra material for this group only">Only {{ $lesson->cohort?->name ?? 'one group' }}</span>@endif
             <h3>{{ $lesson->title }}</h3>
             <p class="icm-muted">{{ $lesson->module?->title }} · {{ $lesson->is_published ? 'Published' : 'Draft' }}</p>
 
@@ -274,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <x-learning.file-list compact :files="$lesson->files" :title="$lesson->files->count().' file(s)'"
                 :delete-url="fn ($file) => route('instructor.courses.files.destroy', [$course, $file])" />
 
+            @if($canEditLesson($lesson))
             <details class="icm-details">
                 <summary>Edit lesson</summary>
                 <form method="POST" enctype="multipart/form-data" action="{{ route('instructor.courses.lessons.update',[$course,$lesson->module,$lesson]) }}" class="icm-form-grid" style="margin-top:12px">
@@ -286,6 +312,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div><label>External URL</label><input type="url" name="external_url" value="{{ $lesson->external_url }}"></div>
                     <x-learning.multi-file-input class="full" name="resource_files" label="Add files" mimes="lesson_mimes" :hint="'Adds to the files already on this lesson. Use Remove on a file above to delete it.'" />
                     <div class="full"><label>Content</label><textarea name="content">{{ $lesson->content }}</textarea></div>
+                    @include('instructor.partials.audience-select', $audience + ['sharedLabel' => 'Whole course (shared lesson)', 'selected' => $lesson->cohort_id ? (int) $lesson->cohort_id : null])
                     <label><input type="checkbox" name="is_published" value="1" @checked($lesson->is_published)> Published</label>
                     <div><button class="btn btn-primary btn-sm">Save Lesson</button></div>
                 </form>
@@ -295,6 +322,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 @csrf @method('DELETE')
                 <button class="btn btn-outline btn-sm"><i class="fas fa-trash"></i> Delete</button>
             </form>
+            @endif
         </article>
         @empty
         <div class="icm-card">No lessons found.</div>
@@ -328,9 +356,10 @@ document.addEventListener('DOMContentLoaded', function () {
 @foreach(['assignment'=>'assignments','quiz'=>'quizzes','exam'=>'exams'] as $assessmentType => $tabName)
 @if($activeTab === $tabName)
 @php
-    $assessmentList = $course->assessments()->where('type',$assessmentType)->with(['files','questions'])->withCount(['questions','attempts'])->latest()->get();
+    $assessmentList = $course->assessments()->where('type',$assessmentType)->with(['files','questions','cohortDeadlines'])->withCount(['questions','attempts'])->latest()->get();
     $openNew = $assessmentList->isEmpty() || ($errors->any() && old('type') === $assessmentType && ! old('_method'));
 @endphp
+@if($canEditShared)
 <section class="icm-panel">
     <details class="ag-new" @if($openNew) open @endif>
     <summary><i class="fas fa-plus"></i> New {{ $assessmentType }}</summary>
@@ -352,10 +381,12 @@ document.addEventListener('DOMContentLoaded', function () {
         @if($assessmentType === 'assignment')
             @include('instructor.partials.assessment-submission-settings')
         @endif
+        @include('instructor.partials.group-deadlines', ['assessment' => null])
         @include('instructor.partials.publish-buttons', ['label' => $assessmentType])
     </form>
     </details>
 </section>
+@endif
 
 <section class="icm-panel">
     <div class="icm-panel-head"><div><h2>{{ ucfirst($tabName) }} <span class="ag-count">{{ $assessmentList->count() }}</span></h2><p class="icm-muted">Expand a card for details, editing{{ $assessmentType !== 'assignment' ? ' and questions' : '' }}.</p></div></div>
@@ -370,9 +401,10 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="ag-meta">
                 <span><i class="fas fa-inbox"></i>@if($assessmentType !== 'assignment'){{ $assessment->questions_count }} question(s) · @endif{{ $assessment->attempts_count }} {{ $assessmentType === 'assignment' ? 'submission(s)' : 'attempt(s)' }}</span>
                 <span><i class="fas fa-calendar-xmark"></i>{{ $assessment->due_at ? 'Closes '.$assessment->due_at->format('d M Y H:i') : 'No closing date' }}</span>
+                @if($assessment->cohortDeadlines->isNotEmpty())<span><i class="fas fa-users"></i>{{ $assessment->cohortDeadlines->count() }} group date(s)</span>@endif
             </div>
             <div class="ag-card-actions">
-                @unless($assessment->is_published)
+                @unless($assessment->is_published || ! $canEditShared)
                     <form method="POST" action="{{ route('instructor.courses.assessments.publish',[$course,$assessment]) }}">@csrf
                         <button class="btn btn-primary btn-sm"><i class="fas fa-paper-plane"></i> Publish</button>
                     </form>
@@ -391,6 +423,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     :delete-url="fn ($file) => route('instructor.courses.files.destroy', [$course, $file])" />
             </details>
 
+            @include('instructor.partials.group-deadlines', ['assessment' => $assessment])
+
+            @if($canEditShared)
             <details class="ag-more ag-wide">
                 <summary>Edit {{ $assessmentType }}</summary>
                 <form method="POST" enctype="multipart/form-data" action="{{ route('instructor.courses.assessments.update',[$course,$assessment]) }}" class="icm-form-grid" style="margin-top:12px">
@@ -412,8 +447,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     @include('instructor.partials.publish-buttons', ['label' => $assessmentType, 'published' => (bool) $assessment->is_published])
                 </form>
             </details>
+            @endif
 
-            @if(in_array($assessmentType,['quiz','exam'],true))
+            @if(in_array($assessmentType,['quiz','exam'],true) && $canEditShared)
             <details class="ag-more ag-wide">
                 <summary>Preview &amp; manage questions ({{ $assessment->questions->count() }})</summary>
                 <div style="margin:12px 0;padding:14px;border:1px solid #eaecf0;border-radius:10px">
@@ -465,10 +501,12 @@ document.addEventListener('DOMContentLoaded', function () {
             </details>
             @endif
 
+            @if($canEditShared)
             <form method="POST" action="{{ route('instructor.courses.assessments.destroy',[$course,$assessment]) }}" onsubmit="return confirm('Delete this {{ $assessmentType }}?')" class="ag-more">
                 @csrf @method('DELETE')
                 <button class="ag-toolbar-btn" style="color:#b42318"><i class="fas fa-trash"></i> Delete {{ $assessmentType }}</button>
             </form>
+            @endif
         </article>
         @empty
         <div class="icm-card" style="grid-column:1/-1">No {{ $tabName }} created yet.</div>
@@ -803,10 +841,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
 @if($activeTab === 'announcements')
 <section class="icm-panel">
-    <div class="icm-panel-head"><div><h2>Announcements</h2><p class="icm-muted">Publish course-specific updates for enrolled participants.</p></div></div>
+    <div class="icm-panel-head"><div><h2>Announcements</h2><p class="icm-muted">Publish updates for the whole course or for one group. Participants see them on their course page and in the app, and get a notification.</p></div></div>
     <form method="POST" action="{{ route('instructor.courses.announcements.store',$course) }}" class="icm-form-grid">
         @csrf
         <div><label>Title</label><input name="title" required></div>
+        @include('instructor.partials.audience-select', $audience + ['id' => 'announcementAudience', 'label' => 'Send to', 'selected' => old('cohort_id') ? (int) old('cohort_id') : null])
         <div><label>Publish at</label><input type="datetime-local" name="published_at"></div>
         <div><label>Expires at</label><input type="datetime-local" name="expires_at"></div>
         <div class="full"><label>Announcement</label><textarea name="body" required></textarea></div>
@@ -818,8 +857,9 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="icm-card-grid">
         @forelse($announcements as $announcement)
         <article class="icm-card">
+            <span class="icm-chip {{ $announcement->cohort_id ? 'icm-audience' : '' }}">{{ $announcement->cohort_id ? 'Only '.($announcement->cohort?->name ?? 'one group') : 'Whole course' }}</span>
             <h3>{{ $announcement->title }}</h3>
-            <p class="icm-muted">Published {{ $announcement->published_at?->format('d M Y H:i') ?? 'immediately' }}</p>
+            <p class="icm-muted">Published {{ $announcement->published_at?->format('d M Y H:i') ?? 'immediately' }}@if($announcement->creator) · {{ $announcement->creator->name }}@endif</p>
             <p>{{ $announcement->body }}</p>
             <form method="POST" action="{{ route('instructor.courses.announcements.destroy',[$course,$announcement]) }}" onsubmit="return confirm('Delete this announcement?')">
                 @csrf @method('DELETE')

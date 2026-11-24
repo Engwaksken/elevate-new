@@ -29,7 +29,7 @@ class LessonController extends Controller
             404
         );
         abort_unless(Enrolment::where('course_id', $course->id)->where('user_id', auth()->id())->exists(), 403);
-        abort_unless($accessService->canAccess($lesson->module, auth()->user()), 403, 'This module is locked.');
+        abort_unless($accessService->canAccessLesson($lesson, auth()->user()), 403, 'This module is locked.');
 
         $result = $progress->saveProgress(auth()->user(), $lesson, null, (int) $data['seconds']);
 
@@ -58,7 +58,7 @@ class LessonController extends Controller
         );
 
         abort_unless(
-            $accessService->canAccess($lesson->module,auth()->user()),
+            $accessService->canAccessLesson($lesson,auth()->user()),
             403,
             'This module is locked. Complete the previous module or wait for your instructor to release it.'
         );
@@ -97,7 +97,7 @@ class LessonController extends Controller
         );
 
         abort_unless(
-            $accessService->canAccess($lesson->module,auth()->user()),
+            $accessService->canAccessLesson($lesson,auth()->user()),
             403,
             'This module is locked.'
         );

@@ -54,6 +54,7 @@ class AssessmentController extends Controller
         $context = $assignments->context(auth()->user(), [$assessment->id]);
         $dueState = $assignments->state($assessment, $context);
         $dueState['effective_due'] = $assignments->effectiveDueAt($assessment, $context);
+        $dueState['base_due'] = $assignments->baseDueAt($assessment, $context);
         $dueState['extension'] = $context['latest'][$assessment->id] ?? null;
         $dueState['can_request_extension'] = $dueState['can_request_extension'] && $enrolled;
 

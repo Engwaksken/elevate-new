@@ -28,9 +28,10 @@ class SubmissionArchiveService
     }
 
     /**
+     * @param  array<int>|null  $participantIds  limit to these participants (a branch instructor's); null = everyone
      * @return array{path: string, name: string, participants: int, files: int}
      */
-    public function build(Course $course, ?Assessment $assessment = null): array
+    public function build(Course $course, ?Assessment $assessment = null, ?array $participantIds = null): array
     {
         if (! class_exists(ZipArchive::class)) {
             throw new RuntimeException('ZIP downloads need the PHP zip extension, which is not enabled on this server.');
@@ -44,6 +45,7 @@ class SubmissionArchiveService
                 fn ($q) => $q->where('assessment_id', $assessment->id),
                 fn ($q) => $q->whereHas('assessment', fn ($a) => $a->where('course_id', $course->id))
             )
+            ->when($participantIds !== null, fn ($q) => $q->whereIn('user_id', $participantIds ?: [0]))
             ->orderBy('assessment_id')->orderBy('user_id')->orderBy('attempt_number')->orderBy('id')
             ->get();
 

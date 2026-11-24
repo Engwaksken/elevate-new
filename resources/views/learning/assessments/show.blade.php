@@ -45,7 +45,7 @@
             <span class="status-chip draft">Due {{ $effectiveDue->diffForHumans() }}</span>
         @endif
         @if($extension && $extension->status === 'approved' && $extension->approved_due_at)
-            <small class="text-muted">(extended from {{ $assessment->due_at?->format('d M Y H:i') ?? 'no due date' }})</small>
+            <small class="text-muted">(extended from {{ ($dueState['base_due'] ?? $assessment->due_at)?->format('d M Y H:i') ?? 'no due date' }})</small>
         @endif
     </p>
 

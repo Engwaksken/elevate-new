@@ -152,7 +152,7 @@ class LearningNotificationObserver implements ShouldHandleEventsAfterCommit
         }
 
         $this->notifications->sendToMany(
-            self::learnerIds($course),
+            self::learnerIds($course, $lesson->cohort_id ? (int) $lesson->cohort_id : null),
             'lesson_published',
             'New lesson: '.$lesson->title,
             "A new lesson \"{$lesson->title}\" is available in \"{$course->title}\".",
@@ -184,9 +184,13 @@ class LearningNotificationObserver implements ShouldHandleEventsAfterCommit
         ];
         $url = self::route('learning.assessment.show', $assessment);
 
+        // Cohorts with their own deadline hear their own date, never the course-wide one.
+        $cohortDeadlines = $assessment->cohortDeadlines()->get();
+        $ownDeadlineCohorts = $cohortDeadlines->pluck('cohort_id')->map(fn ($id) => (int) $id)->all();
+
         if ($event === 'created' || $assessment->wasChanged('is_published')) {
             $this->notifications->sendToMany(
-                self::learnerIds($course),
+                self::learnerIds($course, null, $ownDeadlineCohorts),
                 'assignment_published',
                 "New {$assessment->type}: {$assessment->title}",
                 "{$label} \"{$assessment->title}\" has been published in \"{$course->title}\".{$due}",
@@ -194,12 +198,23 @@ class LearningNotificationObserver implements ShouldHandleEventsAfterCommit
                 $data
             );
 
+            foreach ($cohortDeadlines as $deadline) {
+                $this->notifications->sendToMany(
+                    self::learnerIds($course, (int) $deadline->cohort_id),
+                    'assignment_published',
+                    "New {$assessment->type}: {$assessment->title}",
+                    "{$label} \"{$assessment->title}\" has been published in \"{$course->title}\". Due ".$deadline->due_at->format('d M Y H:i').'.',
+                    $url,
+                    ['due_at' => $deadline->due_at->toIso8601String()] + $data
+                );
+            }
+
             return;
         }
 
         if ($assessment->wasChanged('due_at') && $assessment->due_at) {
             $this->notifications->sendToMany(
-                self::learnerIds($course),
+                self::learnerIds($course, null, $ownDeadlineCohorts),
                 'assignment_due_date_changed',
                 'Due date changed: '.$assessment->title,
                 "The due date for \"{$assessment->title}\" in \"{$course->title}\" is now ".$assessment->due_at->format('d M Y H:i').'.',
@@ -233,7 +248,7 @@ class LearningNotificationObserver implements ShouldHandleEventsAfterCommit
             $learner = $attempt->user()->first();
 
             $this->notifications->sendToMany(
-                $course?->instructors()->pluck('users.id') ?? [],
+                $course ? app(\App\Services\Learning\InstructorScope::class)->instructorsFor($course, (int) $attempt->user_id)->pluck('id')->all() : [],
                 'assignment_submitted',
                 'New submission: '.$assessment->title,
                 ($learner?->name ?? 'A participant')." submitted \"{$assessment->title}\" in \"".($course?->title ?? 'a course').'".',
@@ -291,7 +306,7 @@ class LearningNotificationObserver implements ShouldHandleEventsAfterCommit
         }
 
         $this->notifications->sendToMany(
-            self::learnerIds($course),
+            self::learnerIds($course, $announcement->cohort_id ? (int) $announcement->cohort_id : null),
             'course_announcement',
             'Announcement: '.$announcement->title,
             Str::limit(strip_tags((string) $announcement->body), 240)." ({$course->title})",
@@ -426,14 +441,51 @@ class LearningNotificationObserver implements ShouldHandleEventsAfterCommit
 
     /* ---------------------------------------------------------------- Helpers */
 
-    /** Ids of participants actively enrolled in a course. */
-    public static function learnerIds(Course $course): array
+    /**
+     * Ids of participants actively enrolled in a course: only one cohort's when
+     * $cohortId is given, and leaving out the cohorts in $exceptCohortIds.
+     */
+    public static function learnerIds(Course $course, ?int $cohortId = null, array $exceptCohortIds = []): array
     {
         return Enrolment::query()
             ->where('course_id', $course->id)
             ->where(fn ($q) => $q->whereNull('status')->orWhereNotIn('status', self::INACTIVE_ENROLMENT_STATUSES))
+            ->when($cohortId, fn ($q) => $q->where('cohort_id', $cohortId))
+            ->when($exceptCohortIds !== [], fn ($q) => $q->where(fn ($q) => $q->whereNull('cohort_id')->orWhereNotIn('cohort_id', $exceptCohortIds)))
             ->pluck('user_id')
             ->all();
+    }
+
+    /**
+     * Tell one cohort that its own deadline for a published assessment was set,
+     * changed or removed (back to the course date). Called by the instructor
+     * screens; not an Eloquent event, so a new assessment does not notify twice.
+     */
+    public function cohortDeadlineChanged(Assessment $assessment, int $cohortId, ?\Illuminate\Support\Carbon $dueAt): void
+    {
+        if (self::$muted || ! $assessment->is_published || ! Schema::hasTable('user_notifications')) {
+            return;
+        }
+
+        try {
+            $course = $assessment->course()->first();
+            $due = $dueAt ?? $assessment->due_at;
+
+            if (! $course || ! $due) {
+                return;
+            }
+
+            $this->notifications->sendToMany(
+                self::learnerIds($course, $cohortId),
+                'assignment_due_date_changed',
+                'Due date changed: '.$assessment->title,
+                "The due date for \"{$assessment->title}\" in \"{$course->title}\" is now ".$due->format('d M Y H:i').'.',
+                self::route('learning.assessment.show', $assessment),
+                ['course_id' => $course->id, 'assessment_id' => $assessment->id, 'due_at' => $due->toIso8601String()]
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     private static function route(string $name, mixed $parameters = []): ?string

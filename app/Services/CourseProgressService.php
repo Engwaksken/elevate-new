@@ -16,10 +16,15 @@ class CourseProgressService
             ['status' => 'enrolled', 'enrolled_at' => now()]
         );
 
+        // Only lessons meant for this participant count (shared + their cohort's extra material).
+        $cohortId = $enrolment->cohort_id ? (int) $enrolment->cohort_id : null;
         $lessonIds = $course->modules()
-            ->with('lessons:id,course_module_id,is_published')
+            ->with('lessons:id,course_module_id,is_published,cohort_id')
             ->get()
-            ->flatMap(fn ($module) => $module->lessons->where('is_published', true)->pluck('id'));
+            ->flatMap(fn ($module) => $module->lessons
+                ->where('is_published', true)
+                ->filter(fn ($lesson) => $lesson->isVisibleToCohort($cohortId))
+                ->pluck('id'));
 
         $total = $lessonIds->count();
 

@@ -20,9 +20,18 @@ class CourseLearningController extends Controller
         abort_unless($enrolment, 403, 'You are not enrolled in this course.');
         $course->load(['branches',
             'modules'=>fn ($q) => $q->where('is_published', true)->orderBy('position'),
-            'modules.lessons'=>fn ($q) => $q->where('is_published', true)->orderBy('position'),
+            'modules.lessons'=>fn ($q) => $q->where('is_published', true)
+                ->visibleToCohort($enrolment->cohort_id ? (int) $enrolment->cohort_id : null)
+                ->orderBy('position'),
             'assessments'=>fn ($q) => $q->where('is_published', true),
         ]);
+        // Whole-course announcements plus those for her own group.
+        $announcements = $course->announcements()
+            ->current()
+            ->visibleToCohort($enrolment->cohort_id ? (int) $enrolment->cohort_id : null)
+            ->latest('published_at')
+            ->limit(5)
+            ->get();
         $moduleAccess = $course->modules->mapWithKeys(fn ($module) => [$module->id=>[
             'accessible'=>$access->canAccess($module, $request->user()),
             'complete'=>$access->moduleComplete($module, $request->user()),
@@ -44,7 +53,7 @@ class CourseLearningController extends Controller
             'due' => $assignments->effectiveDueAt($assessment, $dueContext),
             'extension' => $dueContext['latest'][$assessment->id] ?? null,
         ]]);
-        return view('learning.course-dashboard', ['course'=>$course,'enrolment'=>$enrolment,'moduleAccess'=>$moduleAccess,'assessmentAttempts'=>$attempts,'assessmentDue'=>$assessmentDue,
+        return view('learning.course-dashboard', ['course'=>$course,'enrolment'=>$enrolment,'moduleAccess'=>$moduleAccess,'assessmentAttempts'=>$attempts,'assessmentDue'=>$assessmentDue,'announcements'=>$announcements,
             'canViewTimetable'=>true,'timetable'=>app(CourseTimetableService::class)->forCourse($course)]);
     }
 }

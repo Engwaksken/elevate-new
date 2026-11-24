@@ -61,10 +61,22 @@ class ModuleAccessService
         return $this->moduleComplete($previous,$user);
     }
 
+    /** A lesson is open to a participant when it is meant for them (shared or their cohort's) and its module is unlocked. */
+    public function canAccessLesson(\App\Models\Lesson $lesson, User $user): bool
+    {
+        $lesson->loadMissing('module');
+
+        return $lesson->module
+            && $lesson->isVisibleTo($user)
+            && $this->canAccess($lesson->module, $user);
+    }
+
     public function moduleComplete(CourseModule $module, User $user): bool
     {
+        // Only lessons meant for this participant count (shared + their cohort's extra material).
         $lessonIds=$module->lessons()
             ->where('is_published',true)
+            ->visibleToCohort(\App\Models\Enrolment::cohortIdFor($user->id, (int) $module->course_id))
             ->pluck('id');
 
         if($lessonIds->isEmpty()) return true;
