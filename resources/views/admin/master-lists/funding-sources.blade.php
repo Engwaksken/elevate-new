@@ -18,7 +18,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar" role="search">
+<form method="GET" class="admin-toolbar" role="search" data-auto-filter>
     <div class="search-box"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input name="search" value="{{ request('search') }}" placeholder="Search name, code or description..." aria-label="Search funding sources"></div>
     <select name="status" aria-label="Status"><option value="">All statuses</option><option value="active" @selected(request('status')==='active')>Active</option><option value="inactive" @selected(request('status')==='inactive')>Inactive</option></select>
     <select name="per_page" aria-label="Rows per page">@foreach([10,20,25,50,100] as $n)<option value="{{ $n }}" @selected((int)request('per_page',25)===$n)>{{ $n }}/page</option>@endforeach</select>

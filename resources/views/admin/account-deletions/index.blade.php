@@ -23,7 +23,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
     <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search name or email..." aria-label="Search requests"></div>
     <select name="status" aria-label="Status">
         <option value="" @selected($status === null)>All requests</option>

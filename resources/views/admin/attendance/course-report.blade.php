@@ -13,7 +13,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar eh-filter-row">
+<form method="GET" class="admin-toolbar eh-filter-row" data-auto-filter>
 <div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search participant name or email..."></div>
 <select name="course_id"><option value="">All courses</option>@foreach($courses as $course)<option value="{{ $course->id }}" @selected((string)request('course_id')===(string)$course->id)>{{ $course->title }}</option>@endforeach</select>
 <select name="cohort_id"><option value="">All cohorts</option>@foreach($cohorts as $cohort)<option value="{{ $cohort->id }}" @selected((string)request('cohort_id')===(string)$cohort->id)>{{ $cohort->name }}</option>@endforeach</select>

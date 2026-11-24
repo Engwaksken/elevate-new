@@ -7,7 +7,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
 <div><label>From</label><input type="date" name="from" value="{{ $from->format('Y-m-d') }}"></div>
 <div><label>To</label><input type="date" name="to" value="{{ $to->format('Y-m-d') }}"></div>
 <button class="btn btn-primary btn-sm">Apply</button>

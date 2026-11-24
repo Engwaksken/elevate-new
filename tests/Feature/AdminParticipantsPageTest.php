@@ -226,4 +226,24 @@ class AdminParticipantsPageTest extends TestCase
         $this->assertSame(0, $filtered->viewData('stats')['today']);
         $this->assertSame(['Gulu Hub', 'Kampala Hub'], $filtered->viewData('branchStats')['items']->pluck('branch.name')->all());
     }
+
+    public function test_filter_bar_applies_automatically_and_offers_clear_only_when_filtered(): void
+    {
+        $admin = User::factory()->create(['user_type' => 'staff', 'status' => 'active']);
+        $admin->roles()->attach(\App\Models\Role::firstOrCreate(
+            ['slug' => 'super-administrator'],
+            ['name' => 'Super Administrator']
+        ));
+
+        $this->actingAs($admin)
+            ->get(route('admin.participants.index'))
+            ->assertOk()
+            ->assertSee('data-auto-filter', false)
+            ->assertDontSee('Clear filters');
+
+        $this->actingAs($admin)
+            ->get(route('admin.participants.index', ['status' => 'active']))
+            ->assertOk()
+            ->assertSee('Clear filters');
+    }
 }

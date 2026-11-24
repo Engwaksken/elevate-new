@@ -13,7 +13,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
 <select name="status"><option value="">All statuses</option>@foreach(['active','completed','inactive','cancelled'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst($s) }}</option>@endforeach</select>
 <select name="per_page">@foreach([10,20,25,50,100] as $size)<option value="{{ $size }}" @selected((int)request('per_page',20)===$size)>{{ $size }}/page</option>@endforeach</select>
 <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.mentorship.matches.index') }}" class="btn btn-outline btn-sm">Reset</a>

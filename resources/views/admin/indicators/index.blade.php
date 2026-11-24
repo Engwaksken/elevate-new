@@ -19,7 +19,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
 <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search indicator name, code or definition..."></div>
 <select name="status"><option value="">All statuses</option>@foreach(['draft','active','inactive','closed'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst($s) }}</option>@endforeach</select>
 <select name="result_level"><option value="">All levels</option>@foreach(['impact','outcome','output','activity'] as $s)<option value="{{ $s }}" @selected(request('result_level')===$s)>{{ ucfirst($s) }}</option>@endforeach</select>

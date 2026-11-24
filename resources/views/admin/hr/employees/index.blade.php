@@ -11,7 +11,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
 <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search name, email, number, department, position or location..."></div>
 <select name="department" aria-label="Department"><option value="">All departments</option>@foreach($departments as $d)<option value="{{ $d->id }}" @selected((int) request('department') === $d->id)>{{ $d->name }}</option>@endforeach</select>
 <select name="status"><option value="">All statuses</option>@foreach(['active','probation','on_leave','suspended','exiting','exited'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select>

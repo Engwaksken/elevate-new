@@ -13,7 +13,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
 <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search deliverable, activity, owner or description..."></div>
 <select name="status"><option value="">All statuses</option>@foreach(['not_started','in_progress','returned_for_revision','completed','overdue'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select>
 <input type="date" name="from" value="{{ request('from') }}" title="Due date from">

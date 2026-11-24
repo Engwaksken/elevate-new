@@ -43,7 +43,7 @@
 <div class="ss-layout">
 <section class="admin-panel ss-requests" aria-labelledby="ss-requests-title">
     <div class="ss-panel-head"><h2 id="ss-requests-title">My requests</h2></div>
-    <form method="GET" class="admin-toolbar" aria-label="Filter my requests">
+    <form method="GET" class="admin-toolbar" aria-label="Filter my requests" data-auto-filter>
         <div class="search-box"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input name="search" value="{{ request('search') }}" placeholder="Search subject or details..." aria-label="Search requests"></div>
         <select name="status" aria-label="Status"><option value="">All statuses</option>@foreach($statuses as $value => $label)<option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>@endforeach</select>
         <button class="btn btn-primary btn-sm">Apply</button>

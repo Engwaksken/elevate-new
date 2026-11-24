@@ -22,7 +22,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
 <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search assessment title..."></div>
 <select name="type"><option value="">All types</option>@foreach(['quiz','assignment','exam'] as $type)<option value="{{ $type }}" @selected(request('type')===$type)>{{ ucfirst($type) }}</option>@endforeach</select>
 <select name="published"><option value="">All publication states</option><option value="1" @selected(request('published')==='1')>Published</option><option value="0" @selected(request('published')==='0')>Draft</option></select>

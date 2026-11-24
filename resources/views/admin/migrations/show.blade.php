@@ -31,7 +31,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
     <div class="search-box">
         <i class="fas fa-magnifying-glass"></i>
         <input name="search" value="{{ request('search') }}" placeholder="Search source ID, name, email or phone...">

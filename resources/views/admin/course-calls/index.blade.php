@@ -35,7 +35,7 @@
 @endif
 
 <div class="admin-panel">
-    <form method="GET" class="admin-toolbar">
+    <form method="GET" class="admin-toolbar" data-auto-filter>
         <div class="search-box">
             <i class="fas fa-search"></i>
             <input

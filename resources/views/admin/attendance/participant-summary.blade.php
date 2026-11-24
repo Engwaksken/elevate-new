@@ -7,7 +7,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar eh-filter-row">
+<form method="GET" class="admin-toolbar eh-filter-row" data-auto-filter>
 <div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search participant name or email..."></div>
 <button class="btn btn-primary btn-sm">Search</button>
 <a href="{{ route('admin.participant-attendance-summary.index') }}" class="btn btn-outline btn-sm">Reset</a>

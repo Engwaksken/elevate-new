@@ -13,7 +13,7 @@
 @endforeach
 </div>
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
 <div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search event, venue or district..."></div>
 <select name="event_type"><option value="">All event types</option>@foreach(['training','workshop','webinar','meeting','mentorship','career_fair','community','other'] as $type)<option value="{{ $type }}" @selected(request('event_type')===$type)>{{ ucwords(str_replace('_',' ',$type)) }}</option>@endforeach</select>
 <input type="date" name="from" value="{{ request('from') }}"><input type="date" name="to" value="{{ request('to') }}"><button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.events.index') }}" class="btn btn-outline btn-sm">Reset</a>

@@ -32,7 +32,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
     <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search title, financial year or description..."></div>
     <select name="status"><option value="">All statuses</option>@foreach(['draft','submitted','under_review','approved','in_progress','on_hold','completed','cancelled'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select>
     <select name="period_type"><option value="">All periods</option>@foreach(['annual','quarterly','monthly','programme','project','department','staff'] as $p)<option value="{{ $p }}" @selected(request('period_type')===$p)>{{ ucfirst($p) }}</option>@endforeach</select>

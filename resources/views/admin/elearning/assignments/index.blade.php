@@ -9,7 +9,7 @@
 @endforeach
 </div>
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar"><div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search course title or code..."></div><button class="btn btn-primary btn-sm">Search</button><a href="{{ route('admin.elearning.assignments.index') }}" class="btn btn-outline btn-sm">Reset</a></form>
+<form method="GET" class="admin-toolbar" data-auto-filter><div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search course title or code..."></div><button class="btn btn-primary btn-sm">Search</button><a href="{{ route('admin.elearning.assignments.index') }}" class="btn btn-outline btn-sm">Reset</a></form>
 @php
 $bulkRoute = route('admin.elearning.assignments.bulk-destroy');
 $bulkTableId = 'courseAssignmentsTable';

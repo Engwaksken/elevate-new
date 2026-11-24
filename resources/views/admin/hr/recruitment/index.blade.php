@@ -18,7 +18,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
     <div class="search-box"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input name="search" value="{{ request('search') }}" placeholder="Search title, reference or location..." aria-label="Search vacancies"></div>
     <select name="status" aria-label="Status"><option value="">All statuses</option>@foreach(\App\Models\RecruitmentVacancy::STATUSES as $s)<option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>@endforeach</select>
     <button class="btn btn-primary btn-sm">Apply</button><a href="{{ route('admin.hr.recruitment.index') }}" class="btn btn-outline btn-sm">Reset</a>

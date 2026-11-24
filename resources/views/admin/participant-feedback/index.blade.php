@@ -20,7 +20,7 @@
 </div>
 
 <div class="admin-panel">
-    <form method="GET" class="admin-toolbar">
+    <form method="GET" class="admin-toolbar" data-auto-filter>
         <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search participant, course or event..." aria-label="Search feedback"></div>
         <select name="rating" aria-label="Overall rating">
             <option value="">All ratings</option>

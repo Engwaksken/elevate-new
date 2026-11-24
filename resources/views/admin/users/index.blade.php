@@ -91,7 +91,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
     <div class="search-box">
         <i class="fas fa-magnifying-glass"></i>
         <input name="search" value="{{ request('search') }}" placeholder="Search name, email, phone or participant ID...">
@@ -141,8 +141,10 @@
         @endforeach
     </select>
 
-    <button class="btn btn-primary btn-sm">Apply</button>
-    <a href="{{ $isParticipantsView ? route('admin.participants.index') : route('admin.users.index') }}" class="btn btn-outline btn-sm">Reset</a>
+    <button class="btn btn-primary btn-sm" data-auto-filter-submit>Apply</button>
+    @if(collect(request()->only(['search','user_type','status','branch_id','course_id','cohort_id']))->filter(fn ($v) => filled($v))->isNotEmpty())
+        <a href="{{ $isParticipantsView ? route('admin.participants.index') : route('admin.users.index') }}" class="btn btn-outline btn-sm"><i class="fas fa-xmark"></i> Clear filters</a>
+    @endif
 </form>
 
 @if($canBulkSelect)

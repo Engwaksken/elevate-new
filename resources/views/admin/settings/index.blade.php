@@ -22,7 +22,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
 <div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search setting key or group..."></div>
 <select name="group"><option value="">All groups</option>@foreach($groups as $group)<option value="{{ $group }}" @selected(request('group')===$group)>{{ ucfirst($group) }}</option>@endforeach</select>
 <button class="btn btn-primary btn-sm">Apply</button>

@@ -5,7 +5,7 @@
 <div><span class="admin-eyebrow">MEAL Reporting</span><h1>Event Participation & Evaluation</h1><p>MEAL-ready event outputs covering registrations, attendance and participant feedback.</p></div>
 <div class="admin-page-actions"><a href="{{ route('admin.events.meal-report.csv',request()->query()) }}" class="btn btn-outline"><i class="fas fa-file-csv"></i> Export CSV</a><x-export-buttons :formats="['pdf']" size="md" /></div>
 </div>
-<div class="admin-panel"><form method="GET" class="admin-toolbar"><div><label>From</label><input type="date" name="from" value="{{ $from->format('Y-m-d') }}"></div><div><label>To</label><input type="date" name="to" value="{{ $to->format('Y-m-d') }}"></div><button class="btn btn-primary btn-sm">Apply</button></form></div>
+<div class="admin-panel"><form method="GET" class="admin-toolbar" data-auto-filter><div><label>From</label><input type="date" name="from" value="{{ $from->format('Y-m-d') }}"></div><div><label>To</label><input type="date" name="to" value="{{ $to->format('Y-m-d') }}"></div><button class="btn btn-primary btn-sm">Apply</button></form></div>
 <div class="admin-stats-grid compact">
 @foreach([['events','Events','fa-calendar-days'],['registered','Registered','fa-users'],['attended','Attended','fa-user-check'],['feedback','Feedback Responses','fa-comments'],['avg_satisfaction','Avg Satisfaction / 5','fa-star']] as [$k,$l,$i])
 <div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $i }}"></i></span><div><small>{{ $l }}</small><strong>{{ number_format((float)($stats[$k]??0),$k==='avg_satisfaction'?2:0) }}</strong></div></div>

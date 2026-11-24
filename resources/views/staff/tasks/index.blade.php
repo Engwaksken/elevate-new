@@ -49,7 +49,7 @@
 <div class="st-main">
 
 @if($view === 'team')
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
     <input type="hidden" name="view" value="team">
     <select name="member" onchange="this.form.submit()">
         <option value="">Everyone in my team</option>
@@ -122,7 +122,7 @@
 
 @if($past)
 <section class="admin-panel">
-    <form method="GET" class="admin-toolbar st-filters">
+    <form method="GET" class="admin-toolbar st-filters" data-auto-filter>
         <input type="hidden" name="view" value="past">
         <select name="outcome">
             <option value="">All past tasks</option>

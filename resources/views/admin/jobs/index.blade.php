@@ -25,7 +25,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
 <div class="search-box"><i class="fas fa-search"></i><input name="search" value="{{ request('search') }}" placeholder="Search job, employer, industry or location..."></div>
 <select name="status"><option value="">All statuses</option>@foreach(['draft','pending','published','closed','rejected'] as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst($s) }}</option>@endforeach</select>
 <select name="employment_type"><option value="">All employment types</option>@foreach(['full_time'=>'Full time','part_time'=>'Part time','contract'=>'Contract','internship'=>'Internship','temporary'=>'Temporary'] as $v=>$l)<option value="{{ $v }}" @selected(request('employment_type')===$v)>{{ $l }}</option>@endforeach</select>

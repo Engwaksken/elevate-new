@@ -203,7 +203,7 @@
         </div>
     </div>
 
-    <form method="GET" class="admin-toolbar" action="{{ route('admin.elearning.bulk-enrolment.create') }}">
+    <form method="GET" class="admin-toolbar" action="{{ route('admin.elearning.bulk-enrolment.create') }}" data-auto-filter>
         <div class="search-box">
             <i class="fas fa-magnifying-glass"></i>
             <input name="p_search" value="{{ request('p_search') }}" placeholder="Search by name, email or participant code...">

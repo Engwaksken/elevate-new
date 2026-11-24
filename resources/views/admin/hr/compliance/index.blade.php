@@ -47,7 +47,7 @@
 
 <section class="admin-panel" aria-labelledby="staff-h">
     <h2 id="staff-h" style="margin-top:0;font-size:1.05rem">Staff compliance</h2>
-    <form method="GET" class="admin-toolbar">
+    <form method="GET" class="admin-toolbar" data-auto-filter>
         <div class="search-box"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input name="search" value="{{ request('search') }}" placeholder="Search staff..." aria-label="Search staff"></div>
         <select name="department" aria-label="Department"><option value="">All departments</option>@foreach($departments as $d)<option value="{{ $d->id }}" @selected((int) request('department') === $d->id)>{{ $d->name }}</option>@endforeach</select>
         <select name="filter" aria-label="Show"><option value="">Everyone</option><option value="outstanding" @selected(request('filter') === 'outstanding')>Only with outstanding items</option></select>

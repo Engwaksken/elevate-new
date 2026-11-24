@@ -26,7 +26,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
     <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search request number, item or justification..." aria-label="Search requests"></div>
     <select name="status" aria-label="Status"><option value="">All statuses</option>@foreach(\App\Http\Controllers\Staff\StaffPurchaseRequestController::STATUSES as $s)<option value="{{ $s }}" @selected(request('status')===$s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select>
     <button class="btn btn-primary btn-sm">Apply</button>

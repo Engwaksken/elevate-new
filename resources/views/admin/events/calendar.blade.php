@@ -29,7 +29,7 @@
 </div>
 
 <div class="admin-panel">
-    <form method="GET" class="admin-toolbar">
+    <form method="GET" class="admin-toolbar" data-auto-filter>
         <div class="form-group">
             <label for="event-calendar-month">Month</label>
             <input

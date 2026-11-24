@@ -22,7 +22,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" action="{{ route('admin.elearning.learning-files.index') }}" class="admin-toolbar">
+<form method="GET" action="{{ route('admin.elearning.learning-files.index') }}" class="admin-toolbar" data-auto-filter>
     <div class="search-box">
         <i class="fas fa-search"></i>
         <input name="search" value="{{ request('search') }}" placeholder="Search file name...">

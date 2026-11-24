@@ -11,7 +11,7 @@
 
 @if(auth()->user()->hasPermission('reports.view'))
 <div class="admin-panel">
-    <form method="GET" action="{{ route('admin.learning-reports.index') }}" class="admin-toolbar eh-filter-row">
+    <form method="GET" action="{{ route('admin.learning-reports.index') }}" class="admin-toolbar eh-filter-row" data-auto-filter>
         <select name="course_id"><option value="">All courses</option>@foreach($courses as $course)<option value="{{ $course->id }}" @selected((string)($filters['course_id'] ?? '') === (string)$course->id)>{{ $course->title }}</option>@endforeach</select>
         <select name="programme_id"><option value="">All programmes</option>@foreach($programmes as $programme)<option value="{{ $programme->id }}" @selected((string)($filters['programme_id'] ?? '') === (string)$programme->id)>{{ $programme->name }}</option>@endforeach</select>
         <select name="branch_id"><option value="">All branches</option>@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((string)($filters['branch_id'] ?? '') === (string)$branch->id)>{{ $branch->name }}</option>@endforeach</select>

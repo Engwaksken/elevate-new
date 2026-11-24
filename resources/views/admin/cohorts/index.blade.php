@@ -4,7 +4,7 @@
 <div class="admin-page-header"><div><span class="admin-eyebrow">Programme Management</span><h1>Cohorts</h1><p>Manage programme cohorts, delivery locations, dates and status.</p></div><div class="admin-page-actions"><x-export-buttons /><button type="button" class="btn btn-primary" data-modal-open="cohortCreate"><i class="fas fa-plus"></i> Add Cohort</button></div></div>
 @include('admin.shared.feedback')
 <div class="admin-stats-grid compact">@foreach([['total','Total Cohorts','fa-users-rectangle'],['active','Active','fa-circle-check'],['open','Open','fa-door-open'],['completed','Completed','fa-flag-checkered']] as [$k,$l,$i])<div class="admin-stat"><span class="admin-stat-icon"><i class="fas {{ $i }}"></i></span><div><small>{{ $l }}</small><strong>{{ number_format($stats[$k]??0) }}</strong></div></div>@endforeach</div>
-<div class="admin-panel"><form method="GET" class="admin-toolbar">
+<div class="admin-panel"><form method="GET" class="admin-toolbar" data-auto-filter>
 <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search cohort name or code..."></div>
 <select name="programme_id"><option value="">All programmes</option>@foreach($programmes as $p)<option value="{{ $p->id }}" @selected((string)request('programme_id')===(string)$p->id)>{{ $p->name }}</option>@endforeach</select>
 <select name="branch_id"><option value="">All branches</option>@foreach($branches as $b)<option value="{{ $b->id }}" @selected((string)request('branch_id')===(string)$b->id)>{{ $b->name }}</option>@endforeach</select>

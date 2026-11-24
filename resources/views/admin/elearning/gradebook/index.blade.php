@@ -18,7 +18,7 @@
 </div>
 
 <div class="admin-panel">
-<form method="GET" class="admin-toolbar">
+<form method="GET" class="admin-toolbar" data-auto-filter>
 <div class="search-box"><i class="fas fa-magnifying-glass"></i><input name="search" value="{{ request('search') }}" placeholder="Search learner or assessment..."></div>
 <select name="status"><option value="">All statuses</option>@foreach(['in_progress','submitted','graded'] as $status)<option value="{{ $status }}" @selected(request('status')===$status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>@endforeach</select>
 <select name="per_page">@foreach([10,20,30,50,100] as $n)<option value="{{ $n }}" @selected((int)request('per_page',30)===$n)>{{ $n }}/page</option>@endforeach</select>
