@@ -6,6 +6,7 @@ import './assistive-tools';
 import './career-ai-form-fix';
 import './form-help';
 import './auto-filter';
+import './participant-activity-chart';
 document.addEventListener('DOMContentLoaded',()=>{const b=document.body,t=document.querySelector('[data-sidebar-toggle]'),c=document.querySelector('[data-sidebar-close]'),o=document.querySelector('[data-sidebar-overlay]');const close=()=>{b.classList.remove('sidebar-open');if(t)t.setAttribute('aria-expanded','false')};if(t)t.addEventListener('click',()=>{const open=!b.classList.contains('sidebar-open');b.classList.toggle('sidebar-open',open);t.setAttribute('aria-expanded',open?'true':'false')});if(c)c.addEventListener('click',close);if(o)o.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});document.querySelectorAll('.ps-link').forEach(a=>a.addEventListener('click',()=>{if(innerWidth<=991)close()}));});
 
 // Participant sidebar: collapsible groups keep the menu short (one group open at a time).

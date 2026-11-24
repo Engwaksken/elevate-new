@@ -90,6 +90,10 @@
 @endforeach
 </div>
 
+@if($isParticipantsView && !empty($activity))
+    @include('admin.users.partials.participant-activity')
+@endif
+
 <div class="admin-panel">
 <form method="GET" class="admin-toolbar" data-auto-filter>
     <div class="search-box">

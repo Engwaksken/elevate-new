@@ -102,7 +102,9 @@ class UserController extends Controller
 
         if ($forcedType === 'participant') {
             [$stats, $branchStats] = $this->participantStats($branches, $branchId ?: null);
+            $activity = $this->participantActivity($branchId ?: null, $request->integer('activity_days'));
         } else {
+            $activity = null;
             $branchStats = null;
             $stats = [
                 'total' => User::count(),
@@ -123,6 +125,7 @@ class UserController extends Controller
             'cohorts' => Cohort::orderBy('name')->get(['id','name']),
             'stats' => $stats,
             'branchStats' => $branchStats,
+            'activity' => $activity,
         ]);
     }
 
@@ -136,6 +139,91 @@ class UserController extends Controller
         return $query->where(fn ($q) => $q
             ->whereHas('branches', fn ($b) => $b->whereKey($branchId))
             ->orWhereHas('profile', fn ($p) => $p->where('branch_id', $branchId)));
+    }
+
+    public const ACTIVITY_RANGES = [7, 30, 90];
+
+    /**
+     * Daily participant activity for the Participants page charts. A participant
+     * counts as active on a day when they started or completed a lesson, submitted
+     * an assessment, or were marked present/late at a session. Sign-ins are not
+     * kept per day (only the latest one), so they appear as a recency breakdown.
+     */
+    private function participantActivity(?int $branchId, int $days): array
+    {
+        $days = in_array($days, self::ACTIVITY_RANGES, true) ? $days : 30;
+        $end = now()->endOfDay();
+        $start = now()->subDays($days - 1)->startOfDay();
+
+        $participants = User::query()->where('user_type', 'participant');
+        if ($branchId) {
+            $this->scopeToBranch($participants, $branchId);
+        }
+        $participantIds = (clone $participants)->select('users.id');
+
+        $dates = collect(range(0, $days - 1))->map(fn ($i) => $start->copy()->addDays($i)->toDateString());
+
+        // [table, timestamp column, extra constraint]
+        $sources = [
+            'lessons_started' => ['lesson_progress', 'first_opened_at', null],
+            'lessons_completed' => ['lesson_progress', 'completed_at', null],
+            'assessments_submitted' => ['assessment_attempts', 'submitted_at', null],
+            'attendance' => ['attendance_records', 'created_at', fn ($q) => $q->whereIn('status', ['present', 'late'])],
+        ];
+
+        $totals = [];
+        $activeByDay = [];
+
+        foreach ($sources as $key => [$table, $column, $constraint]) {
+            if (! \Illuminate\Support\Facades\Schema::hasTable($table)) {
+                $totals[$key] = 0;
+                continue;
+            }
+
+            $rows = \Illuminate\Support\Facades\DB::table($table)
+                ->whereIn('user_id', $participantIds)
+                ->whereBetween($column, [$start, $end])
+                ->when($constraint, $constraint)
+                ->selectRaw("user_id, DATE({$column}) as day")
+                ->get();
+
+            $totals[$key] = $rows->count();
+
+            foreach ($rows as $row) {
+                $activeByDay[$row->day][$row->user_id] = true;
+            }
+        }
+
+        $registrations = (clone $participants)
+            ->whereBetween('created_at', [$start, $end])
+            ->selectRaw('DATE(created_at) as day, COUNT(*) as total')
+            ->groupBy('day')
+            ->pluck('total', 'day');
+
+        $activeInRange = collect($activeByDay)->flatMap(fn ($users) => array_keys($users))->unique()->count();
+
+        $now = now();
+        $recency = [
+            ['label' => 'Last 7 days', 'count' => (clone $participants)->where('last_login_at', '>=', $now->copy()->subDays(7))->count()],
+            ['label' => '8–30 days ago', 'count' => (clone $participants)->whereBetween('last_login_at', [$now->copy()->subDays(30), $now->copy()->subDays(7)])->count()],
+            ['label' => '31–90 days ago', 'count' => (clone $participants)->whereBetween('last_login_at', [$now->copy()->subDays(90), $now->copy()->subDays(30)])->count()],
+            ['label' => 'Over 90 days ago', 'count' => (clone $participants)->where('last_login_at', '<', $now->copy()->subDays(90))->count()],
+            ['label' => 'Never signed in', 'count' => (clone $participants)->whereNull('last_login_at')->count()],
+        ];
+
+        return [
+            'days' => $days,
+            'ranges' => self::ACTIVITY_RANGES,
+            'from' => $start,
+            'to' => $end,
+            'series' => $dates->map(fn ($day) => [
+                'date' => $day,
+                'active' => count($activeByDay[$day] ?? []),
+                'registrations' => (int) ($registrations[$day] ?? 0),
+            ])->values()->all(),
+            'totals' => $totals + ['active_participants' => $activeInRange],
+            'recency' => $recency,
+        ];
     }
 
     /**
