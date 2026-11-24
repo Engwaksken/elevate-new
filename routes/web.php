@@ -1438,6 +1438,9 @@ Route::middleware(['auth','staff','role:instructor,trainer,administrator,super-a
         Route::post('/{course}/modules/{module}/lessons', [\App\Http\Controllers\Instructor\CourseManagementController::class,'storeLesson'])->name('lessons.store');
         Route::delete('/{course}/modules/{module}/lessons/{lesson}', [\App\Http\Controllers\Instructor\CourseManagementController::class,'destroyLesson'])->name('lessons.destroy');
         Route::post('/{course}/assessments', [\App\Http\Controllers\Instructor\CourseManagementController::class,'storeAssessment'])->name('assessments.store');
+        Route::get('/{course}/module-access', [ModuleAccessController::class,'index'])->name('module-access');
+        Route::put('/{course}/module-access/settings', [ModuleAccessController::class,'settings'])->name('module-access.settings');
+        Route::put('/{course}/module-access/{module}/release', [ModuleAccessController::class,'release'])->name('module-access.release');
         Route::put('/{course}/assessments/{assessment}/group-deadlines', [\App\Http\Controllers\Instructor\CourseManagementController::class,'updateCohortDeadlines'])->name('assessments.group-deadlines');
         Route::post('/{course}/assessments/{assessment}/questions', [\App\Http\Controllers\Instructor\CourseManagementController::class,'addQuestion'])->name('assessments.questions.store');
         Route::get('/{course}/assessments/{assessment}/questions/template', [\App\Http\Controllers\Instructor\CourseManagementController::class,'downloadQuestionTemplate'])->name('assessments.questions.template');

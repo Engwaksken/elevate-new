@@ -106,6 +106,7 @@
         @if(Route::has('instructor.attendance.create'))
             <a href="{{ route('instructor.attendance.create', $course) }}" class="btn btn-outline"><i class="fas fa-user-check"></i> Attendance</a>
         @endif
+        <a href="{{ route('instructor.courses.module-access', $course) }}" class="btn btn-outline"><i class="fas fa-lock-open"></i> Module access</a>
         <a href="{{ route('admin.my-courses') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> My Courses</a>
     </div>
 </div>
@@ -178,7 +179,8 @@
 
 @if($activeTab === 'modules')
 <section class="icm-panel">
-    <div class="icm-panel-head"><div><h2>Modules</h2><p class="icm-muted">Create, edit, publish and reorder course modules.</p></div></div>
+    <div class="icm-panel-head"><div><h2>Modules</h2><p class="icm-muted">Create, edit, publish and reorder course modules.</p></div>
+        <a href="{{ route('instructor.courses.module-access', $course) }}" class="btn btn-outline btn-sm"><i class="fas fa-lock-open"></i> Module access by group</a></div>
 
     <form method="POST" action="{{ route('instructor.courses.modules.store',$course) }}" class="icm-form-grid">
         @csrf
