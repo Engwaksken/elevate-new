@@ -162,4 +162,71 @@ class CourseTimetableTest extends TestCase
         }
         $this->assertDatabaseCount('course_time_slots', 0);
     }
+
+    private function batch(array $slots, array $changes = []): array
+    {
+        return array_replace([
+            'timetable_form' => 'batch', 'title' => 'Weekly class', 'timezone' => 'Africa/Kampala',
+            'venue' => 'Room 2', 'meeting_link' => '', 'notes' => '', 'slots' => $slots,
+        ], $changes);
+    }
+
+    public function test_several_slots_can_be_added_at_once_from_the_modal(): void
+    {
+        $this->actingAs($this->trainer)
+            ->get(route('instructor.courses.manage', ['course' => $this->course, 'tab' => 'timetable']))
+            ->assertOk()
+            ->assertSee('data-modal-open="addTimeSlotsModal"', false)
+            ->assertSee('id="addTimeSlotsModal"', false)
+            ->assertSee('name="slots[0][session_date]"', false);
+
+        $this->post(route('instructor.courses.timetable.store', $this->course), $this->batch([
+            ['session_date' => '2026-12-01', 'start_time' => '09:00', 'end_time' => '11:00'],
+            ['session_date' => '2026-12-08', 'start_time' => '09:00', 'end_time' => '11:00'],
+            ['session_date' => '2026-12-15', 'start_time' => '14:00', 'end_time' => '16:00'],
+        ]))
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success', '3 time slots added.')
+            ->assertRedirect(route('instructor.courses.manage', ['course' => $this->course, 'tab' => 'timetable']));
+
+        $slots = $this->course->timeSlots()->orderBy('starts_at')->get();
+        $this->assertCount(3, $slots);
+        $this->assertSame(['Weekly class'], $slots->pluck('title')->unique()->values()->all());
+        $this->assertSame(['scheduled'], $slots->pluck('status')->unique()->values()->all());
+        $this->assertSame('14:00', $slots->last()->starts_at->setTimezone('Africa/Kampala')->format('H:i'));
+        $this->assertSame($this->trainer->id, $slots->first()->created_by);
+    }
+
+    public function test_a_clash_in_any_row_saves_none_of_the_batch(): void
+    {
+        $this->createSlot(['session_date' => '2026-12-08', 'start_time' => '10:00', 'end_time' => '12:00']);
+
+        $this->post(route('instructor.courses.timetable.store', $this->course), $this->batch([
+            ['session_date' => '2026-12-01', 'start_time' => '09:00', 'end_time' => '11:00'],
+            ['session_date' => '2026-12-08', 'start_time' => '09:00', 'end_time' => '11:00'],
+        ]))->assertSessionHasErrors('slots.1.start_time');
+
+        $this->assertSame(1, $this->course->timeSlots()->count());
+
+        // Two new rows that overlap each other are refused too.
+        $this->post(route('instructor.courses.timetable.store', $this->course), $this->batch([
+            ['session_date' => '2026-12-20', 'start_time' => '09:00', 'end_time' => '11:00'],
+            ['session_date' => '2026-12-20', 'start_time' => '10:00', 'end_time' => '12:00'],
+        ]))->assertSessionHasErrors('slots.1.start_time');
+
+        $this->assertSame(1, $this->course->timeSlots()->count());
+    }
+
+    public function test_batch_rows_are_validated(): void
+    {
+        $this->actingAs($this->trainer)->post(route('instructor.courses.timetable.store', $this->course), $this->batch([
+            ['session_date' => '2026-12-01', 'start_time' => '11:00', 'end_time' => '09:00'],
+        ]))->assertSessionHasErrors('slots.0.start_time');
+
+        $this->post(route('instructor.courses.timetable.store', $this->course), $this->batch([
+            ['session_date' => '', 'start_time' => '09:00', 'end_time' => '11:00'],
+        ]))->assertSessionHasErrors('slots.0.session_date');
+
+        $this->assertSame(0, $this->course->timeSlots()->count());
+    }
 }

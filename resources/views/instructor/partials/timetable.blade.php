@@ -1,9 +1,13 @@
 <section class="icm-panel">
-    <div class="icm-panel-head"><div><h2>Course Timetable</h2><p class="icm-muted">Add dated sessions for all enrolled participants. Times use the selected timezone. Active sessions cannot overlap.</p></div></div>
+    <div class="icm-panel-head">
+        <div><h2>Course Timetable</h2><p class="icm-muted">Dated sessions for all enrolled participants. Times use the selected timezone. Active sessions cannot overlap.</p></div>
+        <button type="button" class="btn btn-primary" data-modal-open="addTimeSlotsModal"><i class="fas fa-calendar-plus"></i> Add time slots</button>
+    </div>
     @if(session('success'))<div class="success-box" role="status">{{ session('success') }}</div>@endif
-    @if($errors->any())<div class="icm-notice" role="alert">{{ $errors->first() }}</div>@endif
-    @include('instructor.partials.timetable-form', ['slot' => null])
+    {{-- Errors from the add modal are shown inside it; this covers the edit forms below. --}}
+    @if($errors->any() && (string) old('timetable_form') !== 'batch')<div class="icm-notice" role="alert">{{ $errors->first() }}</div>@endif
 </section>
+@include('instructor.partials.timetable-add-modal')
 <section class="icm-panel">
     <div class="icm-card-grid">
         @forelse($timeSlots as $timeSlot)
@@ -24,7 +28,7 @@
                 </form>
             </article>
         @empty
-            <div class="icm-card">No time slots yet. Add the first session above.</div>
+            <div class="icm-card">No time slots yet. Use "Add time slots" above to schedule sessions.</div>
         @endforelse
     </div>
     <div style="margin-top:15px">{{ $timeSlots->appends(['tab' => 'timetable'])->links() }}</div>
