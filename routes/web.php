@@ -392,6 +392,9 @@ Route::prefix('admin')
         Route::post('/users/bulk-status',[UserController::class,'bulkStatus'])
             ->middleware('permission:users.edit')->name('users.bulk-status');
 
+        Route::post('/users/bulk-branch',[UserController::class,'bulkBranch'])
+            ->middleware('permission:users.edit')->name('users.bulk-branch');
+
         Route::resource('users',UserController::class)->except(['show','destroy'])
             ->middleware('permission:users.edit');
 

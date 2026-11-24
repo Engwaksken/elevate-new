@@ -173,6 +173,21 @@
                 </select>
                 <button class="btn btn-primary btn-sm"><i class="fas fa-user-check"></i> Update Status</button>
             </form>
+            @if($branches->isNotEmpty())
+            <form method="POST" action="{{ route('admin.users.bulk-branch') }}" data-bulk-form data-table="usersTable"
+                  data-bulk-confirm="Assign the {count} selected user(s) to this branch? Participants are moved to it; staff, mentors and employers keep their other branches."
+                  class="admin-bulk-status-form">
+                @csrf
+                <label for="bulkUserBranch" class="sr-only">Branch</label>
+                <select name="branch_id" id="bulkUserBranch" class="form-select form-select-sm" required>
+                    <option value="" disabled selected>Set branch…</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}">{{ $branch->name }}@unless($branch->is_active) (inactive)@endunless</option>
+                    @endforeach
+                </select>
+                <button class="btn btn-primary btn-sm"><i class="fas fa-location-dot"></i> Update Branch</button>
+            </form>
+            @endif
         @endif
         @if($canDeleteUsers)
             <form method="POST" action="{{ route('admin.users.bulk-destroy') }}" data-bulk-form data-table="usersTable">

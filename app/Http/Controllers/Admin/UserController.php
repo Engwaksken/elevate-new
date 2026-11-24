@@ -369,6 +369,59 @@ class UserController extends Controller
         );
     }
 
+    /**
+     * Put the selected users in a branch. A participant has one branch, so they
+     * are moved; staff, mentors and employers can have several, so the branch
+     * is added to the ones they already have. Enrolments are left unchanged.
+     */
+    public function bulkBranch(Request $request, AuditService $audit)
+    {
+        $data = $request->validate([
+            'ids' => ['required','array','min:1'],
+            'ids.*' => ['integer','exists:users,id'],
+            'branch_id' => ['required','integer','exists:branches,id'],
+        ]);
+
+        $branch = Branch::findOrFail($data['branch_id']);
+        $users = User::query()->whereKey($data['ids'])->with(['profile', 'branches:id'])->get();
+        $changed = 0;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($users, $branch, $audit, &$changed) {
+            foreach ($users as $user) {
+                $oldBranchIds = $user->branches->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+                $oldProfileBranch = $user->profile?->branch_id ? (int) $user->profile->branch_id : null;
+
+                if ($user->isParticipant()) {
+                    if ($oldProfileBranch === (int) $branch->id && $oldBranchIds === [(int) $branch->id]) {
+                        continue;
+                    }
+                    $user->profile()->updateOrCreate(['user_id' => $user->id], ['branch_id' => $branch->id]);
+                    $user->branches()->sync([$branch->id]);
+                } else {
+                    if (in_array((int) $branch->id, $oldBranchIds, true)) {
+                        continue;
+                    }
+                    $user->branches()->syncWithoutDetaching([$branch->id]);
+                }
+
+                $changed++;
+                $audit->log('users', 'branch_updated', $user,
+                    ['branches' => $oldBranchIds, 'profile_branch_id' => $oldProfileBranch],
+                    ['branches' => $user->branches()->pluck('branches.id')->all(), 'profile_branch_id' => $user->profile()->value('branch_id')]
+                );
+            }
+        });
+
+        if ($changed === 0) {
+            return back()->with('error', 'No users were changed. They are already in '.$branch->name.'.');
+        }
+
+        $skipped = $users->count() - $changed;
+
+        return back()->with('success', $changed.' user(s) assigned to '.$branch->name.'.'
+            .($skipped > 0 ? ' '.$skipped.' already there.' : ''));
+    }
+
     public function bulkStatus(Request $request, AuditService $audit)
     {
         $data = $request->validate([
