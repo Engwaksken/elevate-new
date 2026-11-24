@@ -446,12 +446,11 @@ class ParticipantAuthController extends Controller
          * Activate pending participant accounts after successful login,
          * preserving the existing system behaviour.
          */
-        $user->forceFill([
-            'last_login_at' => now(),
+        app(\App\Services\SignInRecorder::class)->record($user, $request, 'web', [
             'status' => $user->status === 'pending'
                 ? 'active'
                 : $user->status,
-        ])->save();
+        ]);
 
         /*
          * Prevent a stored staff/admin URL from redirecting the participant

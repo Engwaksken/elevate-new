@@ -23,6 +23,8 @@ class ParticipantRegisterRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        \App\Support\DateParts::merge($this, 'date_of_birth');
+
         if ($this->input('country') === 'Other' && $this->filled('country_other')) {
             $this->merge(['country' => trim((string) $this->input('country_other'))]);
         }
@@ -119,6 +121,7 @@ class ParticipantRegisterRequest extends FormRequest
     {
         return [
             'interests.*.in' => 'Choose Learning, Mentorship or Jobs (or All).',
+            'date_of_birth.date' => 'Choose a day, month and year that make a real date of birth.',
             'branch_id.required' => 'Choose a branch for your learning.',
             'cohort_id.required' => 'Choose a cohort for your learning.',
             'course_id.required' => 'Choose a course for your learning.',

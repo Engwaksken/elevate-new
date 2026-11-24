@@ -58,7 +58,7 @@ class PartnerAuthController extends Controller
             ]);
         }
 
-        $user->forceFill(['last_login_at' => now()])->save();
+        app(\App\Services\SignInRecorder::class)->record($user, $request, 'web');
 
         return redirect()->intended(route($this->home($type)));
     }

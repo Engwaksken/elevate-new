@@ -65,7 +65,7 @@ class StaffAuthController extends Controller
         }
 
         try {
-            $user->forceFill(['last_login_at' => now()])->save();
+            app(\App\Services\SignInRecorder::class)->record($user, $request, 'web');
         } catch (\Throwable $e) {
             report($e);
         }

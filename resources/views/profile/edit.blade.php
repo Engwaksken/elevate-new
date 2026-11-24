@@ -83,7 +83,7 @@ $profileFormTabs = [
     <div><label>Given Name</label><input name="given_name" value="{{ old('given_name',$profile?->given_name) }}" placeholder="Enter your given name"></div>
     <div><label>Other Name</label><input name="other_name" value="{{ old('other_name',$profile?->other_name) }}" placeholder="Enter other name if applicable"></div>
     <div><label>Gender</label><select name="gender"><option value="">Select your gender</option>@foreach(['female'=>'Female','male'=>'Male','other'=>'Other','prefer_not_to_say'=>'Prefer not to say'] as $v=>$l)<option value="{{ $v }}" @selected(old('gender',$profile?->gender)===$v)>{{ $l }}</option>@endforeach</select></div>
-    <div><label>Date of Birth</label><input type="date" name="date_of_birth" value="{{ old('date_of_birth',optional($profile?->date_of_birth)->format('Y-m-d')) }}"></div>
+    <div><label for="date_of_birth">Date of Birth</label><x-date-parts id="date_of_birth" name="date_of_birth" label="Date of birth" :value="old('date_of_birth', $profile?->date_of_birth)" :max-year="now()->year - 10" /></div>
     <div><label>Branch</label><select name="branch_id"><option value="">Select your branch</option>@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((string)old('branch_id',$profile?->branch_id)===(string)$branch->id)>{{ $branch->name }}</option>@endforeach</select></div>
 </div>
 </div>

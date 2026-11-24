@@ -30,6 +30,8 @@ class ProfileController extends Controller
     {
         $user=$request->user();
 
+        \App\Support\DateParts::merge($request, 'date_of_birth');
+
         if($request->input('education_level')==='Other' && $request->filled('education_level_other')){
             $request->merge(['education_level'=>trim((string)$request->input('education_level_other'))]);
         }

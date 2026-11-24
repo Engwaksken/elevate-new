@@ -59,7 +59,7 @@ class AdminParticipantActivityTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->administrator())
-            ->get(route('admin.participants.index', ['activity_days' => 7]))
+            ->get(route('admin.participants.index', ['tab' => 'activity', 'activity_days' => 7]))
             ->assertOk()
             ->assertSee('Participant activity')
             ->assertSee('data-participant-activity-chart', false)
@@ -87,7 +87,7 @@ class AdminParticipantActivityTest extends TestCase
     public function test_activity_range_falls_back_to_thirty_days(): void
     {
         $activity = $this->actingAs($this->administrator())
-            ->get(route('admin.participants.index', ['activity_days' => 999]))
+            ->get(route('admin.participants.index', ['tab' => 'activity', 'activity_days' => 999]))
             ->assertOk()
             ->viewData('activity');
 

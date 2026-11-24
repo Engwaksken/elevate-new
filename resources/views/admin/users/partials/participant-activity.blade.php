@@ -1,11 +1,12 @@
 @php
     $rangeLink = fn ($days) => route('admin.participants.index', array_filter(
-        array_merge(request()->except(['page', 'activity_days']), ['activity_days' => $days]),
+        array_merge(request()->except(['page', 'activity_days']), ['tab' => 'activity', 'activity_days' => $days]),
         fn ($v) => $v !== null && $v !== ''
     ));
     $recencyMax = max(1, collect($activity['recency'])->max('count'));
     $tiles = [
         ['active_participants', 'Active participants', 'fa-user-check'],
+        ['sign_ins', 'Sign-ins', 'fa-right-to-bracket'],
         ['lessons_started', 'Lessons started', 'fa-book-open'],
         ['lessons_completed', 'Lessons completed', 'fa-circle-check'],
         ['assessments_submitted', 'Assessments submitted', 'fa-file-pen'],

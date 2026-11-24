@@ -90,10 +90,15 @@
 @endforeach
 </div>
 
-@if($isParticipantsView && !empty($activity))
-    @include('admin.users.partials.participant-activity')
+@if($isParticipantsView)
+    @include('admin.users.partials.participant-tabs')
 @endif
 
+@if($isParticipantsView && $participantTab === 'activity')
+    @include('admin.users.partials.participant-activity')
+@elseif($isParticipantsView && $participantTab === 'signins')
+    @include('admin.users.partials.participant-signins')
+@else
 <div class="admin-panel">
 <form method="GET" class="admin-toolbar" data-auto-filter>
     <div class="search-box">
@@ -284,6 +289,7 @@
 
 <div class="admin-pagination">{{ $users->links() }}</div>
 </div>
+@endif
 
 @if($canEditUsers)
 @php
@@ -369,6 +375,8 @@
 </div>
 </div>
 
+{{-- Edit forms are only needed where the user list is shown. --}}
+@if(! $isParticipantsView || $participantTab === 'participants')
 @foreach($users as $user)
 <div class="eh-modal" id="editUser{{ $user->id }}" aria-hidden="true">
 <div class="eh-modal-dialog eh-modal-lg">
@@ -444,6 +452,7 @@
 </div>
 </div>
 @endforeach
+@endif
 @endif
 
 @if($errors->any())

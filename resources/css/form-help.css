@@ -7,3 +7,7 @@
 [data-form-help-generated]{
     display:none!important;
 }
+
+/* Date of birth (and similar) as day / month / year dropdowns: <x-date-parts> */
+.eh-date-parts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1.1fr);gap:8px;margin:0;padding:0;border:0;min-width:0}
+.eh-date-parts select,.eh-register-field .eh-date-parts select{box-sizing:border-box!important;width:100%!important;min-width:0!important;padding-left:10px!important;padding-right:24px!important}

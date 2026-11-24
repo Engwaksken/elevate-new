@@ -32,7 +32,7 @@ class AuthController extends Controller
             ]);
         }
 
-        $user->forceFill(['last_login_at' => now()])->save();
+        app(\App\Services\SignInRecorder::class)->record($user, $request, 'app');
 
         $token = $user->createToken(
             $credentials['device_name'] ?? 'ElevateHer360 Participant App',

@@ -428,15 +428,17 @@
                                 Date of birth
                             </label>
 
-                            <input
+                            <x-date-parts
                                 id="date_of_birth"
-                                type="date"
                                 name="date_of_birth"
-                                value="{{ old('date_of_birth') }}"
-                            >
+                                label="Date of birth"
+                                :value="old('date_of_birth')"
+                                :min-year="now()->year - 100"
+                                :max-year="now()->year - 10"
+                            />
 
                             <small>
-                                Select your date of birth.
+                                Choose the day, month and year you were born.
                             </small>
 
                         </div>

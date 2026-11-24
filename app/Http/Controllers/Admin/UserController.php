@@ -102,9 +102,19 @@ class UserController extends Controller
 
         if ($forcedType === 'participant') {
             [$stats, $branchStats] = $this->participantStats($branches, $branchId ?: null);
-            $activity = $this->participantActivity($branchId ?: null, $request->integer('activity_days'));
+            $participantTab = in_array($request->get('tab'), self::PARTICIPANT_TABS, true)
+                ? $request->get('tab')
+                : self::PARTICIPANT_TABS[0];
+            $activity = $participantTab === 'activity'
+                ? $this->participantActivity($branchId ?: null, $request->integer('activity_days'))
+                : null;
+            $signIns = $participantTab === 'signins'
+                ? $this->participantSignIns($request, $branchId ?: null)
+                : null;
         } else {
+            $participantTab = null;
             $activity = null;
+            $signIns = null;
             $branchStats = null;
             $stats = [
                 'total' => User::count(),
@@ -126,6 +136,8 @@ class UserController extends Controller
             'stats' => $stats,
             'branchStats' => $branchStats,
             'activity' => $activity,
+            'participantTab' => $participantTab,
+            'signIns' => $signIns,
         ]);
     }
 
@@ -143,11 +155,81 @@ class UserController extends Controller
 
     public const ACTIVITY_RANGES = [7, 30, 90];
 
+    /** Tabs on the Participants page; the first is the default. */
+    public const PARTICIPANT_TABS = ['participants', 'activity', 'signins'];
+
+    /** Participant accounts, optionally limited to one branch. */
+    private function participantQuery(?int $branchId)
+    {
+        $query = User::query()->where('user_type', 'participant');
+
+        return $branchId ? $this->scopeToBranch($query, $branchId) : $query;
+    }
+
+    /**
+     * Every recorded participant sign-in, newest first, for the Sign-ins tab.
+     */
+    private function participantSignIns(Request $request, ?int $branchId): array
+    {
+        $participantIds = $this->participantQuery($branchId)->select('users.id');
+
+        $base = fn () => \App\Models\LoginAudit::query()
+            ->where('successful', true)
+            ->whereIn('user_id', $participantIds);
+
+        $query = $base()->with('user:id,name,email,participant_code')->latest('attempted_at')->latest('id');
+
+        if ($search = trim((string) $request->get('signin_search'))) {
+            $query->whereHas('user', fn ($q) => $q->where(fn ($q) => $q
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('participant_code', 'like', "%{$search}%")));
+        }
+
+        if (in_array($request->get('channel'), ['web', 'app'], true)) {
+            $query->where('channel', $request->get('channel'));
+        }
+
+        if ($from = $this->validDate($request->get('from'))) {
+            $query->where('attempted_at', '>=', $from->startOfDay());
+        }
+
+        if ($to = $this->validDate($request->get('to'))) {
+            $query->where('attempted_at', '<=', $to->endOfDay());
+        }
+
+        $perPage = in_array((int) $request->get('per_page'), [10,20,25,50,100], true)
+            ? (int) $request->get('per_page')
+            : 25;
+
+        return [
+            'items' => $query->paginate($perPage, ['*'], 'signins_page')->withQueryString(),
+            'today' => $base()->where('attempted_at', '>=', now()->startOfDay())->count(),
+            'week' => $base()->where('attempted_at', '>=', now()->subDays(6)->startOfDay())->count(),
+            'people_30' => $base()->where('attempted_at', '>=', now()->subDays(29)->startOfDay())->distinct()->count('user_id'),
+        ];
+    }
+
+    private function validDate(mixed $value): ?\Illuminate\Support\Carbon
+    {
+        if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return null;
+        }
+
+        try {
+            $date = \Illuminate\Support\Carbon::createFromFormat('!Y-m-d', $value);
+
+            return $date->format('Y-m-d') === $value ? $date : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /**
      * Daily participant activity for the Participants page charts. A participant
-     * counts as active on a day when they started or completed a lesson, submitted
-     * an assessment, or were marked present/late at a session. Sign-ins are not
-     * kept per day (only the latest one), so they appear as a recency breakdown.
+     * counts as active on a day when they signed in, started or completed a
+     * lesson, submitted an assessment, or were marked present/late at a session.
+     * Sign-ins are recorded from 24 Nov 2026; earlier days count learning only.
      */
     private function participantActivity(?int $branchId, int $days): array
     {
@@ -155,10 +237,7 @@ class UserController extends Controller
         $end = now()->endOfDay();
         $start = now()->subDays($days - 1)->startOfDay();
 
-        $participants = User::query()->where('user_type', 'participant');
-        if ($branchId) {
-            $this->scopeToBranch($participants, $branchId);
-        }
+        $participants = $this->participantQuery($branchId);
         $participantIds = (clone $participants)->select('users.id');
 
         $dates = collect(range(0, $days - 1))->map(fn ($i) => $start->copy()->addDays($i)->toDateString());
@@ -169,6 +248,7 @@ class UserController extends Controller
             'lessons_completed' => ['lesson_progress', 'completed_at', null],
             'assessments_submitted' => ['assessment_attempts', 'submitted_at', null],
             'attendance' => ['attendance_records', 'created_at', fn ($q) => $q->whereIn('status', ['present', 'late'])],
+            'sign_ins' => ['login_audits', 'attempted_at', fn ($q) => $q->where('successful', true)],
         ];
 
         $totals = [];
