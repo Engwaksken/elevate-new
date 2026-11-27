@@ -63,7 +63,7 @@ class LessonController extends Controller
         $request->validate($this->files()->uploadRules('resource_files','lesson_mimes') + [
             'remove_files'=>['nullable','array'],
             'remove_files.*'=>['integer'],
-        ]);
+        ], $this->files()->uploadMessages('resource_files'));
 
         return $request->validate([
             'title'=>['required','string','max:190'],

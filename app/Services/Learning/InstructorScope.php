@@ -156,7 +156,9 @@ class InstructorScope
         $branchIds = $user->branches()->pluck('branches.id')->map(fn ($id) => (int) $id)->all();
 
         if ($isLead || $branchIds === []) {
-            return $this->cache[$key] = ['all' => true, 'edit_shared' => $isLead || ! $hasLead, 'cohort_ids' => null, 'branch_ids' => $branchIds];
+            // Instructors with no branch keep full access, including adding and
+            // editing shared lessons; only branch instructors defer to the lead.
+            return $this->cache[$key] = ['all' => true, 'edit_shared' => true, 'cohort_ids' => null, 'branch_ids' => $branchIds];
         }
 
         $cohortIds = $course->cohorts()
@@ -168,7 +170,9 @@ class InstructorScope
 
         return $this->cache[$key] = [
             'all' => false,
-            'edit_shared' => ! $hasLead,
+            // With no group at their branch they would have nowhere to put material,
+            // so they work on the shared content (participants stay branch-limited).
+            'edit_shared' => ! $hasLead || $cohortIds === [],
             'cohort_ids' => $cohortIds,
             'branch_ids' => $branchIds,
         ];

@@ -20,6 +20,6 @@
     <div class="icm-maxfiles">
         <label>Maximum files per submission</label>
         <input type="number" name="max_submission_files" min="1" max="{{ \App\Models\Assessment::MAX_SUBMISSION_FILES_LIMIT }}" value="{{ $maxFiles }}" required>
-        <small class="icm-muted">1 to {{ \App\Models\Assessment::MAX_SUBMISSION_FILES_LIMIT }} files, up to {{ (int) round(((int) config('elearning.max_file_kb', 51200)) / 1024) }} MB each.</small>
+        <small class="icm-muted">1 to {{ \App\Models\Assessment::MAX_SUBMISSION_FILES_LIMIT }} files, up to {{ app(\App\Services\Learning\LearningFileService::class)->maxFileMb() }} MB each.</small>
     </div>
 </fieldset>

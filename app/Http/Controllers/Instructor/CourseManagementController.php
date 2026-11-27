@@ -373,9 +373,8 @@ class CourseManagementController extends Controller
                 'lessons.*.video_url' => ['nullable', 'url'],
                 'lessons.*.external_url' => ['nullable', 'url'],
                 'lessons.*.estimated_minutes' => ['nullable', 'integer', 'min:1'],
-            ] + $this->files()->uploadRules('resource_files', 'lesson_mimes', 'resource_file'), [
-                'resource_files.max' => 'You can upload up to :max files at a time.',
-            ]);
+            ] + $this->files()->uploadRules('resource_files', 'lesson_mimes', 'resource_file'),
+                $this->files()->uploadMessages('resource_files', 'resource_file'));
 
             $position = (int) ($module->lessons()->max('position') ?? 0);
             $uploads = $this->files()->uploadedFiles($request, 'resource_files', 'resource_file');
@@ -1382,9 +1381,8 @@ class CourseManagementController extends Controller
             'remove_file' => ['nullable', 'boolean'],
             'remove_files' => ['nullable', 'array'],
             'remove_files.*' => ['integer'],
-        ] + $this->files()->uploadRules('resource_files', 'lesson_mimes', 'resource_file'), [
-            'resource_files.max' => 'You can upload up to :max files at a time.',
-        ]);
+        ] + $this->files()->uploadRules('resource_files', 'lesson_mimes', 'resource_file'),
+            $this->files()->uploadMessages('resource_files', 'resource_file'));
     }
 
     private function validateAssessment(Request $request): array
@@ -1413,8 +1411,7 @@ class CourseManagementController extends Controller
             'cohort_due.*' => ['nullable', 'date'],
         ] + $this->files()->uploadRules('assessment_files', 'assignment_mimes', 'assessment_file'), [
             'submission_formats.*.in' => 'Choose file formats from the list.',
-            'assessment_files.max' => 'You can upload up to :max files at a time.',
-        ]);
+        ] + $this->files()->uploadMessages('assessment_files', 'assessment_file'));
     }
 
     /**

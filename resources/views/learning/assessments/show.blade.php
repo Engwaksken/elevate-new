@@ -108,7 +108,7 @@
     @php($maxFiles = $assessment->maxSubmissionFiles())
     <x-learning.multi-file-input name="submission_files" :label="$assessment->allow_link_submissions ? 'Upload files (optional)' : ($maxFiles === 1 ? 'Upload your file *' : 'Upload your files *')"
         :extensions="$assessment->submissionExtensions()" :max="$maxFiles" :required="!$assessment->allow_link_submissions"
-        :hint="($assessment->allow_link_submissions ? 'Optional if you add a link below. ' : 'Required. ').'Accepted formats: '.$assessment->submissionFormatLabels().' ('.implode(', ', $assessment->submissionExtensions()).'). '.($maxFiles === 1 ? 'One file' : 'Up to '.$maxFiles.' files').', '.(int) round(((int) config('elearning.max_file_kb', 51200)) / 1024).' MB each.'" />
+        :hint="($assessment->allow_link_submissions ? 'Optional if you add a link below. ' : 'Required. ').'Accepted formats: '.$assessment->submissionFormatLabels().' ('.implode(', ', $assessment->submissionExtensions()).'). '.($maxFiles === 1 ? 'One file' : 'Up to '.$maxFiles.' files').', '.app(\App\Services\Learning\LearningFileService::class)->maxFileMb().' MB each.'" />
     @if($assessment->allow_link_submissions)
     <label for="submission_links" style="display:block;margin-top:12px"><strong>Submission links</strong> <small>(optional, one per line; add a file or link)</small></label>
     <textarea id="submission_links" name="submission_links" rows="3" placeholder="https://example.com/your-work">{{ old('submission_links') }}</textarea>

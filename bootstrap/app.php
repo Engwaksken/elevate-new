@@ -61,6 +61,27 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request, Throwable $e) => $request->is('api/*') || $request->expectsJson()
         );
 
+        // Uploads bigger than PHP's post_max_size arrive with no fields at all. Runs before
+        // the session starts, so explain on a plain page instead of a flash message.
+        $exceptions->render(function (\Illuminate\Http\Exceptions\PostTooLargeException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return null;
+            }
+
+            $limitMb = max(1, (int) floor(\App\Services\Learning\LearningFileService::iniBytes((string) ini_get('post_max_size')) / 1048576));
+            $back = e(url()->previous() ?: url('/'));
+
+            return response(
+                '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+                .'<title>Upload too large</title></head><body style="font-family:system-ui,sans-serif;max-width:560px;margin:60px auto;padding:0 16px;line-height:1.5">'
+                .'<h1 style="font-size:1.4rem">The upload was too large</h1>'
+                ."<p>The files you selected add up to more than the server accepts in one go ({$limitMb} MB). Nothing was saved.</p>"
+                .'<p>Go back and upload fewer or smaller files at a time (for big videos, paste a video link instead).</p>'
+                ."<p><a href=\"{$back}\">&larr; Go back</a></p></body></html>",
+                413
+            );
+        });
+
         // Human-readable "message" for HTTP errors on api/* routes. Validation (422) and
         // authentication (401) errors keep Laravel's default JSON: {"message": ..., "errors": {...}}.
         $exceptions->render(function (Throwable $e, Request $request) {

@@ -47,14 +47,15 @@ class ParticipantLibraryApiTest extends TestCase
         $this->book(['title' => 'Retired Book', 'is_active' => false]);
 
         $data = $this->getJson(self::BASE)->assertOk()->json();
-        $this->assertEqualsCanonicalizing(['Interview Skills', 'Public Primer'], collect($data['data'])->pluck('title')->all());
+        // Library access is open (a4adc45): staff-level books are listed too; inactive ones are not.
+        $this->assertEqualsCanonicalizing(['Interview Skills', 'Public Primer', 'Staff Handbook'], collect($data['data'])->pluck('title')->all());
         $this->assertSame('Careers', $data['categories'][0]['name']);
 
         $this->assertSame(['Interview Skills'], collect($this->getJson(self::BASE.'?search=interview')->json('data'))->pluck('title')->all());
         $this->assertSame(['Interview Skills'], collect($this->getJson(self::BASE.'?category='.$category->id)->json('data'))->pluck('title')->all());
 
-        $staffOnly = LibraryResource::where('title', 'Staff Handbook')->first();
-        $this->getJson(self::BASE.'/'.$staffOnly->id)->assertNotFound();
+        $retired = LibraryResource::where('title', 'Retired Book')->first();
+        $this->getJson(self::BASE.'/'.$retired->id)->assertNotFound();
     }
 
     public function test_reading_saves_progress_shared_with_continue_reading(): void

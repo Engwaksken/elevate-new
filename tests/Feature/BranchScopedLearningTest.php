@@ -326,4 +326,53 @@ class BranchScopedLearningTest extends TestCase
 
         $this->assertCount(2, $participants);
     }
+
+    public function test_instructor_without_a_branch_adds_shared_lessons_on_a_course_with_a_lead(): void
+    {
+        $this->kampalaInstructor->branches()->detach();
+
+        $this->actingAs($this->kampalaInstructor)
+            ->post(route('instructor.courses.lessons.store', [$this->course, $this->module]), [
+                'lessons' => [['title' => 'Week 2 slides', 'content_type' => 'file']],
+                'is_published' => 1,
+            ])
+            ->assertSessionHas('success');
+
+        $this->assertNull(Lesson::where('title', 'Week 2 slides')->value('cohort_id'));
+
+        $this->actingAs($this->kampalaInstructor)
+            ->put(route('instructor.courses.lessons.update', [$this->course, $this->module, $this->sharedLesson]), [
+                'title' => 'Shared lesson (updated)', 'content_type' => 'text',
+            ])
+            ->assertSessionHas('success');
+    }
+
+    public function test_branch_instructor_with_no_group_at_their_branch_can_still_add_lessons(): void
+    {
+        $this->course->cohorts()->detach($this->kampalaCohort->id);
+
+        $this->actingAs($this->kampalaInstructor)
+            ->post(route('instructor.courses.lessons.store', [$this->course, $this->module]), [
+                'title' => 'Kampala instructor shared notes', 'content_type' => 'text',
+            ])
+            ->assertSessionHas('success');
+
+        // Still limited to their own branch's participants (none here).
+        $participants = $this->actingAs($this->kampalaInstructor)
+            ->get(route('instructor.courses.manage', [$this->course, 'tab' => 'participants']))
+            ->assertOk()
+            ->viewData('participants');
+        $this->assertCount(0, $participants);
+    }
+
+    public function test_upload_limit_never_exceeds_what_php_accepts(): void
+    {
+        $service = app(\App\Services\Learning\LearningFileService::class);
+        $php = \App\Services\Learning\LearningFileService::iniBytes((string) ini_get('upload_max_filesize'));
+
+        $this->assertSame(64 * 1024 * 1024, \App\Services\Learning\LearningFileService::iniBytes('64M'));
+        $this->assertSame(2048, \App\Services\Learning\LearningFileService::iniBytes('2K'));
+        $this->assertLessThanOrEqual(intdiv($php, 1024), $service->maxFileKb());
+        $this->assertLessThanOrEqual((int) config('elearning.max_file_kb'), $service->maxFileKb());
+    }
 }

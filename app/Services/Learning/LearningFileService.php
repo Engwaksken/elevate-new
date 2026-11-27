@@ -104,9 +104,70 @@ class LearningFileService
      *
      * @param  string  $mimesKey  lesson_mimes | assignment_mimes | submission_mimes
      */
+    /**
+     * Largest file accepted, in KB: the e-learning setting, capped by PHP's
+     * upload_max_filesize. PHP silently drops anything bigger, so promising more
+     * than the server takes makes uploads fail with no useful message.
+     */
+    public function maxFileKb(): int
+    {
+        $configured = (int) config('elearning.max_file_kb', 51200);
+        $php = self::iniBytes((string) ini_get('upload_max_filesize'));
+
+        return $php > 0 ? max(1, min($configured, intdiv($php, 1024))) : $configured;
+    }
+
+    /** Largest whole form (all files together) PHP accepts, in KB; 0 = no limit. */
+    public function maxRequestKb(): int
+    {
+        $php = self::iniBytes((string) ini_get('post_max_size'));
+
+        return $php > 0 ? intdiv($php, 1024) : 0;
+    }
+
+    public function maxFileMb(): int
+    {
+        return max(1, (int) floor($this->maxFileKb() / 1024));
+    }
+
+    /** "64M" / "2G" / "512K" / "1048576" -> bytes. */
+    public static function iniBytes(string $value): int
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return 0;
+        }
+
+        $number = (int) $value;
+
+        return match (strtolower(substr($value, -1))) {
+            'g' => $number * 1024 * 1024 * 1024,
+            'm' => $number * 1024 * 1024,
+            'k' => $number * 1024,
+            default => $number,
+        };
+    }
+
+    /** Plain-language messages for lesson/material uploads. */
+    public function uploadMessages(string $field, ?string $legacyField = null): array
+    {
+        $mb = $this->maxFileMb();
+        $messages = [];
+
+        foreach (array_filter([$field.'.*', $legacyField]) as $key) {
+            $messages[$key.'.uploaded'] = ":attribute could not be uploaded. Files must be {$mb} MB or smaller; try a smaller file or a link instead.";
+            $messages[$key.'.max'] = "Each file must be {$mb} MB or smaller.";
+            $messages[$key.'.mimes'] = 'This file type is not accepted. Allowed: :values.';
+        }
+
+        $messages[$field.'.max'] = 'You can upload up to :max files at a time.';
+
+        return $messages;
+    }
+
     public function uploadRules(string $field, string $mimesKey, ?string $legacyField = null): array
     {
-        $fileRules = ['file', 'max:'.(int) config('elearning.max_file_kb', 51200), 'mimes:'.config("elearning.{$mimesKey}")];
+        $fileRules = ['file', 'max:'.$this->maxFileKb(), 'mimes:'.config("elearning.{$mimesKey}")];
 
         $rules = [
             $field => ['nullable', 'array', 'max:'.$this->maxFiles()],
@@ -127,7 +188,7 @@ class LearningFileService
      */
     public function submissionRules(Assessment $assessment, string $field, ?string $legacyField = null): array
     {
-        $fileRules = ['file', 'max:'.(int) config('elearning.max_file_kb', 51200), 'mimes:'.$assessment->submissionMimesRule()];
+        $fileRules = ['file', 'max:'.$this->maxFileKb(), 'mimes:'.$assessment->submissionMimesRule()];
         $presence = $assessment->requiresAttachment() && ! $assessment->allow_link_submissions
             ? ($legacyField ? 'required_without:'.$legacyField : 'required')
             : 'nullable';
@@ -155,7 +216,8 @@ class LearningFileService
             $field.'.required_without' => 'Attach at least one file. Assignments cannot be submitted without a file.',
             $field.'.max' => $max === 1 ? 'This assignment accepts one file only.' : "This assignment accepts up to {$max} files.",
             $field.'.*.mimes' => "This file type is not accepted for this assignment. Allowed: {$formats}.",
-            $field.'.*.max' => 'Each file must be '.(int) round(((int) config('elearning.max_file_kb', 51200)) / 1024).' MB or smaller.',
+            $field.'.*.max' => 'Each file must be '.$this->maxFileMb().' MB or smaller.',
+            $field.'.*.uploaded' => 'A file could not be uploaded. Files must be '.$this->maxFileMb().' MB or smaller.',
         ];
     }
 

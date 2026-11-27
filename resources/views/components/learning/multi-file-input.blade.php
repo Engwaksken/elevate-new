@@ -16,7 +16,11 @@
     $acceptAttr = collect($extensionList)
         ->map(fn ($extension) => '.'.trim($extension))
         ->join(',');
-    $maxMb = (int) round(((int) config('elearning.max_file_kb', 51200)) / 1024);
+    $fileService = app(\App\Services\Learning\LearningFileService::class);
+    $maxMb = $fileService->maxFileMb();
+    $maxFileBytes = $fileService->maxFileKb() * 1024;
+    // Leave ~1 MB of the form limit for the other fields.
+    $maxTotalBytes = $fileService->maxRequestKb() > 0 ? max(0, ($fileService->maxRequestKb() - 1024) * 1024) : 0;
 @endphp
 
 @once
@@ -42,11 +46,16 @@
         if (!list) return;
         list.innerHTML = '';
         var max = parseInt(input.dataset.maxFiles || '10', 10);
+        var maxBytes = parseInt(input.dataset.maxBytes || '0', 10);
+        var maxTotal = parseInt(input.dataset.maxTotalBytes || '0', 10);
+        var total = 0, tooBig = [];
 
         Array.prototype.forEach.call(input.files, function (file, index) {
             var li = document.createElement('li');
             var label = document.createElement('span');
+            total += file.size;
             label.textContent = file.name + ' (' + sizeLabel(file.size) + ')';
+            if (maxBytes && file.size > maxBytes) { tooBig.push(file.name); li.style.borderColor = '#b42318'; label.textContent += ' - too large'; }
             var remove = document.createElement('button');
             remove.type = 'button';
             remove.setAttribute('aria-label', 'Remove ' + file.name);
@@ -64,7 +73,13 @@
             list.appendChild(li);
         });
 
-        if (error) error.textContent = input.files.length > max ? (max === 1 ? 'Only one file can be uploaded.' : 'You can upload up to ' + max + ' files at a time.') : '';
+        var message = '';
+        if (input.files.length > max) message = max === 1 ? 'Only one file can be uploaded.' : 'You can upload up to ' + max + ' files at a time.';
+        else if (tooBig.length) message = tooBig.join(', ') + (tooBig.length === 1 ? ' is' : ' are') + ' larger than ' + sizeLabel(maxBytes) + '. Remove ' + (tooBig.length === 1 ? 'it' : 'them') + ' or use a link instead.';
+        else if (maxTotal && total > maxTotal) message = 'These files add up to ' + sizeLabel(total) + '; the server accepts up to ' + sizeLabel(maxTotal) + ' per save. Upload them in smaller batches.';
+        if (error) error.textContent = message;
+        // Block the save instead of letting the server silently drop the files.
+        input.setCustomValidity(message);
     }
 
     document.addEventListener('change', function (event) {
@@ -83,6 +98,15 @@
         render(input);
     });
 
+    // A browser that kept a selection across a page restore still gets checked.
+    document.addEventListener('submit', function (event) {
+        var inputs = event.target.querySelectorAll ? event.target.querySelectorAll('input[type=file][data-multi-file-input]') : [];
+        Array.prototype.forEach.call(inputs, function (input) { render(input); });
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].validationMessage) { event.preventDefault(); inputs[i].reportValidity(); return; }
+        }
+    }, true);
+
     document.addEventListener('reset', function (event) {
         event.target.querySelectorAll && event.target.querySelectorAll('input[type=file][data-multi-file-input]').forEach(function (input) {
             input._mfiPrevious = null;
@@ -95,7 +119,7 @@
 
 <div {{ $attributes->merge(['class' => 'mfi']) }}>
     <label for="{{ $inputId }}">{{ $label }}</label>
-    <input type="file" id="{{ $inputId }}" name="{{ $name }}[]" @if($max > 1) multiple @endif accept="{{ $acceptAttr }}" data-multi-file-input data-max-files="{{ $max }}" @required($required)>
+    <input type="file" id="{{ $inputId }}" name="{{ $name }}[]" @if($max > 1) multiple @endif accept="{{ $acceptAttr }}" data-multi-file-input data-max-files="{{ $max }}" data-max-bytes="{{ $maxFileBytes }}" data-max-total-bytes="{{ $maxTotalBytes }}" @required($required)>
     <small class="form-hint" style="display:block">{{ $hint ?? ($max === 1 ? "One file, up to {$maxMb} MB." : "Up to {$max} files, {$maxMb} MB each. You can remove a file from the list before saving.") }}</small>
     <ul class="mfi-list" id="{{ $inputId }}-list" aria-live="polite"></ul>
     <div class="mfi-error" id="{{ $inputId }}-error" role="alert"></div>

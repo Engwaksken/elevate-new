@@ -124,7 +124,7 @@ class RoleShell
             default => [
                 'Overview' => [
                     ['route' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'fa-gauge-high', 'active' => ['dashboard']],
-                    ['route' => 'mentorship.dashboard', 'fragment' => '#ai', 'label' => 'AI Career Mentor', 'icon' => 'fa-wand-magic-sparkles', 'active' => []],
+                    ['route' => 'mentorship.dashboard', 'fragment' => '#ai', 'requires_ai' => true, 'label' => 'AI Career Mentor', 'icon' => 'fa-wand-magic-sparkles', 'active' => []],
                     ['route' => 'participant.chat.index', 'label' => 'Chat', 'icon' => 'fa-comments', 'active' => ['participant.chat.*']],
                     ['route' => 'calendar.index', 'label' => 'Calendar', 'icon' => 'fa-calendar-days', 'active' => ['calendar.*']],
                     ['route' => 'certificates.mine', 'label' => 'My Certificates', 'icon' => 'fa-award', 'active' => ['certificates.mine']],
@@ -153,10 +153,18 @@ class RoleShell
             ],
         };
 
+        // Same check as the mentorship page: the AI tab exists only when a system AI key is set.
+        $aiEnabled = null;
+        $aiOn = function () use (&$aiEnabled): bool {
+            return $aiEnabled ??= (bool) \App\Models\AiIntegration::activeSystem()?->encrypted_api_key;
+        };
+
         $resolved = [];
         foreach ($groups as $label => $items) {
-            $items = array_values(array_filter($items, function (array $item) {
-                return Route::has($item['route']) && (! isset($item['requires']) || Route::has($item['requires']));
+            $items = array_values(array_filter($items, function (array $item) use ($aiOn) {
+                return Route::has($item['route'])
+                    && (! isset($item['requires']) || Route::has($item['requires']))
+                    && (empty($item['requires_ai']) || $aiOn());
             }));
 
             if ($items !== []) {

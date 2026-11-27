@@ -397,7 +397,7 @@ class ParticipantLessonService
         $data['allowed_extensions'] = $assessment->submissionExtensions();
         $data['allowed_formats_label'] = $assessment->submissionFormatLabels();
         $data['max_submission_files'] = $assessment->maxSubmissionFiles();
-        $data['max_file_mb'] = (int) round(((int) config('elearning.max_file_kb', 51200)) / 1024);
+        $data['max_file_mb'] = $this->files->maxFileMb();
 
         $attachments = $this->files->assessmentFiles($assessment);
         $first = $attachments->first();
