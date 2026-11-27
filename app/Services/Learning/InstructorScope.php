@@ -11,9 +11,9 @@ use Illuminate\Support\Collection;
 /**
  * Which participants of a course a staff member works with.
  *
- * - Admins, the course's lead instructor(s), and instructors with no branch
- *   assigned see the whole course (today's behaviour).
- * - Any other instructor is a "branch instructor": they see participants in
+ * - Admins, the course's lead instructor(s), instructors with no branch and
+ *   instructors assigned to more than one branch see the whole course.
+ * - An instructor with exactly one branch is a "branch instructor": they see participants in
  *   the course's cohorts that run at their branches, plus cohort-less
  *   participants whose profile branch is one of theirs.
  *
@@ -159,6 +159,17 @@ class InstructorScope
             // Instructors with no branch keep full access, including adding and
             // editing shared lessons; only branch instructors defer to the lead.
             return $this->cache[$key] = ['all' => true, 'edit_shared' => true, 'cohort_ids' => null, 'branch_ids' => $branchIds];
+        }
+
+        if (count($branchIds) > 1) {
+            // Assigned to several branches: works with every participant and group of
+            // the course. Shared content still belongs to the lead, if there is one.
+            return $this->cache[$key] = [
+                'all' => true,
+                'edit_shared' => ! $hasLead || ! $course->cohorts()->exists(),
+                'cohort_ids' => null,
+                'branch_ids' => $branchIds,
+            ];
         }
 
         $cohortIds = $course->cohorts()

@@ -160,6 +160,79 @@ class ModuleAccessByGroupTest extends TestCase
             ->assertRedirect();
     }
 
+    public function test_one_save_sets_module_access_for_all_groups(): void
+    {
+        $this->actingAs($this->lead)
+            ->get(route('instructor.courses.module-access', [$this->course, 'target' => 'all']))
+            ->assertOk()
+            ->assertSee('All groups (2)');
+
+        $this->actingAs($this->lead)
+            ->put(route('instructor.courses.module-access.settings', $this->course), ['target' => 'all', 'mode' => 'release'])
+            ->assertRedirect();
+        $this->assertSame(2, CourseCohortLearningSetting::where('instructor_release_required', true)->count());
+
+        $this->completeFirst($this->kampalaLearner);
+        $this->completeFirst($this->guluLearner);
+        $this->assertFalse($this->canOpenSecond($this->kampalaLearner));
+        $this->assertFalse($this->canOpenSecond($this->guluLearner));
+
+        $this->actingAs($this->lead)
+            ->put(route('instructor.courses.module-access.release', [$this->course, $this->second]), ['target' => 'all', 'is_released' => 1])
+            ->assertRedirect();
+
+        $this->assertTrue($this->canOpenSecond($this->kampalaLearner));
+        $this->assertTrue($this->canOpenSecond($this->guluLearner));
+        $this->assertTrue(UserNotification::where('user_id', $this->guluLearner->id)->where('type', 'module_released')->exists());
+    }
+
+    public function test_a_branch_target_changes_only_that_branchs_groups(): void
+    {
+        $gulu = Branch::where('code', 'GUL')->first();
+
+        $this->actingAs($this->lead)
+            ->put(route('instructor.courses.module-access.settings', $this->course), ['target' => 'branch:'.$gulu->id, 'mode' => 'sequential'])
+            ->assertRedirect();
+
+        $this->assertFalse($this->canOpenSecond($this->guluLearner));
+        $this->assertTrue($this->canOpenSecond($this->kampalaLearner));
+    }
+
+    public function test_branch_instructor_cannot_target_all_groups_or_another_branch(): void
+    {
+        $gulu = Branch::where('code', 'GUL')->first();
+
+        foreach (['all', 'branch:'.$gulu->id] as $target) {
+            $this->actingAs($this->kampalaInstructor)
+                ->put(route('instructor.courses.module-access.settings', $this->course), ['target' => $target, 'mode' => 'release'])
+                ->assertForbidden();
+        }
+
+        $this->assertSame(0, CourseCohortLearningSetting::count());
+    }
+
+    public function test_instructor_with_several_branches_sees_every_participant_and_group(): void
+    {
+        $this->kampalaInstructor->branches()->attach(Branch::create(['name' => 'Mbale', 'code' => 'MBL', 'is_active' => true])->id);
+
+        $participants = $this->actingAs($this->kampalaInstructor)
+            ->get(route('instructor.courses.manage', [$this->course, 'tab' => 'participants']))
+            ->assertOk()
+            ->viewData('participants');
+        $this->assertCount(2, $participants);
+
+        $this->actingAs($this->kampalaInstructor)
+            ->get(route('instructor.courses.module-access', $this->course))
+            ->assertOk()
+            ->assertSee('Gulu Jan')
+            ->assertSee('All groups (2)');
+
+        $this->actingAs($this->kampalaInstructor)
+            ->put(route('instructor.courses.module-access.settings', $this->course), ['target' => 'all', 'mode' => 'sequential'])
+            ->assertRedirect();
+        $this->assertSame(2, CourseCohortLearningSetting::count());
+    }
+
     public function test_staff_not_teaching_the_course_cannot_open_it(): void
     {
         $this->actingAs($this->instructor())
